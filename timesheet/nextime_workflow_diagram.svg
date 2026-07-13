@@ -1,0 +1,177 @@
+<svg viewBox="0 0 900 720" xmlns="http://www.w3.org/2000/svg" role="img" font-family="Arial, sans-serif">
+  <title>NexTime Workflow Diagram</title>
+  <desc>ขั้นตอนการทำงานใน NexTime ตั้งแต่สร้าง Project, Project Plan, Task จนถึง Timesheet</desc>
+
+  <!-- Background -->
+  <rect width="900" height="720" fill="#f8f9fa" rx="12"/>
+
+  <!-- Title -->
+  <text x="450" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#1a1a2e">NexTime — Workflow การทำงาน</text>
+
+  <!-- PHASE LABELS -->
+  <rect x="20" y="58" width="148" height="24" rx="6" fill="#4361ee" opacity="0.15"/>
+  <text x="94" y="74" text-anchor="middle" font-size="11" font-weight="700" fill="#4361ee">① CREATE PROJECT</text>
+  <rect x="258" y="58" width="148" height="24" rx="6" fill="#7209b7" opacity="0.15"/>
+  <text x="332" y="74" text-anchor="middle" font-size="11" font-weight="700" fill="#7209b7">② PROJECT PLAN</text>
+  <rect x="496" y="58" width="148" height="24" rx="6" fill="#f72585" opacity="0.15"/>
+  <text x="570" y="74" text-anchor="middle" font-size="11" font-weight="700" fill="#f72585">③ TASK / KANBAN</text>
+  <rect x="734" y="58" width="148" height="24" rx="6" fill="#fb8500" opacity="0.15"/>
+  <text x="808" y="74" text-anchor="middle" font-size="11" font-weight="700" fill="#fb8500">④ TIMESHEET</text>
+
+  <!-- COLUMN DIVIDERS -->
+  <line x1="238" y1="55" x2="238" y2="700" stroke="#dee2e6" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="476" y1="55" x2="476" y2="700" stroke="#dee2e6" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="714" y1="55" x2="714" y2="700" stroke="#dee2e6" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- COLUMN 1: CREATE PROJECT -->
+  <rect x="28" y="96" width="182" height="38" rx="8" fill="#4361ee" opacity="0.9"/>
+  <text x="119" y="112" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">Admin / Manager</text>
+  <text x="119" y="127" text-anchor="middle" font-size="10" fill="#dce3ff">คลิก "+ New Project"</text>
+  <line x1="119" y1="134" x2="119" y2="154" stroke="#4361ee" stroke-width="2" marker-end="url(#arr-blue)"/>
+  <rect x="28" y="154" width="182" height="58" rx="8" fill="#fff" stroke="#4361ee" stroke-width="1.5"/>
+  <text x="119" y="172" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a2e">กรอกรายละเอียดโปรเจกต์</text>
+  <text x="119" y="187" text-anchor="middle" font-size="10" fill="#666">ชื่อ / วันที่ / งบประมาณ</text>
+  <text x="119" y="202" text-anchor="middle" font-size="10" fill="#666">เลือก Milestone Template</text>
+  <line x1="119" y1="212" x2="119" y2="232" stroke="#4361ee" stroke-width="2" marker-end="url(#arr-blue)"/>
+  <rect x="28" y="232" width="182" height="42" rx="8" fill="#fff" stroke="#4361ee" stroke-width="1.5"/>
+  <text x="119" y="250" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a2e">กำหนด PM ประจำโปรเจกต์</text>
+  <text x="119" y="266" text-anchor="middle" font-size="10" fill="#666">เลือกจาก Employee Directory</text>
+  <line x1="119" y1="274" x2="119" y2="294" stroke="#4361ee" stroke-width="2" marker-end="url(#arr-blue)"/>
+  <rect x="28" y="294" width="182" height="42" rx="8" fill="#fff" stroke="#4361ee" stroke-width="1.5"/>
+  <text x="119" y="312" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a2e">เพิ่มสมาชิกทีม</text>
+  <text x="119" y="328" text-anchor="middle" font-size="10" fill="#666">กำหนด Role: PM / Lead / Member</text>
+  <line x1="210" y1="315" x2="256" y2="315" stroke="#4361ee" stroke-width="2" marker-end="url(#arr-blue)"/>
+  <text x="233" y="308" text-anchor="middle" font-size="9" fill="#4361ee" font-style="italic">สร้างแล้ว</text>
+
+  <!-- COLUMN 2: PROJECT PLAN -->
+  <rect x="266" y="96" width="182" height="52" rx="8" fill="#7209b7" opacity="0.9"/>
+  <text x="357" y="114" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">Auto-Generate Milestones</text>
+  <text x="357" y="129" text-anchor="middle" font-size="10" fill="#e8d5ff">จาก Template Start%/End%</text>
+  <text x="357" y="143" text-anchor="middle" font-size="10" fill="#e8d5ff">สร้างอัตโนมัติตามวันโปรเจกต์</text>
+  <line x1="357" y1="148" x2="357" y2="168" stroke="#7209b7" stroke-width="2" marker-end="url(#arr-purple)"/>
+  <rect x="266" y="168" width="182" height="52" rx="8" fill="#fff" stroke="#7209b7" stroke-width="1.5"/>
+  <text x="357" y="186" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a2e">ดู Gantt Chart</text>
+  <text x="357" y="201" text-anchor="middle" font-size="10" fill="#666">ปรับวันที่ Milestone</text>
+  <text x="357" y="215" text-anchor="middle" font-size="10" fill="#666">ดูความคืบหน้า %</text>
+  <line x1="357" y1="220" x2="357" y2="240" stroke="#7209b7" stroke-width="2" marker-end="url(#arr-purple)"/>
+  <rect x="266" y="240" width="182" height="52" rx="8" fill="#fff" stroke="#7209b7" stroke-width="1.5"/>
+  <text x="357" y="258" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a2e">สร้าง Sprint</text>
+  <text x="357" y="273" text-anchor="middle" font-size="10" fill="#666">ดึง Task จาก Backlog</text>
+  <text x="357" y="287" text-anchor="middle" font-size="10" fill="#666">กำหนดวัน Sprint Start/End</text>
+  <line x1="448" y1="280" x2="494" y2="280" stroke="#7209b7" stroke-width="2" marker-end="url(#arr-purple)"/>
+  <text x="471" y="273" text-anchor="middle" font-size="9" fill="#7209b7" font-style="italic">เริ่ม Sprint</text>
+
+  <!-- COLUMN 3: TASK / KANBAN -->
+  <rect x="504" y="96" width="182" height="52" rx="8" fill="#f72585" opacity="0.9"/>
+  <text x="595" y="114" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">สร้าง Task Card</text>
+  <text x="595" y="129" text-anchor="middle" font-size="10" fill="#ffe0ef">ชื่องาน / ผู้รับผิดชอบ</text>
+  <text x="595" y="143" text-anchor="middle" font-size="10" fill="#ffe0ef">Priority / Story Points</text>
+  <line x1="595" y1="148" x2="595" y2="168" stroke="#f72585" stroke-width="2" marker-end="url(#arr-pink)"/>
+  <!-- Kanban columns -->
+  <rect x="504" y="168" width="38" height="168" rx="6" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"/>
+  <text x="523" y="185" text-anchor="middle" font-size="9" font-weight="700" fill="#666" transform="rotate(-90,523,252)">TO DO</text>
+  <rect x="548" y="168" width="38" height="168" rx="6" fill="#cfe2ff" stroke="#0d6efd" stroke-width="1"/>
+  <text x="567" y="185" text-anchor="middle" font-size="9" font-weight="700" fill="#0d6efd" transform="rotate(-90,567,252)">IN PROGRESS</text>
+  <rect x="592" y="168" width="38" height="168" rx="6" fill="#fff3cd" stroke="#ffc107" stroke-width="1"/>
+  <text x="611" y="185" text-anchor="middle" font-size="9" font-weight="700" fill="#856404" transform="rotate(-90,611,252)">REVIEW</text>
+  <rect x="636" y="168" width="38" height="168" rx="6" fill="#d1e7dd" stroke="#198754" stroke-width="1"/>
+  <text x="655" y="185" text-anchor="middle" font-size="9" font-weight="700" fill="#146c43" transform="rotate(-90,655,252)">DONE</text>
+  <line x1="542" y1="252" x2="548" y2="252" stroke="#888" stroke-width="1.5" marker-end="url(#arr-gray)"/>
+  <line x1="586" y1="252" x2="592" y2="252" stroke="#888" stroke-width="1.5" marker-end="url(#arr-gray)"/>
+  <line x1="630" y1="252" x2="636" y2="252" stroke="#888" stroke-width="1.5" marker-end="url(#arr-gray)"/>
+  <text x="595" y="352" text-anchor="middle" font-size="9" fill="#666">&#8592; Drag &amp; Drop &#8594;</text>
+  <rect x="504" y="366" width="182" height="38" rx="8" fill="#f0f4ff" stroke="#4361ee" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="595" y="382" text-anchor="middle" font-size="10" fill="#4361ee">🔗 Git Webhook</text>
+  <text x="595" y="396" text-anchor="middle" font-size="10" fill="#4361ee">commit &#8594; auto move card</text>
+  <line x1="686" y1="280" x2="732" y2="280" stroke="#f72585" stroke-width="2" marker-end="url(#arr-pink)"/>
+  <text x="709" y="273" text-anchor="middle" font-size="9" fill="#f72585" font-style="italic">ทำงาน</text>
+
+  <!-- COLUMN 4: TIMESHEET -->
+  <rect x="742" y="96" width="142" height="52" rx="8" fill="#fb8500" opacity="0.9"/>
+  <text x="813" y="114" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">บันทึกชั่วโมงทำงาน</text>
+  <text x="813" y="129" text-anchor="middle" font-size="10" fill="#fff3e0">เลือกโปรเจกต์ + Task</text>
+  <text x="813" y="143" text-anchor="middle" font-size="10" fill="#fff3e0">ระบุจำนวนชั่วโมง</text>
+  <line x1="813" y1="148" x2="813" y2="168" stroke="#fb8500" stroke-width="2" marker-end="url(#arr-orange)"/>
+  <rect x="742" y="168" width="142" height="36" rx="8" fill="#fff" stroke="#6c757d" stroke-width="1.5"/>
+  <circle cx="762" cy="186" r="7" fill="#6c757d"/>
+  <text x="770" y="182" font-size="10" font-weight="700" fill="#6c757d"> DRAFT</text>
+  <text x="813" y="196" text-anchor="middle" font-size="9" fill="#666">บันทึกชั่วคราว</text>
+  <line x1="813" y1="204" x2="813" y2="220" stroke="#fb8500" stroke-width="2" marker-end="url(#arr-orange)"/>
+  <text x="835" y="215" font-size="9" fill="#fb8500">ส่งอนุมัติ</text>
+  <rect x="742" y="220" width="142" height="36" rx="8" fill="#fff" stroke="#ffc107" stroke-width="1.5"/>
+  <circle cx="762" cy="238" r="7" fill="#ffc107"/>
+  <text x="770" y="234" font-size="10" font-weight="700" fill="#856404"> PENDING</text>
+  <text x="813" y="248" text-anchor="middle" font-size="9" fill="#666">รอ PM / Admin ตรวจ</text>
+  <line x1="813" y1="256" x2="813" y2="272" stroke="#fb8500" stroke-width="2" marker-end="url(#arr-orange)"/>
+  <!-- Decision diamond -->
+  <polygon points="813,272 843,300 813,328 783,300" fill="#fff3cd" stroke="#ffc107" stroke-width="1.5"/>
+  <text x="813" y="297" text-anchor="middle" font-size="9" font-weight="700" fill="#856404">PM</text>
+  <text x="813" y="309" text-anchor="middle" font-size="9" font-weight="700" fill="#856404">ตรวจ</text>
+  <!-- Approved path -->
+  <line x1="843" y1="300" x2="884" y2="300" stroke="#198754" stroke-width="2"/>
+  <line x1="884" y1="300" x2="884" y2="358" stroke="#198754" stroke-width="2" marker-end="url(#arr-green)"/>
+  <rect x="742" y="340" width="142" height="36" rx="8" fill="#d1e7dd" stroke="#198754" stroke-width="1.5"/>
+  <circle cx="762" cy="358" r="7" fill="#198754"/>
+  <text x="770" y="354" font-size="10" font-weight="700" fill="#146c43"> APPROVED</text>
+  <text x="813" y="368" text-anchor="middle" font-size="9" fill="#146c43">อนุมัติแล้ว ✓</text>
+  <text x="856" y="298" font-size="9" fill="#198754">✓ อนุมัติ</text>
+  <!-- Rejected path -->
+  <line x1="813" y1="328" x2="813" y2="395" stroke="#dc3545" stroke-width="2" marker-end="url(#arr-red)"/>
+  <text x="820" y="365" font-size="9" fill="#dc3545">✗ ปฏิเสธ</text>
+  <rect x="742" y="395" width="142" height="36" rx="8" fill="#f8d7da" stroke="#dc3545" stroke-width="1.5"/>
+  <circle cx="762" cy="413" r="7" fill="#dc3545"/>
+  <text x="770" y="409" font-size="10" font-weight="700" fill="#842029"> REJECTED</text>
+  <text x="813" y="423" text-anchor="middle" font-size="9" fill="#842029">แก้ไขและส่งใหม่</text>
+  <path d="M742,413 Q720,413 720,186 Q720,168 742,168" fill="none" stroke="#dc3545" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-red)"/>
+  <!-- Email notification -->
+  <rect x="742" y="450" width="142" height="30" rx="8" fill="#f0f4ff" stroke="#4361ee" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="813" y="469" text-anchor="middle" font-size="10" fill="#4361ee">✉️ Email แจ้งผลอัตโนมัติ</text>
+
+  <!-- REPORTS SECTION -->
+  <rect x="28" y="500" width="844" height="60" rx="10" fill="#fff" stroke="#0dcaf0" stroke-width="1.5"/>
+  <text x="450" y="522" text-anchor="middle" font-size="12" font-weight="700" fill="#0dcaf0">📊 Reports &amp; Dashboard</text>
+  <text x="200" y="542" text-anchor="middle" font-size="10" fill="#666">ชั่วโมงรวมต่อโปรเจกต์</text>
+  <text x="370" y="542" text-anchor="middle" font-size="10" fill="#666">ความคืบหน้า Sprint</text>
+  <text x="540" y="542" text-anchor="middle" font-size="10" fill="#666">ต้นทุนทีมงาน</text>
+  <text x="710" y="542" text-anchor="middle" font-size="10" fill="#666">สถิติรายบุคคล/ทีม</text>
+  <line x1="119" y1="500" x2="119" y2="490" stroke="#0dcaf0" stroke-width="1.5"/>
+  <line x1="357" y1="500" x2="357" y2="490" stroke="#0dcaf0" stroke-width="1.5"/>
+  <line x1="595" y1="500" x2="595" y2="490" stroke="#0dcaf0" stroke-width="1.5"/>
+  <line x1="813" y1="500" x2="813" y2="490" stroke="#0dcaf0" stroke-width="1.5"/>
+  <line x1="119" y1="490" x2="813" y2="490" stroke="#0dcaf0" stroke-width="1.5"/>
+
+  <!-- LEGEND -->
+  <text x="28" y="590" font-size="11" font-weight="700" fill="#1a1a2e">ผู้ใช้งาน:</text>
+  <rect x="100" y="578" width="12" height="12" rx="3" fill="#4361ee"/>
+  <text x="116" y="589" font-size="10" fill="#666">Admin / Manager</text>
+  <rect x="230" y="578" width="12" height="12" rx="3" fill="#7209b7"/>
+  <text x="246" y="589" font-size="10" fill="#666">PM</text>
+  <rect x="290" y="578" width="12" height="12" rx="3" fill="#f72585"/>
+  <text x="306" y="589" font-size="10" fill="#666">ทีม / Developer</text>
+  <rect x="420" y="578" width="12" height="12" rx="3" fill="#fb8500"/>
+  <text x="436" y="589" font-size="10" fill="#666">พนักงาน (Employee)</text>
+
+  <defs>
+    <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#4361ee"/>
+    </marker>
+    <marker id="arr-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#7209b7"/>
+    </marker>
+    <marker id="arr-pink" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#f72585"/>
+    </marker>
+    <marker id="arr-orange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#fb8500"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#198754"/>
+    </marker>
+    <marker id="arr-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#dc3545"/>
+    </marker>
+    <marker id="arr-gray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#888"/>
+    </marker>
+  </defs>
+</svg>
