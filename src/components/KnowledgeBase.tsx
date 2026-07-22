@@ -397,6 +397,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               </ul>
             </div>
           )
+        },
+        {
+          id: 'q22',
+          question: 'Why does the Gantt Compare show "On Track (0d)" and no variance initially?',
+          icon: BarChart3,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>This happens because when you set a baseline as the "Active Plan", it populates your current workspace. Thus, your "Current Live Plan" and the "Active Plan" baseline are **100% identical** initially. To trigger a visible comparison:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Modify Current Tasks:</strong> Scroll down to the "Milestones & Subtasks" table, click the Edit icon (pencil) next to any milestone, change its Start/End Date or Estimated Hours, and save.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>View Variance:</strong> The top solid bar (Actual) will shift relative to the bottom dashed bar (Base Plan), displaying dotted delay connector lines (e.g., <code>+3d Delay</code>) and updating the variance stats.</li>
+                <li><strong>Compare Versions:</strong> Alternatively, save multiple baseline versions (e.g. v1 and v2) and select them in the "Active Plan" and "Compare vs" dropdowns to see how the plan changed historically.</li>
+              </ul>
+            </div>
+          )
         }
       ]
     },
@@ -758,6 +773,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               </ul>
             </div>
           )
+        },
+        {
+          id: 'q22',
+          question: 'เมื่อเปิดดูเมนูเปรียบเทียบแผนงาน (Compare) ทำไม Gantt Chart หรือความคลาดเคลื่อน (Drift) ถึงยังไม่แสดงความต่าง?',
+          icon: BarChart3,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>เป็นเพราะแผนงานในปัจจุบัน (Current Live Plan) กับแผนงานฐานข้อมูล (Baseline) ที่คุณเพิ่งเปิดใช้งานหรือเพิ่งบันทึกนั้น **เหมือนกันทุกประการ** ครับ วิธีที่จะทำให้การเปรียบเทียบแสดงผล มีดังนี้:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>แก้ไขแผนงานปัจจุบัน (Live Plan):</strong> เลื่อนลงมาที่ส่วนตาราง "Milestones & Subtasks" ด้านล่าง Gantt Chart แล้วกดไอคอนแก้ไข (ดินสอ) ท้ายรายการ Milestone ที่ต้องการ แล้วปรับเปลี่ยนวันเริ่ม/วันจบการทำงาน หรือจำนวนชั่วโมงประเมิน จากนั้นกดบันทึก</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>ดูผลลัพธ์บน Gantt Chart:</strong> แถบสีด้านบน (Actual / Compare) จะยืดหดหรือขยับหนีจาก แถบเส้นประด้านล่าง (Base Plan) และจะมีแถบเส้นเชื่อมแสดงจำนวนวันล่าช้า (เช่น <code>+3d Delay</code>) พร้อมแสดงเมตริกความคลาดเคลื่อนคำนวณอัตโนมัติที่กล่องสถิติด้านบนทันทีครับ</li>
+                <li><strong>เปรียบเทียบระหว่างเวอร์ชัน:</strong> คุณสามารถบันทึก Baseline v1 (แผนตั้งต้น) และ v2 (แผนถัดมา) เพื่อสลับเปรียบเทียบในช่อง Active Plan และ Compare vs แทนการเทียบกับแผนปัจจุบันได้ด้วยครับ</li>
+              </ul>
+            </div>
+          )
         }
       ]
     }
@@ -880,6 +910,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               </ul>
             </div>
           )
+        },
+        {
+          id: 'f7',
+          question: 'Gantt Timeline Compare: How to visualize drift and delay between plans?',
+          icon: BarChart3,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>The Gantt Timeline Compare provides a visual way to track timeline delays and estimate drift:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Dual-Bar Visualization:</strong> In compare mode, each milestone displays a top solid bar (Compare target / Live plan) and a bottom dashed bar (Base plan baseline).</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Dotted Delay Line:</strong> If a milestone's end date shifts, a dotted connector connects the two bars with a badge (e.g., <code>+5d Delay</code>) indicating the delay.</li>
+                <li><strong>Update to trigger:</strong> Modify dates in the Milestones & Subtasks table to immediately see the visual drift.</li>
+              </ul>
+            </div>
+          )
         }
       ]
     },
@@ -993,6 +1038,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                     <li><em>Monthly Tasks:</em> สร้างถังงานอิงตามเดือนปฏิทินตลอดระยะสัญญาซัพพอร์ต (เช่น <code>[2026-01] Support & Maintenance</code>) ช่วยแยกชั่วโมงทำงานออกเป็นรายเดือนอย่างมีระเบียบ</li>
                   </ul>
                 </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f7',
+          question: 'การตรวจวิเคราะห์ Gantt Timeline Compare: จะดูแท่งแถบเวลาและการหน่วงล่าช้าอย่างไร?',
+          icon: BarChart3,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ระบบ Gantt Timeline Compare ออกแบบมาเพื่อช่วยให้เห็นภาพการเคลื่อนตัวของระยะเวลาอย่างชัดเจน:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การพล็อตแบบ 2 แท่งซ้อนกัน:</strong> ในโหมดเปรียบเทียบ แต่ละ Milestone จะมีแท่งทึบด้านบน (แทนแผนเปรียบเทียบหรือแผนปัจจุบัน) และแท่งเส้นประด้านล่าง (แทนแผนตั้งต้น Baseline)</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>เส้นประคลาดเคลื่อนและป้ายระบุล่าช้า:</strong> หากแผนปัจจุบันเลื่อนช้าออกไป จะมีเส้นป้ายเตือน (เช่น <code>+5d Delay</code>) เชื่อมส่วนปลายแสดงความกว้างของวันที่ช้ากว่าแผน</li>
+                <li><strong>แก้แล้วแสดงผลทันที:</strong> สามารถปรับเปลี่ยนวันที่ในตาราง Milestones & Subtasks ด้านล่างเพื่อดูผลทดสอบการเลื่อนของแท่งและเปอร์เซ็นต์ส่วนต่างสะสมได้ทันทีครับ</li>
               </ul>
             </div>
           )

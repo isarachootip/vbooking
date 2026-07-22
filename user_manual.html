@@ -291,12 +291,14 @@
 <th align="center">Admin</th>
 <th align="center">Manager</th>
 <th align="center">PM</th>
+<th align="center">Team Lead</th>
 <th align="center">Member</th>
 <th align="center">Assignee</th>
 </tr>
 </thead>
 <tbody><tr>
 <td align="left"><strong>Browse Project</strong> (ดูโครงการ)</td>
+<td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
@@ -309,10 +311,12 @@
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
+<td align="center">✅</td>
 <td align="center">❌</td>
 </tr>
 <tr>
 <td align="left"><strong>Edit Task</strong> (แก้ไขงาน)</td>
+<td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
@@ -324,6 +328,7 @@
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
+<td align="center">✅</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
 </tr>
@@ -331,6 +336,7 @@
 <td align="left"><strong>Delete Task</strong> (ลบงาน)</td>
 <td align="center">✅</td>
 <td align="center">❌</td>
+<td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
@@ -342,9 +348,11 @@
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
+<td align="center">✅</td>
 </tr>
 <tr>
 <td align="left"><strong>Manage Sprints</strong> (จัดการ Sprint)</td>
+<td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
@@ -356,11 +364,13 @@
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
+<td align="center">✅</td>
 <td align="center">❌</td>
 <td align="center">❌</td>
 </tr>
 <tr>
 <td align="left"><strong>Manage Members</strong> (จัดการสมาชิก)</td>
+<td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
@@ -510,6 +520,16 @@
 <td align="left"><strong>Project Key</strong></td>
 <td align="left">รหัสย่อโครงการ (ใช้อ้างอิง Task ID)</td>
 <td align="left">NXT</td>
+</tr>
+<tr>
+<td align="left"><strong>Project Type</strong></td>
+<td align="left">ประเภทโครงการ (<code>dev</code> สำหรับโครงการพัฒนาทั่วไปที่มี Gantt Timeline / <code>support</code> สำหรับโครงการซัพพอร์ตดูแลระบบย่อย/BU)</td>
+<td align="left"><code>support</code></td>
+</tr>
+<tr>
+<td align="left"><strong>Support Task Auto-generation</strong></td>
+<td align="left">รูปแบบการสร้างงานอัจฉริยะของโปรเจกต์ Support (สร้าง Task ตามกลุ่มบริการ หรือ สร้าง Task แยกเป็นรายถังรายเดือน [YYYY-MM])</td>
+<td align="left"><code>Category-based Tasks</code></td>
 </tr>
 <tr>
 <td align="left"><strong>Start Date</strong></td>
@@ -882,22 +902,28 @@
 <li><strong>การสร้างแผนอัตโนมัติ (Auto Milestone Generator):</strong><br>เมื่อแอดมินสร้างโปรเจกต์ใหม่พร้อมระบุวันเริ่ม (Start Date) และวันเสร็จสิ้น (End Date) ของโครงการ ระบบจะทำการอ้างอิงแม่แบบแผนงาน (<strong>Admin Task Templates</strong>) ที่กำหนดไว้ในส่วนกลาง มาสร้างรายการ Milestone ย่อยพร้อมคำนวณหาวันเริ่มและสิ้นสุดที่เหมาะสมในไทม์ไลน์ให้อัตโนมัติ (ตามสัดส่วนร้อยละของกรอบเวลา) ช่วยให้ประหยัดเวลาการวางแผนเริ่มต้นได้สูงสุด</li>
 <li><strong>การจัดการ Milestone แบบกำหนดเอง:</strong> เพิ่ม, แก้ไข, ลบ Milestone ได้ตามต้องการ พร้อมกำหนดวันเริ่มต้นและวันสิ้นสุดของแต่ละ Milestone</li>
 </ul>
+<div style="border-left:4px solid #0969da;background:#ddf4ff;padding:12px 16px;margin:16px 0;border-radius:4px;"><strong style="color:#0969da;">ℹ️ หมายเหตุ</strong><br/><strong>หมายเหตุสำหรับโครงการประเภท Support:</strong><br>หากโปรเจกต์ถูกเลือกเป็นประเภท <strong>Support Project</strong> ระบบจะระงับการวางแผน Milestone และ Gantt Chart รวมถึงเมนู Baseline ทั้งหมด โดยจะแสดงหน้าแจ้งเตือนพร้อมลิ้งก์ด่วนสำหรับการย้ายไปจัดการ Task บนบอร์ดหรือเริ่มบันทึกเวลาทำงานรายวันใน Timesheet แทน เนื่องจากงานซัพพอร์ตระบบหรืองานดูแลทั่วไปไม่มีขั้นตอนระยะเวลาการวางแผน (CapEx) และเน้นการลงเวลา (OpEx) เป็นหลัก</div>
 <h3>Project Baselines &amp; Versioning [NEW!]</h3>
 <p>ระบบ Baseline ช่วยให้สามารถบันทึก Snapshot ของแผนงานในแต่ละช่วงเวลา เพื่อใช้เปรียบเทียบและติดตามความเบี่ยงเบนของโครงการ:</p>
-<h4>สร้าง Baseline</h4>
-<p>กดปุ่ม <strong>&quot;Create Baseline&quot;</strong> เพื่อบันทึก Snapshot ของแผนงานปัจจุบัน พร้อมตั้งชื่อและคำอธิบาย</p>
+<h4>สร้าง Baseline (บันทึกเวอร์ชันแผนงาน)</h4>
+<p>กดปุ่ม <strong>&quot;Save Version&quot;</strong> ที่แถบเครื่องมือมุมขวาบน เพื่อบันทึก Snapshot ของแผนงานปัจจุบัน พร้อมตั้งชื่อเวอร์ชัน (เช่น <code>Base_v1</code>) และคำอธิบาย</p>
 <h4>ดูประวัติ Baseline</h4>
-<p>แสดงรายการ Baseline ทั้งหมดที่เคยบันทึกไว้ พร้อมข้อมูล:</p>
-<ul>
-<li>ชื่อ Baseline</li>
-<li>วันที่สร้าง</li>
-<li>ผู้สร้าง</li>
-</ul>
+<p>แสดงรายการ Baseline ทั้งหมดที่เคยบันทึกไว้ในดรอปดาวน์ <strong>Active Plan</strong> และ <strong>Compare vs</strong></p>
 <h4>สลับ/เปิดใช้ Baseline</h4>
-<p>กดปุ่ม <strong>&quot;Activate&quot;</strong> เพื่อกู้คืนแผนงานจาก Baseline ที่เลือก (สลับ Workspace)</p>
-<h4>เปรียบเทียบ Baseline (Baseline Comparison)</h4>
-<p>เลือก Baseline 2 เวอร์ชัน (หรือ Baseline vs แผนงานปัจจุบัน) เพื่อเปรียบเทียบ:</p>
-<p><strong>Variance Summary:</strong></p>
+<p>เลือก Baseline ที่ต้องการในดรอปดาวน์ <strong>Active Plan</strong> เพื่อกู้คืนแผนงานและสลับไปเป็นแผนงานที่รันในปัจจุบัน (Workspace)</p>
+<h4>เปรียบเทียบแผนงาน (Plan Comparison &amp; Gantt Compare)</h4>
+<p>คุณสามารถเลือกเปรียบเทียบระหว่างแผนงานอ้างอิง (Base Plan) และแผนปัจจุบัน (Current Live Plan / Actual) เพื่อดูความล่าช้าหรือการหน่วงของช่วงเวลา:</p>
+<ol>
+<li><strong>เลือก Base Plan</strong>: เลือกเวอร์ชัน Baseline ที่ช่องดรอปดาวน์ <strong>Active Plan</strong> (เช่น <code>original_1</code>)</li>
+<li><strong>เลือก Actual / Compare</strong>: เลือกเป็น <strong>Current Live Plan</strong> (หรือแผนเวอร์ชันอื่นที่ต้องการเปรียบเทียบ) ในช่อง <strong>Compare vs</strong></li>
+<li><strong>การทำให้แสดงความคลาดเคลื่อน (Drift &amp; Delay)</strong>: <ul>
+<li>เนื่องจากเมื่อสลับเปลี่ยน Active Plan ระบบจะทำการคัดลอกข้อมูลใน Baseline เข้าสู่แผนปัจจุบันเริ่มแรก จึงทำให้ทั้ง 2 แผนมีข้อมูลที่ตรงกัน 100% และแสดงเป็น &quot;On Track (0d)&quot;</li>
+<li><strong>วิธีการใช้งานจริง</strong>: ให้คุณเลื่อนตารางลงมาที่ส่วน <strong>&quot;Milestones &amp; Subtasks&quot;</strong> ด้านล่าง Gantt Chart จากนั้นกดไอคอนแก้ไข (รูปดินสอ 📝) ที่ Milestone ที่ต้องการ แล้วทดลองขยับเลื่อนวันเริ่มต้น/วันสิ้นสุด หรือปรับชั่วโมงงาน แล้วกดเซฟ</li>
+<li><strong>การแสดงผล</strong>: แถบ Gantt Chart แถวบน (แผนงานจริง) จะเลื่อนหดขยายตัวเปรียบเทียบกับแถวเส้นประด้านล่าง (Base Plan) โดยอัตโนมัติ และจะปรากฏแถบเส้นเชื่อมแสดงจำนวนวันล่าช้าสีแดง (เช่น <code>+3d Delay</code>) พร้อมแสดงสรุปในกล่องสถิติ <strong>Schedule Slippage (Drift)</strong> ทันที</li>
+</ul>
+</li>
+</ol>
+<p><strong>Variance Summary (ตารางสรุปผลต่าง):</strong></p>
 <table>
 <thead>
 <tr>
@@ -907,7 +933,7 @@
 </thead>
 <tbody><tr>
 <td align="left"><strong>Days Drift</strong></td>
-<td align="left">ผลต่างจำนวนวันที่เลื่อนออกไป</td>
+<td align="left">ผลต่างจำนวนวันที่เลื่อนออกไปสะสมรวม</td>
 </tr>
 <tr>
 <td align="left"><strong>Story Points Drift</strong></td>
@@ -915,15 +941,15 @@
 </tr>
 <tr>
 <td align="left"><strong>Estimated Hours Drift</strong></td>
-<td align="left">ผลต่างชั่วโมงประเมินที่เปลี่ยนแปลง</td>
+<td align="left">ผลต่างชั่วโมงประมาณการสะสมที่เบี่ยงเบน</td>
 </tr>
 <tr>
 <td align="left"><strong>Actual Hours</strong></td>
-<td align="left">ชั่วโมงจริงที่ใช้ไป</td>
+<td align="left">ชั่วโมงที่ลงเวลาทำงานจริงและอนุมัติแล้ว (Approved)</td>
 </tr>
 </tbody></table>
-<p><strong>Per-Task Comparison:</strong></p>
-<p>แสดงรายละเอียดต่อ Task:</p>
+<p><strong>Per-Task Comparison (ตารางแสดงรายละเอียดรายชิ้นงาน):</strong></p>
+<p>แสดงรายละเอียดราย Task:</p>
 <ul>
 <li><strong>Start Delay:</strong> จำนวนวันที่เริ่มช้ากว่าแผน</li>
 <li><strong>End Delay:</strong> จำนวนวันที่เสร็จช้ากว่าแผน</li>
@@ -932,9 +958,9 @@
 </ul>
 <p>สัญลักษณ์แสดงสถานะ Task:</p>
 <ul>
-<li>🟢 <strong>Added:</strong> Task ที่เพิ่มขึ้นมาใหม่</li>
-<li>🔴 <strong>Removed:</strong> Task ที่ถูกลบออก</li>
-<li>🟡 <strong>Changed:</strong> Task ที่มีการเปลี่ยนแปลง</li>
+<li>🟢 <strong>Added:</strong> Task ที่เพิ่มขึ้นมาใหม่ในแผนเปรียบเทียบ</li>
+<li>🔴 <strong>Removed:</strong> Task ที่ถูกลบออกไปจากแผนเปรียบเทียบ</li>
+<li>🟡 <strong>Changed:</strong> Task ที่มีการเปลี่ยนแปลงข้อมูล</li>
 </ul>
 <hr>
 <h2>👥 9. การอนุมัติเวลาทำงานและการจัดการพนักงาน (Approvals &amp; Employee Management)</h2>
@@ -1213,7 +1239,7 @@
 <td align="left">เพิ่ม/ลบสมาชิกโครงการ</td>
 </tr>
 </tbody></table>
-<p><strong>6 บทบาทที่กำหนดสิทธิ์ได้:</strong><br>Admin, Manager, PM, Member, Assignee</p>
+<p><strong>6 บทบาทที่กำหนดสิทธิ์ได้:</strong><br>Admin, Manager, PM, Team Lead, Member, Assignee</p>
 <p><strong>Toggle Matrix UI:</strong> ใช้ระบบ Toggle Matrix สำหรับติ๊กเปิด/ปิดสิทธิ์แต่ละรายการสำหรับแต่ละ Role ได้อย่างง่ายดาย</p>
 <div style="border-left:4px solid #cf222e;background:#ffebe9;padding:12px 16px;margin:16px 0;border-radius:4px;"><strong style="color:#cf222e;">🚨 ระวัง</strong><br/>ไม่สามารถลบ <strong>Default Scheme</strong> ได้ เนื่องจากเป็น Scheme พื้นฐานที่ใช้กับโปรเจกต์ที่ไม่ได้กำหนด Scheme เฉพาะ</div>
 <h3>D. Cost Rates / อัตราค่าแรง (Labor Rates) [NEW!]</h3>
@@ -1477,9 +1503,11 @@
 </blockquote>
 <p><strong>Q: ทำไมแถบ &quot;Auto-Generated Plan&quot; (แผนงานอัตโนมัติ) ถึงไม่แสดงหลังสร้างโปรเจกต์ใหม่?</strong></p>
 <blockquote>
-<p>A: เกิดจาก 2 สาเหตุที่เป็นไปได้:<br/>
-1. <strong>ข้อมูลหน้าจอยังไม่ได้ดึงล่าสุด:</strong> หลังกดสร้างโปรเจกต์ ระบบจะสร้างงานทันทีใน Database แต่หน้าจอฝั่ง Client ยังไม่ได้รับการอัปเดต ให้ลอง <strong>รีเฟรชหน้าเว็บ (F5 / Reload)</strong><br/>
-2. <strong>ไม่ได้กำหนดวันสิ้นสุด (End Date) ตั้งแต่แรก:</strong> ระบบหลังบ้านจะเจนแผนงานอัตโนมัติเฉพาะตอนที่ระบุทั้ง <strong>Start Date</strong> และ <strong>End Date</strong> พร้อมกันตั้งแต่ตอนกดสร้างโปรเจกต์ หากคุณแก้ไขมาใส่ End Date ทีหลัง ให้ไปที่แท็บ <strong>Project Plan</strong> เลือกโปรเจกต์นั้น แล้วกดปุ่ม <strong>🚀 Generate Milestones from Templates</strong> เพื่อเจนงานด้วยตนเอง</p>
+<p>A: เกิดจาก 2 สาเหตุที่เป็นไปได้:</p>
+<ol>
+<li><strong>ข้อมูลหน้าจอยังไม่ได้อัปเดต:</strong> หลังสร้างเสร็จ ระบบหลังบ้านจะสร้างแผนงานทันทีใน Database แต่หน้าเว็บยังไม่ได้ดึงล่าสุด ให้ลอง <strong>รีเฟรชหน้าจอ (F5)</strong> อีกครั้ง</li>
+<li><strong>ไม่ได้ระบุ End Date ตั้งแต่แรก:</strong> ระบบจะเจนแผนงานอัตโนมัติเฉพาะตอนที่สร้างโปรเจกต์ใหม่และมีข้อมูล <strong>Start Date</strong> และ <strong>End Date</strong> พร้อมกันเท่านั้น หากเว้นว่างไว้แล้วมาแก้ไขทีหลัง จะต้องไปที่แท็บ <strong>Project Plan</strong> เลือกโปรเจกต์ดังกล่าว แล้วกดปุ่ม <strong>🚀 Generate Milestones from Templates</strong> เพื่อสั่งทำงานด้วยตัวเอง</li>
+</ol>
 </blockquote>
 <h3>รายงาน &amp; ต้นทุน</h3>
 <p><strong>Q: ดู Cost Report แล้วตัวเลขไม่ถูก?</strong></p>
@@ -1503,6 +1531,28 @@
 <p><strong>Q: ใช้งานบนมือถือได้ไหม?</strong></p>
 <blockquote>
 <p>A: ได้! ระบบรองรับ Responsive Design บนทุกอุปกรณ์ พร้อม Mobile Bottom Navigation สำหรับนำทางด่วน ดูรายละเอียดที่ <a href="#-14-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B8%87%E0%B8%B2%E0%B8%99%E0%B8%9A%E0%B8%99%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%96%E0%B8%B7%E0%B8%AD-mobile-responsive">หัวข้อ 14</a></p>
+</blockquote>
+<p><strong>Q: ปุ่มสำหรับสร้าง Milestones (Generate Milestones from Templates) กดซ้ำได้ไหม?</strong></p>
+<blockquote>
+<p>A: ไม่ได้ครับ! เมื่อระบบทำการสร้างแผนงาน/Milestone สำหรับโปรเจกต์นั้นเรียบร้อยแล้ว ปุ่มสีส้มเดิมจะถูกเปลี่ยนเป็นปุ่มสีเขียว <strong>Already</strong> และอยู่ในสถานะใช้งานไม่ได้ (Disabled) เพื่อแจ้งว่าถูกบันทึกไปแล้ว ป้องกันไม่ให้เผลอกดซ้ำซึ่งอาจก่อให้เกิดข้อมูลงานที่ซ้ำซ้อนในโครงการครับ</p>
+</blockquote>
+<p><strong>Q: ในส่วนของ &quot;My Tasks&quot; หน้า Dashboard กรองโปรเจกต์และสถานะอย่างไร?</strong></p>
+<blockquote>
+<p>A: ในหน้า Dashboard (System Overview) กล่องหัวข้อ <strong>My Tasks</strong> จะมี Dropdown ให้เลือกกรองตาม Project และปุ่มสถานะ (เช่น To Do, In Progress, Review, Done) ปรากฏให้กรองได้ทันที โดยงานจะจัดเรียงตามความเคลื่อนไหวล่าสุด (Update ล่าสุด) ขึ้นมาอยู่บนสุดเสมอ นอกจากนี้ ปุ่ม <strong>&quot;+ Log Time&quot;</strong> ในรายการจะซ่อนตัวเองโดยอัตโนมัติหากงานดังกล่าวถูกย้ายเลยจากสถานะ In Progress ไปแล้ว (เช่น เมื่อขึ้น Review, Done หรือ pending) เพื่อลดความสับสนในการบันทึกเวลาทำงานจริงครับ</p>
+</blockquote>
+<p><strong>Q: การกรองดูเฉพาะงานของสมาชิกคนนั้นในบอร์ด Tasks ทำอย่างไร?</strong></p>
+<blockquote>
+<p>A: เมื่อคุณเลือกโปรเจกต์ในหน้า <strong>Tasks</strong> (Kanban Board) จะเห็นภาพโปรไฟล์ (Avatar) ของสมาชิกโปรเจกต์ทั้งหมดแสดงที่มุมขวาบนของแถบเมนูย่อย สามารถคลิกที่รูปสมาชิกแต่ละคนเพื่อเลือกกรองดูเฉพาะงานของคนนั้นในบอร์ด, แบ็กล็อก หรือ ไทม์ไลน์ได้ทันที หากต้องการล้างตัวกรอง ให้กดที่รูปเดิมอีกครั้ง หรือกดปุ่ม <strong>Clear</strong> ครับ</p>
+</blockquote>
+<p><strong>Q: เมื่อตั้งค่าเปรียบเทียบแผนงาน (Compare) ทำไม Gantt Chart หรือตัวเลขความคลาดเคลื่อน (Drift) ถึงแสดงเป็น 0 และไม่มีความแตกต่าง?</strong></p>
+<blockquote>
+<p>A: เกิดจากเมื่อเลือก Baseline ในช่อง <strong>Active Plan</strong> ระบบจะสลับเอางานในอดีตตัวนั้นขึ้นมาทับเป็นข้อมูลปัจจุบัน (Workspace) เริ่มแรก ส่งผลให้แผนงานอ้างอิงและแผนปัจจุบัน<strong>เหมือนกันทุกประการ 100%</strong><br><strong>วิธีตรวจสอบความแตกต่าง (Compare)</strong>:</p>
+<ol>
+<li>ไปที่ตาราง <strong>&quot;Milestones &amp; Subtasks&quot;</strong> ด้านล่าง Gantt Chart</li>
+<li>กดปุ่มแก้ไขรูป<strong>ดินสอ (Edit)</strong> ที่แถว Milestone ที่คุณต้องการทดสอบ</li>
+<li>ปรับเปลี่ยนวันที่เริ่มต้น/วันที่สิ้นสุด หรือจำนวนชั่วโมงประเมิน แล้วกด <strong>Update Task</strong></li>
+<li>แถบสีของแผนจริง (แท่งทึบด้านบน) จะเลื่อนหนีจากแผนตั้งต้น (แท่งเส้นประด้านล่าง) พร้อมแสดงแถบเส้นเชื่อมระยะเวลาที่ล่าช้า (เช่น <code>+3d Delay</code>) และสรุปผลต่างสะสมด้านบนทันทีครับ</li>
+</ol>
 </blockquote>
 <hr>
 <div style="border-left:4px solid #0969da;background:#ddf4ff;padding:12px 16px;margin:16px 0;border-radius:4px;"><strong style="color:#0969da;">ℹ️ หมายเหตุ</strong><br/>หากพบปัญหาการใช้ระบบ หรือต้องการเชื่อมต่อฟังก์ชันเพิ่มเติม กรุณาแจ้ง Admin ของระบบ NexTime หรือผู้พัฒนาผ่านช่องทางติดต่อหลังบ้านของบริษัท ขอให้มีความสุขกับการลงบันทึกเวลาทำงานอย่างเป็นระบบ!</div>
