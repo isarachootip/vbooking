@@ -193,8 +193,10 @@ const initDB = async () => {
         priority VARCHAR(50) NOT NULL DEFAULT 'Medium',
         start_percent NUMERIC NOT NULL DEFAULT 0,
         end_percent NUMERIC NOT NULL DEFAULT 100,
-        estimated_hours NUMERIC NOT NULL DEFAULT 0
+        estimated_hours NUMERIC NOT NULL DEFAULT 0,
+        project_template_name VARCHAR(100) DEFAULT 'General'
       );
+      ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS project_template_name VARCHAR(100) DEFAULT 'General';
     `);
 
     // Create Project Messages Table (for internal chat)
@@ -1389,7 +1391,8 @@ app.get('/api/initial-data', async (req, res) => {
       priority: tpl.priority,
       startPercent: parseFloat(tpl.start_percent || '0'),
       endPercent: parseFloat(tpl.end_percent || '100'),
-      estimatedHours: parseFloat(tpl.estimated_hours || '0')
+      estimatedHours: parseFloat(tpl.estimated_hours || '0'),
+      projectTemplateName: tpl.project_template_name || 'General'
     }));
 
     const sprints = sprintsRes.rows.map(s => ({
@@ -1509,7 +1512,7 @@ app.delete('/api/users/:id', async (req, res) => {
 
 // Projects REST API
 app.post('/api/projects', async (req, res) => {
-  const { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense } = req.body;
+  const { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense, projectTemplateName } = req.body;
   try {
     const checkExist = await pool.query('SELECT 1 FROM projects WHERE id = $1', [id]);
     const isNew = checkExist.rows.length === 0;
@@ -1560,7 +1563,43 @@ app.post('/api/projects', async (req, res) => {
 
     // Auto-generate main tasks for new projects
     if (isNew && startDate) {
-      if (projectType === 'support') {
+      let customTemplates = [];
+      if (projectTemplateName && projectTemplateName !== 'Default' && projectTemplateName !== 'None') {
+        const customRes = await pool.query('SELECT * FROM task_templates WHERE project_template_name = $1', [projectTemplateName]);
+        customTemplates = customRes.rows;
+      }
+
+      if (customTemplates.length > 0) {
+        const startD = new Date(startDate);
+        const endD = endDate ? new Date(endDate) : new Date(startD.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const totalMs = endD.getTime() - startD.getTime();
+        
+        for (const tpl of customTemplates) {
+          const taskStartMs = startD.getTime() + (totalMs * parseFloat(tpl.start_percent) / 100);
+          const taskEndMs = startD.getTime() + (totalMs * parseFloat(tpl.end_percent) / 100);
+          
+          const taskStartStr = new Date(taskStartMs).toISOString().split('T')[0];
+          const taskEndStr = new Date(taskEndMs).toISOString().split('T')[0];
+          
+          const taskId = 't_' + Math.random().toString(36).substr(2, 9);
+          await pool.query(
+            `INSERT INTO tasks (id, project_id, assignee_id, title, description, status, priority, estimated_hours, created_at, start_date, end_date, sprint_id, release_id, story_points, issue_type)
+             VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10, NULL, NULL, 0, 'Task')`,
+            [
+              taskId,
+              id,
+              tpl.title,
+              tpl.description || '',
+              'To Do',
+              tpl.priority || 'Medium',
+              parseFloat(tpl.estimated_hours || '0'),
+              new Date().toISOString(),
+              taskStartStr,
+              taskEndStr
+            ]
+          );
+        }
+      } else if (projectType === 'support') {
         if (supportTaskStyle === 'monthly') {
           const startD = new Date(startDate);
           // If no end date, default to 12 months from start date
@@ -1677,13 +1716,19 @@ app.post('/api/projects', async (req, res) => {
         }
       } else {
         // Normal template tasks for Dev Projects
+        const defaultTemplatesRes = await pool.query("SELECT * FROM task_templates WHERE project_template_name = 'General' OR project_template_name = 'Default'");
+        let defaultTemplates = defaultTemplatesRes.rows;
+        if (defaultTemplates.length === 0) {
+          const allTpl = await pool.query("SELECT * FROM task_templates");
+          defaultTemplates = allTpl.rows;
+        }
+
         if (endDate) {
-          const templates = await pool.query('SELECT * FROM task_templates');
           const startD = new Date(startDate);
           const endD = new Date(endDate);
           const totalMs = endD.getTime() - startD.getTime();
           
-          for (const tpl of templates.rows) {
+          for (const tpl of defaultTemplates) {
             const taskStartMs = startD.getTime() + (totalMs * parseFloat(tpl.start_percent) / 100);
             const taskEndMs = startD.getTime() + (totalMs * parseFloat(tpl.end_percent) / 100);
             
@@ -2654,19 +2699,20 @@ app.delete('/api/timesheets/:id', async (req, res) => {
 
 // Task Templates REST API
 app.post('/api/task-templates', async (req, res) => {
-  const { id, title, description, priority, startPercent, endPercent, estimatedHours } = req.body;
+  const { id, title, description, priority, startPercent, endPercent, estimatedHours, projectTemplateName } = req.body;
   try {
     await pool.query(
-      `INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours, project_template_name)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (id) DO UPDATE SET
          title = EXCLUDED.title,
          description = EXCLUDED.description,
          priority = EXCLUDED.priority,
          start_percent = EXCLUDED.start_percent,
          end_percent = EXCLUDED.end_percent,
-         estimated_hours = EXCLUDED.estimated_hours`,
-      [id, title, description, priority, startPercent, endPercent, estimatedHours]
+         estimated_hours = EXCLUDED.estimated_hours,
+         project_template_name = EXCLUDED.project_template_name`,
+      [id, title, description, priority, startPercent, endPercent, estimatedHours, projectTemplateName || 'General']
     );
     res.json({ success: true });
   } catch (err) {

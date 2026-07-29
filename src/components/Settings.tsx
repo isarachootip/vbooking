@@ -27,6 +27,8 @@ export const Settings = ({
   setSystemSettings,
   fetchInitialData
 }: SettingsProps) => {
+  const uniqueTemplateNames = Array.from(new Set(taskTemplates.map(tpl => tpl.projectTemplateName || 'General'))).filter(Boolean) as string[];
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
   const [activeTab, setActiveTab] = useState<'templates' | 'integrations' | 'permission_schemes' | 'cost_rates' | 'data_management' | 'system_config'>('templates');
@@ -92,6 +94,9 @@ export const Settings = ({
   const [startPercent, setStartPercent] = useState('0');
   const [endPercent, setEndPercent] = useState('100');
   const [estimatedHours, setEstimatedHours] = useState('8');
+  const [projectTemplateName, setProjectTemplateName] = useState('General');
+  const [customTemplateName, setCustomTemplateName] = useState('');
+  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<string>('All');
 
   const openAddModal = () => {
     setEditingTemplate(null);
@@ -101,6 +106,8 @@ export const Settings = ({
     setStartPercent('0');
     setEndPercent('10');
     setEstimatedHours('8');
+    setProjectTemplateName('General');
+    setCustomTemplateName('');
     setIsModalOpen(true);
   };
 
@@ -112,6 +119,8 @@ export const Settings = ({
     setStartPercent(String(tpl.startPercent));
     setEndPercent(String(tpl.endPercent));
     setEstimatedHours(String(tpl.estimatedHours));
+    setProjectTemplateName(tpl.projectTemplateName || 'General');
+    setCustomTemplateName('');
     setIsModalOpen(true);
   };
 
@@ -126,6 +135,8 @@ export const Settings = ({
       return alert('Start percent must be strictly less than end percent.');
     }
 
+    const finalTemplateName = projectTemplateName === 'NEW_CUSTOM' ? (customTemplateName.trim() || 'General') : projectTemplateName;
+
     const tplData: TaskTemplate = {
       id: editingTemplate ? editingTemplate.id : 'tpl_' + Date.now(),
       title,
@@ -133,7 +144,8 @@ export const Settings = ({
       priority,
       startPercent: startVal,
       endPercent: endVal,
-      estimatedHours: Number(estimatedHours) || 0
+      estimatedHours: Number(estimatedHours) || 0,
+      projectTemplateName: finalTemplateName
     };
 
     if (editingTemplate) {
@@ -520,10 +532,27 @@ export const Settings = ({
         <>
           {/* Visual Timeline Preview */}
           <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Visual Proportional Timeline Preview (0% - 100% of Project Duration)</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Below is a visual projection showing how the tasks will span across your project timeline, based on their Start % and End %.
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Visual Proportional Timeline Preview (0% - 100% of Project Duration)</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+                  Below is a visual projection showing how the tasks will span across your project timeline, based on their Start % and End %.
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>แม่แบบโครงการ:</span>
+                <select
+                  value={selectedTemplateFilter}
+                  onChange={e => setSelectedTemplateFilter(e.target.value)}
+                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.4rem 0.8rem', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="All">แสดงทุกแม่แบบ (All)</option>
+                  {uniqueTemplateNames.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             {/* Timeline representation */}
             <div style={{ 
@@ -544,79 +573,88 @@ export const Settings = ({
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem', padding: '0 1rem' }}>
-                {taskTemplates.map((tpl, idx) => {
-                  const widthVal = tpl.endPercent - tpl.startPercent;
-                  return (
-                    <div key={tpl.id} style={{ display: 'flex', alignItems: 'center', height: '24px', position: 'relative' }}>
-                      {/* Left Label */}
-                      <span style={{ fontSize: '0.7rem', width: '150px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
-                        {tpl.title}
-                      </span>
-                      
-                      {/* Bar container */}
-                      <div style={{ flex: 1, position: 'relative', height: '100%' }}>
-                        <div style={{
-                          position: 'absolute',
-                          left: `${tpl.startPercent}%`,
-                          width: `${widthVal}%`,
-                          height: '14px',
-                          background: idx % 2 === 0 ? 'rgba(99, 102, 241, 0.25)' : 'rgba(168, 85, 247, 0.25)',
-                          border: idx % 2 === 0 ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(168, 85, 247, 0.5)',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          paddingLeft: '4px',
-                          fontSize: '0.65rem',
-                          color: 'white',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden'
-                        }} title={`${tpl.title}: ${tpl.startPercent}% to ${tpl.endPercent}% (${tpl.estimatedHours}h)`}>
-                          {tpl.startPercent}% - {tpl.endPercent}%
+                {taskTemplates
+                  .filter(t => selectedTemplateFilter === 'All' || (t.projectTemplateName || 'General') === selectedTemplateFilter)
+                  .map((tpl, idx) => {
+                    const widthVal = tpl.endPercent - tpl.startPercent;
+                    return (
+                      <div key={tpl.id} style={{ display: 'flex', alignItems: 'center', height: '24px', position: 'relative' }}>
+                        {/* Left Label */}
+                        <span style={{ fontSize: '0.7rem', width: '180px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
+                          [{tpl.projectTemplateName || 'General'}] {tpl.title}
+                        </span>
+                        
+                        {/* Bar container */}
+                        <div style={{ flex: 1, position: 'relative', height: '100%' }}>
+                          <div style={{
+                            position: 'absolute',
+                            left: `${tpl.startPercent}%`,
+                            width: `${widthVal}%`,
+                            height: '14px',
+                            background: idx % 2 === 0 ? 'rgba(99, 102, 241, 0.25)' : 'rgba(168, 85, 247, 0.25)',
+                            border: idx % 2 === 0 ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(168, 85, 247, 0.5)',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            paddingLeft: '4px',
+                            fontSize: '0.65rem',
+                            color: 'white',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden'
+                          }} title={`${tpl.title}: ${tpl.startPercent}% to ${tpl.endPercent}% (${tpl.estimatedHours}h)`}>
+                            {tpl.startPercent}% - {tpl.endPercent}%
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           </div>
 
           {/* Grid of Milestone Templates */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-            {taskTemplates.map(tpl => (
-              <div key={tpl.id} className="glass-panel hover-lift" style={{ padding: '1.25rem', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="flex-between">
-                  <span style={{ 
-                    fontSize: '0.7rem', 
-                    fontWeight: 600, 
-                    padding: '0.15rem 0.5rem', 
-                    borderRadius: 'var(--radius-sm)', 
-                    background: getPriorityBadgeColor(tpl.priority),
-                    color: 'white'
-                  }}>
-                    {tpl.priority}
-                  </span>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => openEditModal(tpl)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                      <Edit size={14} />
-                    </button>
-                    <button onClick={() => handleDelete(tpl.id)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer' }}>
-                      <Trash2 size={14} />
-                    </button>
+            {taskTemplates
+              .filter(t => selectedTemplateFilter === 'All' || (t.projectTemplateName || 'General') === selectedTemplateFilter)
+              .map(tpl => (
+                <div key={tpl.id} className="glass-panel hover-lift" style={{ padding: '1.25rem', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="flex-between">
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      <span style={{ 
+                        fontSize: '0.7rem', 
+                        fontWeight: 600, 
+                        padding: '0.15rem 0.5rem', 
+                        borderRadius: 'var(--radius-sm)', 
+                        background: getPriorityBadgeColor(tpl.priority),
+                        color: 'white'
+                      }}>
+                        {tpl.priority}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.05)', padding: '0.15rem 0.4rem', borderRadius: '4px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                        {tpl.projectTemplateName || 'General'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => openEditModal(tpl)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                        <Edit size={14} />
+                      </button>
+                      <button onClick={() => handleDelete(tpl.id)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer' }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{tpl.title}</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', minHeight: '40px' }}>{tpl.description}</p>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <span>Phase: <strong>{tpl.startPercent}% - {tpl.endPercent}%</strong></span>
+                    <span>Default Est: <strong>{tpl.estimatedHours} hrs</strong></span>
                   </div>
                 </div>
-
-                <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{tpl.title}</h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', minHeight: '40px' }}>{tpl.description}</p>
-                </div>
-
-                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  <span>Phase: <strong>{tpl.startPercent}% - {tpl.endPercent}%</strong></span>
-                  <span>Default Est: <strong>{tpl.estimatedHours} hrs</strong></span>
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         </>
       ) : activeTab === 'integrations' ? (
@@ -1004,6 +1042,39 @@ export const Settings = ({
             </div>
 
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Project Template Name / ชื่อแม่แบบโครงการ *</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <select
+                    value={projectTemplateName === 'NEW_CUSTOM' ? 'NEW_CUSTOM' : projectTemplateName}
+                    onChange={e => {
+                      if (e.target.value === 'NEW_CUSTOM') {
+                        setProjectTemplateName('NEW_CUSTOM');
+                        setCustomTemplateName('');
+                      } else {
+                        setProjectTemplateName(e.target.value);
+                      }
+                    }}
+                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none', width: '200px' }}
+                  >
+                    {uniqueTemplateNames.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                    <option value="NEW_CUSTOM">+ เพิ่มแม่แบบใหม่...</option>
+                  </select>
+                  {projectTemplateName === 'NEW_CUSTOM' && (
+                    <input 
+                      type="text" 
+                      value={customTemplateName} 
+                      onChange={e => setCustomTemplateName(e.target.value)} 
+                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none', flex: 1 }}
+                      placeholder="ระบุชื่อแม่แบบโครงการใหม่ เช่น งานสร้างครัวใหม่"
+                      required
+                    />
+                  )}
+                </div>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Milestone Title *</label>
                 <input 

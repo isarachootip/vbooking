@@ -100,7 +100,8 @@ CREATE TABLE IF NOT EXISTS task_templates (
     priority VARCHAR(50) NOT NULL DEFAULT 'Medium',
     start_percent NUMERIC NOT NULL DEFAULT 0,
     end_percent NUMERIC NOT NULL DEFAULT 100,
-    estimated_hours NUMERIC NOT NULL DEFAULT 0
+    estimated_hours NUMERIC NOT NULL DEFAULT 0,
+    project_template_name VARCHAR(100) DEFAULT 'General'
 );
 
 -- 7. Timesheets Table

@@ -948,7 +948,7 @@ function App() {
       <AppLayout currentUser={currentUser} tasks={tasks} onLogout={handleLogout}>
         <Routes>
           <Route path="/" element={<Dashboard projects={projects} tasks={tasks} timesheets={timesheets} currentUser={currentUser} />} />
-          <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} />} />
+          <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} />} />
           <Route path="/project-board" element={<ProjectBoard projects={projects} setProjects={handleSetProjects} tasks={tasks} users={users} currentUser={currentUser} />} />
           <Route path="/project-timeline" element={<ProjectTimeline projects={projects} currentUser={currentUser} />} />
           <Route path="/project-plan" element={<ProjectPlan projects={projects} tasks={tasks} setTasks={handleSetTasks} users={users} taskTemplates={taskTemplates} permissionSchemes={permissionSchemes} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />

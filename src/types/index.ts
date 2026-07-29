@@ -57,6 +57,7 @@ export interface Project {
   collectedValue?: number;
   plannedExpense?: number;
   actualExpense?: number;
+  projectTemplateName?: string;
 }
 
 export interface Sprint {
@@ -113,6 +114,7 @@ export interface TaskTemplate {
   startPercent: number;
   endPercent: number;
   estimatedHours: number;
+  projectTemplateName?: string;
 }
 
 export interface TimesheetEntry {

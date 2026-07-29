@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Calendar, Users, DollarSign, Plus, X, Edit, Trash2, GitBranch, MessageSquare } from 'lucide-react';
-import type { User, Project, ProjectStatus, ProjectRole, Task, PermissionScheme, ProjectWorkflow } from '../types';
+import type { User, Project, ProjectStatus, ProjectRole, Task, PermissionScheme, ProjectWorkflow, TaskTemplate } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 
@@ -14,6 +14,7 @@ interface ProjectsProps {
   currentUser: User | null;
   projectWorkflows: ProjectWorkflow[];
   setProjectWorkflows: React.Dispatch<React.SetStateAction<ProjectWorkflow[]>>;
+  taskTemplates?: TaskTemplate[];
 }
 
 export const Projects = ({ 
@@ -24,7 +25,8 @@ export const Projects = ({
   permissionSchemes, 
   currentUser, 
   projectWorkflows, 
-  setProjectWorkflows 
+  setProjectWorkflows,
+  taskTemplates = []
 }: ProjectsProps) => {
   const location = useLocation();
   const [highlightedProjectId, setHighlightedProjectId] = useState<string | null>(null);
@@ -60,6 +62,7 @@ export const Projects = ({
   const [customColumnsText, setCustomColumnsText] = useState('To Do, In Progress, Review, Done');
   const [permissionSchemeId, setPermissionSchemeId] = useState('scheme_default');
   const [projectType, setProjectType] = useState<'dev' | 'support' | 'construction'>('dev');
+  const [projectTemplateName, setProjectTemplateName] = useState('Default');
   const [supportTaskStyle, setSupportTaskStyle] = useState<'monthly' | 'categories'>('categories');
   const [address, setAddress] = useState('');
   const [projectValue, setProjectValue] = useState('');
@@ -98,6 +101,7 @@ export const Projects = ({
     setCustomColumnsText('To Do, In Progress, Review, Done');
     setPermissionSchemeId('scheme_default');
     setProjectType('dev');
+    setProjectTemplateName('Default');
     setSupportTaskStyle('categories');
     setAddress('');
     setProjectValue('');
@@ -120,6 +124,7 @@ export const Projects = ({
     setCustomColumnsText(project.customColumns ? project.customColumns.join(', ') : 'To Do, In Progress, Review, Done');
     setPermissionSchemeId(project.permissionSchemeId || 'scheme_default');
     setProjectType(project.projectType || 'dev');
+    setProjectTemplateName('Default');
     setSupportTaskStyle(project.supportTaskStyle || 'categories');
     setAddress(project.address || '');
     setProjectValue(project.projectValue ? formatNumberWithCommas(String(project.projectValue)) : '');
@@ -154,7 +159,8 @@ export const Projects = ({
       invoicedValue: projectType === 'construction' ? parseNumberFromCommas(invoicedValue) : undefined,
       collectedValue: projectType === 'construction' ? parseNumberFromCommas(collectedValue) : undefined,
       plannedExpense: projectType === 'construction' ? parseNumberFromCommas(plannedExpense) : undefined,
-      actualExpense: projectType === 'construction' ? parseNumberFromCommas(actualExpense) : undefined
+      actualExpense: projectType === 'construction' ? parseNumberFromCommas(actualExpense) : undefined,
+      projectTemplateName: projectTemplateName || undefined
     };
 
     if (editingProject) {
@@ -586,6 +592,23 @@ export const Projects = ({
                   </div>
                 )}
               </div>
+
+              {!editingProject && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Project Template / แม่แบบสำหรับสร้างแผนงานย่อยเริ่มต้น</label>
+                  <select 
+                    value={projectTemplateName} 
+                    onChange={e => setProjectTemplateName(e.target.value)}
+                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
+                  >
+                    <option value="Default">Default (แม่แบบมาตรฐานของระบบสำหรับงาน {projectType === 'construction' ? 'ก่อสร้าง/ติดตั้ง' : projectType === 'support' ? 'บริการ/สนับสนุน' : 'พัฒนาซอฟต์แวร์'})</option>
+                    <option value="None">None (ไม่สร้างงานย่อย เริ่มต้นด้วยโครงการเปล่า)</option>
+                    {Array.from(new Set(taskTemplates.map(t => t.projectTemplateName || 'General'))).filter(n => n && n !== 'General' && n !== 'Default').map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {projectType === 'construction' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed rgba(20, 184, 166, 0.3)', padding: '1rem', borderRadius: 'var(--radius-md)', background: 'rgba(20, 184, 166, 0.02)' }}>
