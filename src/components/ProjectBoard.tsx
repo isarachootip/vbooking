@@ -16,16 +16,18 @@ export const ProjectBoard = ({ projects, setProjects, tasks, users, currentUser 
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
 
   const columns = [
-    'บันทึกข้อมูลลูกค้า',
-    'Follow up',
-    'ชื่อสำรวจ',
-    'ประสานงาน/สำรวจ',
-    'จ่ายงานให้ QC',
-    'ลูกค้าชำระเงิน',
-    'ลูกค้าสั่งเข้าใบเสนอราคา',
-    'Renovate',
-    'COMPLETE_CONSTRUCTION',
-    'Project Complete'
+    'ซื้อสำรวจ',
+    'QC (สำรวจ)',
+    'ออกแบบ',
+    'สร้างใบเสนอราคา',
+    'ลูกค้ายืนยัน',
+    'ชำระเงิน',
+    'ดำเนินการโครงการ',
+    'ช่าง check-in/check out siteงาน',
+    'Project complete',
+    'QC (ส่งมอบ)',
+    'aftersales',
+    'ปิดjob'
   ];
 
   // Map database standard statuses to columns if needed, or fallback
@@ -33,11 +35,11 @@ export const ProjectBoard = ({ projects, setProjects, tasks, users, currentUser 
     const status = project.status;
     if (columns.includes(status)) return status;
     // Map standard dev/support statuses to pipeline columns
-    if (status === 'Planning') return 'บันทึกข้อมูลลูกค้า';
-    if (status === 'Active') return 'Renovate';
-    if (status === 'On Hold') return 'Follow up';
-    if (status === 'Completed') return 'Project Complete';
-    return 'บันทึกข้อมูลลูกค้า'; // default fallback
+    if (status === 'Planning') return 'ซื้อสำรวจ';
+    if (status === 'Active') return 'ดำเนินการโครงการ';
+    if (status === 'On Hold') return 'สร้างใบเสนอราคา';
+    if (status === 'Completed') return 'ปิดjob';
+    return 'ซื้อสำรวจ'; // default fallback
   };
 
   const filteredProjects = projects.filter(p => {
@@ -66,7 +68,7 @@ export const ProjectBoard = ({ projects, setProjects, tasks, users, currentUser 
       if (p.id === draggedProjectId) {
         // Map back to standard status if Completed column
         let status = columnName;
-        if (columnName === 'Project Complete') {
+        if (columnName === 'ปิดjob') {
           status = 'Completed';
         }
         return { ...p, status };

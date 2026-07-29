@@ -86,17 +86,21 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
 
   const getStatusColor = (status: string) => {
     const mapping: Record<string, string> = {
-      'บันทึกข้อมูลลูกค้า': '#38bdf8',
-      'Follow up': '#fbbf24',
-      'ชื่อสำรวจ': '#a78bfa',
-      'ออกแบบ': '#f472b6',
-      'ลูกค้าชำระเงิน': '#10b981',
-      'Renovate': '#14b8a6',
-      'COMPLETE_CONSTRUCTION': '#8b5cf6',
-      'Project Complete': '#6366f1',
+      'ซื้อสำรวจ': '#38bdf8',
+      'QC (สำรวจ)': '#fbbf24',
+      'ออกแบบ': '#a78bfa',
+      'สร้างใบเสนอราคา': '#f472b6',
+      'ลูกค้ายืนยัน': '#ec4899',
+      'ชำระเงิน': '#10b981',
+      'ดำเนินการโครงการ': '#14b8a6',
+      'ช่าง check-in/check out siteงาน': '#06b6d4',
+      'Project complete': '#3b82f6',
+      'QC (ส่งมอบ)': '#6366f1',
+      'aftersales': '#f97316',
+      'ปิดjob': '#8b5cf6',
       'Active': '#10b981',
       'Planning': '#6b7280',
-      'Completed': '#6366f1',
+      'Completed': '#8b5cf6',
       'On Hold': '#f59e0b'
     };
     return mapping[status] || 'var(--accent-primary)';

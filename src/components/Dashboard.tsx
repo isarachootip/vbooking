@@ -187,16 +187,18 @@ export const Dashboard = ({ projects, tasks, timesheets, currentUser }: Dashboar
 
   // Pipeline count data
   const pipelineStatuses = [
-    'บันทึกข้อมูลลูกค้า',
-    'Follow up',
-    'ชื่อสำรวจ',
-    'ประสานงาน/สำรวจ',
-    'จ่ายงานให้ QC',
-    'ลูกค้าชำระเงิน',
-    'ลูกค้าสั่งเข้าใบเสนอราคา',
-    'Renovate',
-    'COMPLETE_CONSTRUCTION',
-    'Project Complete'
+    'ซื้อสำรวจ',
+    'QC (สำรวจ)',
+    'ออกแบบ',
+    'สร้างใบเสนอราคา',
+    'ลูกค้ายืนยัน',
+    'ชำระเงิน',
+    'ดำเนินการโครงการ',
+    'ช่าง check-in/check out siteงาน',
+    'Project complete',
+    'QC (ส่งมอบ)',
+    'aftersales',
+    'ปิดjob'
   ];
 
   const pipelineChartData = pipelineStatuses.map(status => ({

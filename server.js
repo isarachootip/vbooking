@@ -1632,13 +1632,18 @@ app.post('/api/projects', async (req, res) => {
       } else if (projectType === 'construction') {
         // Auto-generate construction phases
         const phases = [
-          { title: 'สำรวจหน้างาน (Survey)', desc: 'เข้าสำรวจหน้างาน วัดขนาด และบันทึกสภาพพื้นที่จริง', startPct: 0, endPct: 15, est: 8 },
-          { title: 'ออกแบบและเขียนแบบ (Design)', desc: 'จัดทำแบบ 2D/3D และประเมินราคาวัสดุ/ค่าแรง', startPct: 15, endPct: 30, est: 24 },
-          { title: 'ทำสัญญาและวางเงินมัดจำ (Contract)', desc: 'เซ็นสัญญาจ้าง ทำงวดงานและรับเงินมัดจำงวดแรก', startPct: 30, endPct: 40, est: 8 },
-          { title: 'จัดเตรียมและเคลียร์หน้างาน (Prep Site)', desc: 'นำเข้าวัสดุ อุปกรณ์ และเตรียมพื้นที่สำหรับการก่อสร้าง', startPct: 40, endPct: 50, est: 16 },
-          { title: 'ดำเนินงานก่อสร้างและรีโนเวท (Construction)', desc: 'ดำเนินงานตามแบบก่อสร้าง/ตกแต่งภายใน', startPct: 50, endPct: 85, est: 80 },
-          { title: 'ตรวจสอบความเรียบร้อยและ QC (QC Check)', desc: 'ตรวจสอบคุณภาพงาน เก็บรายละเอียดข้อบกพร่อง', startPct: 85, endPct: 95, est: 16 },
-          { title: 'ส่งมอบงานและรับเงินส่วนสุดท้าย (Handover)', desc: 'ส่งมอบงานให้ลูกค้าเซ็นรับมอบ และเคลียร์บัญชี', startPct: 95, endPct: 100, est: 8 }
+          { title: 'ซื้อสำรวจ', desc: 'ลูกค้าซื้อสิทธิ์สำรวจหน้างานและระบุขอบเขตความต้องการ', startPct: 0, endPct: 8, est: 4 },
+          { title: 'QC (สำรวจ)', desc: 'ตรวจสอบข้อมูลหน้างาน ความเป็นไปได้ และรายละเอียดการสำรวจ', startPct: 8, endPct: 16, est: 8 },
+          { title: 'ออกแบบ', desc: 'ออกแบบผังการจัดวาง เขียนแบบ 2D/3D และเลือกวัสดุ', startPct: 16, endPct: 32, est: 24 },
+          { title: 'สร้างใบเสนอราคา', desc: 'จัดทำใบเสนอราคางวดงานส่งให้ลูกค้าพิจารณา', startPct: 32, endPct: 40, est: 4 },
+          { title: 'ลูกค้ายืนยัน', desc: 'ลูกค้ายืนยันตกลงสั่งจ้างงานตามแบบและเงื่อนไข', startPct: 40, endPct: 48, est: 4 },
+          { title: 'ชำระเงิน', desc: 'ชำระเงินมัดจำงวดแรกและยืนยันยอดเงินเข้าระบบ', startPct: 48, endPct: 56, est: 4 },
+          { title: 'ดำเนินการโครงการ', desc: 'เข้าดำเนินงานติดตั้ง ตกแต่ง หรือการก่อสร้างหน้างานจริง', startPct: 56, endPct: 75, est: 80 },
+          { title: 'ช่าง check-in/check out siteงาน', desc: 'ช่างลงบันทึกเวลาเข้า-ออก และรายงานผลการทำงานรายวัน', startPct: 75, endPct: 82, est: 16 },
+          { title: 'Project complete', desc: 'งานก่อสร้างติดตั้งเสร็จสิ้นเบื้องต้นจากผู้รับเหมา', startPct: 82, endPct: 88, est: 8 },
+          { title: 'QC (ส่งมอบ)', desc: 'ตรวจสอบความเรียบร้อยรอบสุดท้ายและแก้ไข Defect ก่อนส่งมอบ', startPct: 88, endPct: 94, est: 8 },
+          { title: 'aftersales', desc: 'การดูแลประกันผลงานหลังการขายและการเก็บรายละเอียดเพิ่มเติม', startPct: 94, endPct: 98, est: 12 },
+          { title: 'ปิดjob', desc: 'ส่งมอบงานอย่างเป็นทางการและรับชำระเงินงวดสุดท้าย', startPct: 98, endPct: 100, est: 4 }
         ];
 
         const startD = new Date(startDate);
