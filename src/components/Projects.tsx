@@ -554,7 +554,7 @@ export const Projects = ({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: projectType === 'support' ? '1fr 1fr' : '1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: (!editingProject) ? '1fr 1fr' : '1fr', gap: '1rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <label style={{ 
                     fontSize: '0.875rem', 
@@ -578,34 +578,66 @@ export const Projects = ({
                   </select>
                 </div>
 
-                {projectType === 'support' && (
+                {!editingProject && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Support Task Auto-generation</label>
+                    <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      Project Template (แม่แบบสร้างงานเริ่มต้น)
+                    </label>
                     <select 
-                      value={supportTaskStyle} 
-                      onChange={e => setSupportTaskStyle(e.target.value as 'monthly' | 'categories')}
+                      value={projectTemplateName} 
+                      onChange={e => setProjectTemplateName(e.target.value)}
                       style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
                     >
-                      <option value="categories">Category-based Tasks (ระบบสนับสนุน / BU Support)</option>
-                      <option value="monthly">Monthly Tasks (แบ่งเป็นถังรายเดือน [YYYY-MM])</option>
+                      <option value="Default">Default (แม่แบบมาตรฐานประจำประเภทโครงการ)</option>
+                      <option value="None">None (ไม่สร้างงานย่อย เริ่มด้วยโปรเจกต์ว่างเปล่า)</option>
+                      {Array.from(new Set(taskTemplates.map(t => t.projectTemplateName || 'General'))).filter(n => n && n !== 'General' && n !== 'Default').map(name => {
+                        const count = taskTemplates.filter(t => (t.projectTemplateName || 'General') === name).length;
+                        return (
+                          <option key={name} value={name}>{name} ({count} tasks)</option>
+                        );
+                      })}
                     </select>
                   </div>
                 )}
               </div>
 
-              {!editingProject && (
+              {!editingProject && projectTemplateName !== 'None' && (
+                <div style={{ padding: '0.85rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>📋 งานย่อยที่จะถูกสร้างอัตโนมัติ (Generated Tasks):</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', maxHeight: '100px', overflowY: 'auto' }}>
+                    {projectTemplateName === 'Default' ? (
+                      projectType === 'construction' ? (
+                        ['ซื้อสำรวจ', 'QC (สำรวจ)', 'ออกแบบ', 'สร้างใบเสนอราคา', 'ลูกค้ายืนยัน', 'ชำระเงิน', 'ดำเนินการโครงการ', 'ช่าง check-in/check out siteงาน', 'Project complete', 'QC (ส่งมอบ)', 'aftersales', 'ปิดjob'].map(t => (
+                          <span key={t} style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-secondary)' }}>{t}</span>
+                        ))
+                      ) : projectType === 'support' ? (
+                        (supportTaskStyle === 'monthly' ? ['[YYYY-MM] Support & Maintenance'] : ['User Support & Helpdesk', 'System Maintenance', 'Bug Fixing']).map(t => (
+                          <span key={t} style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-secondary)' }}>{t}</span>
+                        ))
+                      ) : (
+                        taskTemplates.filter(t => (t.projectTemplateName || 'General') === 'General' || (t.projectTemplateName || 'General') === 'Default').map(t => (
+                          <span key={t.id} style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-secondary)' }}>{t.title}</span>
+                        ))
+                      )
+                    ) : (
+                      taskTemplates.filter(t => (t.projectTemplateName || 'General') === projectTemplateName).map(t => (
+                        <span key={t.id} style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-secondary)' }}>{t.title}</span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {projectType === 'support' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Project Template / แม่แบบสำหรับสร้างแผนงานย่อยเริ่มต้น</label>
+                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Support Task Auto-generation</label>
                   <select 
-                    value={projectTemplateName} 
-                    onChange={e => setProjectTemplateName(e.target.value)}
+                    value={supportTaskStyle} 
+                    onChange={e => setSupportTaskStyle(e.target.value as 'monthly' | 'categories')}
                     style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
                   >
-                    <option value="Default">Default (แม่แบบมาตรฐานของระบบสำหรับงาน {projectType === 'construction' ? 'ก่อสร้าง/ติดตั้ง' : projectType === 'support' ? 'บริการ/สนับสนุน' : 'พัฒนาซอฟต์แวร์'})</option>
-                    <option value="None">None (ไม่สร้างงานย่อย เริ่มต้นด้วยโครงการเปล่า)</option>
-                    {Array.from(new Set(taskTemplates.map(t => t.projectTemplateName || 'General'))).filter(n => n && n !== 'General' && n !== 'Default').map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
+                    <option value="categories">Category-based Tasks (ระบบสนับสนุน / BU Support)</option>
+                    <option value="monthly">Monthly Tasks (แบ่งเป็นถังรายเดือน [YYYY-MM])</option>
                   </select>
                 </div>
               )}

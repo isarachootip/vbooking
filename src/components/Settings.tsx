@@ -96,7 +96,13 @@ export const Settings = ({
   const [estimatedHours, setEstimatedHours] = useState('8');
   const [projectTemplateName, setProjectTemplateName] = useState('General');
   const [customTemplateName, setCustomTemplateName] = useState('');
-  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<string>('All');
+  const [selectedTemplateFilter, setSelectedTemplateFilter] = useState<string>('General');
+
+  useEffect(() => {
+    if (uniqueTemplateNames.length > 0 && !uniqueTemplateNames.includes(selectedTemplateFilter)) {
+      setSelectedTemplateFilter(uniqueTemplateNames[0]);
+    }
+  }, [uniqueTemplateNames, selectedTemplateFilter]);
 
   const openAddModal = () => {
     setEditingTemplate(null);
@@ -529,134 +535,262 @@ export const Settings = ({
       </div>
 
       {activeTab === 'templates' ? (
-        <>
-          {/* Visual Timeline Preview */}
-          <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Visual Proportional Timeline Preview (0% - 100% of Project Duration)</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-                  Below is a visual projection showing how the tasks will span across your project timeline, based on their Start % and End %.
-                </p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>แม่แบบโครงการ:</span>
-                <select
-                  value={selectedTemplateFilter}
-                  onChange={e => setSelectedTemplateFilter(e.target.value)}
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.4rem 0.8rem', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
-                >
-                  <option value="All">แสดงทุกแม่แบบ (All)</option>
-                  {uniqueTemplateNames.map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+          
+          {/* LEFT Sidebar: Project Templates Master */}
+          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '450px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>🗂️ แม่แบบโครงการ (Master Templates)</h3>
+            </div>
+            
+            {/* List of templates */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '420px', overflowY: 'auto', paddingRight: '0.2rem' }}>
+              <button
+                onClick={() => setSelectedTemplateFilter('All')}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.65rem 0.8rem',
+                  borderRadius: 'var(--radius-md)',
+                  background: selectedTemplateFilter === 'All' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  color: selectedTemplateFilter === 'All' ? 'white' : 'var(--text-primary)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  fontWeight: selectedTemplateFilter === 'All' ? 600 : 400,
+                  transition: 'all 0.2s'
+                }}
+                className="hover-lift"
+              >
+                <span style={{ fontSize: '0.775rem' }}>แสดงทุกแม่แบบ (All)</span>
+                <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem', borderRadius: '999px', background: selectedTemplateFilter === 'All' ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', color: selectedTemplateFilter === 'All' ? 'white' : 'var(--text-secondary)' }}>
+                  {taskTemplates.length}
+                </span>
+              </button>
+
+              {uniqueTemplateNames.map(name => {
+                const count = taskTemplates.filter(t => (t.projectTemplateName || 'General') === name).length;
+                const isSelected = selectedTemplateFilter === name;
+                return (
+                  <button
+                    key={name}
+                    onClick={() => setSelectedTemplateFilter(name)}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '0.65rem 0.8rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: isSelected ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      color: isSelected ? 'white' : 'var(--text-primary)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontWeight: isSelected ? 600 : 400,
+                      transition: 'all 0.2s'
+                    }}
+                    className="hover-lift"
+                  >
+                    <span style={{ fontSize: '0.775rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={name}>
+                      {name}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.4rem', borderRadius: '999px', background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)', color: isSelected ? 'white' : 'var(--text-secondary)' }}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Timeline representation */}
-            <div style={{ 
-              position: 'relative', 
-              background: 'var(--bg-tertiary)', 
-              borderRadius: 'var(--radius-md)', 
-              border: '1px solid var(--border-color)', 
-              minHeight: '260px', 
-              padding: '1rem 0'
-            }}>
-              {/* Vertical axis ticks */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed var(--border-color)', paddingBottom: '0.5rem', margin: '0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                <span>Start (0%)</span>
-                <span>25%</span>
-                <span>50% (Midpoint)</span>
-                <span>75%</span>
-                <span>End (100%)</span>
+            {/* Create new template button */}
+            <button
+              onClick={() => {
+                setEditingTemplate(null);
+                setTitle('');
+                setDescription('');
+                setPriority('Medium');
+                setStartPercent('0');
+                setEndPercent('10');
+                setEstimatedHours('8');
+                setProjectTemplateName('NEW_CUSTOM');
+                setCustomTemplateName('');
+                setIsModalOpen(true);
+              }}
+              style={{
+                width: '100%',
+                padding: '0.6rem',
+                borderRadius: 'var(--radius-md)',
+                background: 'transparent',
+                border: '1px dashed var(--accent-primary)',
+                color: 'var(--accent-primary)',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                marginTop: 'auto',
+                transition: 'all 0.2s'
+              }}
+              className="hover-lift"
+            >
+              <Plus size={14} /> สร้างแม่แบบใหม่...
+            </button>
+          </div>
+
+          {/* RIGHT Panel: Selected Template steps manager */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1 }}>
+            
+            {/* Visual Timeline Preview */}
+            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    📈 สัดส่วนระยะเวลาในแม่แบบ: <span style={{ color: 'var(--accent-primary)' }}>{selectedTemplateFilter === 'All' ? 'แสดงทั้งหมด' : selectedTemplateFilter}</span>
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+                    อัตราส่วนระยะเวลาการทำงานย่อย (Start % ถึง End % ของระยะเวลาโครงการทั้งหมด)
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingTemplate(null);
+                    setTitle('');
+                    setDescription('');
+                    setPriority('Medium');
+                    setStartPercent('0');
+                    setEndPercent('10');
+                    setEstimatedHours('8');
+                    setProjectTemplateName(selectedTemplateFilter === 'All' ? 'General' : selectedTemplateFilter);
+                    setCustomTemplateName('');
+                    setIsModalOpen(true);
+                  }}
+                  style={{
+                    padding: '0.45rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--accent-primary)',
+                    border: 'none',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                  className="hover-lift"
+                >
+                  <Plus size={14} /> เพิ่มขั้นตอนงานในแม่แบบนี้
+                </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem', padding: '0 1rem' }}>
-                {taskTemplates
-                  .filter(t => selectedTemplateFilter === 'All' || (t.projectTemplateName || 'General') === selectedTemplateFilter)
-                  .map((tpl, idx) => {
-                    const widthVal = tpl.endPercent - tpl.startPercent;
-                    return (
-                      <div key={tpl.id} style={{ display: 'flex', alignItems: 'center', height: '24px', position: 'relative' }}>
-                        {/* Left Label */}
-                        <span style={{ fontSize: '0.7rem', width: '180px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
-                          [{tpl.projectTemplateName || 'General'}] {tpl.title}
-                        </span>
-                        
-                        {/* Bar container */}
-                        <div style={{ flex: 1, position: 'relative', height: '100%' }}>
-                          <div style={{
-                            position: 'absolute',
-                            left: `${tpl.startPercent}%`,
-                            width: `${widthVal}%`,
-                            height: '14px',
-                            background: idx % 2 === 0 ? 'rgba(99, 102, 241, 0.25)' : 'rgba(168, 85, 247, 0.25)',
-                            border: idx % 2 === 0 ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(168, 85, 247, 0.5)',
-                            borderRadius: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            paddingLeft: '4px',
-                            fontSize: '0.65rem',
-                            color: 'white',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden'
-                          }} title={`${tpl.title}: ${tpl.startPercent}% to ${tpl.endPercent}% (${tpl.estimatedHours}h)`}>
-                            {tpl.startPercent}% - {tpl.endPercent}%
+              {/* Timeline representation */}
+              <div style={{ 
+                position: 'relative', 
+                background: 'var(--bg-tertiary)', 
+                borderRadius: 'var(--radius-md)', 
+                border: '1px solid var(--border-color)', 
+                minHeight: '260px', 
+                padding: '1rem 0'
+              }}>
+                {/* Vertical axis ticks */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed var(--border-color)', paddingBottom: '0.5rem', margin: '0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span>Start (0%)</span>
+                  <span>25%</span>
+                  <span>50% (Midpoint)</span>
+                  <span>75%</span>
+                  <span>End (100%)</span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem', padding: '0 1rem' }}>
+                  {taskTemplates
+                    .filter(t => selectedTemplateFilter === 'All' || (t.projectTemplateName || 'General') === selectedTemplateFilter)
+                    .map((tpl, idx) => {
+                      const widthVal = tpl.endPercent - tpl.startPercent;
+                      return (
+                        <div key={tpl.id} style={{ display: 'flex', alignItems: 'center', height: '24px', position: 'relative' }}>
+                          {/* Left Label */}
+                          <span style={{ fontSize: '0.7rem', width: '180px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
+                            [{tpl.projectTemplateName || 'General'}] {tpl.title}
+                          </span>
+                          
+                          {/* Bar container */}
+                          <div style={{ flex: 1, position: 'relative', height: '100%' }}>
+                            <div style={{
+                              position: 'absolute',
+                              left: `${tpl.startPercent}%`,
+                              width: `${widthVal}%`,
+                              height: '14px',
+                              background: idx % 2 === 0 ? 'rgba(99, 102, 241, 0.25)' : 'rgba(168, 85, 247, 0.25)',
+                              border: idx % 2 === 0 ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(168, 85, 247, 0.5)',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              paddingLeft: '4px',
+                              fontSize: '0.65rem',
+                              color: 'white',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden'
+                            }} title={`${tpl.title}: ${tpl.startPercent}% to ${tpl.endPercent}% (${tpl.estimatedHours}h)`}>
+                              {tpl.startPercent}% - {tpl.endPercent}%
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Grid of Milestone Templates */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-            {taskTemplates
-              .filter(t => selectedTemplateFilter === 'All' || (t.projectTemplateName || 'General') === selectedTemplateFilter)
-              .map(tpl => (
-                <div key={tpl.id} className="glass-panel hover-lift" style={{ padding: '1.25rem', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="flex-between">
-                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                      <span style={{ 
-                        fontSize: '0.7rem', 
-                        fontWeight: 600, 
-                        padding: '0.15rem 0.5rem', 
-                        borderRadius: 'var(--radius-sm)', 
-                        background: getPriorityBadgeColor(tpl.priority),
-                        color: 'white'
-                      }}>
-                        {tpl.priority}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.05)', padding: '0.15rem 0.4rem', borderRadius: '4px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        {tpl.projectTemplateName || 'General'}
-                      </span>
+            {/* Grid of Milestone Templates */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+              {taskTemplates
+                .filter(t => selectedTemplateFilter === 'All' || (t.projectTemplateName || 'General') === selectedTemplateFilter)
+                .map(tpl => (
+                  <div key={tpl.id} className="glass-panel hover-lift" style={{ padding: '1.25rem', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="flex-between">
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          fontWeight: 600, 
+                          padding: '0.15rem 0.5rem', 
+                          borderRadius: 'var(--radius-sm)', 
+                          background: getPriorityBadgeColor(tpl.priority),
+                          color: 'white'
+                        }}>
+                          {tpl.priority}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.05)', padding: '0.15rem 0.4rem', borderRadius: '4px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                          {tpl.projectTemplateName || 'General'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button onClick={() => openEditModal(tpl)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                          <Edit size={14} />
+                        </button>
+                        <button onClick={() => handleDelete(tpl.id)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer' }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button onClick={() => openEditModal(tpl)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                        <Edit size={14} />
-                      </button>
-                      <button onClick={() => handleDelete(tpl.id)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer' }}>
-                        <Trash2 size={14} />
-                      </button>
+
+                    <div>
+                      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{tpl.title}</h3>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', minHeight: '40px' }}>{tpl.description}</p>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      <span>Phase: <strong>{tpl.startPercent}% - {tpl.endPercent}%</strong></span>
+                      <span>Default Est: <strong>{tpl.estimatedHours} hrs</strong></span>
                     </div>
                   </div>
+                ))}
+            </div>
 
-                  <div>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{tpl.title}</h3>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', minHeight: '40px' }}>{tpl.description}</p>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    <span>Phase: <strong>{tpl.startPercent}% - {tpl.endPercent}%</strong></span>
-                    <span>Default Est: <strong>{tpl.estimatedHours} hrs</strong></span>
-                  </div>
-                </div>
-              ))}
           </div>
-        </>
+        </div>
       ) : activeTab === 'integrations' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
