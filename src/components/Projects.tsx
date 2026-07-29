@@ -59,8 +59,14 @@ export const Projects = ({
   const [members, setMembers] = useState<{ userId: string; role: ProjectRole; manDayRate?: number }[]>([]);
   const [customColumnsText, setCustomColumnsText] = useState('To Do, In Progress, Review, Done');
   const [permissionSchemeId, setPermissionSchemeId] = useState('scheme_default');
-  const [projectType, setProjectType] = useState<'dev' | 'support'>('dev');
+  const [projectType, setProjectType] = useState<'dev' | 'support' | 'construction'>('dev');
   const [supportTaskStyle, setSupportTaskStyle] = useState<'monthly' | 'categories'>('categories');
+  const [address, setAddress] = useState('');
+  const [projectValue, setProjectValue] = useState('');
+  const [invoicedValue, setInvoicedValue] = useState('');
+  const [collectedValue, setCollectedValue] = useState('');
+  const [plannedExpense, setPlannedExpense] = useState('');
+  const [actualExpense, setActualExpense] = useState('');
 
   // Member select helper state
   const [tempUserId, setTempUserId] = useState('');
@@ -76,6 +82,7 @@ export const Projects = ({
   };
 
   const parseNumberFromCommas = (formattedValue: string) => {
+    if (!formattedValue) return 0;
     return parseFloat(formattedValue.replace(/,/g, '')) || 0;
   };
 
@@ -92,6 +99,12 @@ export const Projects = ({
     setPermissionSchemeId('scheme_default');
     setProjectType('dev');
     setSupportTaskStyle('categories');
+    setAddress('');
+    setProjectValue('');
+    setInvoicedValue('');
+    setCollectedValue('');
+    setPlannedExpense('');
+    setActualExpense('');
     setIsModalOpen(true);
   };
 
@@ -108,6 +121,12 @@ export const Projects = ({
     setPermissionSchemeId(project.permissionSchemeId || 'scheme_default');
     setProjectType(project.projectType || 'dev');
     setSupportTaskStyle(project.supportTaskStyle || 'categories');
+    setAddress(project.address || '');
+    setProjectValue(project.projectValue ? formatNumberWithCommas(String(project.projectValue)) : '');
+    setInvoicedValue(project.invoicedValue ? formatNumberWithCommas(String(project.invoicedValue)) : '');
+    setCollectedValue(project.collectedValue ? formatNumberWithCommas(String(project.collectedValue)) : '');
+    setPlannedExpense(project.plannedExpense ? formatNumberWithCommas(String(project.plannedExpense)) : '');
+    setActualExpense(project.actualExpense ? formatNumberWithCommas(String(project.actualExpense)) : '');
     setIsModalOpen(true);
   };
 
@@ -129,7 +148,13 @@ export const Projects = ({
       customColumns: cols.length > 0 ? cols : ['To Do', 'In Progress', 'Review', 'Done'],
       permissionSchemeId: permissionSchemeId,
       projectType,
-      supportTaskStyle: projectType === 'support' ? supportTaskStyle : undefined
+      supportTaskStyle: projectType === 'support' ? supportTaskStyle : undefined,
+      address: projectType === 'construction' ? address : undefined,
+      projectValue: projectType === 'construction' ? parseNumberFromCommas(projectValue) : undefined,
+      invoicedValue: projectType === 'construction' ? parseNumberFromCommas(invoicedValue) : undefined,
+      collectedValue: projectType === 'construction' ? parseNumberFromCommas(collectedValue) : undefined,
+      plannedExpense: projectType === 'construction' ? parseNumberFromCommas(plannedExpense) : undefined,
+      actualExpense: projectType === 'construction' ? parseNumberFromCommas(actualExpense) : undefined
     };
 
     if (editingProject) {
@@ -368,11 +393,11 @@ export const Projects = ({
                         fontSize: '0.75rem', 
                         padding: '0.25rem 0.75rem', 
                         borderRadius: 'var(--radius-full)', 
-                        background: project.projectType === 'support' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(139, 92, 246, 0.1)',
-                        color: project.projectType === 'support' ? '#3b82f6' : '#8b5cf6',
+                        background: project.projectType === 'support' ? 'rgba(59, 130, 246, 0.1)' : project.projectType === 'construction' ? 'rgba(20, 184, 166, 0.1)' : 'rgba(139, 92, 246, 0.1)',
+                        color: project.projectType === 'support' ? '#3b82f6' : project.projectType === 'construction' ? '#14b8a6' : '#8b5cf6',
                         fontWeight: 500
                       }}>
-                        {project.projectType === 'support' ? 'Support' : 'Development'}
+                        {project.projectType === 'support' ? 'Support' : project.projectType === 'construction' ? 'Construction' : 'Development'}
                       </span>
                     </div>
                   </div>
@@ -409,10 +434,22 @@ export const Projects = ({
                   <Calendar size={16} />
                   <span>{formatToDDMMYYYY(project.startDate)} - {project.endDate ? formatToDDMMYYYY(project.endDate) : 'Ongoing'}</span>
                 </div>
+                {project.projectType === 'construction' && project.address && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--accent-primary)', minWidth: '50px' }}>📍 ที่อยู่:</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={project.address}>{project.address}</span>
+                  </div>
+                )}
                 {project.budget && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                     <DollarSign size={16} />
                     <span>${project.budget.toLocaleString()} Budget</span>
+                  </div>
+                )}
+                {project.projectType === 'construction' && project.projectValue && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--accent-secondary)' }}>💰 ยอดขาย/มูลค่า:</span>
+                    <span>฿{project.projectValue.toLocaleString()}</span>
                   </div>
                 )}
               </div>
@@ -526,11 +563,12 @@ export const Projects = ({
                   </label>
                   <select 
                     value={projectType} 
-                    onChange={e => setProjectType(e.target.value as 'dev' | 'support')}
+                    onChange={e => setProjectType(e.target.value as 'dev' | 'support' | 'construction')}
                     style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
                   >
                     <option value="dev">Development Project (มี Timeline & Sprint/Release)</option>
                     <option value="support">Support Project (มีแค่ Task & บันทึกเวลาแยกตามระบบ/BU)</option>
+                    <option value="construction">Construction Project (งานก่อสร้าง มีแผนงาน ที่อยู่ และต้นทุนแผน/จริง)</option>
                   </select>
                 </div>
 
@@ -548,6 +586,73 @@ export const Projects = ({
                   </div>
                 )}
               </div>
+
+              {projectType === 'construction' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed rgba(20, 184, 166, 0.3)', padding: '1rem', borderRadius: 'var(--radius-md)', background: 'rgba(20, 184, 166, 0.02)' }}>
+                  <h4 style={{ fontSize: '0.9rem', color: '#14b8a6', margin: 0, fontWeight: 600 }}>Construction Details (ข้อมูลสำหรับงานก่อสร้าง)</h4>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ที่อยู่หน้างาน / สถานที่ก่อสร้าง *</label>
+                    <textarea 
+                      value={address} 
+                      onChange={e => setAddress(e.target.value)} 
+                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none', minHeight: '60px', resize: 'vertical' }}
+                      placeholder="ระบุที่อยู่สถานที่ก่อสร้าง เช่น บ้านเลขที่ ซอย ถนน แขวง เขต..."
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>มูลค่าโครงการ / ยอดขาย (฿)</label>
+                      <input 
+                        type="text" 
+                        value={projectValue} 
+                        onChange={e => setProjectValue(formatNumberWithCommas(e.target.value))} 
+                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ยอดเรียกเก็บเงิน (฿)</label>
+                      <input 
+                        type="text" 
+                        value={invoicedValue} 
+                        onChange={e => setInvoicedValue(formatNumberWithCommas(e.target.value))} 
+                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ยอดที่เก็บเงินได้แล้ว (฿)</label>
+                      <input 
+                        type="text" 
+                        value={collectedValue} 
+                        onChange={e => setCollectedValue(formatNumberWithCommas(e.target.value))} 
+                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ค่าใช้จ่ายตามแผน (Planned Cost) (฿)</label>
+                      <input 
+                        type="text" 
+                        value={plannedExpense} 
+                        onChange={e => setPlannedExpense(formatNumberWithCommas(e.target.value))} 
+                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ค่าใช้จ่ายจริง (Actual Cost) (฿)</label>
+                      <input 
+                        type="text" 
+                        value={actualExpense} 
+                        onChange={e => setActualExpense(formatNumberWithCommas(e.target.value))} 
+                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Description</label>

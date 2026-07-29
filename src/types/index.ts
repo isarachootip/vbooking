@@ -3,7 +3,7 @@ export type ProjectRole = string;
 export type TaskStatus = string; // Made generic to support custom workflow columns
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type TimesheetStatus = 'Draft' | 'Pending' | 'Approved' | 'Rejected';
-export type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed';
+export type ProjectStatus = string;
 
 export interface User {
   id: string;
@@ -49,8 +49,14 @@ export interface Project {
   members: ProjectMember[];
   customColumns?: string[];
   permissionSchemeId?: string;
-  projectType?: 'dev' | 'support';
+  projectType?: 'dev' | 'support' | 'construction';
   supportTaskStyle?: 'monthly' | 'categories';
+  address?: string;
+  projectValue?: number;
+  invoicedValue?: number;
+  collectedValue?: number;
+  plannedExpense?: number;
+  actualExpense?: number;
 }
 
 export interface Sprint {

@@ -37,7 +37,13 @@ CREATE TABLE IF NOT EXISTS projects (
     custom_columns JSONB DEFAULT '["To Do", "In Progress", "Review", "Done"]'::jsonb,
     permission_scheme_id VARCHAR(50) REFERENCES permission_schemes(id) ON DELETE SET NULL,
     project_type VARCHAR(50) DEFAULT 'dev',
-    support_task_style VARCHAR(50) DEFAULT 'categories'
+    support_task_style VARCHAR(50) DEFAULT 'categories',
+    address TEXT,
+    project_value NUMERIC DEFAULT 0,
+    invoiced_value NUMERIC DEFAULT 0,
+    collected_value NUMERIC DEFAULT 0,
+    planned_expense NUMERIC DEFAULT 0,
+    actual_expense NUMERIC DEFAULT 0
 );
 
 -- 2.5 Project Workflows Table

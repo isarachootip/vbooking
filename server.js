@@ -115,6 +115,12 @@ const initDB = async () => {
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS permission_scheme_id VARCHAR(50);
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_type VARCHAR(50) DEFAULT 'dev';
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS support_task_style VARCHAR(50) DEFAULT 'categories';
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS address TEXT;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_value NUMERIC DEFAULT 0;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS invoiced_value NUMERIC DEFAULT 0;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS collected_value NUMERIC DEFAULT 0;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS planned_expense NUMERIC DEFAULT 0;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS actual_expense NUMERIC DEFAULT 0;
     `);
 
     // Create Project Workflows Table
@@ -1328,7 +1334,13 @@ app.get('/api/initial-data', async (req, res) => {
       customColumns: p.custom_columns,
       permissionSchemeId: p.permission_scheme_id,
       projectType: p.project_type || 'dev',
-      supportTaskStyle: p.support_task_style || 'categories'
+      supportTaskStyle: p.support_task_style || 'categories',
+      address: p.address || '',
+      projectValue: parseFloat(p.project_value || '0'),
+      invoicedValue: parseFloat(p.invoiced_value || '0'),
+      collectedValue: parseFloat(p.collected_value || '0'),
+      plannedExpense: parseFloat(p.planned_expense || '0'),
+      actualExpense: parseFloat(p.actual_expense || '0')
     }));
 
     const tasks = tasksRes.rows.map(t => ({
@@ -1497,15 +1509,15 @@ app.delete('/api/users/:id', async (req, res) => {
 
 // Projects REST API
 app.post('/api/projects', async (req, res) => {
-  const { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle } = req.body;
+  const { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense } = req.body;
   try {
     const checkExist = await pool.query('SELECT 1 FROM projects WHERE id = $1', [id]);
     const isNew = checkExist.rows.length === 0;
     const cols = customColumns || ["To Do", "In Progress", "Review", "Done"];
 
     await pool.query(
-      `INSERT INTO projects (id, name, description, status, start_date, end_date, budget, members, custom_columns, permission_scheme_id, project_type, support_task_style)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO projects (id, name, description, status, start_date, end_date, budget, members, custom_columns, permission_scheme_id, project_type, support_task_style, address, project_value, invoiced_value, collected_value, planned_expense, actual_expense)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          description = EXCLUDED.description,
@@ -1517,7 +1529,13 @@ app.post('/api/projects', async (req, res) => {
          custom_columns = EXCLUDED.custom_columns,
          permission_scheme_id = EXCLUDED.permission_scheme_id,
          project_type = EXCLUDED.project_type,
-         support_task_style = EXCLUDED.support_task_style`,
+         support_task_style = EXCLUDED.support_task_style,
+         address = EXCLUDED.address,
+         project_value = EXCLUDED.project_value,
+         invoiced_value = EXCLUDED.invoiced_value,
+         collected_value = EXCLUDED.collected_value,
+         planned_expense = EXCLUDED.planned_expense,
+         actual_expense = EXCLUDED.actual_expense`,
       [
         id, 
         name, 
@@ -1530,7 +1548,13 @@ app.post('/api/projects', async (req, res) => {
         JSON.stringify(cols), 
         permissionSchemeId || null, 
         projectType || 'dev', 
-        supportTaskStyle || 'categories'
+        supportTaskStyle || 'categories',
+        address || null,
+        projectValue || 0,
+        invoicedValue || 0,
+        collectedValue || 0,
+        plannedExpense || 0,
+        actualExpense || 0
       ]
     );
 
@@ -1604,6 +1628,47 @@ app.post('/api/projects', async (req, res) => {
               ]
             );
           }
+        }
+      } else if (projectType === 'construction') {
+        // Auto-generate construction phases
+        const phases = [
+          { title: 'สำรวจหน้างาน (Survey)', desc: 'เข้าสำรวจหน้างาน วัดขนาด และบันทึกสภาพพื้นที่จริง', startPct: 0, endPct: 15, est: 8 },
+          { title: 'ออกแบบและเขียนแบบ (Design)', desc: 'จัดทำแบบ 2D/3D และประเมินราคาวัสดุ/ค่าแรง', startPct: 15, endPct: 30, est: 24 },
+          { title: 'ทำสัญญาและวางเงินมัดจำ (Contract)', desc: 'เซ็นสัญญาจ้าง ทำงวดงานและรับเงินมัดจำงวดแรก', startPct: 30, endPct: 40, est: 8 },
+          { title: 'จัดเตรียมและเคลียร์หน้างาน (Prep Site)', desc: 'นำเข้าวัสดุ อุปกรณ์ และเตรียมพื้นที่สำหรับการก่อสร้าง', startPct: 40, endPct: 50, est: 16 },
+          { title: 'ดำเนินงานก่อสร้างและรีโนเวท (Construction)', desc: 'ดำเนินงานตามแบบก่อสร้าง/ตกแต่งภายใน', startPct: 50, endPct: 85, est: 80 },
+          { title: 'ตรวจสอบความเรียบร้อยและ QC (QC Check)', desc: 'ตรวจสอบคุณภาพงาน เก็บรายละเอียดข้อบกพร่อง', startPct: 85, endPct: 95, est: 16 },
+          { title: 'ส่งมอบงานและรับเงินส่วนสุดท้าย (Handover)', desc: 'ส่งมอบงานให้ลูกค้าเซ็นรับมอบ และเคลียร์บัญชี', startPct: 95, endPct: 100, est: 8 }
+        ];
+
+        const startD = new Date(startDate);
+        const endD = endDate ? new Date(endDate) : new Date(startD.getTime() + 30 * 24 * 60 * 60 * 1000); // default 30 days
+        const totalMs = endD.getTime() - startD.getTime();
+
+        for (const phase of phases) {
+          const taskStartMs = startD.getTime() + (totalMs * phase.startPct / 100);
+          const taskEndMs = startD.getTime() + (totalMs * phase.endPct / 100);
+          
+          const taskStartStr = new Date(taskStartMs).toISOString().split('T')[0];
+          const taskEndStr = new Date(taskEndMs).toISOString().split('T')[0];
+          
+          const taskId = 't_' + Math.random().toString(36).substr(2, 9);
+          await pool.query(
+            `INSERT INTO tasks (id, project_id, assignee_id, title, description, status, priority, estimated_hours, created_at, start_date, end_date, sprint_id, release_id, story_points, issue_type)
+             VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10, NULL, NULL, 0, 'Task')`,
+            [
+              taskId,
+              id,
+              phase.title,
+              phase.desc,
+              'To Do',
+              'Medium',
+              phase.est,
+              new Date().toISOString(),
+              taskStartStr,
+              taskEndStr
+            ]
+          );
         }
       } else {
         // Normal template tasks for Dev Projects

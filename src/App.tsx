@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { Projects } from './components/Projects';
 import { Timesheet } from './components/Timesheet';
@@ -13,6 +13,8 @@ import { ProjectPlan } from './components/ProjectPlan';
 import { ProjectChat } from './components/ProjectChat';
 import KnowledgeBase from './components/KnowledgeBase';
 import ChatWidget from './components/ChatWidget';
+import { ProjectBoard } from './components/ProjectBoard';
+import { ProjectTimeline } from './components/ProjectTimeline';
 import { mockUsers, mockProjects, mockTasks, mockTimesheets } from './data/mockData';
 import type { User, Project, Task, TimesheetEntry, TaskTemplate, Sprint, Release, PermissionScheme, ProjectWorkflow, CostRate } from './types';
 import { formatToDDMMYYYY } from './utils';
@@ -276,6 +278,8 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
         <nav style={{ padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }} onClick={() => setIsSidebarOpen(false)}>
           <SidebarItem icon={LayoutDashboard} label="แดชบอร์ดโครงการ" path="/" />
           <SidebarItem icon={Briefcase} label="รายชื่อโครงการติดตั้ง" path="/projects" />
+          <SidebarItem icon={Kanban} label="โปรเจกต์บอร์ด" path="/project-board" />
+          <SidebarItem icon={CalendarDays} label="ปฏิทินโปรเจกต์" path="/project-timeline" />
           <SidebarItem icon={CalendarRange} label="แผนงาน / Gantt" path="/project-plan" />
           <SidebarItem icon={CheckSquare} label="ขั้นตอนงาน & QC" path="/tasks" />
           <SidebarItem icon={Clock} label="บันทึกหน้างาน / ช่าง" path="/timesheet" />
@@ -945,6 +949,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard projects={projects} tasks={tasks} timesheets={timesheets} currentUser={currentUser} />} />
           <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} />} />
+          <Route path="/project-board" element={<ProjectBoard projects={projects} setProjects={handleSetProjects} tasks={tasks} users={users} currentUser={currentUser} />} />
+          <Route path="/project-timeline" element={<ProjectTimeline projects={projects} currentUser={currentUser} />} />
           <Route path="/project-plan" element={<ProjectPlan projects={projects} tasks={tasks} setTasks={handleSetTasks} users={users} taskTemplates={taskTemplates} permissionSchemes={permissionSchemes} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
           <Route path="/tasks" element={<Tasks tasks={tasks} setTasks={handleSetTasks} projects={projects} users={users} sprints={sprints} setSprints={handleSetSprints} releases={releases} setReleases={handleSetReleases} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} permissionSchemes={permissionSchemes} currentUser={currentUser} />} />
           <Route path="/timesheet" element={<Timesheet timesheets={timesheets} setTimesheets={handleSetTimesheets} projects={projects} tasks={tasks} currentUser={currentUser} users={users} />} />

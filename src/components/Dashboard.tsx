@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Clock, CheckSquare, Briefcase, AlertTriangle, TrendingUp, Users, ChevronRight, Calendar } from 'lucide-react';
+import { Clock, CheckSquare, Briefcase, AlertTriangle, TrendingUp, Users, ChevronRight, Calendar, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User, Project, Task, TimesheetEntry } from '../types';
 import { formatToDDMMYYYY } from '../utils';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
   projects: Project[];
@@ -162,6 +163,65 @@ export const Dashboard = ({ projects, tasks, timesheets, currentUser }: Dashboar
     return !(s === 'review' || s === 'done' || s === 'pending' || s === 'completed' || s === 'approved');
   };
 
+  const [dashboardMode, setDashboardMode] = useState<'my' | 'company'>('my');
+  const canViewCompanyDashboard = currentUser?.globalRole === 'Admin' || currentUser?.globalRole === 'Manager';
+
+  // Construction-specific calculations
+  const constructionProjects = projects.filter(p => p.projectType === 'construction');
+  
+  const totalProjectValue = constructionProjects.reduce((sum, p) => sum + (p.projectValue || 0), 0);
+  const totalInvoicedValue = constructionProjects.reduce((sum, p) => sum + (p.invoicedValue || 0), 0);
+  const totalCollectedValue = constructionProjects.reduce((sum, p) => sum + (p.collectedValue || 0), 0);
+  const totalPlannedExpense = constructionProjects.reduce((sum, p) => sum + (p.plannedExpense || 0), 0);
+  const totalActualExpense = constructionProjects.reduce((sum, p) => sum + (p.actualExpense || 0), 0);
+
+  const completedProjectsCount = projects.filter(p => p.status === 'Completed' || p.status === 'Project Complete').length;
+  const overdueProjectsCount = projects.filter(p => p.status !== 'Completed' && p.status !== 'Project Complete' && p.endDate && new Date(p.endDate) < today).length;
+  const onScheduleProjectsCount = projects.length - completedProjectsCount - overdueProjectsCount;
+
+  // Expense chart data
+  const expenseChartData = [
+    { name: 'แผนงาน (Planned)', Amount: totalPlannedExpense },
+    { name: 'จริง (Actual)', Amount: totalActualExpense }
+  ];
+
+  // Pipeline count data
+  const pipelineStatuses = [
+    'บันทึกข้อมูลลูกค้า',
+    'Follow up',
+    'ชื่อสำรวจ',
+    'ประสานงาน/สำรวจ',
+    'จ่ายงานให้ QC',
+    'ลูกค้าชำระเงิน',
+    'ลูกค้าสั่งเข้าใบเสนอราคา',
+    'Renovate',
+    'COMPLETE_CONSTRUCTION',
+    'Project Complete'
+  ];
+
+  const pipelineChartData = pipelineStatuses.map(status => ({
+    name: status,
+    จำนวนโครงการ: projects.filter(p => p.status === status).length
+  }));
+
+  const getPlannedProgress = (proj: Project) => {
+    if (proj.status === 'Completed' || proj.status === 'Project Complete') return 100;
+    if (!proj.startDate) return 0;
+    const start = new Date(proj.startDate).getTime();
+    const end = proj.endDate ? new Date(proj.endDate).getTime() : new Date().getTime();
+    const total = end - start;
+    if (total <= 0) return 0;
+    const elapsed = Date.now() - start;
+    return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
+  };
+
+  const getActualProgress = (projectId: string) => {
+    const projTasks = tasks.filter(t => t.projectId === projectId && !t.parentId);
+    if (projTasks.length === 0) return 0;
+    const done = projTasks.filter(t => t.status === 'Done').length;
+    return Math.round((done / projTasks.length) * 100);
+  };
+
   // --- Project health ---
   const projectHealth = projects.map(proj => {
     const projTasks = tasks.filter(t => t.projectId === proj.id);
@@ -189,17 +249,63 @@ export const Dashboard = ({ projects, tasks, timesheets, currentUser }: Dashboar
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-        <h1 className="text-gradient" style={{ fontSize: '1.875rem', fontWeight: 700, margin: 0 }}>
-          Good {getGreeting()}, {currentUser.name} 👋
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-          <Calendar size={14} />
-          {formatDate(new Date())}
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <h1 className="text-gradient" style={{ fontSize: '1.875rem', fontWeight: 700, margin: 0 }}>
+            Good {getGreeting()}, {currentUser.name} 👋
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+            <Calendar size={14} />
+            {formatDate(new Date())}
+          </p>
+        </div>
+
+        {/* Mode Switcher */}
+        {canViewCompanyDashboard && (
+          <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+            <button
+              onClick={() => setDashboardMode('my')}
+              style={{
+                padding: '0.45rem 1rem',
+                border: 'none',
+                borderRadius: '6px',
+                background: dashboardMode === 'my' ? 'var(--accent-primary)' : 'transparent',
+                color: dashboardMode === 'my' ? 'white' : 'var(--text-secondary)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <Users size={12} /> หน้างานส่วนตัว (My Tasks)
+            </button>
+            <button
+              onClick={() => setDashboardMode('company')}
+              style={{
+                padding: '0.45rem 1rem',
+                border: 'none',
+                borderRadius: '6px',
+                background: dashboardMode === 'company' ? 'var(--accent-primary)' : 'transparent',
+                color: dashboardMode === 'company' ? 'white' : 'var(--text-secondary)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <BarChart3 size={12} /> ภาพรวมบริษัท (Company Dashboard)
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* ── Hero Stats Row ── */}
+      {dashboardMode === 'my' && <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
         {/* Active Projects */}
         <div className="hover-lift" style={heroCardStyle('rgba(16,185,129,0.08)', 'rgba(16,185,129,0.35)')}>
@@ -582,6 +688,235 @@ export const Dashboard = ({ projects, tasks, timesheets, currentUser }: Dashboar
           )}
         </div>
       </div>
+      </>}
+
+      {dashboardMode === 'company' &&
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          
+          {/* Executive KPI Cards Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+            
+            {/* Total Projects */}
+            <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderLeft: '4px solid var(--accent-primary)' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>โครงการทั้งหมด (Total Projects)</span>
+              <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{projects.length}</span>
+            </div>
+
+            {/* On Schedule */}
+            <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderLeft: '4px solid #10b981' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>ดำเนินงานปกติ (On Schedule)</span>
+              <span style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>{onScheduleProjectsCount}</span>
+            </div>
+
+            {/* Overdue */}
+            <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderLeft: '4px solid #ef4444' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>ล่าช้าเกินกำหนด (Overdue)</span>
+              <span style={{ fontSize: '2rem', fontWeight: 800, color: '#ef4444' }}>{overdueProjectsCount}</span>
+            </div>
+
+            {/* Completed */}
+            <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderLeft: '4px solid #8b5cf6' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>ส่งมอบแล้วเสร็จ (Completed)</span>
+              <span style={{ fontSize: '2rem', fontWeight: 800, color: '#8b5cf6' }}>{completedProjectsCount}</span>
+            </div>
+
+          </div>
+
+          {/* Charts Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            
+            {/* Target Achievement SVG gauge */}
+            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '340px' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>เป้าหมายยอดขายและการเก็บเงิน (Target Achievement)</h3>
+              
+              <div style={{ display: 'flex', flexGrow: 1, alignItems: 'center', justifyContent: 'space-around', gap: '1rem' }}>
+                {/* SVG Double Circular progress rings */}
+                <div style={{ position: 'relative', width: '160px', height: '160px' }}>
+                  <svg width="100%" height="100%" viewBox="0 0 100 100">
+                    {/* Background rings */}
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="rgba(255,255,255,0.04)" strokeWidth="6" />
+                    <circle cx="50" cy="50" r="30" fill="transparent" stroke="rgba(255,255,255,0.04)" strokeWidth="6" />
+                    
+                    {/* Outer Billed vs Value Ring */}
+                    <circle 
+                      cx="50" 
+                      cy="50" 
+                      r="40" 
+                      fill="transparent" 
+                      stroke="#3b82f6" 
+                      strokeWidth="6" 
+                      strokeDasharray={`${totalProjectValue > 0 ? (totalInvoicedValue / totalProjectValue) * 251.2 : 0} 251.2`}
+                      strokeLinecap="round"
+                      transform="rotate(-90 50 50)"
+                    />
+
+                    {/* Inner Collected vs Billed Ring */}
+                    <circle 
+                      cx="50" 
+                      cy="50" 
+                      r="30" 
+                      fill="transparent" 
+                      stroke="#10b981" 
+                      strokeWidth="6" 
+                      strokeDasharray={`${totalInvoicedValue > 0 ? (totalCollectedValue / totalInvoicedValue) * 188.4 : 0} 188.4`}
+                      strokeLinecap="round"
+                      transform="rotate(-90 50 50)"
+                    />
+                  </svg>
+
+                  {/* Centered label */}
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>
+                      {totalProjectValue > 0 ? Math.round((totalCollectedValue / totalProjectValue) * 100) : 0}%
+                    </span>
+                    <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>เก็บเงินสำเร็จ</span>
+                  </div>
+                </div>
+
+                {/* Legend list details */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flexGrow: 1 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#a78bfa' }} />
+                      มูลค่าเป้าหมาย (Value):
+                    </span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#a78bfa', marginLeft: '0.8rem' }}>
+                      ฿{totalProjectValue.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }} />
+                      เรียกเก็บเงินแล้ว (Billed):
+                    </span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#3b82f6', marginLeft: '0.8rem' }}>
+                      ฿{totalInvoicedValue.toLocaleString()} ({totalProjectValue > 0 ? Math.round((totalInvoicedValue / totalProjectValue) * 100) : 0}%)
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+                      ยอดเก็บเงินจริง (Collected):
+                    </span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981', marginLeft: '0.8rem' }}>
+                      ฿{totalCollectedValue.toLocaleString()} ({totalInvoicedValue > 0 ? Math.round((totalCollectedValue / totalInvoicedValue) * 100) : 0}%)
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Planned vs Actual Cost Chart */}
+            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '340px' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>เปรียบเทียบค่าใช้จ่ายแผน/จริง (Planned vs Actual Cost)</h3>
+              
+              <div style={{ flex: 1, width: '100%', height: '220px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={expenseChartData} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                    <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={12} />
+                    <YAxis tickFormatter={val => `฿${(val / 1000).toFixed(0)}k`} stroke="var(--text-secondary)" fontSize={11} />
+                    <Tooltip formatter={val => [`฿${Number(val).toLocaleString()}`, 'จำนวนเงิน']} contentStyle={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }} />
+                    <Bar dataKey="Amount" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.5rem' }}>
+                <span>ส่วนต่างค่าใช้จ่ายสะสม (Cost Variance):</span>
+                <span style={{ fontWeight: 700, color: totalPlannedExpense - totalActualExpense >= 0 ? '#10b981' : '#ef4444' }}>
+                  ฿{(totalPlannedExpense - totalActualExpense).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Pipeline Stage Stacked Chart */}
+            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '340px' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>สถานะโครงการติดตั้งติดตั้งรวม (Pipeline Stage Projects)</h3>
+              
+              <div style={{ flex: 1, width: '100%', height: '240px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={pipelineChartData} layout="vertical" margin={{ top: 5, right: 10, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" />
+                    <XAxis type="number" stroke="var(--text-secondary)" fontSize={10} />
+                    <YAxis dataKey="name" type="category" stroke="var(--text-secondary)" fontSize={9} width={100} />
+                    <Tooltip contentStyle={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)' }} />
+                    <Bar dataKey="จำนวนโครงการ" fill="var(--accent-primary)" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Project List Table */}
+          <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0 }}>ตารางงบประมาณและข้อมูลความคืบหน้าโครงการติดตั้ง</h3>
+            
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>ชื่อโครงการติดตั้ง</th>
+                    <th style={{ padding: '0.75rem 0.5rem' }}>สถานะ</th>
+                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>ความคืบหน้าแผน (%)</th>
+                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>ความคืบหน้าจริง (%)</th>
+                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>ผลต่างความต่าง (%)</th>
+                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>งบประมาณแผน (Planned)</th>
+                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>ค่าใช้จ่ายจริง (Actual)</th>
+                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>ส่วนต่างสะสม (Variance)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {constructionProjects.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        ไม่มีโครงการประเภทงานติดตั้ง/ก่อสร้างในระบบ
+                      </td>
+                    </tr>
+                  ) : (
+                    constructionProjects.map(proj => {
+                      const planned = getPlannedProgress(proj);
+                      const actual = getActualProgress(proj.id);
+                      const variance = actual - planned;
+                      const costVar = (proj.plannedExpense || 0) - (proj.actualExpense || 0);
+
+                      return (
+                        <tr key={proj.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                          <td style={{ padding: '0.85rem 0.5rem', fontWeight: 600 }}>{proj.name}</td>
+                          <td style={{ padding: '0.85rem 0.5rem' }}>
+                            <span style={{
+                              fontSize: '0.7rem',
+                              background: 'rgba(255,255,255,0.05)',
+                              color: 'var(--text-secondary)',
+                              padding: '0.15rem 0.45rem',
+                              borderRadius: '4px',
+                              fontWeight: 600
+                            }}>{proj.status}</span>
+                          </td>
+                          <td style={{ padding: '0.85rem 0.5rem', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)' }}>{planned}%</td>
+                          <td style={{ padding: '0.85rem 0.5rem', textAlign: 'center', fontWeight: 600, color: 'var(--accent-primary)' }}>{actual}%</td>
+                          <td style={{ padding: '0.85rem 0.5rem', textAlign: 'center', fontWeight: 700, color: variance >= 0 ? '#10b981' : '#ef4444' }}>
+                            {variance > 0 ? `+${variance}` : variance}%
+                          </td>
+                          <td style={{ padding: '0.85rem 0.5rem', textAlign: 'right' }}>฿{(proj.plannedExpense || 0).toLocaleString()}</td>
+                          <td style={{ padding: '0.85rem 0.5rem', textAlign: 'right' }}>฿{(proj.actualExpense || 0).toLocaleString()}</td>
+                          <td style={{ padding: '0.85rem 0.5rem', textAlign: 'right', fontWeight: 700, color: costVar >= 0 ? '#10b981' : '#ef4444' }}>
+                            ฿{costVar.toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      }
     </div>
   );
 };
