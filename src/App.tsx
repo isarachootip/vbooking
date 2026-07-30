@@ -233,6 +233,8 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
+    document.body.className = `${theme}-theme`;
     localStorage.setItem('app_theme', theme);
   }, [theme]);
 
