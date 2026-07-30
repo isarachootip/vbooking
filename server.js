@@ -1562,8 +1562,8 @@ app.post('/api/projects', async (req, res) => {
          project_value = EXCLUDED.project_value,
          invoiced_value = EXCLUDED.invoiced_value,
          collected_value = EXCLUDED.collected_value,
-         plannedExpense = EXCLUDED.planned_expense,
-         actualExpense = EXCLUDED.actual_expense,
+         planned_expense = EXCLUDED.planned_expense,
+         actual_expense = EXCLUDED.actual_expense,
          extra_details = EXCLUDED.extra_details`,
       [
         id, 
