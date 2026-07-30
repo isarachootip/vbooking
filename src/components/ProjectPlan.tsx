@@ -578,9 +578,9 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
               onClick={() => setIsBaselineModalOpen(true)} 
               className="hover-lift" 
               style={{ 
-                background: 'rgba(255,255,255,0.06)', 
-                color: 'white', 
-                border: '1px solid rgba(255,255,255,0.12)', 
+                background: 'var(--bg-secondary)', 
+                color: 'var(--text-primary)', 
+                border: '1px solid var(--border-color)', 
                 padding: '0.6rem 1.25rem', 
                 borderRadius: '8px', 
                 fontWeight: 600, 
@@ -671,9 +671,9 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
           {compareData && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <BarChart3 size={18} color="#38bdf8" />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>
-                  Comparison Variance: <span style={{ color: '#10b981' }}>{compareData.baseBaseline.name}</span> vs <span style={{ color: '#38bdf8' }}>{compareData.compareBaseline.name}</span>
+                <BarChart3 size={18} color="var(--accent-secondary)" />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Comparison Variance: <span style={{ color: 'var(--accent-primary)' }}>{compareData.baseBaseline.name}</span> vs <span style={{ color: 'var(--accent-secondary)' }}>{compareData.compareBaseline.name}</span>
                 </h3>
               </div>
 
@@ -813,42 +813,42 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
           {/* ─── Summary Cards ─── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
             {/* Duration */}
-            <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(99,102,241,0.08) 100%)', border: '1px solid rgba(99,102,241,0.35)', borderRadius: '14px', padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Calendar size={22} color="#818cf8" />
+            <div className="glass-panel hover-lift" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Calendar size={22} color="#6366f1" />
               </div>
               <div>
-                <p style={{ fontSize: '0.8rem', color: '#a5b4fc', marginBottom: '0.2rem' }}>Project Duration</p>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>{totalDays} Days</h3>
-                <p style={{ fontSize: '0.75rem', color: '#c7d2fe', marginTop: '0.1rem' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>Project Duration</p>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>{totalDays} Days</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
                   {formatToDDMMYYYY(project.startDate)} → {project.endDate ? formatToDDMMYYYY(project.endDate) : 'Ongoing'}
                 </p>
               </div>
             </div>
 
             {/* Progress */}
-            <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.25) 0%, rgba(16,185,129,0.08) 100%)', border: '1px solid rgba(16,185,129,0.35)', borderRadius: '14px', padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16,185,129,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="glass-panel hover-lift" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CheckCircle2 size={22} color="#10b981" />
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '0.8rem', color: '#6ee7b7', marginBottom: '0.2rem' }}>Milestones Progress</p>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>{overallProgress}% Done</h3>
-                <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', marginTop: '0.4rem', overflow: 'hidden' }}>
-                  <div style={{ width: `${overallProgress}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #6ee7b7)', borderRadius: '3px', transition: 'width 0.4s ease' }} />
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>Milestones Progress</p>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>{overallProgress}% Done</h3>
+                <div style={{ width: '100%', height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', marginTop: '0.4rem', overflow: 'hidden' }}>
+                  <div style={{ width: `${overallProgress}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #059669)', borderRadius: '3px', transition: 'width 0.4s ease' }} />
                 </div>
               </div>
             </div>
 
             {/* Total milestones */}
-            <div style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.25) 0%, rgba(14,165,233,0.08) 100%)', border: '1px solid rgba(14,165,233,0.35)', borderRadius: '14px', padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(14,165,233,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Clock size={22} color="#38bdf8" />
+            <div className="glass-panel hover-lift" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(14,165,233,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Clock size={22} color="#0284c7" />
               </div>
               <div>
-                <p style={{ fontSize: '0.8rem', color: '#7dd3fc', marginBottom: '0.2rem' }}>Total Milestones</p>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'white' }}>{projectMilestones.length} Main Tasks</h3>
-                <p style={{ fontSize: '0.75rem', color: '#bae6fd', marginTop: '0.1rem' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.2rem', fontWeight: 600 }}>Total Milestones</p>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)' }}>{projectMilestones.length} Main Tasks</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
                   {tasks.filter(t => t.projectId === selectedProjectId && !!t.parentId).length} subtasks total
                 </p>
               </div>
@@ -881,13 +881,13 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
 
           {/* ─── Gantt Chart ─── */}
           {projectMilestones.length > 0 && (
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1.5rem', overflowX: 'auto' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'white' }}>📅 Proportional Gantt Timeline</h3>
+            <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.5rem', overflowX: 'auto' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.25rem', color: 'var(--text-primary)' }}>📅 Proportional Gantt Timeline</h3>
               <div style={{ minWidth: '700px' }}>
                 {/* Date header */}
-                <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                  <div style={{ width: '240px', fontSize: '0.85rem', color: '#9ca3af', fontWeight: 600 }}>Milestone</div>
-                  <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#6b7280', paddingLeft: '1rem' }}>
+                <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                  <div style={{ width: '240px', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 700 }}>Milestone</div>
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, paddingLeft: '1rem' }}>
                     {ticks.map((t, i) => <span key={i}>{t}</span>)}
                   </div>
                 </div>
@@ -928,16 +928,16 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
                       const delayDays = compTask ? compTask.variance.endDelayDays : 0;
                       
                       return (
-                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.75rem' }}>
+                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
                           {/* Label */}
                           <div style={{ width: '240px', display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: progress === 100 ? '#10b981' : 'white', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', textShadow: progress === 100 ? '0 0 8px rgba(16,185,129,0.3)' : 'none' }} title={m.title}>
+                            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: progress === 100 ? '#059669' : 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }} title={m.title}>
                               {progress === 100 && (
-                                <Check size={18} color="#10b981" strokeWidth={3.5} style={{ flexShrink: 0, filter: 'drop-shadow(0 0 3px rgba(16,185,129,0.4))' }} />
+                                <Check size={16} color="#059669" strokeWidth={3.5} style={{ flexShrink: 0 }} />
                               )}
                               {m.title}
                             </span>
-                            <span style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: '0.1rem' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem', fontWeight: 500 }}>
                               {subtasks.length} subtasks · Est: {compTask?.compare?.estimatedHours ?? m.estimatedHours}h vs Base: {compTask?.base?.estimatedHours ?? 0}h
                             </span>
                           </div>
@@ -1021,35 +1021,35 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
                         </div>
                       );
                     } else {
-                      // Normal single bar Gantt row (as originally implemented)
+                      // Normal single bar Gantt row
                       const taskStart = m.startDate ? new Date(m.startDate).getTime() : projStart;
                       const taskEnd = m.endDate ? new Date(m.endDate).getTime() : projEnd;
                       const leftOffset = projDuration > 0 ? Math.max(0, Math.min(100, ((taskStart - projStart) / projDuration) * 100)) : 0;
                       const widthVal = projDuration > 0 ? Math.max(2, Math.min(100 - leftOffset, ((taskEnd - taskStart) / projDuration) * 100)) : 100;
                       
                       return (
-                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.65rem' }}>
+                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.65rem' }}>
                           <div style={{ width: '240px', display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: progress === 100 ? '#10b981' : 'white', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.45rem', textShadow: progress === 100 ? '0 0 8px rgba(16,185,129,0.3)' : 'none' }} title={m.title}>
+                            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: progress === 100 ? '#059669' : 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }} title={m.title}>
                               {progress === 100 && (
-                                <Check size={18} color="#10b981" strokeWidth={3.5} style={{ flexShrink: 0, filter: 'drop-shadow(0 0 3px rgba(16,185,129,0.4))' }} />
+                                <Check size={16} color="#059669" strokeWidth={3.5} style={{ flexShrink: 0 }} />
                               )}
                               {m.title}
                             </span>
-                            <span style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: '0.1rem' }}>{subtasks.length} subtasks · {m.estimatedHours}h</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem', fontWeight: 500 }}>{subtasks.length} subtasks · {m.estimatedHours}h</span>
                           </div>
                           <div style={{ flex: 1, position: 'relative', height: '34px', marginLeft: '1rem' }}>
                             <div style={{
                               position: 'absolute', left: `${leftOffset}%`, width: `${widthVal}%`, height: '28px', top: '3px',
-                              background: 'rgba(99,102,241,0.15)', border: `2px solid ${getPriorityColor(m.priority)}`,
+                              background: 'var(--bg-tertiary)', border: `2px solid ${getPriorityColor(m.priority)}`,
                               borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', padding: '0 8px',
                             }} title={`${m.title}: ${m.startDate || 'TBD'} → ${m.endDate || 'TBD'}`}>
-                              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${progress}%`, background: getPriorityColor(m.priority), opacity: 0.2 }} />
+                              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${progress}%`, background: getPriorityColor(m.priority), opacity: 0.85 }} />
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', zIndex: 1 }}>
                                 {progress === 100 && (
-                                  <Check size={14} color="#10b981" strokeWidth={3.5} style={{ filter: 'drop-shadow(0 0 4px rgba(16,185,129,0.8))' }} />
+                                  <Check size={14} color="white" strokeWidth={3.5} />
                                 )}
-                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: progress === 100 ? '#10b981' : 'white' }}>{progress}%</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>{progress}% (Comp)</span>
                               </div>
                             </div>
                           </div>
@@ -1064,9 +1064,9 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
 
           {/* ─── Milestones Detail Table with CRUD ─── */}
           {projectMilestones.length > 0 && (
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1.5rem' }}>
+            <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>📋 Milestones & Subtasks</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>📋 Milestones & Subtasks</h3>
                 <button 
                   disabled={true} 
                   style={{ 
