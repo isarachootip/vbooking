@@ -19,6 +19,7 @@ import { ProjectTimeline } from './components/ProjectTimeline';
 import { mockUsers, mockProjects, mockTasks, mockTimesheets } from './data/mockData';
 import type { User, Project, Task, TimesheetEntry, TaskTemplate, Sprint, Release, PermissionScheme, ProjectWorkflow, CostRate } from './types';
 import { formatToDDMMYYYY } from './utils';
+import { useLanguage } from './i18n/LanguageContext';
 import './index.css';
 
 // --- Helper to use LocalStorage with fallback ---
@@ -227,6 +228,7 @@ const MobileBottomNav = () => {
 const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React.ReactNode, currentUser: User, tasks: Task[], onLogout: () => void }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [chatNotifications, setChatNotifications] = useState<any[]>([]);
+  const { lang, toggleLang, t } = useLanguage();
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('app_theme') as 'light' | 'dark') || 'light';
   });
@@ -291,19 +293,19 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
         </div>
         
         <nav style={{ padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }} onClick={() => setIsSidebarOpen(false)}>
-          <SidebarItem icon={LayoutDashboard} label="แดชบอร์ดโครงการ" path="/" />
-          <SidebarItem icon={Briefcase} label="รายชื่อโครงการติดตั้ง" path="/projects" />
-          <SidebarItem icon={Kanban} label="โปรเจกต์บอร์ด" path="/project-board" />
-          <SidebarItem icon={CalendarDays} label="ปฏิทินโปรเจกต์" path="/project-timeline" />
-          <SidebarItem icon={CalendarRange} label="แผนงาน / Gantt" path="/project-plan" />
-          <SidebarItem icon={CheckSquare} label="ขั้นตอนงาน & QC" path="/tasks" />
-          <SidebarItem icon={Clock} label="บันทึกหน้างาน / ช่าง" path="/timesheet" />
-          <SidebarItem icon={MapPin} label="เช็คอิน / เช็คเอาท์ช่าง" path="/checkin-checkout" />
-          <SidebarItem icon={MessageSquare} label="แชทติดต่อช่าง" path="/chat" badgeCount={unreadChatCount} />
-          <SidebarItem icon={Users} label="ช่างติดตั้ง & ทีมงาน" path="/team" />
-          <SidebarItem icon={BarChart3} label="สรุปงบประมาณและต้นทุน" path="/reports" />
-          <SidebarItem icon={SettingsIcon} label="ตั้งค่าระบบ" path="/settings" />
-          <SidebarItem icon={HelpCircle} label="คู่มือระบบ BuildFlow" path="/help" />
+          <SidebarItem icon={LayoutDashboard} label={t.dashboard} path="/" />
+          <SidebarItem icon={Briefcase} label={t.projects} path="/projects" />
+          <SidebarItem icon={Kanban} label={t.projectBoard} path="/project-board" />
+          <SidebarItem icon={CalendarDays} label={t.projectTimeline} path="/project-timeline" />
+          <SidebarItem icon={CalendarRange} label={t.projectPlan} path="/project-plan" />
+          <SidebarItem icon={CheckSquare} label={t.tasks} path="/tasks" />
+          <SidebarItem icon={Clock} label={t.timesheet} path="/timesheet" />
+          <SidebarItem icon={MapPin} label={t.siteCheckInOut} path="/checkin-checkout" />
+          <SidebarItem icon={MessageSquare} label={t.chat} path="/chat" badgeCount={unreadChatCount} />
+          <SidebarItem icon={Users} label={t.team} path="/team" />
+          <SidebarItem icon={BarChart3} label={t.reports} path="/reports" />
+          <SidebarItem icon={SettingsIcon} label={t.settings} path="/settings" />
+          <SidebarItem icon={HelpCircle} label={t.help} path="/help" />
         </nav>
 
         <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
@@ -333,18 +335,26 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button 
+              onClick={toggleLang}
+              className="glass-panel hover-lift"
+              title="Switch Language (TH / EN)"
+              style={{ padding: '0.5rem 0.85rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', outline: 'none', fontSize: '0.85rem', fontWeight: 600 }}
+            >
+              <span>{lang === 'th' ? '🇹🇭 TH' : '🇬🇧 EN'}</span>
+            </button>
+            <button 
               onClick={toggleTheme} 
               className="glass-panel hover-lift" 
               title={theme === 'light' ? 'สลับเป็น Theme มืด (Dark Mode)' : 'สลับเป็น Theme สว่าง (Light Mode)'}
               style={{ padding: '0.5rem 0.85rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', outline: 'none', fontSize: '0.85rem', fontWeight: 500 }}
             >
               {theme === 'light' ? <Sun size={18} color="#f59e0b" /> : <Moon size={18} color="#00F5FF" />}
-              <span className="hide-mobile" style={{ fontSize: '0.875rem' }}>{theme === 'light' ? 'ธีมสว่าง' : 'ธีมมืด'}</span>
+              <span className="hide-mobile" style={{ fontSize: '0.875rem' }}>{theme === 'light' ? t.themeLight : t.themeDark}</span>
             </button>
             <NotificationBell tasks={tasks} currentUser={currentUser} />
             <Link to="/settings" className="glass-panel hover-lift" style={{ padding: '0.5rem 1rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', outline: 'none', textDecoration: 'none' }}>
               <SettingsIcon size={18} />
-              <span className="hide-mobile" style={{ fontSize: '0.875rem' }}>Settings</span>
+              <span className="hide-mobile" style={{ fontSize: '0.875rem' }}>{t.settings}</span>
             </Link>
           </div>
         </header>
