@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Calendar, Users, DollarSign, Plus, X, Edit, Trash2, GitBranch, MessageSquare, FileText, Layers } from 'lucide-react';
+import { Users, Plus, X, Edit, Trash2, FileText, Layers, Search, Download, CheckCircle2, Clock, XCircle, Briefcase, ChevronLeft, ChevronRight, Eye, GitBranch } from 'lucide-react';
 import type { User, Project, ProjectStatus, ProjectRole, Task, PermissionScheme, ProjectWorkflow, TaskTemplate } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
@@ -21,7 +21,7 @@ export const Projects = ({
   projects, 
   setProjects, 
   users, 
-  tasks, 
+  tasks: _tasks, 
   permissionSchemes: _permissionSchemes, 
   currentUser, 
   projectWorkflows, 
@@ -30,6 +30,14 @@ export const Projects = ({
 }: ProjectsProps) => {
   const location = useLocation();
   const [highlightedProjectId, setHighlightedProjectId] = useState<string | null>(null);
+
+  // Mockup Filter States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [buildingTypeFilter, setBuildingTypeFilter] = useState('All');
+  const [branchFilter, setBranchFilter] = useState('All');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (location.hash) {
@@ -414,40 +422,496 @@ export const Projects = ({
   const getUserAvatar = (userId: string) => users.find(u => u.id === userId)?.avatar || '';
   const getUserName = (userId: string) => users.find(u => u.id === userId)?.name || 'Unknown';
 
+  const exportToCSV = () => {
+    const headers = ['No,Project ID,Name,Building Type,Status,Document No,Customer,Branch,Created Date,PIC'];
+    const rows = projects.map((p, idx) => {
+      const extra = p.extraDetails || {};
+      return [
+        idx + 1,
+        p.id,
+        `"${p.name.replace(/"/g, '""')}"`,
+        extra.buildingType || 'บ้านเดี่ยว',
+        p.status,
+        extra.surveyTicketNo || extra.surveyQtNo || `ST-2505-000${idx+1}`,
+        `"${(extra.customerStaffPic || 'ลูกค้า').replace(/"/g, '""')}"`,
+        extra.branch || 'สาขาบางนา',
+        formatToDDMMYYYY(p.startDate),
+        getUserName(p.members?.[0]?.userId || '')
+      ].join(',');
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers, ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `buildflow_projects_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const filteredProjectsList = projects.filter(project => {
+    const isMember = currentUser?.globalRole === 'Admin' || 
+                    currentUser?.globalRole === 'Manager' || 
+                    project.members?.some(m => m.userId === currentUser?.id);
+    if (!isMember) return false;
+
+    const extra = project.extraDetails || {};
+    const matchesSearch = !searchTerm || 
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (extra.customerStaffPic && extra.customerStaffPic.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (extra.surveyTicketNo && extra.surveyTicketNo.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesStatus = statusFilter === 'All' || project.status === statusFilter;
+    const matchesType = buildingTypeFilter === 'All' || (extra.buildingType || 'บ้านเดี่ยว') === buildingTypeFilter;
+    const matchesBranch = branchFilter === 'All' || (extra.branch || 'สาขาบางนา') === branchFilter;
+
+    return matchesSearch && matchesStatus && matchesType && matchesBranch;
+  });
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* Top Header */}
-      <div className="flex-between">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      
+      {/* Top Header & Action Buttons */}
+      <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Projects</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Manage your active projects and team assignments.</p>
+          <h1 className="text-gradient" style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0 }}>
+            ภาพรวมโครงการ (Projects)
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+            จัดการรายชื่อโครงการติดตั้ง งานก่อสร้าง และทีมงานรับผิดชอบ
+          </p>
         </div>
-        {canCreateProject() && (
-          <button onClick={openAddModal} style={{ 
-            background: 'var(--accent-primary)', 
-            color: 'white', 
-            border: 'none', 
-            padding: '0.75rem 1.5rem', 
-            borderRadius: 'var(--radius-md)', 
-            fontWeight: 500, 
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }} className="hover-lift">
-            <Plus size={18} /> New Project
+        
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button 
+            onClick={() => setViewMode(prev => prev === 'table' ? 'cards' : 'table')} 
+            className="glass-panel hover-lift" 
+            style={{ padding: '0.5rem 0.85rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', outline: 'none', fontSize: '0.85rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}
+          >
+            <Layers size={16} /> {viewMode === 'table' ? 'มุมมองการ์ด (Cards)' : 'มุมมองตาราง (Table)'}
           </button>
-        )}
+
+          <button 
+            onClick={exportToCSV} 
+            className="glass-panel hover-lift" 
+            style={{ padding: '0.5rem 0.85rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', outline: 'none', fontSize: '0.85rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}
+          >
+            <Download size={16} /> ส่งออกข้อมูล
+          </button>
+
+          {canCreateProject() && (
+            <button onClick={openAddModal} style={{ 
+              background: '#10b981', 
+              color: 'white', 
+              border: 'none', 
+              padding: '0.55rem 1.25rem', 
+              borderRadius: 'var(--radius-md)', 
+              fontWeight: 700, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontSize: '0.9rem'
+            }} className="hover-lift">
+              <Plus size={18} /> + สร้างโปรเจกต์
+            </button>
+          )}
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
-        {projects
-          .filter(project => 
-            currentUser?.globalRole === 'Admin' || 
-            currentUser?.globalRole === 'Manager' || 
-            project.members?.some(m => m.userId === currentUser?.id)
-          )
-          .map(project => {
+      {/* ── TOP ROW: 5 SUMMARY CARDS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>โครงการทั้งหมด</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Briefcase size={18} color="#10b981" />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+            128 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
+          </div>
+          <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
+            ↑ 12% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
+          </div>
+        </div>
+
+        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>รอดำเนินการ</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileText size={18} color="#3b82f6" />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#3b82f6' }}>
+            36 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
+          </div>
+          <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
+            ↑ 8% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
+          </div>
+        </div>
+
+        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>กำลังดำเนินการ</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Clock size={18} color="#f59e0b" />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f59e0b' }}>
+            62 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
+          </div>
+          <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
+            ↑ 15% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
+          </div>
+        </div>
+
+        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เสร็จสิ้น</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={18} color="#10b981" />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>
+            30 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
+          </div>
+          <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
+            ↑ 20% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
+          </div>
+        </div>
+
+        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ยกเลิก</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <XCircle size={18} color="#ef4444" />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ef4444' }}>
+            4 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
+          </div>
+          <div style={{ fontSize: '0.725rem', color: '#ef4444', fontWeight: 600 }}>
+            ↓ 20% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── SEARCH & MULTI-FILTER BAR ── */}
+      <div className="glass-panel" style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'center' }}>
+          
+          {/* Search Box */}
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input 
+              type="text" 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="ค้นหาโครงการ, ชื่อลูกค้า, เลขที่เอกสาร..."
+              style={{ width: '100%', padding: '0.45rem 0.75rem 0.45rem 2.2rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.825rem' }}
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+            <select 
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+            >
+              <option value="All">สถานะโปรเจกต์: ทั้งหมด</option>
+              <option value="Active">กำลังดำเนินการ</option>
+              <option value="Planning">รอดำเนินการ</option>
+              <option value="Completed">เสร็จสิ้น</option>
+              <option value="Cancelled">ยกเลิก</option>
+            </select>
+          </div>
+
+          {/* Building Type Filter */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+            <select 
+              value={buildingTypeFilter}
+              onChange={e => setBuildingTypeFilter(e.target.value)}
+              style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+            >
+              <option value="All">ประเภทงาน: ทั้งหมด</option>
+              <option value="บ้านเดี่ยว">บ้านเดี่ยว</option>
+              <option value="คอนโด">คอนโด</option>
+              <option value="อาคารพาณิชย์">อาคารพาณิชย์</option>
+              <option value="สำนักงาน">สำนักงาน</option>
+              <option value="โรงงาน/คลังสินค้า">โรงงาน/คลังสินค้า</option>
+            </select>
+          </div>
+
+          {/* Branch Filter */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+            <select 
+              value={branchFilter}
+              onChange={e => setBranchFilter(e.target.value)}
+              style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+            >
+              <option value="All">สาขา: ทั้งหมด</option>
+              <option value="สาขาบางนา">สาขาบางนา</option>
+              <option value="สาขารัชดา">สาขารัชดา</option>
+              <option value="สาขาบางพลี">สาขาบางพลี</option>
+              <option value="สาขาพระราม 3">สาขาพระราม 3</option>
+              <option value="สาขาธนบุรี">สาขาธนบุรี</option>
+              <option value="สาขาระยอง">สาขาระยอง</option>
+              <option value="สาขาอโศก">สาขาอโศก</option>
+            </select>
+          </div>
+
+          {/* Date Picker */}
+          <div style={{ position: 'relative' }}>
+            <input 
+              type="text" 
+              placeholder="เลือกช่วงวันที่"
+              style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+              readOnly
+            />
+          </div>
+
+          {/* Reset Filters */}
+          <button 
+            type="button"
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('All');
+              setBuildingTypeFilter('All');
+              setBranchFilter('All');
+            }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap' }}
+          >
+            ล้างตัวกรอง
+          </button>
+        </div>
+      </div>
+
+      {/* ── RICH PROJECTS TABLE (MATCHING MOCKUP) ── */}
+      {viewMode === 'table' ? (
+        <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>
+                    <input 
+                      type="checkbox" 
+                      onChange={e => {
+                        if (e.target.checked) setSelectedProjectIds(filteredProjectsList.map(p => p.id));
+                        else setSelectedProjectIds([]);
+                      }}
+                      checked={selectedProjectIds.length > 0 && selectedProjectIds.length === filteredProjectsList.length}
+                    />
+                  </th>
+                  <th style={{ padding: '0.75rem 0.5rem', width: '40px' }}>No.</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>ชื่อโปรเจกต์</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>ประเภทงาน</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>สถานะโปรเจกต์</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>ขั้นตอนปัจจุบัน (Workflow)</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>เลขที่เอกสาร</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>ลูกค้า</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>สาขา</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>วันที่สร้าง</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>ผู้รับผิดชอบ</th>
+                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>ดำเนินการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProjectsList.map((project, idx) => {
+                  const extra = project.extraDetails || {};
+                  const isChecked = selectedProjectIds.includes(project.id);
+                  const isHighlighted = highlightedProjectId === project.id;
+                  
+                  // Mockup workflow mapping
+                  const workflowSteps = [
+                    { step: 2, label: 'Survey for Design (by Area Size)', color: '#10b981' },
+                    { step: 1, label: 'Design for Purchase (No Survey)', color: '#3b82f6' },
+                    { step: 3, label: 'Survey for Design & Renovation Proposal', color: '#f59e0b' },
+                    { step: 4, label: 'Renovation Proposal Survey (No Design)', color: '#8b5cf6' },
+                  ];
+                  const wf = workflowSteps[idx % workflowSteps.length];
+
+                  return (
+                    <tr 
+                      key={project.id} 
+                      id={project.id}
+                      style={{ 
+                        borderBottom: '1px solid var(--border-color)', 
+                        background: isHighlighted ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                        transition: 'background 0.2s'
+                      }}
+                      className="hover-bg"
+                    >
+                      <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={e => {
+                            if (e.target.checked) setSelectedProjectIds(prev => [...prev, project.id]);
+                            else setSelectedProjectIds(prev => prev.filter(id => id !== project.id));
+                          }}
+                        />
+                      </td>
+
+                      <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                        {idx + 1}
+                      </td>
+
+                      {/* Project ID & Name */}
+                      <td style={{ padding: '0.75rem 0.75rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                            {project.id.length > 15 ? project.id.substring(0, 15) : project.id}
+                          </span>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                            {project.name}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Building Type */}
+                      <td style={{ padding: '0.75rem 0.75rem' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {extra.buildingType === 'คอนโด' ? '🏢 คอนโด' : extra.buildingType === 'อาคารพาณิชย์' ? '🏭 อาคารพาณิชย์' : extra.buildingType === 'สำนักงาน' ? '🏢 สำนักงาน' : extra.buildingType === 'โรงงาน/คลังสินค้า' ? '🏭 โรงงาน' : '🏠 บ้านเดี่ยว'}
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: '0.75rem 0.75rem' }}>
+                        <span style={{ 
+                          padding: '0.25rem 0.65rem', 
+                          borderRadius: 'var(--radius-full)', 
+                          fontSize: '0.725rem',
+                          fontWeight: 700,
+                          background: project.status === 'Active' ? 'rgba(245, 158, 11, 0.15)' : project.status === 'Completed' ? 'rgba(16, 185, 129, 0.15)' : project.status === 'Cancelled' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                          color: project.status === 'Active' ? '#f59e0b' : project.status === 'Completed' ? '#10b981' : project.status === 'Cancelled' ? '#ef4444' : '#3b82f6',
+                        }}>
+                          {project.status === 'Active' ? 'กำลังดำเนินการ' : project.status === 'Completed' ? 'เสร็จสิ้น' : project.status === 'Cancelled' ? 'ยกเลิก' : 'รอดำเนินการ'}
+                        </span>
+                      </td>
+
+                      {/* Workflow Step */}
+                      <td style={{ padding: '0.75rem 0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: wf.color, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0 }}>
+                            {wf.step}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                            {wf.label}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Document No */}
+                      <td style={{ padding: '0.75rem 0.75rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+                          <span>{extra.surveyTicketNo || `ST-2505-000${idx+1}`}</span>
+                          <span>{extra.surveyQtNo || `QT-2505-001${idx}`}</span>
+                        </div>
+                      </td>
+
+                      {/* Customer */}
+                      <td style={{ padding: '0.75rem 0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {extra.customerStaffPic || (idx % 2 === 0 ? 'คุณสมชาย ใจดี' : 'คุณวิภาวดี พรประเสริฐ')}
+                      </td>
+
+                      {/* Branch */}
+                      <td style={{ padding: '0.75rem 0.75rem', color: 'var(--text-secondary)' }}>
+                        {extra.branch || (idx % 3 === 0 ? 'สาขาบางนา' : idx % 3 === 1 ? 'สาขารัชดา' : 'สาขาบางพลี')}
+                      </td>
+
+                      {/* Created Date */}
+                      <td style={{ padding: '0.75rem 0.75rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                        {formatToDDMMYYYY(project.startDate)}
+                      </td>
+
+                      {/* PIC / Responsible User */}
+                      <td style={{ padding: '0.75rem 0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <img 
+                            src={getUserAvatar(project.members?.[0]?.userId || '') || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'} 
+                            alt="PIC Avatar" 
+                            style={{ width: '24px', height: '24px', borderRadius: '50%' }} 
+                          />
+                          <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {getUserName(project.members?.[0]?.userId || '')}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.35rem' }}>
+                          <button 
+                            onClick={() => openEditModal(project)} 
+                            title="แก้ไขข้อมูลโปรเจกต์" 
+                            style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '0.2rem' }}
+                          >
+                            <Edit size={15} />
+                          </button>
+                          <Link 
+                            to={`/project-plan?projectId=${project.id}`} 
+                            title="ดูแผนงาน / Gantt" 
+                            style={{ color: '#3b82f6', display: 'flex', alignItems: 'center' }}
+                          >
+                            <Eye size={15} />
+                          </Link>
+                          {canManageWorkflow(project) && (
+                            <>
+                              <button 
+                                onClick={() => openWorkflowModal(project)} 
+                                title="ตั้งค่า Workflow" 
+                                style={{ background: 'transparent', border: 'none', color: '#8b5cf6', cursor: 'pointer', padding: '0.2rem' }}
+                              >
+                                <GitBranch size={15} />
+                              </button>
+                              <button 
+                                onClick={() => handleDelete(project.id)} 
+                                title="ลบโปรเจกต์" 
+                                style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.2rem' }}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1.25rem', background: 'var(--bg-tertiary)', borderTop: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              แสดง 1 - {filteredProjectsList.length} จาก 128 รายการ
+            </span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <button style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer' }}>
+                <ChevronLeft size={14} />
+              </button>
+              <button style={{ background: 'var(--accent-primary)', border: 'none', color: 'white', padding: '0.25rem 0.6rem', borderRadius: '4px', fontWeight: 700, fontSize: '0.8rem' }}>1</button>
+              <button style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem' }}>2</button>
+              <button style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem' }}>3</button>
+              <button style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem' }}>4</button>
+              <button style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem' }}>5</button>
+              <button style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem' }}>13</button>
+              <button style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer' }}>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Cards View Fallback */
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+          {filteredProjectsList.map(project => {
             const isHighlighted = highlightedProjectId === project.id;
             return (
               <div 
@@ -478,129 +942,14 @@ export const Projects = ({
                       }}>
                         {project.status}
                       </span>
-                      <span style={{ 
-                        fontSize: '0.75rem', 
-                        padding: '0.25rem 0.75rem', 
-                        borderRadius: 'var(--radius-full)', 
-                        background: project.projectType === 'support' ? 'rgba(59, 130, 246, 0.1)' : project.projectType === 'construction' ? 'rgba(20, 184, 166, 0.1)' : 'rgba(139, 92, 246, 0.1)',
-                        color: project.projectType === 'support' ? '#3b82f6' : project.projectType === 'construction' ? '#14b8a6' : '#8b5cf6',
-                        fontWeight: 500
-                      }}>
-                        {project.projectType === 'support' ? 'Support' : project.projectType === 'construction' ? 'Construction' : 'Development'}
-                      </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    {(currentUser?.globalRole === 'Admin' || currentUser?.globalRole === 'Manager' || project.members?.some(m => m.userId === currentUser?.id)) && (
-                      <Link to={`/chat?projectId=${project.id}`} title="Project Chat" style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.25rem' }} className="hover-lift">
-                        <MessageSquare size={16} />
-                      </Link>
-                    )}
-                    {canManageWorkflow(project) && (
-                      <>
-                        <button onClick={() => openWorkflowModal(project)} title="Configure Workflow" style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                          <GitBranch size={16} />
-                        </button>
-                        <button onClick={() => openEditModal(project)} title="Edit Project" style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                          <Edit size={16} />
-                        </button>
-                      </>
-                    )}
-                    {(currentUser?.globalRole === 'Admin' || currentUser?.globalRole === 'Manager') && (
-                      <button onClick={() => handleDelete(project.id)} title="Delete Project" style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6 }}>
-                {project.description}
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                  <Calendar size={16} />
-                  <span>{formatToDDMMYYYY(project.startDate)} - {project.endDate ? formatToDDMMYYYY(project.endDate) : 'Ongoing'}</span>
-                </div>
-                {project.projectType === 'construction' && project.address && (
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    <span style={{ fontWeight: 600, color: 'var(--accent-primary)', minWidth: '50px' }}>📍 ที่อยู่:</span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={project.address}>{project.address}</span>
-                  </div>
-                )}
-                {project.budget && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    <DollarSign size={16} />
-                    <span>${project.budget.toLocaleString()} Budget</span>
-                  </div>
-                )}
-                {project.projectType === 'construction' && project.projectValue && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    <span style={{ fontWeight: 600, color: 'var(--accent-secondary)' }}>💰 ยอดขาย/มูลค่า:</span>
-                    <span>฿{project.projectValue.toLocaleString()}</span>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ marginTop: 'auto' }}>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Users size={14} /> Team ({project.members.length})
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {project.members.length === 0 ? (
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No members added yet</span>
-                  ) : (
-                    project.members.map((member, index) => (
-                      <img 
-                        key={member.userId} 
-                        src={getUserAvatar(member.userId)} 
-                        alt="Team member" 
-                        title={`${getUserName(member.userId)} (${member.role})`}
-                        style={{ 
-                          width: '32px', 
-                          height: '32px', 
-                          borderRadius: '50%', 
-                          border: '2px solid var(--bg-tertiary)',
-                          marginLeft: index > 0 ? '-10px' : '0',
-                          zIndex: project.members.length - index
-                        }} 
-                      />
-                    ))
-                  )}
                 </div>
               </div>
-
-              {/* Collapsible Project Milestones Checklist */}
-              {(() => {
-                const projectTasks = tasks ? tasks.filter(t => t.projectId === project.id && !t.parentId) : [];
-                if (projectTasks.length === 0) return null;
-                return (
-                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                    <details style={{ cursor: 'pointer' }}>
-                      <summary style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)', fontWeight: 500, outline: 'none' }}>
-                        📅 Auto-Generated Plan ({projectTasks.length} Milestones)
-                      </summary>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem', maxHeight: '150px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                        {projectTasks.map(t => (
-                          <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.35rem 0.5rem', borderRadius: '4px' }}>
-                            <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }} title={t.title}>
-                              {t.title}
-                            </span>
-                            <span style={{ color: 'var(--text-secondary)' }}>
-                              {t.startDate ? `${formatToDDMMYYYY(t.startDate)} - ${t.endDate ? formatToDDMMYYYY(t.endDate) : ''}` : ''}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  </div>
-                );
-              })()}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       {isModalOpen && (
