@@ -50,7 +50,8 @@ export const ProjectBoard = ({ projects, setProjects, tasks, users, currentUser 
     if (!isMember) return false;
 
     if (filterType === 'all') return true;
-    return p.projectType === filterType;
+    const pType = p.projectType || 'construction';
+    return pType === filterType;
   });
 
   const handleDragStart = (projectId: string) => {
