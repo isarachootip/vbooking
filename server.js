@@ -2748,6 +2748,41 @@ app.post('/api/task-templates', async (req, res) => {
   }
 });
 
+app.post('/api/task-templates/bulk', async (req, res) => {
+  const { templates } = req.body;
+  if (!Array.isArray(templates) || templates.length === 0) {
+    return res.status(400).json({ error: 'templates array is required' });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const tpl of templates) {
+      const tId = tpl.id || ('tpl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+      await client.query(
+        `INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours, project_template_name)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (id) DO UPDATE SET
+           title = EXCLUDED.title,
+           description = EXCLUDED.description,
+           priority = EXCLUDED.priority,
+           start_percent = EXCLUDED.start_percent,
+           end_percent = EXCLUDED.end_percent,
+           estimated_hours = EXCLUDED.estimated_hours,
+           project_template_name = EXCLUDED.project_template_name`,
+        [tId, tpl.title, tpl.description || '', tpl.priority || 'Medium', tpl.startPercent || 0, tpl.endPercent || 10, tpl.estimatedHours || 8, tpl.projectTemplateName || 'General']
+      );
+    }
+    await client.query('COMMIT');
+    res.json({ success: true, count: templates.length });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error bulk saving task templates:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 app.delete('/api/task-templates/:id', async (req, res) => {
   const { id } = req.params;
   try {

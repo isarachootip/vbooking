@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { TaskTemplate, TaskPriority, PermissionScheme, User, CostRate } from '../types';
-import { Plus, Trash2, Edit, X, Save, Shield, ShieldCheck, Coins, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Edit, X, Save, Shield, ShieldCheck, Coins, AlertTriangle, RefreshCw, FileUp, Sparkles, FileSpreadsheet } from 'lucide-react';
 
 interface SettingsProps {
   taskTemplates: TaskTemplate[];
@@ -35,6 +35,15 @@ export const Settings = ({
   const [showCleanConfirm, setShowCleanConfirm] = useState(false);
   const [cleanResult, setCleanResult] = useState<{ deleted: Record<string, number> } | null>(null);
   const [isCleaning, setIsCleaning] = useState(false);
+
+  // Import Modal states
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFormat, setImportFormat] = useState<'csv' | 'json'>('csv');
+  const [importText, setImportText] = useState('');
+  const [customImportTemplateName, setCustomImportTemplateName] = useState('งานนำเข้าใหม่');
+
+  // Preset Modal state
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
 
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [maxUploadMb, setMaxUploadMb] = useState('1');
@@ -654,36 +663,78 @@ export const Settings = ({
                     อัตราส่วนระยะเวลาการทำงานย่อย (Start % ถึง End % ของระยะเวลาโครงการทั้งหมด)
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setEditingTemplate(null);
-                    setTitle('');
-                    setDescription('');
-                    setPriority('Medium');
-                    setStartPercent('0');
-                    setEndPercent('10');
-                    setEstimatedHours('8');
-                    setProjectTemplateName(selectedTemplateFilter === 'All' ? 'General' : selectedTemplateFilter);
-                    setCustomTemplateName('');
-                    setIsModalOpen(true);
-                  }}
-                  style={{
-                    padding: '0.45rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--accent-primary)',
-                    border: 'none',
-                    color: 'white',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem'
-                  }}
-                  className="hover-lift"
-                >
-                  <Plus size={14} /> เพิ่มขั้นตอนงานในแม่แบบนี้
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setIsPresetModalOpen(true)}
+                    style={{
+                      padding: '0.45rem 0.85rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgba(139, 92, 246, 0.15)',
+                      border: '1px solid #8b5cf6',
+                      color: '#8b5cf6',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                    className="hover-lift"
+                  >
+                    <Sparkles size={14} /> ⚡ แม่แบบสำเร็จรูปด่วน
+                  </button>
+
+                  <button
+                    onClick={() => setIsImportModalOpen(true)}
+                    style={{
+                      padding: '0.45rem 0.85rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      border: '1px solid #10b981',
+                      color: '#10b981',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                    className="hover-lift"
+                  >
+                    <FileUp size={14} /> 📥 นำเข้า Task (CSV/JSON)
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setEditingTemplate(null);
+                      setTitle('');
+                      setDescription('');
+                      setPriority('Medium');
+                      setStartPercent('0');
+                      setEndPercent('10');
+                      setEstimatedHours('8');
+                      setProjectTemplateName(selectedTemplateFilter === 'All' ? 'General' : selectedTemplateFilter);
+                      setCustomTemplateName('');
+                      setIsModalOpen(true);
+                    }}
+                    style={{
+                      padding: '0.45rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--accent-primary)',
+                      border: 'none',
+                      color: 'white',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                    className="hover-lift"
+                  >
+                    <Plus size={14} /> เพิ่มขั้นตอนงานในแม่แบบนี้
+                  </button>
+                </div>
               </div>
 
               {/* Timeline representation */}
@@ -1302,6 +1353,294 @@ export const Settings = ({
                 <Save size={18} /> Save Template
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CSV / JSON Bulk Task Import Modal */}
+      {isImportModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1200,
+          padding: '1rem'
+        }}>
+          <div className="glass-panel" style={{ padding: '1.75rem 2rem', width: '680px', maxWidth: '95%', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
+            <div className="flex-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FileUp size={22} color="#10b981" /> 📥 นำเข้า Task งานในแม่แบบ (Bulk Import Task Templates)
+              </h2>
+              <button onClick={() => setIsImportModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>รูปแบบข้อมูล (Format)</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => setImportFormat('csv')} 
+                      style={{ flex: 1, padding: '0.45rem', borderRadius: 'var(--radius-md)', background: importFormat === 'csv' ? '#10b981' : 'var(--bg-tertiary)', color: importFormat === 'csv' ? 'white' : 'var(--text-primary)', border: '1px solid var(--border-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      CSV Text
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setImportFormat('json')} 
+                      style={{ flex: 1, padding: '0.45rem', borderRadius: 'var(--radius-md)', background: importFormat === 'json' ? '#10b981' : 'var(--bg-tertiary)', color: importFormat === 'json' ? 'white' : 'var(--text-primary)', border: '1px solid var(--border-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      JSON Array
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ชื่อแม่แบบโครงการที่จะจัดเก็บ</label>
+                  <input 
+                    type="text" 
+                    value={customImportTemplateName} 
+                    onChange={e => setCustomImportTemplateName(e.target.value)} 
+                    placeholder="เช่น งานรีโนเวทห้องครัว, งานติดตั้งไฟฟ้า"
+                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.45rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>วางข้อมูลข้อความ (CSV / JSON Data)</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (importFormat === 'csv') {
+                      setImportText(
+`Title, Description, Priority, Start%, End%, Hours, TemplateGroup
+สำรวจหน้างานและวัดพื้นที่จริง, เข้าวัดพื้นที่หน้างาน ตรวจสอบโครงสร้าง, High, 0, 10, 8, ${customImportTemplateName}
+ออกแบบ 3D & เลือกวัสดุ, ทำแบบจำลอง 3D สเปกกระเบื้องและสุขภัณฑ์, High, 10, 25, 16, ${customImportTemplateName}
+งานรื้อถอนและเตรียมพื้นผิว, รื้อถอนวัสดุเดิม สกัดกระเบื้อง ขนย้ายขยะ, Medium, 25, 40, 16, ${customImportTemplateName}
+งานเดินระบบไฟฟ้า & ประปา, เดินสายไฟฝังผนัง วางระบบท่อน้ำดีและน้ำทิ้ง, High, 40, 55, 24, ${customImportTemplateName}
+งานปูกระเบื้อง & งานโครงสร้าง, ฉาบปูน ปูกระเบื้องพื้นและผนังตามแบบ, Medium, 55, 75, 32, ${customImportTemplateName}
+งานติดตั้งเฟอร์นิเจอร์ & อุปกรณ์, ประกอบตู้แขวน ติดตั้งซิงค์ เตาไฟฟ้า, Urgent, 75, 95, 24, ${customImportTemplateName}
+ทำความสะอาด & ตรวจส่งมอบงาน (QC), ทำความสะอาดไซต์ ตรวจรับงานแก่ลูกค้า, High, 95, 100, 4, ${customImportTemplateName}`
+                      );
+                    } else {
+                      setImportText(JSON.stringify([
+                        { title: 'สำรวจหน้างาน', description: 'วัดพื้นที่จริง', priority: 'High', startPercent: 0, endPercent: 15, estimatedHours: 8, projectTemplateName: customImportTemplateName },
+                        { title: 'ออกแบบ 3D', description: 'เลือกลายกระเบื้อง', priority: 'High', startPercent: 15, endPercent: 35, estimatedHours: 16, projectTemplateName: customImportTemplateName },
+                        { title: 'ติดตั้งอุปกรณ์ & ส่งมอบ', description: 'ตรวจ QC', priority: 'Urgent', startPercent: 35, endPercent: 100, estimatedHours: 24, projectTemplateName: customImportTemplateName }
+                      ], null, 2));
+                    }
+                  }}
+                  style={{ background: 'transparent', border: 'none', color: '#10b981', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                >
+                  <FileSpreadsheet size={14} /> ใส่ตัวอย่างข้อมูล CSV/JSON
+                </button>
+              </div>
+
+              <textarea 
+                value={importText} 
+                onChange={e => setImportText(e.target.value)} 
+                placeholder={importFormat === 'csv' ? "ตัวอย่าง CSV:\nTitle, Description, Priority, Start%, End%, Hours, Group\nงานสำรวจหน้างาน, ตรวจพื้นที่, High, 0, 10, 8, งานรีโนเวท" : "ตัวอย่าง JSON:\n[ {\"title\": \"งานสำรวจ\", \"startPercent\": 0, \"endPercent\": 10} ]"}
+                style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem', color: 'var(--text-primary)', outline: 'none', minHeight: '180px', fontFamily: 'monospace', fontSize: '0.8rem' }}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setIsImportModalOpen(false)}
+                  style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.5rem 1.25rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  ยกเลิก
+                </button>
+                <button 
+                  type="button" 
+                  onClick={async () => {
+                    if (!importText.trim()) return alert('กรุณาวางข้อมูล CSV หรือ JSON');
+                    let newTpls: TaskTemplate[] = [];
+
+                    if (importFormat === 'json') {
+                      try {
+                        const parsed = JSON.parse(importText);
+                        newTpls = Array.isArray(parsed) ? parsed : [parsed];
+                      } catch (err) {
+                        return alert('รูปแบบ JSON ไม่ถูกต้อง');
+                      }
+                    } else {
+                      const lines = importText.split('\n').map(l => l.trim()).filter(l => l);
+                      for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i];
+                        if (i === 0 && line.toLowerCase().includes('title')) continue;
+                        const parts = line.split(',').map(p => p.trim());
+                        if (parts.length >= 1 && parts[0]) {
+                          newTpls.push({
+                            id: 'tpl_imp_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substr(2, 4),
+                            title: parts[0],
+                            description: parts[1] || '',
+                            priority: (parts[2] as TaskPriority) || 'Medium',
+                            startPercent: Number(parts[3]) || 0,
+                            endPercent: Number(parts[4]) || 10,
+                            estimatedHours: Number(parts[5]) || 8,
+                            projectTemplateName: parts[6] || customImportTemplateName || 'General'
+                          });
+                        }
+                      }
+                    }
+
+                    if (newTpls.length === 0) return alert('ไม่พบข้อมูล Task ที่นำเข้าได้');
+
+                    try {
+                      await fetch('/api/task-templates/bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ templates: newTpls })
+                      });
+                    } catch (err) {
+                      console.error('Bulk post failed:', err);
+                    }
+
+                    setTaskTemplates(prev => [...prev, ...newTpls]);
+                    alert(`นำเข้า Task งานในแม่แบบสำเร็จจำนวน ${newTpls.length} ขั้นตอน!`);
+                    setIsImportModalOpen(false);
+                    setImportText('');
+                  }}
+                  style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.5rem 1.5rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  className="hover-lift"
+                >
+                  <FileUp size={16} /> ยืนยันการนำเข้า Task
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preset Templates Library Modal */}
+      {isPresetModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1200,
+          padding: '1rem'
+        }}>
+          <div className="glass-panel" style={{ padding: '1.75rem 2rem', width: '750px', maxWidth: '95%', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="flex-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Sparkles size={22} color="#8b5cf6" /> ⚡ คลังแม่แบบมาตรฐานสำเร็จรูป (Preset Master Templates)
+              </h2>
+              <button onClick={() => setIsPresetModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>
+              เลือกนำเข้าชุดแม่แบบขั้นตอนงานมาตรฐานอุตสาหกรรม เข้าสู่ระบบของคุณได้ทันทีด้วยการคลิกเพียงครั้งเดียว
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+              
+              {/* Preset 1: Home Renovation */}
+              <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: '#10b981', fontSize: '1rem', marginBottom: '0.35rem' }}>
+                    🏠 งานรีโนเวท & ตกแต่งบ้าน (Home Renovation)
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+                    8 ขั้นตอนมาตรฐานสำหรับการรีโนเวทบ้านเดี่ยว คอนโด และตกแต่งภายใน
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const renovationTemplates: TaskTemplate[] = [
+                      { id: 'tpl_ren_1', title: 'สำรวจหน้างานและวัดพื้นที่จริง', description: 'เข้าสำรวจโครงสร้าง ตรวจสอบตำแหน่งน้ำ/ไฟ', priority: 'High', startPercent: 0, endPercent: 10, estimatedHours: 8, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_2', title: 'ออกแบบ 3D & เลือกวัสดุ', description: 'ทำแบบจำลอง 3D สเปกกระเบื้อง และสุขภัณฑ์', priority: 'High', startPercent: 10, endPercent: 25, estimatedHours: 16, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_3', title: 'งานรื้อถอนและเตรียมพื้นผิว', description: 'รื้อถอนวัสดุเดิม สกัดกระเบื้อง ขนย้ายขยะ', priority: 'Medium', startPercent: 25, endPercent: 40, estimatedHours: 16, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_4', title: 'งานเดินระบบไฟฟ้า & ประปา', description: 'เดินสายไฟฝังผนัง วางระบบท่อน้ำดีและน้ำทิ้ง', priority: 'High', startPercent: 40, endPercent: 55, estimatedHours: 24, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_5', title: 'งานปูกระเบื้อง & งานโครงสร้าง', description: 'ฉาบปูน ปูกระเบื้องพื้นและผนังตามแบบ', priority: 'Medium', startPercent: 55, endPercent: 75, estimatedHours: 32, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_6', title: 'งานติดตั้งเฟอร์นิเจอร์บิวท์อิน', description: 'ประกอบตู้แขวน เคาน์เตอร์ และชั้นวาง', priority: 'High', startPercent: 75, endPercent: 90, estimatedHours: 24, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_7', title: 'งานติดตั้งสุขภัณฑ์ & อุปกรณ์', description: 'ติดตั้งอ่างล้างจาน โคมไฟ และสวิตช์ปลั๊ก', priority: 'Urgent', startPercent: 90, endPercent: 98, estimatedHours: 12, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_8', title: 'ทำความสะอาด & ตรวจส่งมอบงาน (QC)', description: 'ทำความสะอาดไซต์ และส่งมอบงานลูกค้า', priority: 'High', startPercent: 98, endPercent: 100, estimatedHours: 4, projectTemplateName: 'งานรีโนเวทบ้าน' }
+                    ];
+
+                    try {
+                      await fetch('/api/task-templates/bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ templates: renovationTemplates })
+                      });
+                    } catch (err) {}
+
+                    setTaskTemplates(prev => [...prev, ...renovationTemplates]);
+                    alert('นำเข้าแม่แบบ "งานรีโนเวทบ้าน" สำเร็จ 8 ขั้นตอน!');
+                    setIsPresetModalOpen(false);
+                  }}
+                  style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.55rem', borderRadius: 'var(--radius-md)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                  className="hover-lift"
+                >
+                  ⚡ นำเข้าแม่แบบรีโนเวทบ้าน (8 ขั้นตอน)
+                </button>
+              </div>
+
+              {/* Preset 2: Electrical & Plumbing */}
+              <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: '#3b82f6', fontSize: '1rem', marginBottom: '0.35rem' }}>
+                    ⚡ งานติดตั้งระบบไฟฟ้า & ประปา (Electrical & Plumbing)
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+                    6 ขั้นตอนสำหรับการติดตั้งตู้คอนซูเมอร์ เดินท่อร้อยสายไฟ และงานประปา
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const elecTemplates: TaskTemplate[] = [
+                      { id: 'tpl_elec_1', title: 'สำรวจระบบและวางผังตู้ไฟ/ท่อประปา', description: 'ตรวจสอบโหลดไฟฟ้า และทิศทางการเดินท่อ', priority: 'High', startPercent: 0, endPercent: 15, estimatedHours: 6, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
+                      { id: 'tpl_elec_2', title: 'เดินสาย main และติดตั้งตู้คอนซูเมอร์', description: 'เดินสายไฟเมนเข้าตู้เบรกเกอร์', priority: 'High', startPercent: 15, endPercent: 40, estimatedHours: 16, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
+                      { id: 'tpl_elec_3', title: 'เดินท่อร้อยสายไฟ & ท่อน้ำ', description: 'สกัดผนัง เดินท่อร้อยสายไฟสีเหลืองและท่อน้ำดี', priority: 'Medium', startPercent: 40, endPercent: 70, estimatedHours: 24, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
+                      { id: 'tpl_elec_4', title: 'ติดตั้งดวงโคม สวิตช์ ปลั๊ก และก๊อกน้ำ', description: 'ประกอบอุปกรณ์ปลายทาง ปลั๊กไฟ ก๊อกน้ำ', priority: 'Medium', startPercent: 70, endPercent: 88, estimatedHours: 16, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
+                      { id: 'tpl_elec_5', title: 'ทดสอบแรงดันน้ำ & ทดสอบโหลดไฟฟ้า', description: 'เช็กไฟรั่ว เช็กแรงดันน้ำและรอยรั่ว', priority: 'Urgent', startPercent: 88, endPercent: 96, estimatedHours: 8, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
+                      { id: 'tpl_elec_6', title: 'ส่งมอบงานและรับประกันบริการ', description: 'ติดป้ายวงจรตู้ไฟ และส่งมอบใบรับประกัน', priority: 'High', startPercent: 96, endPercent: 100, estimatedHours: 4, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' }
+                    ];
+
+                    try {
+                      await fetch('/api/task-templates/bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ templates: elecTemplates })
+                      });
+                    } catch (err) {}
+
+                    setTaskTemplates(prev => [...prev, ...elecTemplates]);
+                    alert('นำเข้าแม่แบบ "งานระบบไฟฟ้า-ประปา" สำเร็จ 6 ขั้นตอน!');
+                    setIsPresetModalOpen(false);
+                  }}
+                  style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.55rem', borderRadius: 'var(--radius-md)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                  className="hover-lift"
+                >
+                  ⚡ นำเข้าแม่แบบระบบไฟฟ้า-ประปา (6 ขั้นตอน)
+                </button>
+              </div>
+
+            </div>
           </div>
         </div>
       )}
