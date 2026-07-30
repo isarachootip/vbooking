@@ -103,7 +103,7 @@ export const Login = ({ onLogin, availableUsers }: LoginProps) => {
           <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-md)' }}>
             <Clock size={28} color="white" />
           </div>
-          <h1 className="text-gradient" style={{ fontSize: '2rem', fontWeight: 800 }}>KANNA</h1>
+          <h1 className="text-gradient" style={{ fontSize: '2rem', fontWeight: 800 }}>BuildFlow</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>ระบบบริหารจัดการโครงการติดตั้ง & รีโนเวทบ้าน</p>
         </div>
 

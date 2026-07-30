@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Calendar, Users, DollarSign, Plus, X, Edit, Trash2, GitBranch, MessageSquare } from 'lucide-react';
+import { Calendar, Users, DollarSign, Plus, X, Edit, Trash2, GitBranch, MessageSquare, FileText, Layers } from 'lucide-react';
 import type { User, Project, ProjectStatus, ProjectRole, Task, PermissionScheme, ProjectWorkflow, TaskTemplate } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
@@ -22,7 +22,7 @@ export const Projects = ({
   setProjects, 
   users, 
   tasks, 
-  permissionSchemes, 
+  permissionSchemes: _permissionSchemes, 
   currentUser, 
   projectWorkflows, 
   setProjectWorkflows,
@@ -61,8 +61,8 @@ export const Projects = ({
   const [members, setMembers] = useState<{ userId: string; role: ProjectRole; manDayRate?: number }[]>([]);
   const [customColumnsText, setCustomColumnsText] = useState('To Do, In Progress, Review, Done');
   const [permissionSchemeId, setPermissionSchemeId] = useState('scheme_default');
-  const [projectType, setProjectType] = useState<'dev' | 'support' | 'construction'>('dev');
-  const [projectTemplateName, setProjectTemplateName] = useState('Default');
+  const [projectType, setProjectType] = useState<'dev' | 'support' | 'construction'>('construction');
+  const [projectTemplateName, setProjectTemplateName] = useState('Workflow vFIX');
   const [supportTaskStyle, setSupportTaskStyle] = useState<'monthly' | 'categories'>('categories');
   const [address, setAddress] = useState('');
   const [projectValue, setProjectValue] = useState('');
@@ -70,6 +70,26 @@ export const Projects = ({
   const [collectedValue, setCollectedValue] = useState('');
   const [plannedExpense, setPlannedExpense] = useState('');
   const [actualExpense, setActualExpense] = useState('');
+
+  // New fields matching mockup
+  const [notes, setNotes] = useState('');
+  const [branch, setBranch] = useState('');
+  const [customerStaffPic, setCustomerStaffPic] = useState('');
+  const [refStartDate, setRefStartDate] = useState('');
+  const [isAllDay, setIsAllDay] = useState(false);
+  const [surveyTicketNo, setSurveyTicketNo] = useState('');
+  const [surveyQtNo, setSurveyQtNo] = useState('');
+  const [renovateQtNo, setRenovateQtNo] = useState('');
+  const [renovateTicketNo, setRenovateTicketNo] = useState('');
+  const [picUser, setPicUser] = useState('');
+  const [jobType, setJobType] = useState('');
+  const [buildingType, setBuildingType] = useState('บ้านเดี่ยว');
+  const [areaSize, setAreaSize] = useState('');
+  const [initialBudget, setInitialBudget] = useState('');
+  const [channelReceivedDate, setChannelReceivedDate] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('โอนเข้าบัญชีธนาคาร');
+  const [workAreas, setWorkAreas] = useState<string[]>([]);
+  const [workTypes, setWorkTypes] = useState<string[]>([]);
 
   // Member select helper state
   const [tempUserId, setTempUserId] = useState('');
@@ -94,14 +114,14 @@ export const Projects = ({
     setName('');
     setDescription('');
     setStatus('Planning');
-    setStartDate('');
+    setStartDate(new Date().toISOString().split('T')[0]);
     setEndDate('');
     setBudget('');
     setMembers([]);
     setCustomColumnsText('To Do, In Progress, Review, Done');
     setPermissionSchemeId('scheme_default');
-    setProjectType('dev');
-    setProjectTemplateName('Default');
+    setProjectType('construction');
+    setProjectTemplateName('Workflow vFIX');
     setSupportTaskStyle('categories');
     setAddress('');
     setProjectValue('');
@@ -109,6 +129,26 @@ export const Projects = ({
     setCollectedValue('');
     setPlannedExpense('');
     setActualExpense('');
+
+    // Reset mockup fields
+    setNotes('');
+    setBranch('');
+    setCustomerStaffPic('');
+    setRefStartDate(new Date().toISOString().split('T')[0]);
+    setIsAllDay(false);
+    setSurveyTicketNo('');
+    setSurveyQtNo('');
+    setRenovateQtNo('');
+    setRenovateTicketNo('');
+    setPicUser('');
+    setJobType('');
+    setBuildingType('บ้านเดี่ยว');
+    setAreaSize('');
+    setInitialBudget('');
+    setChannelReceivedDate('');
+    setPaymentMethod('โอนเข้าบัญชีธนาคาร');
+    setWorkAreas([]);
+    setWorkTypes([]);
     setIsModalOpen(true);
   };
 
@@ -123,8 +163,8 @@ export const Projects = ({
     setMembers(project.members);
     setCustomColumnsText(project.customColumns ? project.customColumns.join(', ') : 'To Do, In Progress, Review, Done');
     setPermissionSchemeId(project.permissionSchemeId || 'scheme_default');
-    setProjectType(project.projectType || 'dev');
-    setProjectTemplateName('Default');
+    setProjectType(project.projectType || 'construction');
+    setProjectTemplateName(project.projectTemplateName || 'Workflow vFIX');
     setSupportTaskStyle(project.supportTaskStyle || 'categories');
     setAddress(project.address || '');
     setProjectValue(project.projectValue ? formatNumberWithCommas(String(project.projectValue)) : '');
@@ -132,14 +172,56 @@ export const Projects = ({
     setCollectedValue(project.collectedValue ? formatNumberWithCommas(String(project.collectedValue)) : '');
     setPlannedExpense(project.plannedExpense ? formatNumberWithCommas(String(project.plannedExpense)) : '');
     setActualExpense(project.actualExpense ? formatNumberWithCommas(String(project.actualExpense)) : '');
+
+    const extra = project.extraDetails || {};
+    setNotes(extra.notes || '');
+    setBranch(extra.branch || '');
+    setCustomerStaffPic(extra.customerStaffPic || '');
+    setRefStartDate(extra.refStartDate || '');
+    setIsAllDay(extra.isAllDay || false);
+    setSurveyTicketNo(extra.surveyTicketNo || '');
+    setSurveyQtNo(extra.surveyQtNo || '');
+    setRenovateQtNo(extra.renovateQtNo || '');
+    setRenovateTicketNo(extra.renovateTicketNo || '');
+    setPicUser(extra.picUser || '');
+    setJobType(extra.jobType || '');
+    setBuildingType(extra.buildingType || 'บ้านเดี่ยว');
+    setAreaSize(extra.areaSize || '');
+    setInitialBudget(extra.initialBudget ? formatNumberWithCommas(String(extra.initialBudget)) : '');
+    setChannelReceivedDate(extra.channelReceivedDate || '');
+    setPaymentMethod(extra.paymentMethod || 'โอนเข้าบัญชีธนาคาร');
+    setWorkAreas(extra.workAreas || []);
+    setWorkTypes(extra.workTypes || []);
+
     setIsModalOpen(true);
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !startDate) return alert('Name and Start Date are required');
+    if (!name || !startDate) return alert('กรุณากรอกชื่อโปรเจกต์ และวันที่เริ่มต้น');
 
     const cols = customColumnsText.split(',').map(c => c.trim()).filter(c => c.length > 0);
+
+    const extraDetails = {
+      notes,
+      branch,
+      customerStaffPic,
+      refStartDate,
+      isAllDay,
+      surveyTicketNo,
+      surveyQtNo,
+      renovateQtNo,
+      renovateTicketNo,
+      picUser,
+      jobType,
+      buildingType,
+      areaSize,
+      initialBudget: initialBudget ? parseNumberFromCommas(initialBudget) : undefined,
+      channelReceivedDate,
+      paymentMethod,
+      workAreas,
+      workTypes
+    };
 
     const projectData: Project = {
       id: editingProject ? editingProject.id : 'p_' + Date.now(),
@@ -160,7 +242,8 @@ export const Projects = ({
       collectedValue: projectType === 'construction' ? parseNumberFromCommas(collectedValue) : undefined,
       plannedExpense: projectType === 'construction' ? parseNumberFromCommas(plannedExpense) : undefined,
       actualExpense: projectType === 'construction' ? parseNumberFromCommas(actualExpense) : undefined,
-      projectTemplateName: projectTemplateName || undefined
+      projectTemplateName: projectTemplateName || undefined,
+      extraDetails
     };
 
     if (editingProject) {
@@ -527,374 +610,606 @@ export const Projects = ({
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(4px)',
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(6px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1100
+          zIndex: 1100,
+          padding: '1rem'
         }}>
-          <div className="glass-panel" style={{ padding: '2rem', width: '650px', maxWidth: '95%', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="flex-between">
-              <h2 className="text-gradient" style={{ fontSize: '1.5rem' }}>{editingProject ? 'Edit Project' : 'New Project'}</h2>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                <X size={20} />
+          <div className="glass-panel" style={{ 
+            padding: '1.75rem 2rem', 
+            width: '1150px', 
+            maxWidth: '98%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '1.25rem', 
+            maxHeight: '94vh', 
+            overflowY: 'auto',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+          }}>
+            <div className="flex-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {editingProject ? 'Edit project' : 'Create project'}
+              </h2>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem' }}>
+                <X size={22} />
               </button>
             </div>
 
-            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Project Name *</label>
-                <input 
-                  type="text" 
-                  value={name} 
-                  onChange={e => setName(e.target.value)} 
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: (!editingProject) ? '1fr 1fr' : '1fr', gap: '1rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ 
-                    fontSize: '0.875rem', 
-                    color: 'var(--text-secondary)',
-                    textDecoration: 'underline',
-                    textDecorationColor: '#ff4d4d',
-                    textDecorationThickness: '2px',
-                    textUnderlineOffset: '4px',
-                    fontWeight: 600
-                  }}>
-                    Project Type
-                  </label>
-                  <select 
-                    value={projectType} 
-                    onChange={e => setProjectType(e.target.value as 'dev' | 'support' | 'construction')}
-                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                  >
-                    <option value="dev">Development Project (มี Timeline & Sprint/Release)</option>
-                    <option value="support">Support Project (มีแค่ Task & บันทึกเวลาแยกตามระบบ/BU)</option>
-                    <option value="construction">Construction Project (งานก่อสร้าง มีแผนงาน ที่อยู่ และต้นทุนแผน/จริง)</option>
-                  </select>
-                </div>
-
-                {!editingProject && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                      Project Template (แม่แบบสร้างงานเริ่มต้น)
-                    </label>
-                    <select 
-                      value={projectTemplateName} 
-                      onChange={e => setProjectTemplateName(e.target.value)}
-                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                    >
-                      <option value="Default">Default (แม่แบบมาตรฐานประจำประเภทโครงการ)</option>
-                      <option value="None">None (ไม่สร้างงานย่อย เริ่มด้วยโปรเจกต์ว่างเปล่า)</option>
-                      {Array.from(new Set(taskTemplates.map(t => t.projectTemplateName || 'General'))).filter(n => n && n !== 'General' && n !== 'Default').map(name => {
-                        const count = taskTemplates.filter(t => (t.projectTemplateName || 'General') === name).length;
-                        return (
-                          <option key={name} value={name}>{name} ({count} tasks)</option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              {!editingProject && projectTemplateName !== 'None' && (
-                <div style={{ padding: '0.85rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>📋 งานย่อยที่จะถูกสร้างอัตโนมัติ (Generated Tasks):</span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', maxHeight: '100px', overflowY: 'auto' }}>
-                    {projectTemplateName === 'Default' ? (
-                      projectType === 'construction' ? (
-                        ['ซื้อสำรวจ', 'QC (สำรวจ)', 'ออกแบบ', 'สร้างใบเสนอราคา', 'ลูกค้ายืนยัน', 'ชำระเงิน', 'ดำเนินการโครงการ', 'ช่าง check-in/check out siteงาน', 'Project complete', 'QC (ส่งมอบ)', 'aftersales', 'ปิดjob'].map(t => (
-                          <span key={t} style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-secondary)' }}>{t}</span>
-                        ))
-                      ) : projectType === 'support' ? (
-                        (supportTaskStyle === 'monthly' ? ['[YYYY-MM] Support & Maintenance'] : ['User Support & Helpdesk', 'System Maintenance', 'Bug Fixing']).map(t => (
-                          <span key={t} style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-secondary)' }}>{t}</span>
-                        ))
-                      ) : (
-                        taskTemplates.filter(t => (t.projectTemplateName || 'General') === 'General' || (t.projectTemplateName || 'General') === 'Default').map(t => (
-                          <span key={t.id} style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-secondary)' }}>{t.title}</span>
-                        ))
-                      )
-                    ) : (
-                      taskTemplates.filter(t => (t.projectTemplateName || 'General') === projectTemplateName).map(t => (
-                        <span key={t.id} style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-secondary)' }}>{t.title}</span>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {projectType === 'support' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Support Task Auto-generation</label>
-                  <select 
-                    value={supportTaskStyle} 
-                    onChange={e => setSupportTaskStyle(e.target.value as 'monthly' | 'categories')}
-                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                  >
-                    <option value="categories">Category-based Tasks (ระบบสนับสนุน / BU Support)</option>
-                    <option value="monthly">Monthly Tasks (แบ่งเป็นถังรายเดือน [YYYY-MM])</option>
-                  </select>
-                </div>
-              )}
-
-              {projectType === 'construction' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed rgba(20, 184, 166, 0.3)', padding: '1rem', borderRadius: 'var(--radius-md)', background: 'rgba(20, 184, 166, 0.02)' }}>
-                  <h4 style={{ fontSize: '0.9rem', color: '#14b8a6', margin: 0, fontWeight: 600 }}>Construction Details (ข้อมูลสำหรับงานก่อสร้าง)</h4>
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.75rem', alignItems: 'start' }}>
+                
+                {/* ── LEFT COLUMN ── */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ที่อยู่หน้างาน / สถานที่ก่อสร้าง *</label>
-                    <textarea 
-                      value={address} 
-                      onChange={e => setAddress(e.target.value)} 
-                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none', minHeight: '60px', resize: 'vertical' }}
-                      placeholder="ระบุที่อยู่สถานที่ก่อสร้าง เช่น บ้านเลขที่ ซอย ถนน แขวง เขต..."
-                    />
+                  {/* SECTION 1: ข้อมูลทั่วไปของโปรเจกต์ */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: 700, fontSize: '1rem' }}>
+                      <FileText size={18} /> ข้อมูลทั่วไปของโปรเจกต์
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          Project Template <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select 
+                          value={projectTemplateName} 
+                          onChange={e => setProjectTemplateName(e.target.value)}
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                        >
+                          <option value="Workflow vFIX">Workflow vFIX</option>
+                          <option value="Default">Default (แม่แบบมาตรฐาน)</option>
+                          <option value="Kitchen Renovation">Kitchen Renovation (รีโนเวทห้องครัว)</option>
+                          <option value="None">None (ไม่สร้างงานย่อย)</option>
+                          {Array.from(new Set(taskTemplates.map(t => t.projectTemplateName || 'General'))).filter(n => n && n !== 'General' && n !== 'Default' && n !== 'Workflow vFIX' && n !== 'Kitchen Renovation').map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          หมายเหตุ
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <textarea 
+                            value={notes} 
+                            onChange={e => setNotes(e.target.value.slice(0, 500))} 
+                            placeholder="ระบุหมายเหตุ (ถ้ามี)"
+                            style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', outline: 'none', minHeight: '60px', width: '100%', resize: 'vertical', fontSize: '0.85rem' }}
+                          />
+                          <span style={{ position: 'absolute', bottom: '6px', right: '10px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            {notes.length}/500
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>มูลค่าโครงการ / ยอดขาย (฿)</label>
-                      <input 
-                        type="text" 
-                        value={projectValue} 
-                        onChange={e => setProjectValue(formatNumberWithCommas(e.target.value))} 
-                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                      />
+                  {/* SECTION 2: ข้อมูลโปรเจกต์ */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: 700, fontSize: '1rem' }}>
+                      <Layers size={18} /> ข้อมูลโปรเจกต์
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ยอดเรียกเก็บเงิน (฿)</label>
-                      <input 
-                        type="text" 
-                        value={invoicedValue} 
-                        onChange={e => setInvoicedValue(formatNumberWithCommas(e.target.value))} 
-                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ยอดที่เก็บเงินได้แล้ว (฿)</label>
-                      <input 
-                        type="text" 
-                        value={collectedValue} 
-                        onChange={e => setCollectedValue(formatNumberWithCommas(e.target.value))} 
-                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                      />
-                    </div>
-                  </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ค่าใช้จ่ายตามแผน (Planned Cost) (฿)</label>
-                      <input 
-                        type="text" 
-                        value={plannedExpense} 
-                        onChange={e => setPlannedExpense(formatNumberWithCommas(e.target.value))} 
-                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          สาขา <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select 
+                          value={branch} 
+                          onChange={e => setBranch(e.target.value)}
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                        >
+                          <option value="">เลือกสาขา</option>
+                          <option value="สำนักงานใหญ่">สำนักงานใหญ่</option>
+                          <option value="สาขา สุขุมวิท">สาขา สุขุมวิท</option>
+                          <option value="สาขา บางนา">สาขา บางนา</option>
+                          <option value="สาขา เชียงใหม่">สาขา เชียงใหม่</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          เจ้าหน้าที่รับผิดชอบข้อมูลลูกค้า <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select 
+                          value={customerStaffPic} 
+                          onChange={e => setCustomerStaffPic(e.target.value)}
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                        >
+                          <option value="">เลือกเจ้าหน้าที่</option>
+                          {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.department || 'Staff'})</option>)}
+                        </select>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>ค่าใช้จ่ายจริง (Actual Cost) (฿)</label>
-                      <input 
-                        type="text" 
-                        value={actualExpense} 
-                        onChange={e => setActualExpense(formatNumberWithCommas(e.target.value))} 
-                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                      />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          ชื่อโปรเจกต์ <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <input 
+                          type="text" 
+                          value={name} 
+                          onChange={e => setName(e.target.value)} 
+                          placeholder="เช่น Mr./Mrs OO House XX construction"
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                          required
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          วันที่เริ่มต้นอ้างอิง <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <CustomDateInput 
+                          value={refStartDate} 
+                          onChange={e => setRefStartDate(e.target.value)} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                        />
+                      </div>
                     </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                            วันที่เริ่ม
+                          </label>
+                          <label style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={isAllDay} 
+                              onChange={e => setIsAllDay(e.target.checked)} 
+                            />
+                            ทั้งวัน
+                          </label>
+                        </div>
+                        <CustomDateInput 
+                          value={startDate} 
+                          onChange={e => setStartDate(e.target.value)} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                          required
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          วันที่เสร็จ
+                        </label>
+                        <CustomDateInput 
+                          value={endDate} 
+                          onChange={e => setEndDate(e.target.value)} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* สถานะโปรเจกต์ Radio options */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.01)' }}>
+                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                        สถานะโปรเจกต์ <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
+                        {[
+                          'บันทึกข้อมูลลูกค้า',
+                          'ประสานงาน/สำรวจ',
+                          'รออนุมัติ QC',
+                          'ออกแบบ',
+                          'ลูกค้ายืนยันดำเนินการ',
+                          'รอใบเสนอราคา',
+                          'ยืนยันราคา/ใบดำเนินการ',
+                          'ก่อสร้าง',
+                          'ส่งมอบงาน/เก็บเงิน',
+                          'Project Complete',
+                          'Survey Complete'
+                        ].map(st => (
+                          <label key={st} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                            <input 
+                              type="radio" 
+                              name="project_status_radio" 
+                              checked={status === st || (status === 'Planning' && st === 'บันทึกข้อมูลลูกค้า')} 
+                              onChange={() => setStatus(st as ProjectStatus)} 
+                            />
+                            {st}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* References grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Survey Ticket Number</label>
+                        <input 
+                          type="text" 
+                          placeholder="ระบุหมายเลข" 
+                          value={surveyTicketNo} 
+                          onChange={e => setSurveyTicketNo(e.target.value)} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem 0.6rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Survey QT Number</label>
+                        <input 
+                          type="text" 
+                          placeholder="ระบุหมายเลข" 
+                          value={surveyQtNo} 
+                          onChange={e => setSurveyQtNo(e.target.value)} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem 0.6rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Renovate QT Number</label>
+                        <input 
+                          type="text" 
+                          placeholder="ระบุหมายเลข" 
+                          value={renovateQtNo} 
+                          onChange={e => setRenovateQtNo(e.target.value)} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem 0.6rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Renovate Ticket Number</label>
+                        <input 
+                          type="text" 
+                          placeholder="ระบุหมายเลข" 
+                          value={renovateTicketNo} 
+                          onChange={e => setRenovateTicketNo(e.target.value)} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem 0.6rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>PIC</label>
+                      <select 
+                        value={picUser} 
+                        onChange={e => setPicUser(e.target.value)}
+                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem 0.6rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+                      >
+                        <option value="">เลือก PIC</option>
+                        {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                      </select>
+                    </div>
+
                   </div>
                 </div>
-              )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Description</label>
-                <textarea 
-                  value={description} 
-                  onChange={e => setDescription(e.target.value)} 
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none', minHeight: '80px', resize: 'vertical' }}
-                />
-              </div>
+                {/* ── RIGHT COLUMN ── */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  
+                  {/* SECTION 3: ข้อมูลลูกค้า */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#8b5cf6', fontWeight: 700, fontSize: '1rem' }}>
+                      <Users size={18} /> ข้อมูลลูกค้า
+                    </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Kanban Columns (comma-separated workflow columns)</label>
-                <input 
-                  type="text" 
-                  value={customColumnsText} 
-                  onChange={e => setCustomColumnsText(e.target.value)} 
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                  placeholder="e.g. To Do, In Progress, Review, Done"
-                />
-              </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          ประเภทงาน <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select 
+                          value={jobType} 
+                          onChange={e => setJobType(e.target.value)}
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                        >
+                          <option value="">เลือกประเภทงาน</option>
+                          <option value="งานรีโนเวท">งานรีโนเวท (Renovation)</option>
+                          <option value="งานสร้างใหม่">งานสร้างใหม่ (Construction)</option>
+                          <option value="งานปรับปรุง/ซ่อมแซม">งานปรับปรุง/ซ่อมแซม (Repair)</option>
+                          <option value="งานตกแต่งภายใน">งานตกแต่งภายใน (Interior)</option>
+                        </select>
+                      </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Permission Scheme</label>
-                <select 
-                  value={permissionSchemeId} 
-                  onChange={e => setPermissionSchemeId(e.target.value)}
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                >
-                  {permissionSchemes.map(ps => (
-                    <option key={ps.id} value={ps.id}>{ps.name} - {ps.description}</option>
-                  ))}
-                </select>
-              </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          ประเภทสิ่งก่อสร้าง <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginTop: '0.2rem' }}>
+                          {['บ้านเดี่ยว', 'คอนโด', 'อาคารพาณิชย์', 'อื่นๆ'].map(bt => (
+                            <label key={bt} style={{ fontSize: '0.775rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                              <input 
+                                type="radio" 
+                                name="building_type_radio" 
+                                checked={buildingType === bt} 
+                                onChange={() => setBuildingType(bt)} 
+                              />
+                              {bt}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Status</label>
-                  <select 
-                    value={status} 
-                    onChange={e => setStatus(e.target.value as ProjectStatus)}
-                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                  >
-                    <option value="Planning">Planning</option>
-                    <option value="Active">Active</option>
-                    <option value="On Hold">On Hold</option>
-                    <option value="Completed">Completed</option>
-                  </select>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          ขนาดพื้นที่
+                        </label>
+                        <input 
+                          type="text" 
+                          placeholder="ระบุขนาดพื้นที่ (ตร.ม.)" 
+                          value={areaSize} 
+                          onChange={e => setAreaSize(e.target.value)} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          งบประมาณเบื้องต้น (บาท)
+                        </label>
+                        <input 
+                          type="text" 
+                          placeholder="ระบุจำนวน" 
+                          value={initialBudget} 
+                          onChange={e => setInitialBudget(formatNumberWithCommas(e.target.value))} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          ช่องทางที่ได้รับสินค้า
+                        </label>
+                        <CustomDateInput 
+                          value={channelReceivedDate} 
+                          onChange={e => setChannelReceivedDate(e.target.value)} 
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          วิธีการชำระเงิน
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.2rem' }}>
+                          {['เงินสด', 'โอนเข้าบัญชีธนาคาร', 'ผ่อนชำระ', 'บัตรเครดิต', 'อื่นๆ'].map(pm => (
+                            <label key={pm} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                              <input 
+                                type="radio" 
+                                name="payment_method_radio" 
+                                checked={paymentMethod === pm} 
+                                onChange={() => setPaymentMethod(pm)} 
+                              />
+                              {pm}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* พื้นที่งาน Checkboxes */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.01)' }}>
+                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                        พื้นที่งาน
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
+                        {[
+                          'ห้องรับแขก', 'ห้องครัว', 'ห้องน้ำ/ห้องส้วม', 'ลาน/สนามหญ้า', 'ลานซักล้าง',
+                          'ตกแต่งภายนอก', 'ห้องนอน', 'ห้องโถง/ห้องรับแขก', 'สำนักงาน / ออฟฟิศ', 'ลานจอดรถ'
+                        ].map(area => {
+                          const checked = workAreas.includes(area);
+                          return (
+                            <label key={area} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={checked} 
+                                onChange={e => {
+                                  if (e.target.checked) setWorkAreas(prev => [...prev, area]);
+                                  else setWorkAreas(prev => prev.filter(a => a !== area));
+                                }} 
+                              />
+                              {area}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* ประเภทงานที่ต้องการ Checkboxes */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.01)' }}>
+                      <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                        ประเภทงานที่ต้องการ
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
+                        {[
+                          'งานไฟฟ้า', 'งานออกแบบ', 'งานป้องกัน', 'งานประปา', 'งานติดตั้ง', 'งานอื่นๆ'
+                        ].map(wt => {
+                          const checked = workTypes.includes(wt);
+                          return (
+                            <label key={wt} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={checked} 
+                                onChange={e => {
+                                  if (e.target.checked) setWorkTypes(prev => [...prev, wt]);
+                                  else setWorkTypes(prev => prev.filter(t => t !== wt));
+                                }} 
+                              />
+                              {wt}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Budget ($)</label>
-                  <input 
-                    type="text" 
-                    value={budget} 
-                    onChange={e => setBudget(formatNumberWithCommas(e.target.value))} 
-                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                  />
-                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                   <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Start Date *</label>
-                   <CustomDateInput 
-                     value={startDate} 
-                     onChange={e => setStartDate(e.target.value)} 
-                     style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                     required
-                   />
-                 </div>
+              {/* COLLAPSIBLE TEAM MEMBERS SECTION */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.85rem' }}>
+                <details style={{ cursor: 'pointer' }}>
+                  <summary style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--accent-secondary)', outline: 'none' }}>
+                    👥 เพิ่มทีมงานและผู้รับผิดชอบโครงการ (Manage Team Members - {members.length}คน)
+                  </summary>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.75rem', padding: '0.75rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 120px', gap: '0.75rem', alignItems: 'end' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>เลือกบุคลากร</label>
+                        <select 
+                          value={tempUserId} 
+                          onChange={e => setTempUserId(e.target.value)}
+                          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+                        >
+                          <option value="">เลือกพนักงาน...</option>
+                          {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.department || 'Staff'})</option>)}
+                        </select>
+                      </div>
 
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                   <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>End Date</label>
-                   <CustomDateInput 
-                     value={endDate} 
-                     onChange={e => setEndDate(e.target.value)} 
-                     style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                   />
-                 </div>
-               </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>บทบาท (Role)</label>
+                        <select 
+                          value={tempRole} 
+                          onChange={e => setTempRole(e.target.value as ProjectRole)}
+                          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+                        >
+                          <option value="Frontend dev">Frontend dev</option>
+                          <option value="Backend dev">Backend dev</option>
+                          <option value="PM">PM</option>
+                          <option value="SA">SA</option>
+                          <option value="Team Lead">Team Lead</option>
+                          <option value="DevOps">DevOps</option>
+                          <option value="QC">QC</option>
+                          <option value="Designer">Designer</option>
+                          <option value="Custom">Custom Role...</option>
+                        </select>
+                      </div>
 
-              {/* Members Setup */}
-              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <h4 style={{ fontSize: '0.95rem' }}>Manage Members</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Select Employee</label>
-                    <select 
-                      value={tempUserId} 
-                      onChange={e => setTempUserId(e.target.value)}
-                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none', width: '100%' }}
-                    >
-                      <option value="">Select Employee...</option>
-                      {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.department})</option>)}
-                    </select>
-                  </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Rate/MD (THB)</label>
+                        <input 
+                          type="number" 
+                          placeholder="Rate/MD"
+                          value={tempManDayRate}
+                          onChange={e => setTempManDayRate(e.target.value)}
+                          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
+                        />
+                      </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Role</label>
-                    <select 
-                      value={tempRole} 
-                      onChange={e => setTempRole(e.target.value)}
-                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none', width: '100%' }}
-                    >
-                      <option value="Frontend dev">Frontend dev</option>
-                      <option value="Backend dev">Backend dev</option>
-                      <option value="PM">PM</option>
-                      <option value="SA">SA</option>
-                      <option value="Team Lead">Team Lead</option>
-                      <option value="DevOps">DevOps</option>
-                      <option value="QC">QC</option>
-                      <option value="Designer">Designer</option>
-                      <option value="Custom">Custom Role...</option>
-                    </select>
-                  </div>
+                      <button 
+                        type="button" 
+                        onClick={addMember} 
+                        style={{ 
+                          background: 'var(--accent-primary)', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: 'var(--radius-sm)', 
+                          padding: '0.45rem', 
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                          fontSize: '0.8rem'
+                        }}
+                      >
+                        + เพิ่มสมาชิก
+                      </button>
+                    </div>
 
-                  {tempRole === 'Custom' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Custom Role Name</label>
+                    {tempRole === 'Custom' && (
                       <input 
                         type="text" 
-                        placeholder="Type role..."
+                        placeholder="ระบุชื่อบทบาทแบบกำหนดเอง..."
                         value={customRole}
                         onChange={e => setCustomRole(e.target.value)}
-                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
+                        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
                       />
+                    )}
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', maxHeight: '100px', overflowY: 'auto' }}>
+                      {members.map(m => (
+                        <span key={m.userId} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          {getUserName(m.userId)} ({m.role})
+                          <button type="button" onClick={() => removeMember(m.userId)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', padding: 0 }}>
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
                     </div>
-                  )}
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Rate/MD (THB)</label>
-                    <input 
-                      type="number" 
-                      placeholder="Rate/MD (THB)"
-                      value={tempManDayRate}
-                      onChange={e => setTempManDayRate(e.target.value)}
-                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none', width: '100%' }}
-                    />
                   </div>
-                </div>
+                </details>
+              </div>
 
+              {/* ACTION FOOTER BUTTONS */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                 <button 
                   type="button" 
-                  onClick={addMember} 
+                  onClick={() => setIsModalOpen(false)} 
                   style={{ 
-                    background: 'var(--bg-tertiary)', 
-                    color: 'var(--text-primary)', 
-                    border: '1px solid var(--border-color)', 
+                    background: 'transparent', 
+                    color: '#059669', 
+                    border: '1.5px solid #059669', 
+                    padding: '0.55rem 1.5rem', 
                     borderRadius: 'var(--radius-md)', 
-                    padding: '0.5rem 1.25rem', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    gap: '0.5rem',
+                    fontWeight: 600, 
                     cursor: 'pointer',
-                    alignSelf: 'flex-start',
-                    fontWeight: 500
+                    fontSize: '0.9rem'
                   }}
                   className="hover-lift"
                 >
-                  <Plus size={16} /> Add Member
+                  ยกเลิก
                 </button>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '120px', overflowY: 'auto' }}>
-                  {members.map(m => (
-                    <div key={m.userId} className="flex-between" style={{ background: 'var(--bg-tertiary)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)' }}>
-                      <span style={{ fontSize: '0.85rem' }}>{getUserName(m.userId)} - <span style={{ color: 'var(--text-muted)' }}>{m.role} {m.manDayRate ? `(${m.manDayRate.toLocaleString()} THB/MD)` : ''}</span></span>
-                      <button type="button" onClick={() => removeMember(m.userId)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer' }}>
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      alert('บันทึกแบบร่างเรียบร้อยแล้ว');
+                      setIsModalOpen(false);
+                    }} 
+                    style={{ 
+                      background: 'transparent', 
+                      color: '#059669', 
+                      border: '1.5px solid #059669', 
+                      padding: '0.55rem 1.25rem', 
+                      borderRadius: 'var(--radius-md)', 
+                      fontWeight: 600, 
+                      cursor: 'pointer',
+                      fontSize: '0.9rem'
+                    }}
+                    className="hover-lift"
+                  >
+                    บันทึกแบบร่าง
+                  </button>
+
+                  <button 
+                    type="submit" 
+                    style={{ 
+                      background: '#059669', 
+                      color: 'white', 
+                      border: 'none', 
+                      padding: '0.55rem 1.75rem', 
+                      borderRadius: 'var(--radius-md)', 
+                      fontWeight: 600, 
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }} 
+                    className="hover-lift"
+                  >
+                    ถัดไป &gt;
+                  </button>
                 </div>
               </div>
 
-              <button type="submit" style={{ 
-                background: 'var(--accent-primary)', 
-                color: 'white', 
-                border: 'none', 
-                padding: '0.75rem', 
-                borderRadius: 'var(--radius-md)', 
-                fontWeight: 600, 
-                cursor: 'pointer',
-                marginTop: '1rem'
-              }} className="hover-lift">
-                Save Project
-              </button>
             </form>
           </div>
         </div>

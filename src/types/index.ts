@@ -58,6 +58,26 @@ export interface Project {
   plannedExpense?: number;
   actualExpense?: number;
   projectTemplateName?: string;
+  extraDetails?: {
+    notes?: string;
+    branch?: string;
+    customerStaffPic?: string;
+    refStartDate?: string;
+    isAllDay?: boolean;
+    surveyTicketNo?: string;
+    surveyQtNo?: string;
+    renovateQtNo?: string;
+    renovateTicketNo?: string;
+    picUser?: string;
+    jobType?: string;
+    buildingType?: string;
+    areaSize?: string;
+    initialBudget?: number;
+    channelReceivedDate?: string;
+    paymentMethod?: string;
+    workAreas?: string[];
+    workTypes?: string[];
+  };
 }
 
 export interface Sprint {

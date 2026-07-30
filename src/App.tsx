@@ -264,7 +264,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Clock size={20} color="white" />
             </div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }} className="text-gradient">KANNA</h1>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }} className="text-gradient">BuildFlow</h1>
           </div>
           <button 
             className="mobile-close-btn"
@@ -287,7 +287,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           <SidebarItem icon={Users} label="ช่างติดตั้ง & ทีมงาน" path="/team" />
           <SidebarItem icon={BarChart3} label="สรุปงบประมาณและต้นทุน" path="/reports" />
           <SidebarItem icon={SettingsIcon} label="ตั้งค่าระบบ" path="/settings" />
-          <SidebarItem icon={HelpCircle} label="คู่มือระบบ Kanna" path="/help" />
+          <SidebarItem icon={HelpCircle} label="คู่มือระบบ BuildFlow" path="/help" />
         </nav>
 
         <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
@@ -952,7 +952,7 @@ function App() {
           <Route path="/project-board" element={<ProjectBoard projects={projects} setProjects={handleSetProjects} tasks={tasks} users={users} currentUser={currentUser} />} />
           <Route path="/project-timeline" element={<ProjectTimeline projects={projects} currentUser={currentUser} />} />
           <Route path="/project-plan" element={<ProjectPlan projects={projects} tasks={tasks} setTasks={handleSetTasks} users={users} taskTemplates={taskTemplates} permissionSchemes={permissionSchemes} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
-          <Route path="/tasks" element={<Tasks tasks={tasks} setTasks={handleSetTasks} projects={projects} users={users} sprints={sprints} setSprints={handleSetSprints} releases={releases} setReleases={handleSetReleases} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} permissionSchemes={permissionSchemes} currentUser={currentUser} />} />
+          <Route path="/tasks" element={<Tasks tasks={tasks} setTasks={handleSetTasks} projects={projects} users={users} sprints={sprints} setSprints={handleSetSprints} releases={releases} setReleases={handleSetReleases} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} permissionSchemes={permissionSchemes} currentUser={currentUser} taskTemplates={taskTemplates} />} />
           <Route path="/timesheet" element={<Timesheet timesheets={timesheets} setTimesheets={handleSetTimesheets} projects={projects} tasks={tasks} currentUser={currentUser} users={users} />} />
           <Route path="/chat" element={<ProjectChat projects={projects} users={users} currentUser={currentUser} systemSettings={systemSettings} />} />
           <Route path="/team" element={<TeamApprovals users={users} setUsers={handleSetUsers} timesheets={timesheets} setTimesheets={handleSetTimesheets} projects={projects} setProjects={handleSetProjects} tasks={tasks} currentUser={currentUser} />} />

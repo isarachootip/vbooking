@@ -121,6 +121,7 @@ const initDB = async () => {
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS collected_value NUMERIC DEFAULT 0;
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS planned_expense NUMERIC DEFAULT 0;
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS actual_expense NUMERIC DEFAULT 0;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS extra_details JSONB DEFAULT '{}'::jsonb;
     `);
 
     // Create Project Workflows Table
@@ -561,6 +562,29 @@ const initDB = async () => {
         );
       }
       console.log('Seeded default task templates.');
+    }
+
+    // Seed Kitchen Renovation templates if not present
+    const kitchenTemplateCount = await client.query("SELECT COUNT(*) FROM task_templates WHERE project_template_name = 'Kitchen Renovation' OR project_template_name = 'รีโนเวทห้องครัว'");
+    if (parseInt(kitchenTemplateCount.rows[0].count) === 0) {
+      console.log('Seeding Kitchen Renovation task templates...');
+      const kitchenTemplates = [
+        { id: 'tpl_k1', title: 'สำรวจหน้างานและวัดพื้นที่จริง (Kitchen Survey)', description: 'สำรวจโครงสร้างเดิม วัดขนาดพื้นที่ ผนัง ตำแหน่งท่อน้ำ ท่อระบายน้ำ และปลั๊กไฟเดิม', priority: 'High', start_percent: 0, end_percent: 5, estimated_hours: 8, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k2', title: 'ออกแบบแปลนและ 3D Perspective (Kitchen 3D Design)', description: 'วางแปลนจัดสรรพื้นที่ (Work Triangle: ตู้เย็น อ่างล้างจาน เตา) ออกแบบภาพ 3D และเลือกวัสดุ', priority: 'High', start_percent: 5, end_percent: 20, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k3', title: 'รื้อถอนเคาน์เตอร์และระบบเดิม (Demolition)', description: 'รื้อถอนตู้บิวท์อิน เคาน์เตอร์ปูน กระเบื้องผนังเดิม และขนย้ายเศษวัสดุไปทิ้ง', priority: 'High', start_percent: 20, end_percent: 35, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k4', title: 'เดินระบบไฟฟ้าและประปาใหม่ (Electrical & Plumbing)', description: 'เดินท่อน้ำดี ท่อน้ำทิ้ง ท่อแก๊ส/เครื่องดูดควัน และเดินสายไฟปลั๊กไฟสำหรับเครื่องใช้ไฟฟ้า', priority: 'High', start_percent: 35, end_percent: 50, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k5', title: 'หล่อเคาน์เตอร์ปูนและงานปูกระเบื้อง (Masonry & Tiling)', description: 'ก่อโครงสร้างเคาน์เตอร์ปูน ฉาบเรียบ ปูกระเบื้องพื้นและกระเบื้องผนังกันเปื้อน (Backsplash)', priority: 'High', start_percent: 50, end_percent: 70, estimated_hours: 24, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k6', title: 'ติดตั้งท็อปเคาน์เตอร์และตู้บิวท์อิน (Countertop & Cabinets)', description: 'ติดตั้งท็อปหินสังเคราะห์/หินแกรนิต ติดตั้งตู้แขวน บิวท์อินตู้ใต้เคาน์เตอร์ และหน้าบาน', priority: 'High', start_percent: 70, end_percent: 85, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k7', title: 'ติดตั้งซิงค์ อุปกรณ์ไฟฟ้า และฟิตติ้ง (Sink & Appliances)', description: 'ติดตั้งอ่างล้างจาน ก๊อกน้ำ เตาไฟฟ้า เครื่องดูดควัน โคมไฟ และอุปกรณ์ฟิตติ้ง', priority: 'Medium', start_percent: 85, end_percent: 95, estimated_hours: 12, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k8', title: 'ทำความสะอาด ตรวจรับงานและส่งมอบ (Final Cleaning & Handover)', description: 'เก็บงานทาสี ทำความสะอาดคราบปูนคราบกาว ตรวจสอบระบบน้ำ/ไฟ และส่งมอบงานให้ลูกค้า', priority: 'Urgent', start_percent: 95, end_percent: 100, estimated_hours: 8, project_template_name: 'Kitchen Renovation' }
+      ];
+      for (const tpl of kitchenTemplates) {
+        await client.query(
+          'INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours, project_template_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING',
+          [tpl.id, tpl.title, tpl.description, tpl.priority, tpl.start_percent, tpl.end_percent, tpl.estimated_hours, tpl.project_template_name]
+        );
+      }
+      console.log('Seeded Kitchen Renovation task templates.');
     }
 
     // Ensure all existing users have a password hash
@@ -1342,7 +1366,8 @@ app.get('/api/initial-data', async (req, res) => {
       invoicedValue: parseFloat(p.invoiced_value || '0'),
       collectedValue: parseFloat(p.collected_value || '0'),
       plannedExpense: parseFloat(p.planned_expense || '0'),
-      actualExpense: parseFloat(p.actual_expense || '0')
+      actualExpense: parseFloat(p.actual_expense || '0'),
+      extraDetails: p.extra_details || {}
     }));
 
     const tasks = tasksRes.rows.map(t => ({
@@ -1512,15 +1537,15 @@ app.delete('/api/users/:id', async (req, res) => {
 
 // Projects REST API
 app.post('/api/projects', async (req, res) => {
-  const { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense, projectTemplateName } = req.body;
+  const { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense, projectTemplateName, extraDetails } = req.body;
   try {
     const checkExist = await pool.query('SELECT 1 FROM projects WHERE id = $1', [id]);
     const isNew = checkExist.rows.length === 0;
     const cols = customColumns || ["To Do", "In Progress", "Review", "Done"];
 
     await pool.query(
-      `INSERT INTO projects (id, name, description, status, start_date, end_date, budget, members, custom_columns, permission_scheme_id, project_type, support_task_style, address, project_value, invoiced_value, collected_value, planned_expense, actual_expense)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      `INSERT INTO projects (id, name, description, status, start_date, end_date, budget, members, custom_columns, permission_scheme_id, project_type, support_task_style, address, project_value, invoiced_value, collected_value, planned_expense, actual_expense, extra_details)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          description = EXCLUDED.description,
@@ -1537,8 +1562,9 @@ app.post('/api/projects', async (req, res) => {
          project_value = EXCLUDED.project_value,
          invoiced_value = EXCLUDED.invoiced_value,
          collected_value = EXCLUDED.collected_value,
-         planned_expense = EXCLUDED.planned_expense,
-         actual_expense = EXCLUDED.actual_expense`,
+         plannedExpense = EXCLUDED.planned_expense,
+         actualExpense = EXCLUDED.actual_expense,
+         extra_details = EXCLUDED.extra_details`,
       [
         id, 
         name, 
@@ -1557,7 +1583,8 @@ app.post('/api/projects', async (req, res) => {
         invoicedValue || 0,
         collectedValue || 0,
         plannedExpense || 0,
-        actualExpense || 0
+        actualExpense || 0,
+        JSON.stringify(extraDetails || {})
       ]
     );
 

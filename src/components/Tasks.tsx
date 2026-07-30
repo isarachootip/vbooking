@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Task, TaskStatus, TaskPriority, Project, User, Sprint, Release, TaskCommit } from '../types';
+import type { Task, TaskStatus, TaskPriority, Project, User, Sprint, Release, TaskCommit, TaskTemplate } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { Plus, Filter, Clock, X, Edit, Trash2, GripVertical, Calendar, Bug, FileText, CheckSquare, Layers, GitBranch, GitCommit, ChevronRight, ChevronDown, BarChart3, CalendarRange } from 'lucide-react';
@@ -15,7 +15,7 @@ import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 
-const taskTemplates = [
+const defaultTaskTemplates = [
   {
     title: 'Requirement Analysis & Specs Drafting',
     description: 'Gather, analyze, and detail project requirements. Deliverable: PRD / specification document.',
@@ -63,6 +63,54 @@ const taskTemplates = [
     description: 'Configure build scripts, dockerize application, set environment variables, deploy to staging/production server.',
     estimatedHours: '8',
     priority: 'Urgent'
+  },
+  {
+    title: 'สำรวจหน้างานและวัดพื้นที่จริง (Kitchen Survey)',
+    description: 'สำรวจโครงสร้างเดิม วัดขนาดพื้นที่ ผนัง ตำแหน่งท่อน้ำ ท่อระบายน้ำ และปลั๊กไฟเดิม',
+    estimatedHours: '8',
+    priority: 'High'
+  },
+  {
+    title: 'ออกแบบแปลนและ 3D Perspective (Kitchen 3D Design)',
+    description: 'วางแปลนจัดสรรพื้นที่ (Work Triangle: ตู้เย็น อ่างล้างจาน เตา) ออกแบบภาพ 3D และเลือกวัสดุ',
+    estimatedHours: '16',
+    priority: 'High'
+  },
+  {
+    title: 'รื้อถอนเคาน์เตอร์และระบบเดิม (Demolition)',
+    description: 'รื้อถอนตู้บิวท์อิน เคาน์เตอร์ปูน กระเบื้องผนังเดิม และขนย้ายเศษวัสดุไปทิ้ง',
+    estimatedHours: '16',
+    priority: 'High'
+  },
+  {
+    title: 'เดินระบบไฟฟ้าและประปาใหม่ (Electrical & Plumbing)',
+    description: 'เดินท่อน้ำดี ท่อน้ำทิ้ง ท่อแก๊ส/เครื่องดูดควัน และเดินสายไฟปลั๊กไฟสำหรับเครื่องใช้ไฟฟ้า',
+    estimatedHours: '16',
+    priority: 'High'
+  },
+  {
+    title: 'หล่อเคาน์เตอร์ปูนและงานปูกระเบื้อง (Masonry & Tiling)',
+    description: 'ก่อโครงสร้างเคาน์เตอร์ปูน ฉาบเรียบ ปูกระเบื้องพื้นและกระเบื้องผนังกันเปื้อน (Backsplash)',
+    estimatedHours: '24',
+    priority: 'High'
+  },
+  {
+    title: 'ติดตั้งท็อปเคาน์เตอร์และตู้บิวท์อิน (Countertop & Cabinets)',
+    description: 'ติดตั้งท็อปหินสังเคราะห์/หินแกรนิต ติดตั้งตู้แขวน บิวท์อินตู้ใต้เคาน์เตอร์ และหน้าบาน',
+    estimatedHours: '16',
+    priority: 'High'
+  },
+  {
+    title: 'ติดตั้งซิงค์ อุปกรณ์ไฟฟ้า และฟิตติ้ง (Sink & Appliances)',
+    description: 'ติดตั้งอ่างล้างจาน ก๊อกน้ำ เตาไฟฟ้า เครื่องดูดควัน โคมไฟ และอุปกรณ์ฟิตติ้ง',
+    estimatedHours: '12',
+    priority: 'Medium'
+  },
+  {
+    title: 'ทำความสะอาด ตรวจรับงานและส่งมอบ (Final Cleaning & Handover)',
+    description: 'เก็บงานทาสี ทำความสะอาดคราบปูนคราบกาว ตรวจสอบระบบน้ำ/ไฟ และส่งมอบงานให้ลูกค้า',
+    estimatedHours: '8',
+    priority: 'Urgent'
   }
 ];
 
@@ -79,6 +127,7 @@ interface TasksProps {
   setProjectWorkflows: React.Dispatch<React.SetStateAction<any[]>>;
   permissionSchemes: any[];
   currentUser: User;
+  taskTemplates?: TaskTemplate[];
 }
 
 // ── Draggable Task Card ────────────────────────────────────────────────────────
@@ -1166,7 +1215,8 @@ function DroppableBacklogSection({
 }
 
 // ── Main Tasks Component ───────────────────────────────────────────────────────
-export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, releases, setReleases, projectWorkflows, setProjectWorkflows: _setProjectWorkflows, permissionSchemes, currentUser }: TasksProps) => {
+export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, releases, setReleases, projectWorkflows, setProjectWorkflows: _setProjectWorkflows, permissionSchemes, currentUser, taskTemplates }: TasksProps) => {
+  const activeTemplates = (taskTemplates && taskTemplates.length > 0) ? taskTemplates : defaultTaskTemplates;
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedSprint, setSelectedSprint] = useState<string>('all');
   const [activeSubTab, setActiveSubTab] = useState<'summary' | 'backlog' | 'board' | 'timeline' | 'releases' | 'grooming'>('summary');
@@ -3825,10 +3875,10 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
                   <select
                     onChange={(e) => {
                       const idx = Number(e.target.value);
-                      if (!isNaN(idx) && taskTemplates[idx]) {
-                        const tpl = taskTemplates[idx];
+                      if (!isNaN(idx) && activeTemplates[idx]) {
+                        const tpl = activeTemplates[idx];
                         setTitle(tpl.title);
-                        setDescription(tpl.description);
+                        setDescription(tpl.description || '');
                         setEstimatedHours(String(tpl.estimatedHours || ''));
                         setPriority(tpl.priority as TaskPriority);
                       }
@@ -3844,7 +3894,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
                     }}
                   >
                     <option value="">-- Select a Template --</option>
-                    {taskTemplates.map((t, idx) => (
+                    {activeTemplates.map((t, idx) => (
                       <option key={idx} value={idx}>
                         {t.title} ({t.estimatedHours}h = {t.estimatedHours ? Number(t.estimatedHours) / 8 : 0} MD)
                       </option>

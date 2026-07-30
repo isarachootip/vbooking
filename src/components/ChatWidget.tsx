@@ -12,7 +12,7 @@ const ChatWidget: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'สวัสดีครับ KANNA Assistant ยินดีให้บริการ มีอะไรให้ผมช่วยเหลือเกี่ยวกับโครงการก่อสร้างหรือติดตั้งไหมครับ?',
+      text: 'สวัสดีครับ BuildFlow Assistant ยินดีให้บริการ มีอะไรให้ผมช่วยเหลือเกี่ยวกับโครงการก่อสร้างหรือติดตั้งไหมครับ?',
       sender: 'bot',
       timestamp: new Date(),
     },
