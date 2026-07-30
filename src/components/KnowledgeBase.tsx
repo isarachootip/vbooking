@@ -53,10 +53,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
             <div>
               <p style={{ marginBottom: '0.5rem' }}>NexTime is a comprehensive project and resource management system. Here are the core features:</p>
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                <li style={{ marginBottom: '0.25rem' }}><strong>Agile Task Management:</strong> Kanban boards, Backlog grooming, and Sprints for managing Stories, Tasks, and Bugs with Story Points (SP).</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>12-Step Project Pipeline:</strong> Manage projects seamlessly from Survey Purchase, QC Survey, Design, BOQ Proposal, Payment, Site Check-in, Execution, to Final QC Handover and Job Close.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Site Check-In & Check-Out:</strong> Real-time GPS location tracking and photo proof for site technicians.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Agile Task & QC Management:</strong> Kanban boards, Backlog, and QC inspections.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Gantt Chart & Timeline:</strong> Visual project planning to see overlapping tasks and bottlenecks.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Timesheet & Approvals:</strong> Employees can log daily work hours, which are sent to PMs or Admins for approval.</li>
-                <li style={{ marginBottom: '0.25rem' }}><strong>Resource & Cost Tracking:</strong> Manage Project Roles, setup Labor Rates, and calculate Man-Days and budgets automatically.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Task Template Importer:</strong> Bulk import task templates via CSV, JSON, or standard industry presets (Home Renovation, Electrical, Plumbing).</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Resource & Cost Tracking:</strong> Labor rates, Man-Days, and budget calculations.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>AI Assistant:</strong> Built-in Chatbot powered by Google Gemini (or OpenAI) to help answer system questions.</li>
                 <li><strong>Role-Based Access Control (RBAC):</strong> Granular permission schemes for Admins, Managers, PMs, and Members.</li>
               </ul>
@@ -429,10 +432,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
             <div>
               <p style={{ marginBottom: '0.5rem' }}>NexTime เป็นระบบบริหารจัดการโปรเจกต์และทรัพยากรบุคคลแบบครบวงจร โดยมีฟีเจอร์เด่นดังนี้ครับ:</p>
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                <li style={{ marginBottom: '0.25rem' }}><strong>Agile Task Management:</strong> จัดการงานด้วย Kanban Board, จัดลำดับ Backlog, และวางแผน Sprint พร้อมประเมินความยากด้วย Story Points (SP)</li>
-                <li style={{ marginBottom: '0.25rem' }}><strong>Gantt Chart & Timeline:</strong> ดูแผนงานระยะยาวแบบปฏิทิน เพื่อป้องกันคอขวดและงานทับซ้อน</li>
-                <li style={{ marginBottom: '0.25rem' }}><strong>Timesheet & Approvals:</strong> ระบบลงเวลาทำงานรายวัน และส่งให้ PM หรือ Admin กดอนุมัติ (Approve) ได้ง่ายๆ</li>
-                <li style={{ marginBottom: '0.25rem' }}><strong>Resource & Cost Tracking:</strong> สรุปประวัติ Project Roles, ตั้งค่าฐานเงินเดือน (Labor Rates) และคำนวณต้นทุน Man-Days ของโปรเจกต์อัตโนมัติ</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>12-Step Project Pipeline:</strong> บริหารจัดการโครงการตั้งแต่สั่งซื้อสำรวจ, QC สำรวจหน้างาน, ออกแบบ 3D, เสนอราคา BOQ, ชำระเงิน, ช่าง Check-in, ดำเนินการติดตั้ง, QC ส่งมอบ จนถึงปิด Job</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Site Check-In & Check-Out:</strong> บันทึกการเข้า-ออกหน้างานของช่างพร้อมพิกัด GPS และรูปถ่ายยืนยันแบบเรียลไทม์</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Task & QC Management:</strong> จัดการขั้นตอนงานย่อย Kanban Board, Backlog และตรวจคุณภาพ QC</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Gantt Chart & Timeline:</strong> วางแผนงานระยะยาว เปรียบเทียบแผนจริงกับแผนแม่แบบ</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Timesheet & Approvals:</strong> บันทึกชั่วโมงทำงานช่างและส่งให้ผู้จัดการกดอนุมัติ</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Task Template Importer:</strong> นำเข้าแม่แบบงานสำเร็จรูปผ่าน CSV, JSON หรือเลือกจากชุดแม่แบบมาตรฐาน (รีโนเวทบ้าน, ระบบไฟฟ้า-ประปา)</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Resource & Cost Tracking:</strong> กำหนดอัตราค่าแรงช่าง และคำนวณต้นทุน/กำไรโครงการอัตโนมัติ</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>AI Assistant:</strong> แชทบอทอัจฉริยะที่เชื่อมต่อกับ Google Gemini (หรือ OpenAI) ช่วยตอบคำถามและให้คำแนะนำ</li>
                 <li><strong>Role-Based Access Control (RBAC):</strong> ระบบกำหนดสิทธิ์การเข้าถึงข้อมูลที่ละเอียด ตั้งแต่ระดับ Admin, Manager, PM จนถึง Member</li>
               </ul>
