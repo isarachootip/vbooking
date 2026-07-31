@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Users, Star, Shield, MessageSquare, Zap, Layers } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Calendar, Users, Star, Shield, MessageSquare, Zap, Layers } from 'lucide-react';
+
 import { marked } from 'marked';
 import type { User } from '../types';
 
@@ -446,9 +447,26 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               </ul>
             </div>
           )
+        },
+        {
+          id: 'q23',
+          question: 'What do the "Construction 🇹🇭", "Development", "Support", and "Show All" filter buttons mean in the Project Calendar Timeline?',
+          icon: Calendar,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>These buttons are the <strong>Project Type Filter</strong> controls located at the top right of the <strong>Project Calendar Timeline</strong> page:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Construction 🇹🇭 (Default):</strong> Filters the timeline to display only construction, renovation, site installation, or field projects.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Development:</strong> Filters the timeline to show software, IT, or application development projects.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Support:</strong> Filters the timeline to display maintenance, helpdesk, or after-sales support projects.</li>
+                <li><strong>Show All:</strong> Displays projects of all categories simultaneously on the timeline grid without filtering.</li>
+              </ul>
+            </div>
+          )
         }
       ]
     },
+
     th: {
       title: "คำถามที่พบบ่อย (FAQ)",
       subtitle: "คำถามและคำแนะนำที่พบบ่อยเกี่ยวกับการใช้งานระบบ",
@@ -857,9 +875,26 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               </ul>
             </div>
           )
+        },
+        {
+          id: 'q25',
+          question: 'ปุ่ม Construction 🇹🇭, Development, Support และ Show All ในหน้าปฏิทินไทม์ไลน์โครงการ หมายความว่าอย่างไร?',
+          icon: Calendar,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ปุ่มเหล่านี้คือ <strong>"ตัวกรองประเภทโครงการ (Project Type Filter)"</strong> บนหน้าปฏิทินไทม์ไลน์โครงการ (Project Calendar Timeline) ครับ:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Construction 🇹🇭 (งานก่อสร้าง/ติดตั้ง):</strong> แสดงเฉพาะโครงการที่เป็นงานก่อสร้าง รีโนเวท ตกแต่ง หรือติดตั้งหน้างาน (เป็นค่าเริ่มต้น)</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Development (งานพัฒนา):</strong> แสดงเฉพาะโครงการพัฒนาระบบ ซอฟต์แวร์ หรือ IT</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Support (งานซัพพอร์ต):</strong> แสดงเฉพาะโครงการดูแลระบบ งานซ่อมบำรุง หรือบริการหลังการขาย</li>
+                <li><strong>Show All (แสดงทั้งหมด):</strong> แสดงผลโครงการทุกประเภทในตารางไทม์ไลน์เดียวโดยไม่แยกหมวดหมู่</li>
+              </ul>
+            </div>
+          )
         }
       ]
     }
+
   };
 
   const current = content[lang];
