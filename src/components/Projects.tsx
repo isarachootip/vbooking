@@ -201,13 +201,48 @@ export const Projects = ({
     setPaymentMethod(extra.paymentMethod || 'โอนเข้าบัญชีธนาคาร');
     setWorkAreas(extra.workAreas || []);
     setWorkTypes(extra.workTypes || []);
-
     setIsModalOpen(true);
+  };
+
+  const generateRunningProjectId = (type: string) => {
+
+    let prefixCode = 'PC';
+    if (type === 'construction') prefixCode = 'PC';
+    else if (type === 'quick_service') prefixCode = 'PQ';
+    else if (type === 'installation') prefixCode = 'PI';
+    else if (type === 'dev') prefixCode = 'PD';
+    else if (type === 'support') prefixCode = 'PS';
+    else {
+      const cleanType = (type || 'C').toUpperCase();
+      prefixCode = 'P' + cleanType.charAt(0);
+    }
+
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(now.getFullYear());
+    const dateStr = `${dd}${mm}${yyyy}`;
+
+    const basePattern = `${prefixCode}${dateStr}-`;
+    const matchingProjects = projects.filter(p => p.id && p.id.startsWith(basePattern));
+
+    let maxSeq = 0;
+    matchingProjects.forEach(p => {
+      const seqPart = p.id.replace(basePattern, '');
+      const num = parseInt(seqPart, 10);
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num;
+      }
+    });
+
+    const nextSeq = String(maxSeq + 1).padStart(4, '0');
+    return `${basePattern}${nextSeq}`;
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !startDate) return alert('กรุณากรอกชื่อโปรเจกต์ และวันที่เริ่มต้น');
+
 
     const cols = customColumnsText.split(',').map(c => c.trim()).filter(c => c.length > 0);
 
@@ -233,7 +268,8 @@ export const Projects = ({
     };
 
     const projectData: Project = {
-      id: editingProject ? editingProject.id : 'p_' + Date.now(),
+      id: editingProject ? editingProject.id : generateRunningProjectId(projectType),
+
       name,
       description,
       status,
@@ -1073,7 +1109,13 @@ export const Projects = ({
                           <option value="dev">💻 งานพัฒนา (Development)</option>
                           <option value="support">🛡️ งานซัพพอร์ต (Support)</option>
                         </select>
+                        {!editingProject && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700, marginTop: '0.25rem' }}>
+                            🔢 รหัสโปรเจกต์ที่จะสร้างให้อัตโนมัติ: <span style={{ fontFamily: 'monospace', background: 'rgba(16, 185, 129, 0.15)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>{generateRunningProjectId(projectType)}</span>
+                          </span>
+                        )}
                       </div>
+
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
 
