@@ -764,15 +764,16 @@ export const Projects = ({
 
                       {/* Project ID & Name */}
                       <td style={{ padding: '0.75rem 0.75rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        <Link to={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-primary)' }} className="hover-underline">
                             {project.id.length > 15 ? project.id.substring(0, 15) : project.id}
                           </span>
-                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                             {project.name}
                           </span>
-                        </div>
+                        </Link>
                       </td>
+
 
                       {/* Building Type */}
                       <td style={{ padding: '0.75rem 0.75rem' }}>
@@ -847,10 +848,17 @@ export const Projects = ({
                       {/* Actions */}
                       <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.35rem' }}>
+                          <Link 
+                            to={`/projects/${project.id}`} 
+                            title="ดูรายละเอียดโครงการ 360°" 
+                            style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', padding: '0.2rem' }}
+                          >
+                            <FileText size={15} />
+                          </Link>
                           <button 
                             onClick={() => openEditModal(project)} 
                             title="แก้ไขข้อมูลโปรเจกต์" 
-                            style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '0.2rem' }}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem' }}
                           >
                             <Edit size={15} />
                           </button>
@@ -861,6 +869,7 @@ export const Projects = ({
                           >
                             <Eye size={15} />
                           </Link>
+
                           {canManageWorkflow(project) && (
                             <>
                               <button 
