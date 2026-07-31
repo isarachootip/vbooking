@@ -148,7 +148,7 @@ export const ProjectBoard = ({ projects, setProjects, tasks, users, currentUser 
               onDrop={() => handleDrop(col)}
               style={{
                 flex: '0 0 280px',
-                background: 'rgba(20, 26, 38, 0.45)',
+                background: 'var(--bg-tertiary)',
                 backdropFilter: 'blur(10px)',
                 border: '1px solid var(--border-color)',
                 borderRadius: '12px',
@@ -161,7 +161,8 @@ export const ProjectBoard = ({ projects, setProjects, tasks, users, currentUser 
               }}
             >
               {/* Header column */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }} title={col}>
                   {col}
                 </span>

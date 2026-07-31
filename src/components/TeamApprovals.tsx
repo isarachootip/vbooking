@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { TimesheetEntry, User, GlobalRole, Project, ProjectRole } from '../types';
-import { Check, X, Clock, Award, Users, Plus, Edit, Trash2, Calendar, Home } from 'lucide-react';
+import { Check, X, Clock, Award, Users, Plus, Edit, Trash2, Calendar, Home, Eye, EyeOff, RefreshCw, LayoutGrid, List } from 'lucide-react';
 import { formatToDDMMYYYY, sortTimesheetsByLastUpdate } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 
@@ -17,6 +17,15 @@ interface TeamApprovalsProps {
 
 export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, projects, setProjects, tasks, currentUser }: TeamApprovalsProps) => {
   const [activeTab, setActiveTab] = useState<'team' | 'approvals' | 'wfh'>('team');
+  const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
+    return (localStorage.getItem('team_view_mode') as 'card' | 'list') || 'card';
+  });
+
+  const toggleViewMode = (mode: 'card' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('team_view_mode', mode);
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -30,6 +39,9 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+
   const [globalRole, setGlobalRole] = useState<GlobalRole>('Employee');
   const [department, setDepartment] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -414,20 +426,74 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
           <p style={{ color: 'var(--text-secondary)' }}>Manage team members and approve timesheet submissions.</p>
         </div>
         {activeTab === 'team' && (
-          <button onClick={openAddModal} style={{ 
-            background: 'var(--accent-primary)', 
-            color: 'white', 
-            border: 'none', 
-            padding: '0.75rem 1.5rem', 
-            borderRadius: 'var(--radius-md)', 
-            fontWeight: 500, 
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }} className="hover-lift">
-            <Plus size={18} /> Add Employee
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {/* View Mode Toggle (Card / List) */}
+            <div style={{ 
+              display: 'flex', 
+              background: 'var(--bg-tertiary)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: 'var(--radius-md)', 
+              padding: '0.2rem' 
+            }}>
+              <button
+                type="button"
+                onClick={() => toggleViewMode('card')}
+                title="Card View (แสดงแบบการ์ด)"
+                style={{
+                  background: viewMode === 'card' ? 'var(--accent-primary)' : 'transparent',
+                  color: viewMode === 'card' ? 'white' : 'var(--text-secondary)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '0.45rem 0.75rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <LayoutGrid size={16} /> Card
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleViewMode('list')}
+                title="List View (แสดงแบบรายการ)"
+                style={{
+                  background: viewMode === 'list' ? 'var(--accent-primary)' : 'transparent',
+                  color: viewMode === 'list' ? 'white' : 'var(--text-secondary)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '0.45rem 0.75rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <List size={16} /> List
+              </button>
+            </div>
+
+            <button onClick={openAddModal} style={{ 
+              background: 'var(--accent-primary)', 
+              color: 'white', 
+              border: 'none', 
+              padding: '0.75rem 1.5rem', 
+              borderRadius: 'var(--radius-md)', 
+              fontWeight: 500, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }} className="hover-lift">
+              <Plus size={18} /> Add Employee
+            </button>
+          </div>
         )}
       </div>
 
@@ -499,122 +565,265 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
       {/* Tab Content */}
       {activeTab === 'team' ? (
         /* Team Directory */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-          {users.map(user => {
-            const userProjectRoles = projects
-              .filter(p => p.members && p.members.some((m: any) => m.userId === user.id))
-              .map(p => {
-                const member = p.members.find((m: any) => m.userId === user.id);
-                return { 
-                  projectName: p.name, 
-                  role: member ? member.role : '',
-                  startDate: p.startDate,
-                  endDate: p.endDate
-                };
-              });
+        viewMode === 'card' ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            {users.map(user => {
+              const userProjectRoles = projects
+                .filter(p => p.members && p.members.some((m: any) => m.userId === user.id))
+                .map(p => {
+                  const member = p.members.find((m: any) => m.userId === user.id);
+                  return { 
+                    projectName: p.name, 
+                    role: member ? member.role : '',
+                    startDate: p.startDate,
+                    endDate: p.endDate
+                  };
+                });
 
-             return (
-              <div key={user.id} className="glass-panel hover-lift team-member-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
-                <div className="member-card-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <img src={user.avatar} alt={user.name} style={{ width: '56px', height: '56px', borderRadius: '50%' }} />
-                  <div className="member-info" style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{user.name}</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-                      <span style={{ 
-                        fontSize: '0.7rem', 
-                        padding: '0.15rem 0.5rem', 
-                        borderRadius: 'var(--radius-sm)', 
-                        fontWeight: 600,
-                        background: user.globalRole === 'Admin' ? 'rgba(239, 68, 68, 0.1)' : 
-                                    user.globalRole === 'Manager' ? 'rgba(59, 130, 246, 0.1)' : 
-                                    user.globalRole === 'Employee' ? 'rgba(16, 185, 129, 0.1)' : 
-                                    'rgba(245, 158, 11, 0.1)',
-                        color: user.globalRole === 'Admin' ? '#EF4444' : 
-                               user.globalRole === 'Manager' ? '#3B82F6' : 
-                               user.globalRole === 'Employee' ? '#10B981' : 
-                               '#F59E0B',
-                        border: user.globalRole === 'Admin' ? '1px solid rgba(239, 68, 68, 0.2)' : 
-                                user.globalRole === 'Manager' ? '1px solid rgba(59, 130, 246, 0.2)' : 
-                                user.globalRole === 'Employee' ? '1px solid rgba(16, 185, 129, 0.2)' : 
-                                '1px solid rgba(245, 158, 11, 0.2)',
-                      }}>
-                        {user.globalRole === 'User' ? 'User / บุคคลภายนอก' : user.globalRole}
-                      </span>
-                      {user.department && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          • {user.department}
+               return (
+                <div key={user.id} className="glass-panel hover-lift team-member-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+                  <div className="member-card-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <img src={user.avatar} alt={user.name} style={{ width: '56px', height: '56px', borderRadius: '50%' }} />
+                    <div className="member-info" style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{user.name}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          padding: '0.15rem 0.5rem', 
+                          borderRadius: 'var(--radius-sm)', 
+                          fontWeight: 600,
+                          background: user.globalRole === 'Admin' ? 'rgba(239, 68, 68, 0.1)' : 
+                                      user.globalRole === 'Manager' ? 'rgba(59, 130, 246, 0.1)' : 
+                                      user.globalRole === 'Employee' ? 'rgba(16, 185, 129, 0.1)' : 
+                                      'rgba(245, 158, 11, 0.1)',
+                          color: user.globalRole === 'Admin' ? '#EF4444' : 
+                                 user.globalRole === 'Manager' ? '#3B82F6' : 
+                                 user.globalRole === 'Employee' ? '#10B981' : 
+                                 '#F59E0B',
+                          border: user.globalRole === 'Admin' ? '1px solid rgba(239, 68, 68, 0.2)' : 
+                                  user.globalRole === 'Manager' ? '1px solid rgba(59, 130, 246, 0.2)' : 
+                                  user.globalRole === 'Employee' ? '1px solid rgba(16, 185, 129, 0.2)' : 
+                                  '1px solid rgba(245, 158, 11, 0.2)',
+                        }}>
+                          {user.globalRole === 'User' ? 'User / บุคคลภายนอก' : user.globalRole}
                         </span>
-                      )}
-                    </div>
-                    
-                    {(user.gender || user.birthday) && (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                        {user.gender && <span>{user.gender}</span>}
-                        {user.gender && user.birthday && <span> • </span>}
-                        {user.birthday && (
-                          <span>
-                            {user.birthday} ({calculateAge(user.birthday)} yrs)
+                        {user.department && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            • {user.department}
                           </span>
                         )}
                       </div>
-                    )}
+                      
+                      {(user.gender || user.birthday) && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                          {user.gender && <span>{user.gender}</span>}
+                          {user.gender && user.birthday && <span> • </span>}
+                          {user.birthday && (
+                            <span>
+                              {user.birthday} ({calculateAge(user.birthday)} yrs)
+                            </span>
+                          )}
+                        </div>
+                      )}
 
-                    <div className="member-email" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', wordBreak: 'break-all' }}>
-                      {user.email}
+                      <div className="member-email" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', wordBreak: 'break-all' }}>
+                        {user.email}
+                      </div>
+
+                      {user.skills && user.skills.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.5rem' }}>
+                          {user.skills.map((skill, idx) => (
+                            <span key={idx} style={{ 
+                              fontSize: '0.65rem', 
+                              padding: '0.1rem 0.4rem', 
+                              background: 'rgba(255, 255, 255, 0.05)', 
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              color: 'var(--text-secondary)', 
+                              borderRadius: 'var(--radius-sm)' 
+                            }}>
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                    <div className="member-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <button onClick={() => openEditModal(user)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                        <Edit size={14} />
+                      </button>
+                      <button onClick={() => handleDeleteUser(user.id)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer' }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
 
-                    {user.skills && user.skills.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.5rem' }}>
-                        {user.skills.map((skill, idx) => (
+                  {/* Display Project Specific Roles */}
+                  {userProjectRoles.length > 0 && (
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Project Roles:</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                        {userProjectRoles.map((pr, idx) => (
                           <span key={idx} style={{ 
-                            fontSize: '0.65rem', 
-                            padding: '0.1rem 0.4rem', 
-                            background: 'rgba(255, 255, 255, 0.05)', 
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            color: 'var(--text-secondary)', 
+                            fontSize: '0.7rem', 
+                            padding: '0.2rem 0.5rem', 
+                            background: 'rgba(99, 102, 241, 0.1)', 
+                            border: '1px solid rgba(99, 102, 241, 0.2)',
+                            color: 'var(--accent-primary)', 
                             borderRadius: 'var(--radius-sm)' 
                           }}>
-                            {skill}
+                            {pr.projectName} ({pr.role})
+                            {pr.startDate && <span style={{ marginLeft: '4px', opacity: 0.8 }}>• {formatToDDMMYYYY(pr.startDate)} {pr.endDate ? `to ${formatToDDMMYYYY(pr.endDate)}` : '(Present)'}</span>}
                           </span>
                         ))}
                       </div>
-                    )}
-                  </div>
-                  <div className="member-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <button onClick={() => openEditModal(user)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                      <Edit size={14} />
-                    </button>
-                    <button onClick={() => handleDeleteUser(user.id)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer' }}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Display Project Specific Roles */}
-                {userProjectRoles.length > 0 && (
-                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Project Roles:</span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                      {userProjectRoles.map((pr, idx) => (
-                        <span key={idx} style={{ 
-                          fontSize: '0.7rem', 
-                          padding: '0.2rem 0.5rem', 
-                          background: 'rgba(99, 102, 241, 0.1)', 
-                          border: '1px solid rgba(99, 102, 241, 0.2)',
-                          color: 'var(--accent-primary)', 
-                          borderRadius: 'var(--radius-sm)' 
-                        }}>
-                          {pr.projectName} ({pr.role})
-                          {pr.startDate && <span style={{ marginLeft: '4px', opacity: 0.8 }}>• {formatToDDMMYYYY(pr.startDate)} {pr.endDate ? `to ${formatToDDMMYYYY(pr.endDate)}` : '(Present)'}</span>}
-                        </span>
-                      ))}
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* List View (Table Format) */
+          <div className="glass-panel" style={{ padding: '1rem', overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  <th style={{ padding: '0.85rem 1rem' }}>พนักงาน (Employee)</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>อีเมล (Email)</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>สิทธิ์ระบบ (Role)</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>แผนก (Department)</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>บทบาทในโครงการ (Project Roles)</th>
+                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>จัดการ (Actions)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(user => {
+                  const userProjectRoles = projects
+                    .filter(p => p.members && p.members.some((m: any) => m.userId === user.id))
+                    .map(p => {
+                      const member = p.members.find((m: any) => m.userId === user.id);
+                      return { 
+                        projectName: p.name, 
+                        role: member ? member.role : '',
+                        startDate: p.startDate,
+                        endDate: p.endDate
+                      };
+                    });
+
+                  return (
+                    <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', height: '64px' }}>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <img src={user.avatar} alt={user.name} style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                          <div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>{user.name}</div>
+                            {(user.gender || user.birthday) && (
+                              <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+                                {user.gender && <span>{user.gender}</span>}
+                                {user.gender && user.birthday && <span> • </span>}
+                                {user.birthday && <span>{user.birthday} ({calculateAge(user.birthday)} yrs)</span>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        {user.email}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          padding: '0.2rem 0.6rem', 
+                          borderRadius: 'var(--radius-sm)', 
+                          fontWeight: 600,
+                          background: user.globalRole === 'Admin' ? 'rgba(239, 68, 68, 0.1)' : 
+                                      user.globalRole === 'Manager' ? 'rgba(59, 130, 246, 0.1)' : 
+                                      user.globalRole === 'Employee' ? 'rgba(16, 185, 129, 0.1)' : 
+                                      'rgba(245, 158, 11, 0.1)',
+                          color: user.globalRole === 'Admin' ? '#EF4444' : 
+                                 user.globalRole === 'Manager' ? '#3B82F6' : 
+                                 user.globalRole === 'Employee' ? '#10B981' : 
+                                 '#F59E0B',
+                          border: user.globalRole === 'Admin' ? '1px solid rgba(239, 68, 68, 0.2)' : 
+                                  user.globalRole === 'Manager' ? '1px solid rgba(59, 130, 246, 0.2)' : 
+                                  user.globalRole === 'Employee' ? '1px solid rgba(16, 185, 129, 0.2)' : 
+                                  '1px solid rgba(245, 158, 11, 0.2)',
+                        }}>
+                          {user.globalRole === 'User' ? 'User / บุคคลภายนอก' : user.globalRole}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        {user.department || '-'}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        {userProjectRoles.length > 0 ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                            {userProjectRoles.map((pr, idx) => (
+                              <span key={idx} style={{ 
+                                fontSize: '0.7rem', 
+                                padding: '0.2rem 0.5rem', 
+                                background: 'rgba(99, 102, 241, 0.1)', 
+                                border: '1px solid rgba(99, 102, 241, 0.2)',
+                                color: 'var(--accent-primary)', 
+                                borderRadius: 'var(--radius-sm)' 
+                              }}>
+                                {pr.projectName} ({pr.role})
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>-</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                          <button 
+                            onClick={() => openEditModal(user)} 
+                            title="Edit"
+                            style={{ 
+                              background: 'var(--bg-tertiary)', 
+                              border: '1px solid var(--border-color)', 
+                              color: 'var(--text-secondary)', 
+                              padding: '0.35rem 0.6rem',
+                              borderRadius: 'var(--radius-sm)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              fontSize: '0.8rem'
+                            }}
+                            className="hover-lift"
+                          >
+                            <Edit size={14} /> Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteUser(user.id)} 
+                            title="Delete"
+                            style={{ 
+                              background: 'rgba(239, 68, 68, 0.1)', 
+                              border: '1px solid rgba(239, 68, 68, 0.2)', 
+                              color: '#EF4444', 
+                              padding: '0.35rem 0.6rem',
+                              borderRadius: 'var(--radius-sm)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              fontSize: '0.8rem'
+                            }}
+                            className="hover-lift"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
       ) : activeTab === 'approvals' ? (
         /* Approvals Queue */
         <div className="glass-panel" style={{ padding: '1.5rem', minHeight: '300px' }}>
@@ -875,15 +1084,68 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Password {editingUser ? '' : '*'}</label>
-                <input 
-                  type="password" 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  placeholder={editingUser ? 'Leave blank to keep existing password' : 'Enter password'}
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                  required={!editingUser}
-                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    Password {editingUser ? '(Leave blank to keep current)' : '*'}
+                  </label>
+                  {editingUser && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPassword('password123');
+                        setShowPassword(true);
+                        showToast('Password reset to password123 (click Save to apply)');
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--accent-primary)',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      <RefreshCw size={12} /> Reset to password123
+                    </button>
+                  )}
+                </div>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    placeholder={editingUser ? 'Leave blank to keep existing password' : 'Enter new password'}
+                    style={{ 
+                      width: '100%',
+                      background: 'var(--bg-tertiary)', 
+                      border: '1px solid var(--border-color)', 
+                      borderRadius: 'var(--radius-md)', 
+                      padding: '0.5rem 2.5rem 0.5rem 1rem', 
+                      color: 'var(--text-primary)', 
+                      outline: 'none' 
+                    }}
+                    required={!editingUser}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '0.75rem',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>

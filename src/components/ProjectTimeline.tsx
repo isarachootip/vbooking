@@ -43,9 +43,9 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
   const getDayNameColor = (dayNum: number) => {
     const d = new Date(year, month, dayNum);
     const day = d.getDay();
-    if (day === 0) return '#ef4444'; // Red for Sunday
-    if (day === 6) return '#3b82f6'; // Blue for Saturday
-    return 'var(--text-secondary)';
+    if (day === 0) return '#dc2626'; // Vibrant Red for Sunday
+    if (day === 6) return '#2563eb'; // Vibrant Blue for Saturday
+    return 'var(--text-primary)';
   };
 
   const prevMonth = () => {
@@ -86,22 +86,22 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
 
   const getStatusColor = (status: string) => {
     const mapping: Record<string, string> = {
-      'ซื้อสำรวจ': '#38bdf8',
-      'QC (สำรวจ)': '#fbbf24',
-      'ออกแบบ': '#a78bfa',
-      'สร้างใบเสนอราคา': '#f472b6',
-      'ลูกค้ายืนยัน': '#ec4899',
-      'ชำระเงิน': '#10b981',
-      'ดำเนินการโครงการ': '#14b8a6',
-      'ช่าง check-in/check out siteงาน': '#06b6d4',
-      'Project complete': '#3b82f6',
-      'QC (ส่งมอบ)': '#6366f1',
-      'aftersales': '#f97316',
-      'ปิดjob': '#8b5cf6',
-      'Active': '#10b981',
-      'Planning': '#6b7280',
-      'Completed': '#8b5cf6',
-      'On Hold': '#f59e0b'
+      'ซื้อสำรวจ': '#0284c7',
+      'QC (สำรวจ)': '#d97706',
+      'ออกแบบ': '#7c3aed',
+      'สร้างใบเสนอราคา': '#db2777',
+      'ลูกค้ายืนยัน': '#c026d3',
+      'ชำระเงิน': '#059669',
+      'ดำเนินการโครงการ': '#0d9488',
+      'ช่าง check-in/check out siteงาน': '#0891b2',
+      'Project complete': '#2563eb',
+      'QC (ส่งมอบ)': '#4f46e5',
+      'aftersales': '#ea580c',
+      'ปิดjob': '#9333ea',
+      'Active': '#059669',
+      'Planning': '#475569',
+      'Completed': '#9333ea',
+      'On Hold': '#d97706'
     };
     return mapping[status] || 'var(--accent-primary)';
   };
@@ -187,7 +187,7 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
           <div style={{
             display: 'flex',
             borderBottom: '1px solid var(--border-color)',
-            background: 'rgba(20, 26, 38, 0.7)',
+            background: 'var(--bg-tertiary)',
             position: 'sticky',
             top: 0,
             zIndex: 100
@@ -198,10 +198,10 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
               padding: '1rem',
               fontWeight: 700,
               fontSize: '0.75rem',
-              color: 'var(--text-muted)',
+              color: 'var(--text-primary)',
               borderRight: '1px solid var(--border-color)',
               flexShrink: 0,
-              background: 'rgba(20, 26, 38, 0.95)',
+              background: 'var(--bg-tertiary)',
               position: 'sticky',
               left: 0,
               zIndex: 10
@@ -219,7 +219,7 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: '0.4rem 0',
-                  borderRight: '1px solid rgba(255,255,255,0.04)',
+                  borderRight: '1px solid var(--border-color)',
                   flexShrink: 0
                 }}>
                   <span style={{ fontSize: '0.55rem', fontWeight: 600, color: getDayNameColor(d) }}>{getDayName(d)}</span>
@@ -242,8 +242,8 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
                 return (
                   <div key={proj.id} style={{
                     display: 'flex',
-                    borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
+                    borderBottom: '1px solid var(--border-color)',
+                    background: idx % 2 === 0 ? 'var(--bg-secondary)' : 'var(--bg-tertiary)',
                     alignItems: 'stretch',
                     minHeight: '72px'
                   }}>
@@ -253,7 +253,7 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
                       padding: '0.85rem 1rem',
                       borderRight: '1px solid var(--border-color)',
                       flexShrink: 0,
-                      background: 'rgba(15, 17, 24, 0.95)',
+                      background: 'var(--bg-secondary)',
                       position: 'sticky',
                       left: 0,
                       zIndex: 5,
@@ -267,10 +267,11 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <span style={{
-                          fontSize: '0.625rem',
-                          background: `${getStatusColor(proj.status)}20`,
+                          fontSize: '0.65rem',
+                          background: `${getStatusColor(proj.status)}25`,
                           color: getStatusColor(proj.status),
-                          padding: '0.1rem 0.4rem',
+                          border: `1px solid ${getStatusColor(proj.status)}40`,
+                          padding: '0.15rem 0.45rem',
                           borderRadius: '4px',
                           fontWeight: 700
                         }}>
@@ -290,7 +291,8 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
                         {days.map(d => (
                           <div key={d} style={{
                             width: '32px',
-                            borderRight: '1px solid rgba(255,255,255,0.02)',
+                            borderRight: '1px solid var(--border-color)',
+                            opacity: 0.5,
                             height: '100%',
                             flexShrink: 0
                           }} />
@@ -303,14 +305,15 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
                           position: 'absolute',
                           left: `${(barLayout.startCol - 1) * 32 + 4}px`,
                           width: `${barLayout.span * 32 - 8}px`,
-                          height: '32px',
-                          background: `linear-gradient(135deg, ${getStatusColor(proj.status)}, ${getStatusColor(proj.status)}cc)`,
+                          height: '34px',
+                          background: `linear-gradient(135deg, ${getStatusColor(proj.status)}, ${getStatusColor(proj.status)}dd)`,
                           borderRadius: '6px',
                           display: 'flex',
                           alignItems: 'center',
                           padding: '0 0.5rem',
-                          color: 'white',
-                          boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                          color: '#ffffff',
+                          textShadow: '0 1px 3px rgba(0, 0, 0, 0.8)',
+                          boxShadow: '0 3px 8px rgba(0, 0, 0, 0.15)',
                           cursor: 'pointer',
                           zIndex: 2,
                           overflow: 'hidden',
@@ -321,13 +324,13 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
                         >
                           {/* Fade indicators for start before / end after */}
                           {barLayout.isStartsBefore && (
-                            <span style={{ marginRight: '0.2rem', fontWeight: 800 }}>◀</span>
+                            <span style={{ marginRight: '0.2rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>◀</span>
                           )}
-                          <span style={{ fontSize: '0.72rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, textShadow: '0 1px 3px rgba(0,0,0,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {proj.name} {proj.address ? `(📍 ${proj.address})` : ''}
                           </span>
                           {barLayout.isEndsAfter && (
-                            <span style={{ marginLeft: 'auto', fontWeight: 800 }}>▶</span>
+                            <span style={{ marginLeft: 'auto', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>▶</span>
                           )}
                         </div>
                       )}
@@ -347,3 +350,4 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
     </div>
   );
 };
+

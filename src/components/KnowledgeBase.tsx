@@ -276,8 +276,39 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
           )
         },
         {
-          id: 'q15',
+          id: 'q16',
+          question: 'What is the difference between a System User (Global Role) and a Project User (Project Role)?',
+          icon: Shield,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>The system separates user scope into two layers:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>System User (Global Role):</strong> Determines system-wide access across the entire application (Admin, Manager, Employee, User).</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Project User (Project Role):</strong> Determines responsibilities and operational permissions specifically within a particular project (PM, Team Lead, Dev, QA, etc.).</li>
+                <li><strong>Flexibility:</strong> A staff member can have an "Employee" global role, but act as the "PM" for Project A while serving as a "Developer" in Project B.</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q17',
+          question: 'How do I toggle between Card View and List View in the Team directory?',
+          icon: Users,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>In the <strong>Team & Approvals</strong> page (Team Directory tab), look at the top right header controls next to the "Add Employee" button:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}>Click <strong>Card</strong> to display employees as visual avatar cards.</li>
+                <li style={{ marginBottom: '0.25rem' }}>Click <strong>List</strong> to view a high-density table showing emails, roles, departments, and project assignments.</li>
+                <li>Your preferred view mode is saved automatically for your next visit.</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q18',
           question: 'What is the Team Chat feature and how does it work?',
+
           icon: MessageSquare,
           answer: (
             <div>
@@ -737,6 +768,37 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
         },
         {
           id: 'q20',
+          question: 'User ในระบบ (Global Role) กับ User ใน Project ต่างกันอย่างไร?',
+          icon: Shield,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ระบบแบ่งโครงสร้างสิทธิ์ออกเป็น 2 เลเยอร์เพื่อความยืดหยุ่นสูงสุดครับ:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>User ในระบบ (Global Role):</strong> ควบคุมสิทธิ์ทั้งระบบ (Admin, Manager, Employee, User) เช่น สิทธิ์การตั้งค่าระบบ, การจัดการพนักงาน, อนุมัติเวลา, หรือดูต้นทุน</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>User ใน Project (Project Role):</strong> กำหนดหน้าที่เฉพาะโครงการนั้นๆ (PM, Team Lead, Dev, QA, etc.) อิงตาม Permission Scheme ของโครงการ</li>
+                <li><strong>ตัวอย่างความยืดหยุ่น:</strong> พนักงาน 1 คน มีสิทธิ์เป็น "Employee" ในระดับระบบ แต่สามารถถูกกำหนดให้เป็น "PM" ผู้ดูแลโครงการ A และเป็น "Developer" ในโครงการ B ได้โดยไม่ขัดกัน</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q21',
+          question: 'ในหน้าสมาชิกทีม (Team Directory) สามารถเปลี่ยนมุมมองจากแบบการ์ดเป็นแบบตารางรายการได้ไหม?',
+          icon: Users,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ทำได้ครับ! คุณสามารถเลือกสลับมุมมองได้ที่ปุ่มกดมุมขวาบนของแท็บ Team Directory:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Card View 🎴:</strong> แสดงผลการ์ดสมาชิกทีมพร้อมรูปภาพโปรไฟล์ รายละเอียดโครงการ และปุ่มจัดการ</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>List View 📋:</strong> แสดงผลตารางรายการความหนาแน่นสูง เหมาะสำหรับเปรียบเทียบข้อมูลพนักงานและบทบาทในโครงการอย่างรวดเร็ว</li>
+                <li>ระบบจะจดจำโหมดการแสดงผลล่าสุดที่คุณเลือกไว้ให้อัตโนมัติสำหรับเข้าใช้งานครั้งถัดไปครับ</li>
+              </ul>
+            </div>
+          )
+        }
+,
+        {
+          id: 'q22',
           question: '"Work Period" time bar คืออะไร และสำหรับงาน 40h (หลายวัน) จะบันทึกเวลาอย่างไร?',
           icon: Clock,
           answer: (
@@ -757,7 +819,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
           )
         },
         {
-          id: 'q21',
+          id: 'q23',
           question: 'ฟีเจอร์ใหม่ที่อัปเดตเพิ่มเติมในส่วน Projects, Tasks และ Dashboard มีอะไรบ้าง?',
           icon: Zap,
           answer: (
@@ -781,8 +843,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
           )
         },
         {
-          id: 'q22',
+          id: 'q24',
           question: 'เมื่อเปิดดูเมนูเปรียบเทียบแผนงาน (Compare) ทำไม Gantt Chart หรือความคลาดเคลื่อน (Drift) ถึงยังไม่แสดงความต่าง?',
+
           icon: BarChart3,
           answer: (
             <div>

@@ -1535,6 +1535,57 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// Update user password directly (Admin / Reset)
+app.put('/api/users/:id/password', async (req, res) => {
+  const { id } = req.params;
+  const { password } = req.body;
+  if (!password || typeof password !== 'string' || password.trim() === '') {
+    return res.status(400).json({ error: 'Password is required' });
+  }
+  try {
+    const pwHash = crypto.createHash('sha256').update(password.trim()).digest('hex');
+    const result = await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [pwHash, id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Error updating user password:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Self-service change password (User verifies old password)
+app.post('/api/users/change-password', async (req, res) => {
+  const { userId, oldPassword, newPassword } = req.body;
+  if (!userId || !oldPassword || !newPassword) {
+    return res.status(400).json({ error: 'User ID, old password, and new password are required' });
+  }
+  if (newPassword.length < 4) {
+    return res.status(400).json({ error: 'New password must be at least 4 characters long' });
+  }
+  try {
+    const userRes = await pool.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const currentPwHash = userRes.rows[0].password_hash;
+    const oldPwHash = crypto.createHash('sha256').update(oldPassword).digest('hex');
+
+    if (currentPwHash && currentPwHash !== oldPwHash) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    const newPwHash = crypto.createHash('sha256').update(newPassword).digest('hex');
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newPwHash, userId]);
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (err) {
+    console.error('Error changing password:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // Projects REST API
 app.post('/api/projects', async (req, res) => {
   const { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense, projectTemplateName, extraDetails } = req.body;

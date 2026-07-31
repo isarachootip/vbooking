@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { TaskTemplate, TaskPriority, PermissionScheme, User, CostRate } from '../types';
-import { Plus, Trash2, Edit, X, Save, Shield, ShieldCheck, Coins, AlertTriangle, RefreshCw, FileUp, Sparkles, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, Edit, X, Save, Shield, ShieldCheck, Coins, AlertTriangle, RefreshCw, FileUp, Sparkles, FileSpreadsheet, Lock, Eye, EyeOff, Key } from 'lucide-react';
 
 interface SettingsProps {
   taskTemplates: TaskTemplate[];
@@ -13,6 +13,8 @@ interface SettingsProps {
   systemSettings?: Record<string, any>;
   setSystemSettings?: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   fetchInitialData?: () => void;
+  users?: User[];
+  setUsers?: React.Dispatch<React.SetStateAction<User[]>>;
 }
 
 export const Settings = ({ 
@@ -25,13 +27,16 @@ export const Settings = ({
   setCostRates,
   systemSettings: _systemSettings,
   setSystemSettings,
-  fetchInitialData
+  fetchInitialData,
+  users = [],
+  setUsers
 }: SettingsProps) => {
   const uniqueTemplateNames = Array.from(new Set(taskTemplates.map(tpl => tpl.projectTemplateName || 'General'))).filter(Boolean) as string[];
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
-  const [activeTab, setActiveTab] = useState<'templates' | 'integrations' | 'permission_schemes' | 'cost_rates' | 'data_management' | 'system_config'>('templates');
+  const [activeTab, setActiveTab] = useState<'templates' | 'integrations' | 'permission_schemes' | 'cost_rates' | 'security' | 'data_management' | 'system_config'>('templates');
+
   const [showCleanConfirm, setShowCleanConfirm] = useState(false);
   const [cleanResult, setCleanResult] = useState<{ deleted: Record<string, number> } | null>(null);
   const [isCleaning, setIsCleaning] = useState(false);
@@ -49,6 +54,104 @@ export const Settings = ({
   const [maxUploadMb, setMaxUploadMb] = useState('1');
   const [isSavingSystemConfig, setIsSavingSystemConfig] = useState(false);
   const [systemConfigMessage, setSystemConfigMessage] = useState('');
+
+  // Password Security states
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showOldPw, setShowOldPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [isChangingPw, setIsChangingPw] = useState(false);
+  const [pwChangeMsg, setPwChangeMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Admin User Password Reset states
+  const [selectedUserForReset, setSelectedUserForReset] = useState<User | null>(null);
+  const [adminNewPassword, setAdminNewPassword] = useState('');
+  const [showAdminPw, setShowAdminPw] = useState(false);
+  const [isAdminResetting, setIsAdminResetting] = useState(false);
+  const [adminResetMsg, setAdminResetMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    if (newPassword !== confirmPassword) {
+      setPwChangeMsg({ text: 'รหัสผ่านใหม่ไม่ตรงกัน (New passwords do not match)', type: 'error' });
+      return;
+    }
+    if (newPassword.length < 4) {
+      setPwChangeMsg({ text: 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร (Password must be at least 4 characters)', type: 'error' });
+      return;
+    }
+
+    setIsChangingPw(true);
+    setPwChangeMsg(null);
+
+    try {
+      const res = await fetch('/api/users/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser.id },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          oldPassword,
+          newPassword
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setPwChangeMsg({ text: '✅ เปลี่ยนรหัสผ่านสำเร็จแล้ว! (Password changed successfully)', type: 'success' });
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setPwChangeMsg({ text: `❌ ${data.error || 'Failed to change password'}`, type: 'error' });
+      }
+    } catch (err: any) {
+      setPwChangeMsg({ text: `❌ Error: ${err.message}`, type: 'error' });
+    } finally {
+      setIsChangingPw(false);
+    }
+  };
+
+  const handleAdminResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUserForReset || !adminNewPassword) return;
+    if (adminNewPassword.length < 4) {
+      setAdminResetMsg({ text: 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', type: 'error' });
+      return;
+    }
+
+    setIsAdminResetting(true);
+    setAdminResetMsg(null);
+
+    try {
+      const res = await fetch(`/api/users/${selectedUserForReset.id}/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
+        body: JSON.stringify({ password: adminNewPassword })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setAdminResetMsg({ text: `✅ อัปเดตรหัสผ่านสำหรับ ${selectedUserForReset.name} สำเร็จ!`, type: 'success' });
+        if (setUsers) {
+          setUsers(prev => prev.map(u => u.id === selectedUserForReset.id ? { ...u, password: adminNewPassword } : u));
+        }
+        setTimeout(() => {
+          setSelectedUserForReset(null);
+          setAdminNewPassword('');
+          setAdminResetMsg(null);
+        }, 2000);
+      } else {
+        setAdminResetMsg({ text: `❌ ${data.error || 'Failed to reset password'}`, type: 'error' });
+      }
+    } catch (err: any) {
+      setAdminResetMsg({ text: `❌ Error: ${err.message}`, type: 'error' });
+    } finally {
+      setIsAdminResetting(false);
+    }
+  };
 
   // Fetch System Config on tab open
   useEffect(() => {
@@ -525,6 +628,20 @@ export const Settings = ({
             🧹 Data Management
           </button>
         )}
+        <button 
+          onClick={() => setActiveTab('security')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: activeTab === 'security' ? 'var(--text-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'security' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+            padding: '0.5rem 1rem',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'security' ? 600 : 400
+          }}
+        >
+          🔐 Security & Password
+        </button>
         {isGlobalAdmin && (
           <button 
             onClick={() => setActiveTab('system_config')}
@@ -1943,6 +2060,321 @@ export const Settings = ({
               </div>
             )}
           </div>
+        </div>
+      )}
+      {activeTab === 'security' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Section 1: Change My Password */}
+          <div className="glass-panel" style={{ padding: '2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <Lock size={22} color="var(--accent-primary)" />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem' }}>เปลี่ยนรหัสผ่านส่วนตัว (Change My Password)</h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  บัญชีผู้ใช้ปัจจุบัน: <strong>{currentUser?.name}</strong> ({currentUser?.email})
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '500px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>รหัสผ่านปัจจุบัน (Current Password) *</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type={showOldPw ? 'text' : 'password'}
+                    value={oldPassword}
+                    onChange={e => setOldPassword(e.target.value)}
+                    placeholder="ป้อนรหัสผ่านเดิมของคุณ"
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 2.5rem 0.65rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)',
+                      outline: 'none'
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPw(!showOldPw)}
+                    style={{ position: 'absolute', right: '0.75rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  >
+                    {showOldPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>รหัสผ่านใหม่ (New Password) *</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type={showNewPw ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="อย่างน้อย 4 ตัวอักษร"
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 2.5rem 0.65rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)',
+                      outline: 'none'
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPw(!showNewPw)}
+                    style={{ position: 'absolute', right: '0.75rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  >
+                    {showNewPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>ยืนยันรหัสผ่านใหม่ (Confirm New Password) *</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type={showConfirmPw ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="ป้อนรหัสผ่านใหม่อีกครั้ง"
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 2.5rem 0.65rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)',
+                      outline: 'none'
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPw(!showConfirmPw)}
+                    style={{ position: 'absolute', right: '0.75rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  >
+                    {showConfirmPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
+                <button
+                  type="submit"
+                  disabled={isChangingPw}
+                  style={{
+                    background: 'var(--accent-primary)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: 'var(--radius-md)',
+                    fontWeight: 600,
+                    cursor: isChangingPw ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                  className="hover-lift"
+                >
+                  <Key size={16} /> {isChangingPw ? 'กำลังอัปเดต...' : 'อัปเดตรหัสผ่านใหม่'}
+                </button>
+                {pwChangeMsg && (
+                  <span style={{ fontSize: '0.9rem', color: pwChangeMsg.type === 'success' ? 'var(--accent-secondary)' : 'var(--accent-danger)' }}>
+                    {pwChangeMsg.text}
+                  </span>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Section 2: User Password Management (Admin / Manager) */}
+          {isGlobalAdmin && (
+            <div className="glass-panel" style={{ padding: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <ShieldCheck size={22} color="var(--accent-secondary)" />
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem' }}>จัดการรหัสผ่านผู้ใช้งาน (User Password Management)</h3>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      ผู้ดูแลระบบสามารถรีเซ็ตหรือเปลี่ยนรหัสผ่านให้ผู้ใช้ในระบบได้โดยตรง
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                      <th style={{ padding: '0.75rem 1rem' }}>ผู้ใช้งาน (User)</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>อีเมล (Email)</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>สิทธิ์ (Role)</th>
+                      <th style={{ padding: '0.75rem 1rem' }}>แผนก (Department)</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>การจัดการ (Action)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map(u => (
+                      <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                        <td style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <img src={u.avatar || `https://i.pravatar.cc/150?u=${u.id}`} alt={u.name} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{u.name}</span>
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{u.email}</td>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <span style={{
+                            padding: '0.2rem 0.6rem',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            background: u.globalRole === 'Admin' ? 'rgba(239, 68, 68, 0.15)' : u.globalRole === 'Manager' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                            color: u.globalRole === 'Admin' ? '#f87171' : u.globalRole === 'Manager' ? '#fbbf24' : '#60a5fa'
+                          }}>
+                            {u.globalRole}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{u.department || 'N/A'}</td>
+                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedUserForReset(u);
+                              setAdminNewPassword('password123');
+                              setShowAdminPw(false);
+                              setAdminResetMsg(null);
+                            }}
+                            style={{
+                              background: 'var(--bg-tertiary)',
+                              border: '1px solid var(--border-color)',
+                              color: 'var(--accent-primary)',
+                              padding: '0.4rem 0.8rem',
+                              borderRadius: 'var(--radius-sm)',
+                              cursor: 'pointer',
+                              fontSize: '0.8rem',
+                              fontWeight: 500,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem'
+                            }}
+                            className="hover-lift"
+                          >
+                            <Key size={14} /> รีเซ็ตรหัสผ่าน
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Reset Password Modal */}
+          {selectedUserForReset && (
+            <div style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100
+            }}>
+              <div className="glass-panel" style={{ width: '450px', maxWidth: '90vw', padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem' }}>🔐 รีเซ็ตรหัสผ่านผู้ใช้</h3>
+                  <button onClick={() => setSelectedUserForReset(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
+                  <img src={selectedUserForReset.avatar || `https://i.pravatar.cc/150?u=${selectedUserForReset.id}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                  <div>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{selectedUserForReset.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{selectedUserForReset.email}</div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleAdminResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>กำหนดรหัสผ่านใหม่ (New Password)</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdminNewPassword('password123');
+                          setShowAdminPw(true);
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        ⚡ ใช้ password123
+                      </button>
+                    </div>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type={showAdminPw ? 'text' : 'password'}
+                        value={adminNewPassword}
+                        onChange={e => setAdminNewPassword(e.target.value)}
+                        placeholder="ป้อนรหัสผ่านใหม่..."
+                        style={{
+                          width: '100%',
+                          padding: '0.6rem 2.5rem 0.6rem 0.875rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: '1px solid var(--border-color)',
+                          background: 'var(--bg-tertiary)',
+                          color: 'var(--text-primary)',
+                          outline: 'none'
+                        }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminPw(!showAdminPw)}
+                        style={{ position: 'absolute', right: '0.75rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                      >
+                        {showAdminPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {adminResetMsg && (
+                    <div style={{ fontSize: '0.85rem', color: adminResetMsg.type === 'success' ? 'var(--accent-secondary)' : 'var(--accent-danger)' }}>
+                      {adminResetMsg.text}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedUserForReset(null)}
+                      style={{
+                        background: 'transparent', border: '1px solid var(--border-color)',
+                        color: 'var(--text-secondary)', padding: '0.5rem 1rem',
+                        borderRadius: 'var(--radius-md)', cursor: 'pointer'
+                      }}
+                    >
+                      ยกเลิก
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isAdminResetting}
+                      style={{
+                        background: 'var(--accent-primary)', color: 'white',
+                        border: 'none', padding: '0.5rem 1.25rem',
+                        borderRadius: 'var(--radius-md)', cursor: isAdminResetting ? 'wait' : 'pointer',
+                        fontWeight: 600
+                      }}
+                    >
+                      {isAdminResetting ? 'กำลังบันทึก...' : 'บันทึกรหัสผ่าน'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
       {activeTab === 'system_config' && isGlobalAdmin && (
