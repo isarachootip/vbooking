@@ -49,8 +49,9 @@ export interface Project {
   members: ProjectMember[];
   customColumns?: string[];
   permissionSchemeId?: string;
-  projectType?: 'dev' | 'support' | 'construction';
+  projectType?: 'construction' | 'quick_service' | 'installation' | 'dev' | 'support' | string;
   supportTaskStyle?: 'monthly' | 'categories';
+
   address?: string;
   projectValue?: number;
   invoicedValue?: number;
@@ -180,5 +181,16 @@ export interface CostRate {
   ratePerHour: number;
   currency: string;
 }
+
+export interface MasterProjectType {
+  id: string;
+  name: string;
+  color: string;
+  badgeText: string;
+  description?: string;
+  isActive: boolean;
+}
+
+
 
 

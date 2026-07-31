@@ -10,7 +10,7 @@ interface ProjectTimelineProps {
 
 export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps) => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2026, 6, 1)); // Default to July 2026 as in screenshot context
-  const [filterType, setFilterType] = useState<'all' | 'construction' | 'dev' | 'support'>('construction');
+  const [filterType, setFilterType] = useState<string>('all');
 
   const filteredProjects = projects.filter(p => {
     // Member check
@@ -21,8 +21,9 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
 
     // Filter by type
     if (filterType === 'all') return true;
-    return p.projectType === filterType;
+    return (p.projectType || 'construction') === filterType;
   });
+
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -124,28 +125,33 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           
           {/* Project type filter */}
-          <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            {(['construction', 'dev', 'support', 'all'] as const).map(t => (
+          <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
+            {[
+              { id: 'all', label: 'แสดงทั้งหมด' },
+              { id: 'construction', label: 'งานก่อสร้าง 🇹🇭' },
+              { id: 'quick_service', label: 'Quick Service ⚡' },
+              { id: 'installation', label: 'งานติดตั้ง 🛠️' }
+            ].map(t => (
               <button
-                key={t}
-                onClick={() => setFilterType(t)}
+                key={t.id}
+                onClick={() => setFilterType(t.id)}
                 style={{
                   padding: '0.4rem 0.85rem',
                   border: 'none',
                   borderRadius: '6px',
-                  background: filterType === t ? 'var(--accent-primary)' : 'transparent',
-                  color: filterType === t ? 'white' : 'var(--text-secondary)',
-                  fontSize: '0.7rem',
+                  background: filterType === t.id ? 'var(--accent-primary)' : 'transparent',
+                  color: filterType === t.id ? 'white' : 'var(--text-secondary)',
+                  fontSize: '0.75rem',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  textTransform: 'capitalize'
+                  transition: 'all 0.2s'
                 }}
               >
-                {t === 'construction' ? 'Construction 🇹🇭' : t === 'dev' ? 'Development' : t === 'support' ? 'Support' : 'Show All'}
+                {t.label}
               </button>
             ))}
           </div>
+
 
           {/* Month selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.25rem 0.5rem' }}>
@@ -278,8 +284,12 @@ export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps)
                           {proj.status}
                         </span>
                         <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                          {proj.projectType === 'support' ? 'ซัพพอร์ต' : proj.projectType === 'construction' ? 'ก่อสร้าง' : 'พัฒนา'}
+                          {proj.projectType === 'quick_service' ? 'Quick service' :
+                           proj.projectType === 'installation' ? 'งานติดตั้ง' :
+                           proj.projectType === 'support' ? 'ซัพพอร์ต' :
+                           proj.projectType === 'dev' ? 'พัฒนา' : 'ก่อสร้าง'}
                         </span>
+
                       </div>
                     </div>
 

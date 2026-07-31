@@ -69,7 +69,8 @@ export const Projects = ({
   const [members, setMembers] = useState<{ userId: string; role: ProjectRole; manDayRate?: number }[]>([]);
   const [customColumnsText, setCustomColumnsText] = useState('To Do, In Progress, Review, Done');
   const [permissionSchemeId, setPermissionSchemeId] = useState('scheme_default');
-  const [projectType, setProjectType] = useState<'dev' | 'support' | 'construction'>('construction');
+  const [projectType, setProjectType] = useState<string>('construction');
+
   const [projectTemplateName, setProjectTemplateName] = useState('Workflow vFIX');
   const [supportTaskStyle, setSupportTaskStyle] = useState<'monthly' | 'categories'>('categories');
   const [address, setAddress] = useState('');
@@ -1048,7 +1049,25 @@ export const Projects = ({
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', gridColumn: 'span 2' }}>
+                        <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          ประเภทโครงการ (Project Type) <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select 
+                          value={projectType} 
+                          onChange={e => setProjectType(e.target.value)}
+                          style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem', fontWeight: 600 }}
+                        >
+                          <option value="construction">🏗️ งานก่อสร้าง (Construction)</option>
+                          <option value="quick_service">⚡ งาน Quick service</option>
+                          <option value="installation">🛠️ งานติดตั้ง (Installation)</option>
+                          <option value="dev">💻 งานพัฒนา (Development)</option>
+                          <option value="support">🛡️ งานซัพพอร์ต (Support)</option>
+                        </select>
+                      </div>
+
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+
                         <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                           สาขา <span style={{ color: '#ef4444' }}>*</span>
                         </label>

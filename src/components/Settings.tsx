@@ -35,7 +35,43 @@ export const Settings = ({
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
-  const [activeTab, setActiveTab] = useState<'templates' | 'integrations' | 'permission_schemes' | 'cost_rates' | 'security' | 'data_management' | 'system_config'>('templates');
+  const [activeTab, setActiveTab] = useState<'templates' | 'integrations' | 'permission_schemes' | 'cost_rates' | 'security' | 'data_management' | 'system_config' | 'master_project_types'>('templates');
+
+  // Master Project Types states
+  const defaultMasterTypes = [
+    { id: 'construction', name: 'งานก่อสร้าง', badgeText: 'ก่อสร้าง 🇹🇭', color: '#059669', description: 'โครงการงานก่อสร้าง รีโนเวท และตกแต่งหน้างาน', isActive: true },
+    { id: 'quick_service', name: 'งาน Quick service', badgeText: 'Quick service ⚡', color: '#f59e0b', description: 'โครงการบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน', isActive: true },
+    { id: 'installation', name: 'งานติดตั้ง (installation)', badgeText: 'งานติดตั้ง 🛠️', color: '#2563eb', description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบและประกอบระบบ', isActive: true },
+    { id: 'dev', name: 'งานพัฒนา (Development)', badgeText: 'พัฒนา 💻', color: '#7c3aed', description: 'โครงการพัฒนาระบบ ซอฟต์แวร์ และแอปพลิเคชัน', isActive: true },
+    { id: 'support', name: 'งานซัพพอร์ต (Support)', badgeText: 'ซัพพอร์ต 🛡️', color: '#0891b2', description: 'โครงการดูแลระบบ งานบำรุงรักษารายเดือน', isActive: true }
+  ];
+
+  const [masterProjectTypes, setMasterProjectTypes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('master_project_types');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return defaultMasterTypes;
+  });
+
+  const [editingMasterType, setEditingMasterType] = useState<{ id: string; name: string; badgeText: string; color: string; description: string; isActive: boolean } | null>(null);
+  const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
+  const [masterTypeName, setMasterTypeName] = useState('');
+  const [masterTypeId, setMasterTypeId] = useState('');
+  const [masterTypeColor, setMasterTypeColor] = useState('#059669');
+  const [masterTypeBadge, setMasterTypeBadge] = useState('');
+  const [masterTypeDesc, setMasterTypeDesc] = useState('');
+
+  const saveMasterTypes = (types: typeof defaultMasterTypes) => {
+    setMasterProjectTypes(types);
+    localStorage.setItem('master_project_types', JSON.stringify(types));
+    fetch('/api/system-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ master_project_types: JSON.stringify(types) })
+    }).catch(() => {});
+  };
+
 
   const [showCleanConfirm, setShowCleanConfirm] = useState(false);
   const [cleanResult, setCleanResult] = useState<{ deleted: Record<string, number> } | null>(null);
@@ -643,22 +679,39 @@ export const Settings = ({
           🔐 Security & Password
         </button>
         {isGlobalAdmin && (
-          <button 
-            onClick={() => setActiveTab('system_config')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: activeTab === 'system_config' ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderBottom: activeTab === 'system_config' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-              padding: '0.5rem 1rem',
-              cursor: 'pointer',
-              fontWeight: activeTab === 'system_config' ? 600 : 400
-            }}
-          >
-            ⚙️ System Config
-          </button>
+          <>
+            <button 
+              onClick={() => setActiveTab('master_project_types')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: activeTab === 'master_project_types' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderBottom: activeTab === 'master_project_types' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                padding: '0.5rem 1rem',
+                cursor: 'pointer',
+                fontWeight: activeTab === 'master_project_types' ? 600 : 400
+              }}
+            >
+              📁 Master Project Types
+            </button>
+            <button 
+              onClick={() => setActiveTab('system_config')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: activeTab === 'system_config' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderBottom: activeTab === 'system_config' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                padding: '0.5rem 1rem',
+                cursor: 'pointer',
+                fontWeight: activeTab === 'system_config' ? 600 : 400
+              }}
+            >
+              ⚙️ System Config
+            </button>
+          </>
         )}
       </div>
+
 
       {activeTab === 'templates' ? (
         <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1.5rem', alignItems: 'start' }}>
@@ -2458,6 +2511,213 @@ export const Settings = ({
           </form>
         </div>
       )}
+
+      {activeTab === 'master_project_types' && isGlobalAdmin && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                📁 การตั้งค่าประเภทโครงการ (Master Project Types Configuration)
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>
+                กำหนดประเภทโครงการหลักขององค์กร (เช่น งานก่อสร้าง, งาน Quick service, งานติดตั้ง) สำหรับใช้งานในเมนู Projects และ Project Timeline
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingMasterType(null);
+                setMasterTypeName('');
+                setMasterTypeId('type_' + Date.now());
+                setMasterTypeBadge('');
+                setMasterTypeColor('#059669');
+                setMasterTypeDesc('');
+                setIsTypeModalOpen(true);
+              }}
+              style={{
+                background: 'var(--accent-primary)',
+                color: 'white',
+                border: 'none',
+                padding: '0.6rem 1.2rem',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+              className="hover-lift"
+            >
+              + เพิ่มประเภทโครงการใหม่
+            </button>
+          </div>
+
+          {/* Master Project Types Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+            {masterProjectTypes.map((t: any) => (
+              <div key={t.id} className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', borderLeft: `4px solid ${t.color}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {t.name}
+                  </span>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    padding: '0.2rem 0.5rem',
+                    borderRadius: '4px',
+                    background: `${t.color}25`,
+                    color: t.color,
+                    border: `1px solid ${t.color}40`,
+                    fontWeight: 700
+                  }}>
+                    {t.badgeText || t.name}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, minHeight: '36px' }}>
+                  {t.description || 'ไม่มีคำอธิบาย'}
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.25rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                    ID: {t.id}
+                  </span>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => {
+                        setEditingMasterType(t);
+                        setMasterTypeName(t.name);
+                        setMasterTypeId(t.id);
+                        setMasterTypeBadge(t.badgeText || t.name);
+                        setMasterTypeColor(t.color || '#059669');
+                        setMasterTypeDesc(t.description || '');
+                        setIsTypeModalOpen(true);
+                      }}
+                      style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.25rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
+                    >
+                      ✏️ แก้ไข
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`ยืนยันการลบประเภทโครงการ "${t.name}"?`)) {
+                          const updated = masterProjectTypes.filter((item: any) => item.id !== t.id);
+                          saveMasterTypes(updated);
+                        }
+                      }}
+                      style={{ background: 'transparent', border: '1px solid #ef444440', color: '#ef4444', padding: '0.25rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
+                    >
+                      🗑️ ลบ
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Modal for Edit / Add Master Project Type */}
+          {isTypeModalOpen && (
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1rem'
+            }}>
+              <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg-secondary)' }}>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {editingMasterType ? '✏️ แก้ไขประเภทโครงการ (Master Type)' : '✨ เพิ่มประเภทโครงการใหม่ (Master Type)'}
+                </h3>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!masterTypeName) return alert('กรุณากรอกชื่อประเภทโครงการ');
+                  
+                  const newItem = {
+                    id: masterTypeId || ('type_' + Date.now()),
+                    name: masterTypeName,
+                    badgeText: masterTypeBadge || masterTypeName,
+                    color: masterTypeColor,
+                    description: masterTypeDesc,
+                    isActive: true
+                  };
+
+                  let updated;
+                  if (editingMasterType) {
+                    updated = masterProjectTypes.map((item: any) => item.id === editingMasterType.id ? newItem : item);
+                  } else {
+                    updated = [...masterProjectTypes, newItem];
+                  }
+
+                  saveMasterTypes(updated);
+                  setIsTypeModalOpen(false);
+                }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ชื่อประเภทโครงการ</label>
+                    <input
+                      type="text"
+                      value={masterTypeName}
+                      onChange={(e) => setMasterTypeName(e.target.value)}
+                      placeholder="เช่น งานก่อสร้าง, งาน Quick service, งานติดตั้ง"
+                      style={{ padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', outline: 'none' }}
+                      required
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Badge Label (ป้ายกำกับ)</label>
+                      <input
+                        type="text"
+                        value={masterTypeBadge}
+                        onChange={(e) => setMasterTypeBadge(e.target.value)}
+                        placeholder="เช่น Quick service ⚡"
+                        style={{ padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', outline: 'none' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>สีสัญลักษณ์ (Theme Color)</label>
+                      <input
+                        type="color"
+                        value={masterTypeColor}
+                        onChange={(e) => setMasterTypeColor(e.target.value)}
+                        style={{ padding: '0.2rem', width: '100%', height: '38px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', cursor: 'pointer' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>คำอธิบายรายละเอียด</label>
+                    <textarea
+                      value={masterTypeDesc}
+                      onChange={(e) => setMasterTypeDesc(e.target.value)}
+                      placeholder="อธิบายวัตถุประสงค์ของประเภทโครงการนี้..."
+                      style={{ padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', outline: 'none', minHeight: '60px', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsTypeModalOpen(false)}
+                      style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}
+                    >
+                      ยกเลิก
+                    </button>
+                    <button
+                      type="submit"
+                      style={{ padding: '0.5rem 1.25rem', borderRadius: '6px', border: 'none', background: 'var(--accent-primary)', color: 'white', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      บันทึกข้อมูล
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 };
