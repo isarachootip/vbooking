@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2 } from 'lucide-react';
+import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 
@@ -8,6 +8,9 @@ interface Lead {
   customer_name: string;
   customer_phone: string;
   customer_address: string;
+  customer_latitude?: number | string | null;
+  customer_longitude?: number | string | null;
+  map_url?: string | null;
   job_type: string;
   status: string;
   notes: string;
@@ -42,6 +45,11 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [customerLatitude, setCustomerLatitude] = useState<string>('');
+  const [customerLongitude, setCustomerLongitude] = useState<string>('');
+  const [mapUrl, setMapUrl] = useState<string>('');
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
   const [jobType, setJobType] = useState('Quick Service');
   const [status, setStatus] = useState('New');
   const [branch, setBranch] = useState('สาขาบางนา');
@@ -72,6 +80,43 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
     fetchLeads();
   }, []);
 
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('เบราว์เซอร์ของคุณไม่รองรับการดึงพิกัด GPS');
+      return;
+    }
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude.toFixed(6);
+        const lng = position.coords.longitude.toFixed(6);
+        setCustomerLatitude(lat);
+        setCustomerLongitude(lng);
+        const generatedMapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+        setMapUrl(generatedMapUrl);
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        alert('ไม่สามารถดึงพิกัดได้ กรุณาอนุญาตการเข้าถึงสิทธิ์ตำแหน่งตำแหน่งที่ตั้ง (Location Permission)');
+        setIsGettingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleOpenGoogleMaps = () => {
+    if (mapUrl) {
+      window.open(mapUrl, '_blank');
+    } else if (customerLatitude && customerLongitude) {
+      window.open(`https://www.google.com/maps?q=${customerLatitude},${customerLongitude}`, '_blank');
+    } else if (customerAddress) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(customerAddress)}`, '_blank');
+    } else {
+      alert('กรุณากรอกที่อยู่ หรือพิกัด ละติจูด/ลองจิจูด ก่อนเปิดแผนที่');
+    }
+  };
+
   const toggleWorkArea = (area: string) => {
     setWorkAreas(prev => 
       prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]
@@ -87,7 +132,6 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Package extra data inside notes as structured text or JSON if needed, or pass directly
     const extraDetails = {
       buildingType,
       areaSize,
@@ -104,6 +148,9 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       customer_name: customerName,
       customer_phone: customerPhone,
       customer_address: customerAddress,
+      customer_latitude: customerLatitude ? parseFloat(customerLatitude) : null,
+      customer_longitude: customerLongitude ? parseFloat(customerLongitude) : null,
+      map_url: mapUrl || (customerLatitude && customerLongitude ? `https://www.google.com/maps?q=${customerLatitude},${customerLongitude}` : null),
       job_type: jobType,
       status: status,
       notes: combinedNotes,
@@ -165,6 +212,9 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       setCustomerName(lead.customer_name);
       setCustomerPhone(lead.customer_phone || '');
       setCustomerAddress(lead.customer_address || '');
+      setCustomerLatitude(lead.customer_latitude ? String(lead.customer_latitude) : '');
+      setCustomerLongitude(lead.customer_longitude ? String(lead.customer_longitude) : '');
+      setMapUrl(lead.map_url || '');
       setJobType(lead.job_type);
       setStatus(lead.status);
 
@@ -192,6 +242,9 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       setCustomerName('');
       setCustomerPhone('');
       setCustomerAddress('');
+      setCustomerLatitude('');
+      setCustomerLongitude('');
+      setMapUrl('');
       setJobType('Quick Service');
       setStatus('New');
       setBranch('สาขาบางนา');
@@ -243,7 +296,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
             รายชื่อลูกค้ามุ่งหวัง (Leads Management)
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0.25rem 0 0 0' }}>
-            จัดการข้อมูลลูกค้า ติดตามสถานะความสนใจ และแปลงข้อมูลเป็นโครงการติดตั้ง
+            จัดการข้อมูลลูกค้า บันทึกพิกัดแผนที่ (GPS) ติดตามสถานะความสนใจ และแปลงข้อมูลเป็นโครงการติดตั้ง
           </p>
         </div>
         
@@ -328,7 +381,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
             type="text" 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            placeholder="ค้นหาชื่อลูกค้า, เบอร์โทร, ที่อยู่..."
+            placeholder="ค้นหาชื่อลูกค้า, เบอร์โทร, ที่อยู่, พิกัด..."
             style={{ width: '100%', padding: '0.5rem 0.75rem 0.5rem 2.2rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
           />
         </div>
@@ -365,6 +418,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
             <thead>
               <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 600 }}>
                 <th style={{ padding: '0.85rem 1rem' }}>ชื่อลูกค้า / ที่อยู่</th>
+                <th style={{ padding: '0.85rem 1rem' }}>พิกัดหน้างาน (Map/GPS)</th>
                 <th style={{ padding: '0.85rem 1rem' }}>การติดต่อ</th>
                 <th style={{ padding: '0.85rem 1rem' }}>ประเภทงาน</th>
                 <th style={{ padding: '0.85rem 1rem' }}>สถานะ</th>
@@ -375,13 +429,13 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     กำลังโหลดข้อมูล...
                   </td>
                 </tr>
               ) : filteredLeads.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     ไม่พบข้อมูลลูกค้ามุ่งหวัง
                   </td>
                 </tr>
@@ -391,6 +445,29 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{lead.customer_name}</div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{lead.customer_address || 'ไม่ระบุที่อยู่'}</div>
+                    </td>
+                    <td style={{ padding: '0.85rem 1rem' }}>
+                      {lead.customer_latitude && lead.customer_longitude ? (
+                        <a 
+                          href={lead.map_url || `https://www.google.com/maps?q=${lead.customer_latitude},${lead.customer_longitude}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}
+                        >
+                          <MapPin size={13} /> {lead.customer_latitude}, {lead.customer_longitude} <ExternalLink size={11} />
+                        </a>
+                      ) : lead.map_url ? (
+                        <a 
+                          href={lead.map_url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#2563eb', background: 'rgba(37, 99, 235, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}
+                        >
+                          <MapPin size={13} /> ดูแผนที่ Google Maps <ExternalLink size={11} />
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>- ไม่ได้ปักพิกัด -</span>
+                      )}
                     </td>
                     <td style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -438,7 +515,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
         </div>
       </div>
 
-      {/* ── RICH LEAD FORM MODAL (MATCHING IMAGE 2 DESIGN SYSTEM) ── */}
+      {/* ── RICH LEAD FORM MODAL WITH MAP/GPS INTEGRATION ── */}
       {isModalOpen && (
         <div style={{
           position: 'fixed',
@@ -481,7 +558,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.75rem', alignItems: 'start' }}>
                 
-                {/* ── LEFT COLUMN: ข้อมูลทั่วไป & การติดต่อ ── */}
+                {/* ── LEFT COLUMN: ข้อมูลทั่วไป & พิกัดแผนที่ (GPS) ── */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   
                   {/* SECTION 1: ข้อมูลทั่วไปของลูกค้า */}
@@ -500,7 +577,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           required
                           value={customerName}
                           onChange={e => setCustomerName(e.target.value)}
-                          placeholder="เช่น คุณสมชาย ใจดี"
+                          placeholder="เช่น คุณสำราญ ศักดิ์ดี"
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                         />
                       </div>
@@ -513,7 +590,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           required
                           value={customerPhone}
                           onChange={e => setCustomerPhone(e.target.value)}
-                          placeholder="08X-XXX-XXXX"
+                          placeholder="093-265-2639"
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                         />
                       </div>
@@ -560,13 +637,74 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                         ที่อยู่ / พิกัดสถานที่หน้างาน
                       </label>
                       <textarea 
-                        rows={3}
+                        rows={2}
                         value={customerAddress}
                         onChange={e => setCustomerAddress(e.target.value)}
                         placeholder="เช่น 123/45 หมู่บ้านสุขสันต์ ถนนบางนา-ตราด แขวงบางนา..."
                         style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                       />
                     </div>
+
+                    {/* SECTION: MAP & GPS LOCATION PICKER (เหมือน VBOOKING) */}
+                    <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <MapPin size={16} /> บันทึกพิกัดแผนที่ (GPS Map Coordinates)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleGetCurrentLocation}
+                          disabled={isGettingLocation}
+                          style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid #10b981', borderRadius: '6px', padding: '0.25rem 0.65rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                        >
+                          <Compass size={13} /> {isGettingLocation ? 'กำลังดึงพิกัด...' : '📍 ดึงพิกัดปัจจุบัน (GPS)'}
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ละติจูด (Latitude)</label>
+                          <input 
+                            type="text" 
+                            value={customerLatitude}
+                            onChange={e => setCustomerLatitude(e.target.value)}
+                            placeholder="13.756331"
+                            style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ลองจิจูด (Longitude)</label>
+                          <input 
+                            type="text" 
+                            value={customerLongitude}
+                            onChange={e => setCustomerLongitude(e.target.value)}
+                            placeholder="100.501862"
+                            style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.15rem' }}>
+                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>ลิงก์หมุดแผนที่ (Google Maps URL)</label>
+                          <button
+                            type="button"
+                            onClick={handleOpenGoogleMaps}
+                            style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'underline' }}
+                          >
+                            <Navigation size={12} /> 🗺️ ทดสอบเปิดแผนที่
+                          </button>
+                        </div>
+                        <input 
+                          type="text" 
+                          value={mapUrl}
+                          onChange={e => setMapUrl(e.target.value)}
+                          placeholder="https://maps.google.com/?q=13.7563,100.5018"
+                          style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                        />
+                      </div>
+                    </div>
+
                   </div>
 
                   {/* SECTION 2: หมายเหตุ & บันทึกเพิ่มเติม */}
@@ -575,7 +713,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                       <FileText size={18} /> หมายเหตุ / บันทึกเพิ่มเติมจากเซลล์
                     </div>
                     <textarea 
-                      rows={4}
+                      rows={3}
                       value={notes}
                       onChange={e => setNotes(e.target.value)}
                       placeholder="ระบุข้อกังวลของลูกค้า ความต้องการพิเศษ หรือรายละเอียดการคุยเบื้องต้น..."

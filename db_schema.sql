@@ -172,6 +172,9 @@ CREATE TABLE IF NOT EXISTS leads (
     customer_name VARCHAR(150) NOT NULL,
     customer_phone VARCHAR(50),
     customer_address TEXT,
+    customer_latitude NUMERIC,
+    customer_longitude NUMERIC,
+    map_url TEXT,
     job_type VARCHAR(100) NOT NULL, -- e.g., 'Quick Service', 'Installation', 'Renovation'
     status VARCHAR(50) NOT NULL DEFAULT 'New', -- 'New', 'Contacted', 'Qualified', 'Converted', 'Lost'
     notes TEXT,

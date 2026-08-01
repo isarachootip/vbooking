@@ -338,6 +338,9 @@ const initDB = async () => {
         customer_name VARCHAR(150) NOT NULL,
         customer_phone VARCHAR(50),
         customer_address TEXT,
+        customer_latitude NUMERIC,
+        customer_longitude NUMERIC,
+        map_url TEXT,
         job_type VARCHAR(100) NOT NULL,
         status VARCHAR(50) NOT NULL DEFAULT 'New',
         notes TEXT,
@@ -345,6 +348,9 @@ const initDB = async () => {
         updated_at VARCHAR(50) NOT NULL,
         project_id VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL
       );
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_latitude NUMERIC;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_longitude NUMERIC;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS map_url TEXT;
     `);
 
     // Seed default cost rates if table is empty
@@ -3052,13 +3058,13 @@ app.get('/api/leads', async (req, res) => {
 // Create lead
 app.post('/api/leads', async (req, res) => {
   try {
-    const { id, customer_name, customer_phone, customer_address, job_type, notes } = req.body;
+    const { id, customer_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, notes } = req.body;
     const leadId = id || `lead_${Date.now()}`;
     const now = new Date().toISOString();
     const result = await pool.query(
-      `INSERT INTO leads (id, customer_name, customer_phone, customer_address, job_type, status, notes, created_at, updated_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [leadId, customer_name, customer_phone, customer_address, job_type, 'New', notes, now, now]
+      `INSERT INTO leads (id, customer_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, notes, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [leadId, customer_name, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, 'New', notes, now, now]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -3071,13 +3077,13 @@ app.post('/api/leads', async (req, res) => {
 app.put('/api/leads/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { customer_name, customer_phone, customer_address, job_type, status, notes, project_id } = req.body;
+    const { customer_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, notes, project_id } = req.body;
     const now = new Date().toISOString();
     const result = await pool.query(
       `UPDATE leads 
-       SET customer_name = $1, customer_phone = $2, customer_address = $3, job_type = $4, status = $5, notes = $6, updated_at = $7, project_id = COALESCE($8, project_id)
-       WHERE id = $9 RETURNING *`,
-      [customer_name, customer_phone, customer_address, job_type, status, notes, now, project_id, id]
+       SET customer_name = $1, customer_phone = $2, customer_address = $3, customer_latitude = $4, customer_longitude = $5, map_url = $6, job_type = $7, status = $8, notes = $9, updated_at = $10, project_id = COALESCE($11, project_id)
+       WHERE id = $12 RETURNING *`,
+      [customer_name, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, status, notes, now, project_id, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
     res.json(result.rows[0]);
