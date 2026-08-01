@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon } from 'lucide-react';
+import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 
@@ -50,6 +50,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   const [customerLatitude, setCustomerLatitude] = useState<string>('');
   const [customerLongitude, setCustomerLongitude] = useState<string>('');
   const [mapUrl, setMapUrl] = useState<string>('');
+  const [smartInput, setSmartInput] = useState<string>('');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
 
@@ -85,6 +86,52 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
     fetchLeads();
   }, []);
 
+  // Smart Auto-Parse Google Maps URL or Coordinates Input (e.g. 13.838690, 100.625241 or Google Maps URL)
+  const parseAndApplySmartInput = (input: string) => {
+    if (!input || !input.trim()) return;
+    const trimmed = input.trim();
+
+    // 1. Match standard lat, lng format e.g. "13.838690, 100.625241" or "13.838690,100.625241"
+    const coordsRegex = /(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/;
+    const matchCoords = trimmed.match(coordsRegex);
+    if (matchCoords) {
+      const lat = matchCoords[1];
+      const lng = matchCoords[2];
+      setCustomerLatitude(lat);
+      setCustomerLongitude(lng);
+      const generatedUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      setMapUrl(generatedUrl);
+      handleReverseGeocode(lat, lng);
+      return true;
+    }
+
+    // 2. Match Google Maps URL patterns e.g. @13.838690,100.625241 or q=13.838690,100.625241
+    const urlCoordsRegex = /[@?&=](-?\d+\.\d+),(-?\d+\.\d+)/;
+    const matchUrl = trimmed.match(urlCoordsRegex);
+    if (matchUrl) {
+      const lat = matchUrl[1];
+      const lng = matchUrl[2];
+      setCustomerLatitude(lat);
+      setCustomerLongitude(lng);
+      setMapUrl(trimmed.startsWith('http') ? trimmed : `https://www.google.com/maps?q=${lat},${lng}`);
+      handleReverseGeocode(lat, lng);
+      return true;
+    }
+
+    // If it's a URL but coordinates weren't directly parsed, save as mapUrl
+    if (trimmed.startsWith('http')) {
+      setMapUrl(trimmed);
+      return true;
+    }
+
+    return false;
+  };
+
+  const handleSmartInputChange = (val: string) => {
+    setSmartInput(val);
+    parseAndApplySmartInput(val);
+  };
+
   // Reverse Geocoding: Fetch address from Lat/Lng (Nominatim API)
   const handleReverseGeocode = async (latStr: string, lngStr: string) => {
     if (!latStr || !lngStr) return;
@@ -104,7 +151,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
     }
   };
 
-  // Forward Geocoding: Search Lat/Lng from Address
+  // Forward Geocoding: Search Lat/Lng from Address text
   const handleSearchCoordinatesFromAddress = async () => {
     if (!customerAddress || !customerAddress.trim()) {
       alert('กรุณากรอกที่อยู่ก่อนค้นหาพิกัด');
@@ -122,9 +169,9 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
           setCustomerLongitude(lng);
           const generatedUrl = `https://www.google.com/maps?q=${lat},${lng}`;
           setMapUrl(generatedUrl);
-          alert(`พิกัดที่พบ: ${lat}, ${lng}`);
+          setSmartInput(`${lat}, ${lng}`);
         } else {
-          alert('ไม่พบพิกัดจากข้อความที่อยู่นี้ กรุณาระบุให้ชัดเจนยิ่งขึ้น หรือปักหมุด GPS');
+          alert('ไม่พบพิกัดจากข้อความที่อยู่นี้ กรุณาระบุให้ชัดเจนยิ่งขึ้น หรือวางพิกัดจาก Google Maps');
         }
       }
     } catch (err) {
@@ -147,6 +194,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
         const lng = position.coords.longitude.toFixed(6);
         setCustomerLatitude(lat);
         setCustomerLongitude(lng);
+        setSmartInput(`${lat}, ${lng}`);
         const generatedMapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
         setMapUrl(generatedMapUrl);
         setIsGettingLocation(false);
@@ -274,8 +322,11 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       setCustomerName(lead.customer_name);
       setCustomerPhone(lead.customer_phone || '');
       setCustomerAddress(lead.customer_address || '');
-      setCustomerLatitude(lead.customer_latitude ? String(lead.customer_latitude) : '');
-      setCustomerLongitude(lead.customer_longitude ? String(lead.customer_longitude) : '');
+      const latStr = lead.customer_latitude ? String(lead.customer_latitude) : '';
+      const lngStr = lead.customer_longitude ? String(lead.customer_longitude) : '';
+      setCustomerLatitude(latStr);
+      setCustomerLongitude(lngStr);
+      setSmartInput(latStr && lngStr ? `${latStr}, ${lngStr}` : lead.map_url || '');
       setMapUrl(lead.map_url || '');
       setJobType(lead.job_type);
       setStatus(lead.status);
@@ -326,6 +377,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       setCustomerLatitude('');
       setCustomerLongitude('');
       setMapUrl('');
+      setSmartInput('');
       setJobType('Quick Service');
       setStatus('New');
       setBranch('สาขาบางนา');
@@ -598,7 +650,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
         </div>
       </div>
 
-      {/* ── RICH LEAD FORM MODAL WITH MAP/GPS INTEGRATION ── */}
+      {/* ── RICH LEAD FORM MODAL WITH SMART MAP & GPS INTEGRATION ── */}
       {isModalOpen && (
         <div style={{
           position: 'fixed',
@@ -726,22 +778,23 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           disabled={isGeocodingAddress}
                           style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'underline' }}
                         >
-                          <SearchIcon size={12} /> {isGeocodingAddress ? 'กำลังค้นหา...' : '🔍 ค้นหาพิกัดจากที่อยู่นี้'}
+                          <SearchIcon size={12} /> {isGeocodingAddress ? 'กำลังค้นหา...' : '🔍 ค้นหาพิกัดจากข้อความที่อยู่'}
                         </button>
                       </div>
                       <textarea 
                         rows={2}
                         value={customerAddress}
                         onChange={e => setCustomerAddress(e.target.value)}
-                        placeholder="เช่น 123/45 หมู่บ้านสุขสันต์ ถนนบางนา-ตราด แขวงบางนา..."
+                        placeholder="เช่น 206 ซอย รามอินทรา 57 แยก 8 แขวงท่าแร้ง เขตบางเขน กรุงเทพมหานคร..."
                         style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                       />
                     </div>
 
-                    {/* SECTION: MAP & GPS LOCATION PICKER WITH REVERSE GEOCODING */}
-                    <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {/* SECTION: SMART MAP & GPS LOCATION PICKER */}
+                    <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.85rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                      
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <span style={{ fontSize: '0.825rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                           <MapPin size={16} /> บันทึกพิกัดแผนที่ (GPS Map Coordinates)
                         </span>
                         <button
@@ -754,14 +807,41 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                         </button>
                       </div>
 
+                      {/* SMART AUTO-PASTE INPUT BOX */}
+                      <div style={{ background: 'var(--bg-secondary)', padding: '0.6rem', borderRadius: '6px', border: '1px dashed var(--accent-primary)', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <Clipboard size={13} /> วางพิกัด หรือ ลิงก์จาก Google Maps อัจฉริยะ (Smart Auto-Fill)
+                          </label>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>ก๊อปมาจาก Google Maps แล้ววางที่นี่</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <input 
+                            type="text"
+                            value={smartInput}
+                            onChange={e => handleSmartInputChange(e.target.value)}
+                            placeholder="เช่น วางพิกัด 13.838690, 100.625241 หรือวางลิงก์ Google Maps..."
+                            style={{ flex: 1, padding: '0.4rem 0.6rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => parseAndApplySmartInput(smartInput)}
+                            style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '0.4rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                          >
+                            <Sparkles size={12} /> ถอดค่า
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* LATITUDE / LONGITUDE MANUAL INPUTS */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                         <div>
                           <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ละติจูด (Latitude)</label>
                           <input 
                             type="text" 
                             value={customerLatitude}
-                            onChange={e => setCustomerLatitude(e.target.value)}
-                            placeholder="13.756331"
+                            onChange={e => { setCustomerLatitude(e.target.value); setSmartInput(`${e.target.value}, ${customerLongitude}`); }}
+                            placeholder="13.838690"
                             style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                           />
                         </div>
@@ -770,8 +850,8 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           <input 
                             type="text" 
                             value={customerLongitude}
-                            onChange={e => setCustomerLongitude(e.target.value)}
-                            placeholder="100.501862"
+                            onChange={e => { setCustomerLongitude(e.target.value); setSmartInput(`${customerLatitude}, ${e.target.value}`); }}
+                            placeholder="100.625241"
                             style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                           />
                         </div>
@@ -791,19 +871,8 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           onClick={handleOpenGoogleMaps}
                           style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'underline' }}
                         >
-                          <Navigation size={12} /> 🗺️ เปิดแผนที่ Google Maps
+                          <Navigation size={12} /> 🗺️ เปิดค้นหาบน Google Maps
                         </button>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ลิงก์หมุดแผนที่ (Google Maps URL)</label>
-                        <input 
-                          type="text" 
-                          value={mapUrl}
-                          onChange={e => setMapUrl(e.target.value)}
-                          placeholder="https://maps.google.com/?q=13.7563,100.5018"
-                          style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
-                        />
                       </div>
 
                       {/* LIVE EMBEDDED GOOGLE MAP PREVIEW */}
@@ -812,7 +881,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           <iframe
                             title="Interactive Map Preview"
                             width="100%"
-                            height="180"
+                            height="190"
                             style={{ border: 0, display: 'block' }}
                             loading="lazy"
                             allowFullScreen
