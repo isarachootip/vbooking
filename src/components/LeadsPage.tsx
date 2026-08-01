@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass } from 'lucide-react';
+import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 
@@ -18,11 +18,13 @@ interface Lead {
   updated_at: string;
   project_id: string | null;
   building_type?: string;
+  custom_building_type?: string;
   area_size?: string;
   initial_budget?: string;
   payment_method?: string;
   work_areas?: string[];
   required_work_types?: string[];
+  custom_required_work_type?: string;
   branch?: string;
 }
 
@@ -49,16 +51,19 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   const [customerLongitude, setCustomerLongitude] = useState<string>('');
   const [mapUrl, setMapUrl] = useState<string>('');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
 
   const [jobType, setJobType] = useState('Quick Service');
   const [status, setStatus] = useState('New');
   const [branch, setBranch] = useState('สาขาบางนา');
   const [buildingType, setBuildingType] = useState('บ้านเดี่ยว');
+  const [customBuildingType, setCustomBuildingType] = useState('');
   const [areaSize, setAreaSize] = useState('');
   const [initialBudget, setInitialBudget] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('โอนเข้าบัญชีธนาคาร');
   const [workAreas, setWorkAreas] = useState<string[]>([]);
   const [requiredWorkTypes, setRequiredWorkTypes] = useState<string[]>([]);
+  const [customRequiredWorkType, setCustomRequiredWorkType] = useState('');
   const [notes, setNotes] = useState('');
 
   const fetchLeads = async () => {
@@ -80,6 +85,56 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
     fetchLeads();
   }, []);
 
+  // Reverse Geocoding: Fetch address from Lat/Lng (Nominatim API)
+  const handleReverseGeocode = async (latStr: string, lngStr: string) => {
+    if (!latStr || !lngStr) return;
+    setIsGeocodingAddress(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latStr}&lon=${lngStr}&accept-language=th`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.display_name) {
+          setCustomerAddress(data.display_name);
+        }
+      }
+    } catch (err) {
+      console.error('Reverse geocode error:', err);
+    } finally {
+      setIsGeocodingAddress(false);
+    }
+  };
+
+  // Forward Geocoding: Search Lat/Lng from Address
+  const handleSearchCoordinatesFromAddress = async () => {
+    if (!customerAddress || !customerAddress.trim()) {
+      alert('กรุณากรอกที่อยู่ก่อนค้นหาพิกัด');
+      return;
+    }
+    setIsGeocodingAddress(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(customerAddress)}&accept-language=th&limit=1`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const lat = parseFloat(data[0].lat).toFixed(6);
+          const lng = parseFloat(data[0].lon).toFixed(6);
+          setCustomerLatitude(lat);
+          setCustomerLongitude(lng);
+          const generatedUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+          setMapUrl(generatedUrl);
+          alert(`พิกัดที่พบ: ${lat}, ${lng}`);
+        } else {
+          alert('ไม่พบพิกัดจากข้อความที่อยู่นี้ กรุณาระบุให้ชัดเจนยิ่งขึ้น หรือปักหมุด GPS');
+        }
+      }
+    } catch (err) {
+      console.error('Forward geocode error:', err);
+      alert('เกิดข้อผิดพลาดในการค้นหาพิกัด');
+    } finally {
+      setIsGeocodingAddress(false);
+    }
+  };
+
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert('เบราว์เซอร์ของคุณไม่รองรับการดึงพิกัด GPS');
@@ -87,7 +142,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
     }
     setIsGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = position.coords.latitude.toFixed(6);
         const lng = position.coords.longitude.toFixed(6);
         setCustomerLatitude(lat);
@@ -95,6 +150,11 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
         const generatedMapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
         setMapUrl(generatedMapUrl);
         setIsGettingLocation(false);
+
+        // Auto reverse geocode address if address is empty
+        if (!customerAddress) {
+          await handleReverseGeocode(lat, lng);
+        }
       },
       (error) => {
         console.error('Geolocation error:', error);
@@ -133,12 +193,14 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
     e.preventDefault();
     
     const extraDetails = {
-      buildingType,
+      buildingType: buildingType === 'อื่นๆ' && customBuildingType ? `อื่นๆ: ${customBuildingType}` : buildingType,
+      customBuildingType,
       areaSize,
       initialBudget,
       paymentMethod,
       workAreas,
-      requiredWorkTypes,
+      requiredWorkTypes: requiredWorkTypes.map(t => t === 'งานอื่นๆ' && customRequiredWorkType ? `งานอื่นๆ: ${customRequiredWorkType}` : t),
+      customRequiredWorkType,
       branch
     };
 
@@ -224,12 +286,31 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
           const parts = lead.notes.split('[Details]:');
           setNotes(parts[0].trim());
           const details = JSON.parse(parts[1].trim());
-          setBuildingType(details.buildingType || 'บ้านเดี่ยว');
+          const bType = details.buildingType || 'บ้านเดี่ยว';
+          if (bType.startsWith('อื่นๆ:')) {
+            setBuildingType('อื่นๆ');
+            setCustomBuildingType(bType.replace('อื่นๆ:', '').trim());
+          } else {
+            setBuildingType(bType);
+            setCustomBuildingType(details.customBuildingType || '');
+          }
+
           setAreaSize(details.areaSize || '');
           setInitialBudget(details.initialBudget || '');
           setPaymentMethod(details.paymentMethod || 'โอนเข้าบัญชีธนาคาร');
           setWorkAreas(details.workAreas || []);
-          setRequiredWorkTypes(details.requiredWorkTypes || []);
+
+          const reqTypes: string[] = details.requiredWorkTypes || [];
+          const hasCustomOther = reqTypes.some(t => t.startsWith('งานอื่นๆ:'));
+          if (hasCustomOther) {
+            const customType = reqTypes.find(t => t.startsWith('งานอื่นๆ:'));
+            setCustomRequiredWorkType(customType ? customType.replace('งานอื่นๆ:', '').trim() : '');
+            setRequiredWorkTypes(reqTypes.map(t => t.startsWith('งานอื่นๆ:') ? 'งานอื่นๆ' : t));
+          } else {
+            setRequiredWorkTypes(reqTypes);
+            setCustomRequiredWorkType(details.customRequiredWorkType || '');
+          }
+
           setBranch(details.branch || 'สาขาบางนา');
         } else {
           setNotes(lead.notes || '');
@@ -249,11 +330,13 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       setStatus('New');
       setBranch('สาขาบางนา');
       setBuildingType('บ้านเดี่ยว');
+      setCustomBuildingType('');
       setAreaSize('');
       setInitialBudget('');
       setPaymentMethod('โอนเข้าบัญชีธนาคาร');
       setWorkAreas([]);
       setRequiredWorkTypes([]);
+      setCustomRequiredWorkType('');
       setNotes('');
     }
     setIsModalOpen(true);
@@ -633,9 +716,19 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                        ที่อยู่ / พิกัดสถานที่หน้างาน
-                      </label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                          ที่อยู่ / พิกัดสถานที่หน้างาน
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleSearchCoordinatesFromAddress}
+                          disabled={isGeocodingAddress}
+                          style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'underline' }}
+                        >
+                          <SearchIcon size={12} /> {isGeocodingAddress ? 'กำลังค้นหา...' : '🔍 ค้นหาพิกัดจากที่อยู่นี้'}
+                        </button>
+                      </div>
                       <textarea 
                         rows={2}
                         value={customerAddress}
@@ -645,7 +738,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                       />
                     </div>
 
-                    {/* SECTION: MAP & GPS LOCATION PICKER (เหมือน VBOOKING) */}
+                    {/* SECTION: MAP & GPS LOCATION PICKER WITH REVERSE GEOCODING */}
                     <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -684,17 +777,26 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                         </div>
                       </div>
 
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleReverseGeocode(customerLatitude, customerLongitude)}
+                          disabled={!customerLatitude || !customerLongitude || isGeocodingAddress}
+                          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0.25rem 0.5rem', color: 'var(--text-primary)', fontSize: '0.72rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                        >
+                          <Map size={12} color="#10b981" /> 🏠 แปลงพิกัดนี้เป็นที่อยู่ข้อความ
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleOpenGoogleMaps}
+                          style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'underline' }}
+                        >
+                          <Navigation size={12} /> 🗺️ เปิดแผนที่ Google Maps
+                        </button>
+                      </div>
+
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.15rem' }}>
-                          <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>ลิงก์หมุดแผนที่ (Google Maps URL)</label>
-                          <button
-                            type="button"
-                            onClick={handleOpenGoogleMaps}
-                            style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'underline' }}
-                          >
-                            <Navigation size={12} /> 🗺️ ทดสอบเปิดแผนที่
-                          </button>
-                        </div>
+                        <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ลิงก์หมุดแผนที่ (Google Maps URL)</label>
                         <input 
                           type="text" 
                           value={mapUrl}
@@ -765,6 +867,16 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                             </label>
                           ))}
                         </div>
+                        {/* CUSTOM BUILDING TYPE INPUT */}
+                        {buildingType === 'อื่นๆ' && (
+                          <input 
+                            type="text" 
+                            value={customBuildingType} 
+                            onChange={e => setCustomBuildingType(e.target.value)} 
+                            placeholder="ระบุสิ่งก่อสร้างอื่นๆ เช่น คลังสินค้า..." 
+                            style={{ marginTop: '0.4rem', width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.8rem', color: 'var(--text-primary)' }}
+                          />
+                        )}
                       </div>
                     </div>
 
@@ -839,7 +951,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                       </div>
                     </div>
 
-                    {/* ประเภทงานที่ต้องการ Checkboxes Panel */}
+                    {/* ประเภทงานที่ต้องการ Checkboxes Panel WITH CUSTOM INPUT */}
                     <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>ประเภทงานที่ต้องการ</span>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
@@ -857,6 +969,16 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           </label>
                         ))}
                       </div>
+                      {/* CUSTOM REQUIRED WORK TYPE INPUT */}
+                      {requiredWorkTypes.includes('งานอื่นๆ') && (
+                        <input 
+                          type="text"
+                          value={customRequiredWorkType}
+                          onChange={e => setCustomRequiredWorkType(e.target.value)}
+                          placeholder="ระบุประเภทงานอื่นๆ เช่น งานทาสี, งานฉีดปลวก..."
+                          style={{ marginTop: '0.4rem', width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.8rem', color: 'var(--text-primary)' }}
+                        />
+                      )}
                     </div>
 
                   </div>
