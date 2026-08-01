@@ -177,8 +177,24 @@ CREATE TABLE IF NOT EXISTS leads (
     map_url TEXT,
     job_type VARCHAR(100) NOT NULL, -- e.g., 'Quick Service', 'Installation', 'Renovation'
     status VARCHAR(50) NOT NULL DEFAULT 'New', -- 'New', 'Contacted', 'Qualified', 'Converted', 'Lost'
+    appointment_date VARCHAR(50),
+    appointment_type VARCHAR(50),
+    appointment_assignee VARCHAR(150),
     notes TEXT,
     created_at VARCHAR(50) NOT NULL,
     updated_at VARCHAR(50) NOT NULL,
     project_id VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL
+);
+
+-- 12. Lead Followups Table
+CREATE TABLE IF NOT EXISTS lead_followups (
+    id VARCHAR(50) PRIMARY KEY,
+    lead_id VARCHAR(50) REFERENCES leads(id) ON DELETE CASCADE,
+    activity_type VARCHAR(50) NOT NULL, -- 'Call Back', 'Site Visit', 'Follow-up Quote', 'Note'
+    appointment_date VARCHAR(50),
+    appointment_time VARCHAR(50),
+    assignee_name VARCHAR(150),
+    notes TEXT,
+    created_at VARCHAR(50) NOT NULL,
+    created_by VARCHAR(150)
 );

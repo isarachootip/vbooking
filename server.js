@@ -351,6 +351,21 @@ const initDB = async () => {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_latitude NUMERIC;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_longitude NUMERIC;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS map_url TEXT;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS appointment_date VARCHAR(50);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS appointment_type VARCHAR(50);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS appointment_assignee VARCHAR(150);
+
+      CREATE TABLE IF NOT EXISTS lead_followups (
+        id VARCHAR(50) PRIMARY KEY,
+        lead_id VARCHAR(50) REFERENCES leads(id) ON DELETE CASCADE,
+        activity_type VARCHAR(50) NOT NULL,
+        appointment_date VARCHAR(50),
+        appointment_time VARCHAR(50),
+        assignee_name VARCHAR(150),
+        notes TEXT,
+        created_at VARCHAR(50) NOT NULL,
+        created_by VARCHAR(150)
+      );
     `);
 
     // Seed default cost rates if table is empty
@@ -3077,19 +3092,61 @@ app.post('/api/leads', async (req, res) => {
 app.put('/api/leads/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { customer_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, notes, project_id } = req.body;
+    const { customer_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, appointment_date, appointment_type, appointment_assignee, notes, project_id } = req.body;
     const now = new Date().toISOString();
     const result = await pool.query(
       `UPDATE leads 
-       SET customer_name = $1, customer_phone = $2, customer_address = $3, customer_latitude = $4, customer_longitude = $5, map_url = $6, job_type = $7, status = $8, notes = $9, updated_at = $10, project_id = COALESCE($11, project_id)
-       WHERE id = $12 RETURNING *`,
-      [customer_name, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, status, notes, now, project_id, id]
+       SET customer_name = $1, customer_phone = $2, customer_address = $3, customer_latitude = $4, customer_longitude = $5, map_url = $6, job_type = $7, status = $8, appointment_date = $9, appointment_type = $10, appointment_assignee = $11, notes = $12, updated_at = $13, project_id = COALESCE($14, project_id)
+       WHERE id = $15 RETURNING *`,
+      [customer_name, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, status, appointment_date || null, appointment_type || null, appointment_assignee || null, notes, now, project_id, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error updating lead:', err);
     res.status(500).json({ error: 'Failed to update lead' });
+  }
+});
+
+// Get followups for a lead
+app.get('/api/leads/:id/followups', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT * FROM lead_followups WHERE lead_id = $1 ORDER BY created_at DESC', [id]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching followups:', err);
+    res.status(500).json({ error: 'Failed to fetch followups' });
+  }
+});
+
+// Add followup log / appointment
+app.post('/api/leads/:id/followups', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { activity_type, appointment_date, appointment_time, assignee_name, notes, new_status, created_by } = req.body;
+    const followupId = `flw_${Date.now()}`;
+    const now = new Date().toISOString();
+
+    const result = await pool.query(
+      `INSERT INTO lead_followups (id, lead_id, activity_type, appointment_date, appointment_time, assignee_name, notes, created_at, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [followupId, id, activity_type, appointment_date || null, appointment_time || null, assignee_name || null, notes || null, now, created_by || 'Admin']
+    );
+
+    // Update Lead status and appointment info
+    const fullAppointmentStr = appointment_date ? `${appointment_date} ${appointment_time || ''}`.trim() : null;
+    await pool.query(
+      `UPDATE leads 
+       SET status = COALESCE($1, status), appointment_date = $2, appointment_type = $3, appointment_assignee = $4, updated_at = $5
+       WHERE id = $6`,
+      [new_status || null, fullAppointmentStr, activity_type, assignee_name, now, id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error adding followup:', err);
+    res.status(500).json({ error: 'Failed to add followup' });
   }
 });
 

@@ -1,7 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles } from 'lucide-react';
+import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles, Calendar, Clock, History } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
+
+interface LeadFollowup {
+  id: string;
+  lead_id: string;
+  activity_type: string;
+  appointment_date?: string | null;
+  appointment_time?: string | null;
+  assignee_name?: string | null;
+  notes?: string | null;
+  created_at: string;
+  created_by?: string | null;
+}
 
 interface Lead {
   id: string;
@@ -13,6 +25,9 @@ interface Lead {
   map_url?: string | null;
   job_type: string;
   status: string;
+  appointment_date?: string | null;
+  appointment_type?: string | null;
+  appointment_assignee?: string | null;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -37,6 +52,19 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+
+  // Follow-up Modal & History
+  const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
+  const [selectedLeadForFollowup, setSelectedLeadForFollowup] = useState<Lead | null>(null);
+  const [followupsList, setFollowupsList] = useState<LeadFollowup[]>([]);
+
+  // Follow-up Form states
+  const [activityType, setActivityType] = useState('ให้โทรกลับ');
+  const [appointmentDate, setAppointmentDate] = useState('');
+  const [appointmentTime, setAppointmentTime] = useState('10:00');
+  const [assigneeName, setAssigneeName] = useState(currentUser?.name || 'แอดมิน');
+  const [followupNotes, setFollowupNotes] = useState('');
+  const [followupNewStatus, setFollowupNewStatus] = useState('Contacted');
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,6 +113,60 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  const fetchFollowups = async (leadId: string) => {
+    try {
+      const res = await fetch(`/api/leads/${leadId}/followups`);
+      if (res.ok) {
+        const data = await res.json();
+        setFollowupsList(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch followups:', err);
+    }
+  };
+
+  const openFollowupModal = (lead: Lead) => {
+    setSelectedLeadForFollowup(lead);
+    setActivityType('ให้โทรกลับ');
+    setAppointmentDate('');
+    setAppointmentTime('10:00');
+    setAssigneeName(currentUser?.name || 'แอดมิน');
+    setFollowupNotes('');
+    setFollowupNewStatus(lead.status === 'New' ? 'Contacted' : lead.status);
+    setIsFollowupModalOpen(true);
+    fetchFollowups(lead.id);
+  };
+
+  const handleSaveFollowup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLeadForFollowup) return;
+
+    try {
+      const res = await fetch(`/api/leads/${selectedLeadForFollowup.id}/followups`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activity_type: activityType,
+          appointment_date: appointmentDate,
+          appointment_time: appointmentTime,
+          assignee_name: assigneeName,
+          notes: followupNotes,
+          new_status: followupNewStatus,
+          created_by: currentUser?.name || 'Admin',
+        }),
+      });
+
+      if (res.ok) {
+        setIsFollowupModalOpen(false);
+        fetchLeads();
+      } else {
+        alert('เกิดข้อผิดพลาดในการบันทึกการติดตาม');
+      }
+    } catch (err) {
+      console.error('Save followup error:', err);
+    }
+  };
 
   // Smart Auto-Parse Google Maps URL or Coordinates Input (e.g. 13.838690, 100.625241 or Google Maps URL)
   const parseAndApplySmartInput = (input: string) => {
@@ -399,9 +481,9 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       case 'New':
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.15)', color: '#2563eb', fontSize: '0.75rem', fontWeight: 700 }}>New (ใหม่)</span>;
       case 'Contacted':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontSize: '0.75rem', fontWeight: 700 }}>Contacted (ติดต่อแล้ว)</span>;
+        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontSize: '0.75rem', fontWeight: 700 }}>Contacted (ติดตามแล้ว)</span>;
       case 'Qualified':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(147, 51, 234, 0.15)', color: '#9333ea', fontSize: '0.75rem', fontWeight: 700 }}>Qualified (รอสำรวจ)</span>;
+        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(147, 51, 234, 0.15)', color: '#9333ea', fontSize: '0.75rem', fontWeight: 700 }}>Qualified (รอสำรวจ/ยืนยัน)</span>;
       case 'Converted':
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', fontSize: '0.75rem', fontWeight: 700 }}>Converted (เป็นงานแล้ว)</span>;
       case 'Lost':
@@ -431,7 +513,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
             รายชื่อลูกค้ามุ่งหวัง (Leads Management)
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0.25rem 0 0 0' }}>
-            จัดการข้อมูลลูกค้า บันทึกพิกัดแผนที่ (GPS) ติดตามสถานะความสนใจ และแปลงข้อมูลเป็นโครงการติดตั้ง
+            จัดการข้อมูลลูกค้า บันทึกพิกัดแผนที่ (GPS) บันทึกการติดตาม/นัดหมายลงพื้นที่ และแปลงเป็นโครงการติดตั้ง
           </p>
         </div>
         
@@ -528,8 +610,8 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
         >
           <option value="All">สถานะทั้งหมด</option>
           <option value="New">New (ใหม่)</option>
-          <option value="Contacted">Contacted (ติดต่อแล้ว)</option>
-          <option value="Qualified">Qualified (รอสำรวจ)</option>
+          <option value="Contacted">Contacted (ติดตามแล้ว)</option>
+          <option value="Qualified">Qualified (รอลงสำรวจ)</option>
           <option value="Converted">Converted (เป็นโปรเจกต์แล้ว)</option>
           <option value="Lost">Lost (ยกเลิก)</option>
         </select>
@@ -554,10 +636,9 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
               <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 600 }}>
                 <th style={{ padding: '0.85rem 1rem' }}>ชื่อลูกค้า / ที่อยู่</th>
                 <th style={{ padding: '0.85rem 1rem' }}>พิกัดหน้างาน (Map/GPS)</th>
-                <th style={{ padding: '0.85rem 1rem' }}>การติดต่อ</th>
+                <th style={{ padding: '0.85rem 1rem' }}>นัดหมาย / การติดตามล่าสุด</th>
                 <th style={{ padding: '0.85rem 1rem' }}>ประเภทงาน</th>
                 <th style={{ padding: '0.85rem 1rem' }}>สถานะ</th>
-                <th style={{ padding: '0.85rem 1rem' }}>วันที่บันทึก</th>
                 <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>การดำเนินการ</th>
               </tr>
             </thead>
@@ -579,7 +660,10 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                   <tr key={lead.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background var(--transition-fast)' }} className="table-row-hover">
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{lead.customer_name}</div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{lead.customer_address || 'ไม่ระบุที่อยู่'}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                        <Phone size={12} style={{ display: 'inline', marginRight: '3px' }} /> {lead.customer_phone || '-'}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{lead.customer_address || 'ไม่ระบุที่อยู่'}</div>
                     </td>
                     <td style={{ padding: '0.85rem 1rem' }}>
                       {lead.customer_latitude && lead.customer_longitude ? (
@@ -604,10 +688,19 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>- ไม่ได้ปักพิกัด -</span>
                       )}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <Phone size={14} color="var(--accent-primary)" /> {lead.customer_phone || '-'}
-                      </div>
+                    <td style={{ padding: '0.85rem 1rem' }}>
+                      {lead.appointment_date ? (
+                        <div style={{ background: 'rgba(147, 51, 234, 0.1)', border: '1px solid rgba(147, 51, 234, 0.2)', padding: '0.3rem 0.6rem', borderRadius: '6px', display: 'inline-flex', flexDirection: 'column', gap: '0.1rem' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Calendar size={12} /> {lead.appointment_type || 'นัดหมาย'}: {lead.appointment_date}
+                          </span>
+                          {lead.appointment_assignee && (
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>👤 {lead.appointment_assignee}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>- ยังไม่มีนัดหมาย -</span>
+                      )}
                     </td>
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <span style={{ padding: '0.2rem 0.6rem', borderRadius: '6px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', fontWeight: 600, fontSize: '0.78rem' }}>
@@ -617,12 +710,15 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                     <td style={{ padding: '0.85rem 1rem' }}>
                       {getStatusBadge(lead.status)}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>
-                      {formatToDDMMYYYY(lead.created_at)}
-                    </td>
                     <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                       {lead.status !== 'Converted' ? (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => openFollowupModal(lead)}
+                            style={{ padding: '0.35rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'rgba(147, 51, 234, 0.12)', border: '1px solid #9333ea', color: '#9333ea', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                          >
+                            <Calendar size={13} /> ติดตาม / นัดหมาย
+                          </button>
                           <button
                             onClick={() => openModal(lead)}
                             style={{ padding: '0.35rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}
@@ -649,6 +745,188 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
           </table>
         </div>
       </div>
+
+      {/* ── FOLLOW-UP & APPOINTMENT MODAL (บันทึกการติดต่อ / หมายกำหนดนัดไปพบลูกค้า) ── */}
+      {isFollowupModalOpen && selectedLeadForFollowup && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1200,
+          padding: '1rem'
+        }}>
+          <div className="glass-panel" style={{ 
+            padding: '1.75rem 2rem', 
+            width: '780px', 
+            maxWidth: '98%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '1.25rem', 
+            maxHeight: '90vh', 
+            overflowY: 'auto',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+          }}>
+            <div className="flex-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Calendar size={24} /> บันทึกการติดตาม & นัดหมายลงพื้นที่ site งาน
+              </h2>
+              <button onClick={() => setIsFollowupModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem' }}>
+                <X size={22} />
+              </button>
+            </div>
+
+            <div style={{ background: 'var(--bg-tertiary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{selectedLeadForFollowup.customer_name}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>📞 {selectedLeadForFollowup.customer_phone} | 📍 {selectedLeadForFollowup.customer_address || 'ไม่ระบุที่อยู่'}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)' }}>{selectedLeadForFollowup.job_type}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveFollowup} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                    กิจกรรมการติดตาม (Activity Type) *
+                  </label>
+                  <select
+                    value={activityType}
+                    onChange={e => setActivityType(e.target.value)}
+                    style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 700 }}
+                  >
+                    <option value="1.2.1 ให้โทรกลับ">1.2.1 ให้โทรกลับ (Call Back)</option>
+                    <option value="1.2.2 นัดลงพื้นที่ site งาน">1.2.2 นัดลงพื้นที่ site งาน (Site Visit Appointment)</option>
+                    <option value="1.3.1 ติดต่อได้ ยืนยัน Lead">1.3.1 ติดต่อได้ ยืนยัน Lead (Qualified)</option>
+                    <option value="1.3.2 ไปพบที่ site งาน confirm เบื้องต้น">1.3.2 ไปพบที่ site งาน confirm เบื้องต้น</option>
+                    <option value="บันทึกการสนทนาทั่วไป">บันทึกการสนทนาทั่วไป (Note)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                    ปรับสถานะ Lead
+                  </label>
+                  <select
+                    value={followupNewStatus}
+                    onChange={e => setFollowupNewStatus(e.target.value)}
+                    style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+                  >
+                    <option value="Contacted">Contacted (ติดตามแล้ว)</option>
+                    <option value="Qualified">Qualified (รอสำรวจ/ยืนยันแล้ว)</option>
+                    <option value="New">New (ใหม่)</option>
+                    <option value="Lost">Lost (ลูกค้ายกเลิก)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* APPOINTMENT DATE & TIME */}
+              <div style={{ background: 'rgba(147, 51, 234, 0.05)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(147, 51, 234, 0.2)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Clock size={16} /> กำหนดนัดหมายวันเวลา
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>วันที่นัดหมาย</label>
+                    <input 
+                      type="date"
+                      value={appointmentDate}
+                      onChange={e => setAppointmentDate(e.target.value)}
+                      style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>เวลานัดหมาย</label>
+                    <input 
+                      type="time"
+                      value={appointmentTime}
+                      onChange={e => setAppointmentTime(e.target.value)}
+                      style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ผู้รับผิดชอบ / ช่างที่จะไป site</label>
+                    <input 
+                      type="text"
+                      value={assigneeName}
+                      onChange={e => setAssigneeName(e.target.value)}
+                      placeholder="ระบุชื่อผู้รับผิดชอบ"
+                      style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                  รายละเอียดการคุย / บันทึกผลการติดต่อ
+                </label>
+                <textarea
+                  rows={3}
+                  value={followupNotes}
+                  onChange={e => setFollowupNotes(e.target.value)}
+                  placeholder="ระบุผลการโทรคุย สรุปที่ลูกค้ายืนยัน หรือสิ่งที่ช่างต้องเตรียมไปหน้างาน..."
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              {/* FOLLOW-UP HISTORY TIMELINE */}
+              <div style={{ marginTop: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.5rem' }}>
+                  <History size={16} color="#9333ea" /> ประวัติการติดต่อ & นัดหมายในอดีต ({followupsList.length})
+                </span>
+                {followupsList.length === 0 ? (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.75rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)' }}>
+                    ยังไม่มีประวัติการบันทึกติดตามก่อนหน้านี้
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '160px', overflowY: 'auto' }}>
+                    {followupsList.map(item => (
+                      <div key={item.id} style={{ background: 'var(--bg-tertiary)', padding: '0.5rem 0.75rem', borderRadius: '6px', borderLeft: '3px solid #9333ea', fontSize: '0.78rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          <span>{item.activity_type}</span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>{formatToDDMMYYYY(item.created_at)} โดย {item.created_by}</span>
+                        </div>
+                        {item.appointment_date && (
+                          <div style={{ color: '#9333ea', fontWeight: 600, marginTop: '0.15rem' }}>
+                            📅 นัดหมาย: {item.appointment_date} {item.appointment_time || ''} {item.assignee_name ? `(ผู้รับผิดชอบ: ${item.assignee_name})` : ''}
+                          </div>
+                        )}
+                        {item.notes && <div style={{ color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{item.notes}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.85rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsFollowupModalOpen(false)}
+                  style={{ padding: '0.55rem 1.25rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '0.55rem 1.5rem', borderRadius: 'var(--radius-md)', background: '#9333ea', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(147, 51, 234, 0.3)' }}
+                  className="hover-lift"
+                >
+                  บันทึกการติดตาม & นัดหมาย
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── RICH LEAD FORM MODAL WITH SMART MAP & GPS INTEGRATION ── */}
       {isModalOpen && (
@@ -759,8 +1037,8 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                         >
                           <option value="New">New (ใหม่)</option>
-                          <option value="Contacted">Contacted (ติดต่อแล้ว)</option>
-                          <option value="Qualified">Qualified (รอลงสำรวจ)</option>
+                          <option value="Contacted">Contacted (ติดตามแล้ว)</option>
+                          <option value="Qualified">Qualified (รอลงสำรวจ/ยืนยันแล้ว)</option>
                           <option value="Lost">Lost (ยกเลิก)</option>
                           {status === 'Converted' && <option value="Converted">Converted (แปลงเป็นงานแล้ว)</option>}
                         </select>
