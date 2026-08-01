@@ -168,12 +168,45 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
     }
   };
 
-  // Smart Auto-Parse Google Maps URL or Coordinates Input (e.g. 13.838690, 100.625241 or Google Maps URL)
-  const parseAndApplySmartInput = (input: string) => {
-    if (!input || !input.trim()) return;
-    const trimmed = input.trim();
+  const parseDMS = (dmsStr: string): number | null => {
+    const dmsRegex = /(\d+)[°\s]+(\d+)[′'\s]+(\d+(?:\.\d+)?)["″\s]*([NSEWnsew])?/;
+    const match = dmsStr.match(dmsRegex);
+    if (!match) return null;
 
-    // 1. Match standard lat, lng format e.g. "13.838690, 100.625241" or "13.838690,100.625241"
+    const deg = parseFloat(match[1]);
+    const min = parseFloat(match[2]);
+    const sec = parseFloat(match[3]);
+    const dir = match[4] ? match[4].toUpperCase() : 'N';
+
+    let dd = deg + min / 60 + sec / 3600;
+    if (dir === 'S' || dir === 'W') {
+      dd = -dd;
+    }
+    return parseFloat(dd.toFixed(6));
+  };
+
+  // Smart Auto-Parse Google Maps URL or Coordinates Input (supports DMS e.g. 13°51'08.1"N 100°38'36.5"E, decimal degrees e.g. 13.851979, 100.643406, or Google Maps URL)
+  const parseAndApplySmartInput = (input: string) => {
+    if (!input || !input.trim()) return false;
+    const trimmed = decodeURIComponent(input.trim());
+
+    // 1. Check DMS format e.g. 13°51'08.1"N 100°38'36.5"E (as in Google Maps Search Box)
+    const dmsLatMatch = trimmed.match(/\d+°\d+['′]\d+(?:\.\d+)?["″]\s*[NSns]/);
+    const dmsLngMatch = trimmed.match(/\d+°\d+['′]\d+(?:\.\d+)?["″]\s*[EWew]/);
+    if (dmsLatMatch && dmsLngMatch) {
+      const lat = parseDMS(dmsLatMatch[0]);
+      const lng = parseDMS(dmsLngMatch[0]);
+      if (lat !== null && lng !== null) {
+        setCustomerLatitude(String(lat));
+        setCustomerLongitude(String(lng));
+        const generatedUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+        setMapUrl(generatedUrl);
+        handleReverseGeocode(String(lat), String(lng));
+        return true;
+      }
+    }
+
+    // 2. Match standard lat, lng format e.g. "13.851979, 100.643406" or "13.851979,100.643406"
     const coordsRegex = /(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/;
     const matchCoords = trimmed.match(coordsRegex);
     if (matchCoords) {
@@ -187,7 +220,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       return true;
     }
 
-    // 2. Match Google Maps URL patterns e.g. @13.838690,100.625241 or q=13.838690,100.625241
+    // 3. Match Google Maps URL patterns e.g. @13.851979,100.643406 or q=13.851979,100.643406
     const urlCoordsRegex = /[@?&=](-?\d+\.\d+),(-?\d+\.\d+)/;
     const matchUrl = trimmed.match(urlCoordsRegex);
     if (matchUrl) {
@@ -1086,27 +1119,36 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                       </div>
 
                       {/* SMART AUTO-PASTE INPUT BOX */}
-                      <div style={{ background: 'var(--bg-secondary)', padding: '0.6rem', borderRadius: '6px', border: '1px dashed var(--accent-primary)', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                      <div style={{ background: 'var(--bg-secondary)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px dashed var(--accent-primary)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <Clipboard size={13} /> วางพิกัด หรือ ลิงก์จาก Google Maps อัจฉริยะ (Smart Auto-Fill)
+                          <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <Clipboard size={14} /> วางพิกัด หรือ ลิงก์จาก Google Maps อัจฉริยะ (Smart Auto-Fill)
                           </label>
-                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>ก๊อปมาจาก Google Maps แล้ววางที่นี่</span>
+                          <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700 }}>รองรับ DMS (13°51'08.1"N) & URL</span>
                         </div>
+
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', background: 'rgba(16, 185, 129, 0.08)', padding: '0.4rem 0.6rem', borderRadius: '4px', borderLeft: '3px solid #10b981' }}>
+                          💡 <b>วิธีก๊อปปี้จาก Google Maps:</b> ก๊อปปี้ข้อความพิกัดในช่องค้นหา (เช่น <code>13°51'07.1"N 100°38'36.3"E</code> หรือ <code>13.851979, 100.643406</code>) หรือก๊อปปี้ลิงก์ URL มาวางในช่องนี้ ระบบจะถอดค่าแยกละติจูด/ลองจิจูดและดึงที่ให้อัตโนมัติ!
+                        </div>
+
                         <div style={{ display: 'flex', gap: '0.4rem' }}>
                           <input 
                             type="text"
                             value={smartInput}
                             onChange={e => handleSmartInputChange(e.target.value)}
-                            placeholder="เช่น วางพิกัด 13.838690, 100.625241 หรือวางลิงก์ Google Maps..."
-                            style={{ flex: 1, padding: '0.4rem 0.6rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                            onPaste={e => {
+                              const pasted = e.clipboardData.getData('text');
+                              if (pasted) handleSmartInputChange(pasted);
+                            }}
+                            placeholder="วางพิกัด เช่น 13°51'07.1&quot;N 100°38'36.3&quot;E หรือ 13.851979, 100.643406..."
+                            style={{ flex: 1, padding: '0.45rem 0.65rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.825rem', fontWeight: 600 }}
                           />
                           <button
                             type="button"
                             onClick={() => parseAndApplySmartInput(smartInput)}
-                            style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '0.4rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                            style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '0.45rem 0.85rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
                           >
-                            <Sparkles size={12} /> ถอดค่า
+                            <Sparkles size={13} /> ถอดค่าพิกัด
                           </button>
                         </div>
                       </div>
@@ -1118,8 +1160,14 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           <input 
                             type="text" 
                             value={customerLatitude}
-                            onChange={e => { setCustomerLatitude(e.target.value); setSmartInput(`${e.target.value}, ${customerLongitude}`); }}
-                            placeholder="13.838690"
+                            onChange={e => { 
+                              const val = e.target.value;
+                              if (!parseAndApplySmartInput(val)) {
+                                setCustomerLatitude(val); 
+                                setSmartInput(`${val}, ${customerLongitude}`); 
+                              }
+                            }}
+                            placeholder="13.851979 หรือ 13°51'07.1&quot;N"
                             style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                           />
                         </div>
@@ -1129,7 +1177,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                             type="text" 
                             value={customerLongitude}
                             onChange={e => { setCustomerLongitude(e.target.value); setSmartInput(`${customerLatitude}, ${e.target.value}`); }}
-                            placeholder="100.625241"
+                            placeholder="100.643406 หรือ 100°38'36.3&quot;E"
                             style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                           />
                         </div>
