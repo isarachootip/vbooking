@@ -805,6 +805,25 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
                         />
                       </div>
+
+                      {/* LIVE EMBEDDED GOOGLE MAP PREVIEW */}
+                      {((customerLatitude && customerLongitude) || customerAddress) && (
+                        <div style={{ marginTop: '0.35rem', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+                          <iframe
+                            title="Interactive Map Preview"
+                            width="100%"
+                            height="180"
+                            style={{ border: 0, display: 'block' }}
+                            loading="lazy"
+                            allowFullScreen
+                            src={
+                              customerLatitude && customerLongitude
+                                ? `https://maps.google.com/maps?q=${customerLatitude},${customerLongitude}&z=16&output=embed`
+                                : `https://maps.google.com/maps?q=${encodeURIComponent(customerAddress)}&z=15&output=embed`
+                            }
+                          />
+                        </div>
+                      )}
                     </div>
 
                   </div>
