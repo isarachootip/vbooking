@@ -766,9 +766,14 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           </button>
                         </div>
                       ) : (
-                        <span style={{ color: '#10b981', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.3rem' }}>
-                          <CheckCircle2 size={15} /> เป็นโปรเจกต์แล้ว
-                        </span>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                          <a
+                            href="/projects"
+                            style={{ padding: '0.35rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#059669', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                          >
+                            <CheckCircle2 size={14} /> 📁 ไปที่โครงการติดตั้ง
+                          </a>
+                        </div>
                       )}
                     </td>
                   </tr>
