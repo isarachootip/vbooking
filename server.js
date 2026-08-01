@@ -1660,10 +1660,41 @@ app.post('/api/users/change-password', async (req, res) => {
 });
 
 
+// Helper function: Generate Project ID in format Pddmmyy-running (e.g. P010826-001)
+async function generateFormattedProjectId() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  const prefix = `P${dd}${mm}${yy}`;
+
+  const res = await pool.query(
+    "SELECT id FROM projects WHERE id LIKE $1 ORDER BY id DESC LIMIT 1",
+    [`${prefix}%`]
+  );
+
+  let running = 1;
+  if (res.rows.length > 0) {
+    const lastId = res.rows[0].id;
+    const numPart = lastId.replace(prefix, '').replace('-', '');
+    const lastNum = parseInt(numPart, 10);
+    if (!isNaN(lastNum)) {
+      running = lastNum + 1;
+    }
+  }
+
+  const runningStr = String(running).padStart(3, '0');
+  return `${prefix}-${runningStr}`;
+}
+
 // Projects REST API
 app.post('/api/projects', async (req, res) => {
-  const { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense, projectTemplateName, extraDetails } = req.body;
+  let { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense, projectTemplateName, extraDetails } = req.body;
   try {
+    if (!id || id.startsWith('p_')) {
+      id = await generateFormattedProjectId();
+    }
+
     const checkExist = await pool.query('SELECT 1 FROM projects WHERE id = $1', [id]);
     const isNew = checkExist.rows.length === 0;
     const cols = customColumns || ["To Do", "In Progress", "Review", "Done"];
@@ -3150,6 +3181,32 @@ app.post('/api/leads/:id/followups', async (req, res) => {
   }
 });
 
+async function generateFormattedProjectId() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  const prefix = `P${dd}${mm}${yy}`;
+
+  const res = await pool.query(
+    "SELECT id FROM projects WHERE id LIKE $1 ORDER BY id DESC LIMIT 1",
+    [`${prefix}%`]
+  );
+
+  let running = 1;
+  if (res.rows.length > 0) {
+    const lastId = res.rows[0].id;
+    const numPart = lastId.replace(prefix, '').replace('-', '');
+    const lastNum = parseInt(numPart, 10);
+    if (!isNaN(lastNum)) {
+      running = lastNum + 1;
+    }
+  }
+
+  const runningStr = String(running).padStart(3, '0');
+  return `${prefix}-${runningStr}`;
+}
+
 // Convert lead to project
 app.post('/api/leads/:id/convert', async (req, res) => {
   try {
@@ -3164,7 +3221,7 @@ app.post('/api/leads/:id/convert', async (req, res) => {
         return res.status(400).json({ error: 'Lead is already converted to a project.'});
     }
 
-    const projectId = `p_${Date.now()}`;
+    const projectId = await generateFormattedProjectId();
     const now = new Date().toISOString();
     const end = new Date();
     end.setDate(end.getDate() + 7);
