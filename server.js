@@ -331,6 +331,22 @@ const initDB = async () => {
       );
     `);
 
+    // Create Leads Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS leads (
+        id VARCHAR(50) PRIMARY KEY,
+        customer_name VARCHAR(150) NOT NULL,
+        customer_phone VARCHAR(50),
+        customer_address TEXT,
+        job_type VARCHAR(100) NOT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'New',
+        notes TEXT,
+        created_at VARCHAR(50) NOT NULL,
+        updated_at VARCHAR(50) NOT NULL,
+        project_id VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL
+      );
+    `);
+
     // Seed default cost rates if table is empty
     const costRatesCount = await client.query('SELECT COUNT(*) FROM cost_rates');
     if (parseInt(costRatesCount.rows[0].count) === 0) {
@@ -585,6 +601,43 @@ const initDB = async () => {
         );
       }
       console.log('Seeded Kitchen Renovation task templates.');
+    }
+
+    // Seed Quick Service templates if not present
+    const quickTemplateCount = await client.query("SELECT COUNT(*) FROM task_templates WHERE project_template_name = 'Quick Service'");
+    if (parseInt(quickTemplateCount.rows[0].count) === 0) {
+      console.log('Seeding Quick Service task templates...');
+      const quickTemplates = [
+        { id: 'tpl_q1', title: 'สำรวจและประเมินงานหน้างาน (Survey)', description: 'ตรวจสอบปัญหาหน้างานและประเมินแนวทางแก้ไข', priority: 'High', start_percent: 0, end_percent: 20, estimated_hours: 1, project_template_name: 'Quick Service' },
+        { id: 'tpl_q2', title: 'ดำเนินการแก้ไข/ซ่อมแซม (Execution)', description: 'ดำเนินการแก้ไขปัญหาตามที่ประเมินไว้', priority: 'Urgent', start_percent: 20, end_percent: 80, estimated_hours: 3, project_template_name: 'Quick Service' },
+        { id: 'tpl_q3', title: 'ตรวจสอบและส่งมอบงาน (QA & Handover)', description: 'ตรวจสอบความเรียบร้อยและส่งมอบงานให้ลูกค้า', priority: 'High', start_percent: 80, end_percent: 100, estimated_hours: 1, project_template_name: 'Quick Service' }
+      ];
+      for (const tpl of quickTemplates) {
+        await client.query(
+          'INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours, project_template_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING',
+          [tpl.id, tpl.title, tpl.description, tpl.priority, tpl.start_percent, tpl.end_percent, tpl.estimated_hours, tpl.project_template_name]
+        );
+      }
+      console.log('Seeded Quick Service task templates.');
+    }
+
+    // Seed Installation templates if not present
+    const installTemplateCount = await client.query("SELECT COUNT(*) FROM task_templates WHERE project_template_name = 'Installation'");
+    if (parseInt(installTemplateCount.rows[0].count) === 0) {
+      console.log('Seeding Installation task templates...');
+      const installTemplates = [
+        { id: 'tpl_i1', title: 'เตรียมอุปกรณ์และเข้าพื้นที่ (Preparation)', description: 'เบิกอุปกรณ์จากสโตร์และเดินทางเข้าพื้นที่หน้างาน', priority: 'Medium', start_percent: 0, end_percent: 10, estimated_hours: 2, project_template_name: 'Installation' },
+        { id: 'tpl_i2', title: 'ดำเนินการติดตั้ง (Installation)', description: 'ติดตั้งอุปกรณ์ตามแบบและมาตรฐาน', priority: 'High', start_percent: 10, end_percent: 70, estimated_hours: 6, project_template_name: 'Installation' },
+        { id: 'tpl_i3', title: 'ทดสอบระบบ (Testing & QA)', description: 'ทดสอบการทำงานของระบบหลังติดตั้งเสร็จ', priority: 'Urgent', start_percent: 70, end_percent: 90, estimated_hours: 2, project_template_name: 'Installation' },
+        { id: 'tpl_i4', title: 'ส่งมอบงานและแนะนำการใช้งาน (Handover)', description: 'ส่งมอบงานให้ลูกค้าและอธิบายวิธีการใช้งาน', priority: 'Medium', start_percent: 90, end_percent: 100, estimated_hours: 1, project_template_name: 'Installation' }
+      ];
+      for (const tpl of installTemplates) {
+        await client.query(
+          'INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours, project_template_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING',
+          [tpl.id, tpl.title, tpl.description, tpl.priority, tpl.start_percent, tpl.end_percent, tpl.estimated_hours, tpl.project_template_name]
+        );
+      }
+      console.log('Seeded Installation task templates.');
     }
 
     // Ensure all existing users have a password hash
@@ -2979,6 +3032,136 @@ app.post('/api/clean-tasks', async (req, res) => {
   } catch (err) {
     console.error('Error cleaning tasks:', err);
     res.status(500).json({ error: 'Failed to clean tasks', details: err.message });
+  }
+});
+// ==========================================
+// LEADS API
+// ==========================================
+
+// Get all leads
+app.get('/api/leads', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM leads ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching leads:', err);
+    res.status(500).json({ error: 'Failed to fetch leads' });
+  }
+});
+
+// Create lead
+app.post('/api/leads', async (req, res) => {
+  try {
+    const { id, customer_name, customer_phone, customer_address, job_type, notes } = req.body;
+    const leadId = id || `lead_${Date.now()}`;
+    const now = new Date().toISOString();
+    const result = await pool.query(
+      `INSERT INTO leads (id, customer_name, customer_phone, customer_address, job_type, status, notes, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [leadId, customer_name, customer_phone, customer_address, job_type, 'New', notes, now, now]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating lead:', err);
+    res.status(500).json({ error: 'Failed to create lead' });
+  }
+});
+
+// Update lead
+app.put('/api/leads/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customer_name, customer_phone, customer_address, job_type, status, notes, project_id } = req.body;
+    const now = new Date().toISOString();
+    const result = await pool.query(
+      `UPDATE leads 
+       SET customer_name = $1, customer_phone = $2, customer_address = $3, job_type = $4, status = $5, notes = $6, updated_at = $7, project_id = COALESCE($8, project_id)
+       WHERE id = $9 RETURNING *`,
+      [customer_name, customer_phone, customer_address, job_type, status, notes, now, project_id, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating lead:', err);
+    res.status(500).json({ error: 'Failed to update lead' });
+  }
+});
+
+// Convert lead to project
+app.post('/api/leads/:id/convert', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { admin_id } = req.body;
+
+    const leadResult = await pool.query('SELECT * FROM leads WHERE id = $1', [id]);
+    if (leadResult.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
+    const lead = leadResult.rows[0];
+
+    if (lead.project_id) {
+        return res.status(400).json({ error: 'Lead is already converted to a project.'});
+    }
+
+    const projectId = `p_${Date.now()}`;
+    const now = new Date().toISOString();
+    const end = new Date();
+    end.setDate(end.getDate() + 7);
+    const endDateStr = end.toISOString();
+
+    const membersJson = JSON.stringify(admin_id ? [{ id: admin_id, role: 'Manager' }] : []);
+    const projResult = await pool.query(
+      `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [
+        projectId, 
+        `[${lead.job_type}] ${lead.customer_name}`, 
+        `Auto-generated from lead ${lead.id}\nNotes: ${lead.notes || ''}`, 
+        'Planning', 
+        now, 
+        endDateStr, 
+        membersJson, 
+        lead.customer_address
+      ]
+    );
+
+    await pool.query(
+        `INSERT INTO project_workflows (project_id, statuses, transitions) VALUES ($1, $2, $3)`,
+        [projectId, JSON.stringify(["To Do", "In Progress", "Review", "Done"]), JSON.stringify([])]
+    );
+
+    const templateResult = await pool.query(
+        'SELECT * FROM task_templates WHERE project_template_name = $1 ORDER BY start_percent ASC',
+        [lead.job_type]
+    );
+    
+    let tpls = templateResult.rows;
+    if (tpls.length === 0) {
+        const genResult = await pool.query(
+            'SELECT * FROM task_templates WHERE project_template_name = $1 ORDER BY start_percent ASC',
+            ['General']
+        );
+        tpls = genResult.rows;
+    }
+
+    for (let i = 0; i < tpls.length; i++) {
+        const tpl = tpls[i];
+        const taskId = `t_${Date.now()}_${i}`;
+        await pool.query(
+            `INSERT INTO tasks (id, project_id, title, description, status, priority, estimated_hours, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [taskId, projectId, tpl.title, tpl.description, 'To Do', tpl.priority, tpl.estimated_hours, now]
+        );
+    }
+
+    await pool.query(
+        `UPDATE leads SET status = 'Converted', project_id = $1, updated_at = $2 WHERE id = $3`,
+        [projectId, now, id]
+    );
+
+    res.json({ message: 'Lead converted successfully', project: projResult.rows[0] });
+
+  } catch (err) {
+    console.error('Error converting lead:', err);
+    res.status(500).json({ error: 'Failed to convert lead' });
   }
 });
 

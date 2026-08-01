@@ -166,4 +166,16 @@ CREATE TABLE IF NOT EXISTS task_snapshots (
 CREATE INDEX IF NOT EXISTS idx_task_snapshots_baseline ON task_snapshots(baseline_id);
 CREATE INDEX IF NOT EXISTS idx_task_snapshots_task ON task_snapshots(task_id);
 
-
+-- 11. Leads Table
+CREATE TABLE IF NOT EXISTS leads (
+    id VARCHAR(50) PRIMARY KEY,
+    customer_name VARCHAR(150) NOT NULL,
+    customer_phone VARCHAR(50),
+    customer_address TEXT,
+    job_type VARCHAR(100) NOT NULL, -- e.g., 'Quick Service', 'Installation', 'Renovation'
+    status VARCHAR(50) NOT NULL DEFAULT 'New', -- 'New', 'Contacted', 'Qualified', 'Converted', 'Lost'
+    notes TEXT,
+    created_at VARCHAR(50) NOT NULL,
+    updated_at VARCHAR(50) NOT NULL,
+    project_id VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL
+);

@@ -3,6 +3,7 @@ export type Language = 'th' | 'en';
 export interface TranslationDictionary {
   // Navigation
   dashboard: string;
+  leads: string;
   projects: string;
   projectBoard: string;
   projectTimeline: string;
@@ -54,6 +55,7 @@ export const translations: Record<Language, TranslationDictionary> = {
   th: {
     // Navigation
     dashboard: 'แดชบอร์ดโครงการ',
+    leads: 'ลูกค้ามุ่งหวัง (Leads)',
     projects: 'รายชื่อโครงการติดตั้ง',
     projectBoard: 'โปรเจกต์บอร์ด',
     projectTimeline: 'ปฏิทินโปรเจกต์',
@@ -103,6 +105,7 @@ export const translations: Record<Language, TranslationDictionary> = {
   en: {
     // Navigation
     dashboard: 'Project Dashboard',
+    leads: 'Leads Management',
     projects: 'Projects List',
     projectBoard: 'Project Board',
     projectTimeline: 'Project Timeline',

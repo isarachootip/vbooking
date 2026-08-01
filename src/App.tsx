@@ -17,6 +17,7 @@ import ChatWidget from './components/ChatWidget';
 import { ProjectBoard } from './components/ProjectBoard';
 import { ProjectTimeline } from './components/ProjectTimeline';
 import { ProjectDetail } from './components/ProjectDetail';
+import { LeadsPage } from './components/LeadsPage';
 
 import { mockUsers, mockProjects, mockTasks, mockTimesheets } from './data/mockData';
 import type { User, Project, Task, TimesheetEntry, TaskTemplate, Sprint, Release, PermissionScheme, ProjectWorkflow, CostRate } from './types';
@@ -296,6 +297,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
         
         <nav style={{ padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }} onClick={() => setIsSidebarOpen(false)}>
           <SidebarItem icon={LayoutDashboard} label={t.dashboard} path="/" />
+          <SidebarItem icon={Users} label={t.leads} path="/leads" />
           <SidebarItem icon={Briefcase} label={t.projects} path="/projects" />
           <SidebarItem icon={Kanban} label={t.projectBoard} path="/project-board" />
           <SidebarItem icon={CalendarDays} label={t.projectTimeline} path="/project-timeline" />
@@ -985,6 +987,7 @@ function App() {
       <AppLayout currentUser={currentUser} tasks={tasks} onLogout={handleLogout}>
         <Routes>
           <Route path="/" element={<Dashboard projects={projects} tasks={tasks} timesheets={timesheets} currentUser={currentUser} />} />
+          <Route path="/leads" element={<LeadsPage currentUser={currentUser} />} />
           <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} />} />
           <Route path="/projects/:id" element={<ProjectDetail projects={projects} setProjects={handleSetProjects} users={users} currentUser={currentUser} tasks={tasks} setTasks={handleSetTasks} projectWorkflows={projectWorkflows} />} />
 
