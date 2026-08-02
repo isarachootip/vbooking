@@ -35,10 +35,10 @@ sudo nano /etc/postgresql/15/main/pg_hba.conf
 
 - เลื่อนลงไปด้านล่างสุดของไฟล์ แล้วเพิ่มบรรทัดนี้ต่อท้าย:
   ```text
-  # เปิดสิทธิ์การเข้าถึงจากทุก IP สำหรับแอปพลิเคชัน Coolify
-  host    timesheet_db    isara_admin     0.0.0.0/0               md5
+  # เปิดสิทธิ์การเข้าถึงจากทุก IP สำหรับแอปพลิเคชัน vbooking(buildflow) บน Coolify
+  host    vbooking_db    all     0.0.0.0/0               md5
   ```
-- *คำอธิบาย: อนุญาตให้ผู้ใช้ `isara_admin` เข้าใช้งานฐานข้อมูล `timesheet_db` จากไอพีภายนอกใดก็ได้*
+- *คำอธิบาย: อนุญาตให้เข้าใช้งานฐานข้อมูล `vbooking_db` สำหรับแอปพลิเคชัน vbooking(buildflow) จากไอพีภายนอก/Coolify*
 - กด `Ctrl + O` และกด `Enter` เพื่อบันทึก จากนั้นกด `Ctrl + X` เพื่อออก
 
 ### 1.3 รีสตาร์ทการทำงานของ PostgreSQL

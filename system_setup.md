@@ -1,14 +1,14 @@
-# NexTime — System Setup & Reference Guide
+# vbooking(buildflow) — System Setup & Reference Guide
 
-> อัปเดตล่าสุด: 2026-06-11  
-> โปรเจกต์: ระบบบันทึกเวลาและจัดการโปรเจกต์ภายในองค์กร
+> อัปเดตล่าสุด: 2026-08-02  
+> โปรเจกต์: vbooking(buildflow) — ระบบบริการจัดการโปรเจกต์และบันทึกเวลาภายในองค์กร
 
 ---
 
 ## 📁 โครงสร้างโปรเจกต์
 
 ```
-c:\atgv\time_sheet\
+c:\atgv\vbooking\
 ├── src/
 │   ├── components/         # React components ทั้งหมด
 │   │   ├── Dashboard.tsx   # หน้าหลัก / ภาพรวมระบบ
@@ -29,15 +29,16 @@ c:\atgv\time_sheet\
 ├── server.js               # Express backend + PostgreSQL API
 ├── .env                    # ⚠️ ตัวแปร environment (อย่าลบ!)
 ├── nixpacks.toml           # Config สำหรับ deploy บน Coolify
-├── scratch/
-│   └── test_db.js          # Script ทดสอบการเชื่อมต่อ DB
-├── database_setup_guide.md # คู่มือตั้งค่า PostgreSQL บน VPS
+├── database_setup_guide.md # คู่มือตั้งค่า PostgreSQL บน VPS (สร้าง vbooking_db)
+├── vbooking_buildflow_systemguide.md # คู่มือระบบ vbooking(buildflow)
 └── system_setup.md         # ไฟล์นี้
 ```
 
 ---
 
-## 🗄️ ฐานข้อมูล (PostgreSQL)
+## 🗄️ ฐานข้อมูล (PostgreSQL: vbooking_db)
+
+⚠️ **แยกใช้งานฐานข้อมูลเฉพาะสำหรับ vbooking(buildflow) (`vbooking_db`) ไม่ใช้ร่วมกับ `timesheet_db`**
 
 ### Connection Details
 
@@ -45,15 +46,20 @@ c:\atgv\time_sheet\
 |--------------|----------------------------|
 | **Host**     | `187.77.147.16`            |
 | **Port**     | `5432`                     |
-| **Database** | `timesheet_db`             |
-| **Username** | `isara_admin`              |
-| **Password** | `MySecretPass123!`         |
-| **Server**   | Hostinger VPS              |
+| **Database** | `vbooking_db` (เฉพาะโปรเจกต์ vbooking(buildflow)) |
+| **Username** | `postgres`                 |
+| **Server**   | Hostinger VPS / PostgreSQL |
+| **Platform** | **Coolify Deployment** (เชื่อมต่อผ่าน `DATABASE_URL`) |
 
-### Connection String (ใช้ใน .env)
+### Connection String (ใช้ใน `.env` และการตั้งค่า Environment Variables บน Coolify)
 
 ```
-DATABASE_URL=postgresql://isara_admin:MySecretPass123!@187.77.147.16:5432/timesheet_db
+DATABASE_URL=postgresql://postgres:EsQShpeaGvSr21I5ieQGJRmCELp78GSlQn6hQHAIjbTnY4c1aWw56JleGierEk2t@187.77.147.16:5432/vbooking_db
+```
+
+### การสร้างฐานข้อมูลใหม่
+```sql
+CREATE DATABASE vbooking_db;
 ```
 
 ### ตารางในฐานข้อมูล

@@ -58,7 +58,7 @@ Tasks can be organized into hierarchy levels to track milestone completion:
 
 ## 4. Timesheet Logging & Approvals / การบันทึกเวลาและการอนุมัติ
 
-NexTime locks in logged time data while providing options for administrative corrections:
+vbooking(buildflow) locks in logged time data while providing options for administrative corrections:
 ระบบอำนวยความสะดวกในการบันทึกเวลาพร้อมทั้งควบคุมความถูกต้องของชั่วโมงปฏิบัติงาน:
 
 *   **Draft & Pending Status**: Logged hours are drafted or submitted as pending for PM approval. Users can edit or delete these entries freely.
@@ -83,7 +83,6 @@ Collaborative messaging rooms for project team members:
     *การกล่าวถึงผู้ใช้ด้วย @*: การพิมพ์ `@` จะแสดงกล่องตัวเลือกสำหรับสมาชิกของโครงการเพื่อแทรกเข้าช่องพิมพ์ทันที พร้อมทั้งแสดงไฮไลต์สีฟ้าโดดเด่นในกล่องข้อความแชท
 *   **Real-time Mentions Notification / การแจ้งเตือนเมื่อโดนแท็ก**: Mentioning a user triggers a red unread badge next to the project name and on the main sidebar menu. It also generates an unread alert in the system-wide **Notification Bell** that redirects the user directly to the target room when clicked.
     *ระบบแจ้งเตือนการกล่าวถึง*: เมื่อถูกกล่าวถึงจะมีป้ายเตือนสีแดงแสดงตรงชื่อโครงการและเมนูแถบข้าง รวมถึงการแสดงรายการแจ้งเตือนด่วนที่กระดิ่งระบบมุมขวาบน ซึ่งสามารถกดเพื่อสลับมาเปิดดูห้องแชทได้โดยตรง
-
 
 ---
 
@@ -113,4 +112,12 @@ Advanced data visualization tools for project metrics and costs:
     DATABASE_URL=postgresql://postgres:EsQShpeaGvSr21I5ieQGJRmCELp78GSlQn6hQHAIjbTnY4c1aWw56JleGierEk2t@187.77.147.16:5432/vbooking_db
     ```
 
+### ขั้นตอนการสร้างฐานข้อมูลใหม่บน PostgreSQL Server:
+```sql
+-- 1. สร้างฐานข้อมูลใหม่สำหรับ vbooking(buildflow)
+CREATE DATABASE vbooking_db;
 
+-- 2. เชื่อมต่อเข้าฐานข้อมูล vbooking_db และนำเข้า Schema
+\c vbooking_db;
+-- จากนั้นรันคำสั่ง SQL จากไฟล์ db_schema.sql เพื่อสร้างโครงสร้างตารางทั้งหมด
+```
