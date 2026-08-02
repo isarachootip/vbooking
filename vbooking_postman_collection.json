@@ -1,0 +1,113 @@
+{
+	"info": {
+		"_postman_id": "vbooking-api-collection",
+		"name": "vbooking / Vibepjm API Collection",
+		"description": "Postman Collection สำหรับทดสอบยิง API ระบบ vbooking (vibepjm.online)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Leads - Add New Lead (POST)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"customer_name\": \"คุณวิชัย ใจดี\",\n  \"customer_phone\": \"081-234-5678\",\n  \"customer_address\": \"99/1 ถ.สุขุมวิท กรุงเทพฯ\",\n  \"customer_latitude\": 13.7563,\n  \"customer_longitude\": 100.5018,\n  \"map_url\": \"https://maps.google.com/?q=13.7563,100.5018\",\n  \"job_type\": \"รีโนเวทห้องครัว\",\n  \"notes\": \"สนใจประเมินราคาด่วนจากหน้าเว็บ\"\n}"
+				},
+				"url": {
+					"raw": "https://vibepjm.online/api/leads",
+					"protocol": "https",
+					"host": [
+						"vibepjm",
+						"online"
+					],
+					"path": [
+						"api",
+						"leads"
+					]
+				}
+			}
+		},
+		{
+			"name": "Leads - Get All Leads (GET)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://vibepjm.online/api/leads",
+					"protocol": "https",
+					"host": [
+						"vibepjm",
+						"online"
+					],
+					"path": [
+						"api",
+						"leads"
+					]
+				}
+			}
+		},
+		{
+			"name": "Projects - Add New Project (POST)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"โครงการรีโนเวทบ้านคุณวิชัย\",\n  \"description\": \"ติดตั้ง Smart Home และปรับปรุงห้องครัว\",\n  \"status\": \"In Progress\",\n  \"startDate\": \"2026-08-02\",\n  \"endDate\": \"2026-08-30\",\n  \"budget\": 150000,\n  \"address\": \"99/1 ถ.สุขุมวิท กรุงเทพฯ\"\n}"
+				},
+				"url": {
+					"raw": "https://vibepjm.online/api/projects",
+					"protocol": "https",
+					"host": [
+						"vibepjm",
+						"online"
+					],
+					"path": [
+						"api",
+						"projects"
+					]
+				}
+			}
+		},
+		{
+			"name": "Tasks - Add New Task (POST)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"projectId\": \"P020826-001\",\n  \"title\": \"ติดตั้งระบบไฟและปลั๊กไฟ\",\n  \"description\": \"เดินสายไฟ 4 จุดพร้อมสวิตช์สัมผัส\",\n  \"status\": \"To Do\",\n  \"priority\": \"High\",\n  \"estimatedHours\": 8\n}"
+				},
+				"url": {
+					"raw": "https://vibepjm.online/api/tasks",
+					"protocol": "https",
+					"host": [
+						"vibepjm",
+						"online"
+					],
+					"path": [
+						"api",
+						"tasks"
+					]
+				}
+			}
+		}
+	]
+}
