@@ -8,8 +8,6 @@ import { sendEmail } from './mailService.js';
 import crypto from 'crypto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
-import swaggerUi from 'swagger-ui-express';
-import { swaggerSpec } from './swaggerSpec.js';
 
 dotenv.config();
 
@@ -21,10 +19,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Support base64 image uploads
-
-// Serve Swagger UI Documentation
-app.get('/api-docs', (req, res) => res.redirect('/api-docs/'));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Serve React build static assets (no-cache so browsers always load latest build)
 app.use(express.static(path.join(__dirname, 'dist'), {
