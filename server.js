@@ -3181,31 +3181,6 @@ app.post('/api/leads/:id/followups', async (req, res) => {
   }
 });
 
-async function generateFormattedProjectId() {
-  const d = new Date();
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yy = String(d.getFullYear()).slice(-2);
-  const prefix = `P${dd}${mm}${yy}`;
-
-  const res = await pool.query(
-    "SELECT id FROM projects WHERE id LIKE $1 ORDER BY id DESC LIMIT 1",
-    [`${prefix}%`]
-  );
-
-  let running = 1;
-  if (res.rows.length > 0) {
-    const lastId = res.rows[0].id;
-    const numPart = lastId.replace(prefix, '').replace('-', '');
-    const lastNum = parseInt(numPart, 10);
-    if (!isNaN(lastNum)) {
-      running = lastNum + 1;
-    }
-  }
-
-  const runningStr = String(running).padStart(3, '0');
-  return `${prefix}-${runningStr}`;
-}
 
 // Convert lead to project
 app.post('/api/leads/:id/convert', async (req, res) => {
