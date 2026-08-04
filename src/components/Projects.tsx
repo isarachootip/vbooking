@@ -568,7 +568,7 @@ export const Projects = ({
             </div>
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            128 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
+            {projects.length} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
           </div>
           <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
             ↑ 12% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
@@ -935,7 +935,7 @@ export const Projects = ({
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1.25rem', background: 'var(--bg-tertiary)', borderTop: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '0.75rem' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              แสดง 1 - {filteredProjectsList.length} จาก 128 รายการ
+              แสดง {filteredProjectsList.length > 0 ? 1 : 0} - {filteredProjectsList.length} จาก {projects.length} รายการ
             </span>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>

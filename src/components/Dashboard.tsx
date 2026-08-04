@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { 
-  Folder, Zap, Clock, CheckCircle2, XCircle, TrendingUp, Calendar, Filter, 
+  CheckCircle2, TrendingUp, Calendar, Filter, 
   Users, FileText, AlertTriangle, Bell, FileCode, CheckSquare, MessageSquare, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,7 @@ import type { User, Project, Task, TimesheetEntry } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { formatToDDMMYYYY } from '../utils';
 import { 
-  ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid 
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid 
 } from 'recharts';
 
 interface DashboardProps {
@@ -37,52 +37,7 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
     : timesheets;
 
   // --- Real Stats Calculations ---
-  const totalProjectsCount = filteredProjects.length;
   const activeProjectsCount = filteredProjects.filter(p => p.status === 'Active' || p.status === 'In Progress' || p.status === 'กำลังดำเนินการ').length;
-  const completedProjectsCount = filteredProjects.filter(p => p.status === 'Completed' || p.status === 'Done' || p.status === 'เสร็จสิ้น').length;
-  const cancelledProjectsCount = filteredProjects.filter(p => p.status === 'Cancelled' || p.status === 'ยกเลิก').length;
-  const pendingProjectsCount = Math.max(0, totalProjectsCount - activeProjectsCount - completedProjectsCount - cancelledProjectsCount);
-
-  // Status distribution for donut chart
-  const pieData = [
-    { name: 'กำลังดำเนินการ', value: activeProjectsCount, color: '#10b981', percent: totalProjectsCount > 0 ? `${Math.round((activeProjectsCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'เสร็จสิ้น', value: completedProjectsCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((completedProjectsCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'รอการดำเนินการ', value: pendingProjectsCount, color: '#f59e0b', percent: totalProjectsCount > 0 ? `${Math.round((pendingProjectsCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'ยกเลิก', value: cancelledProjectsCount, color: '#ef4444', percent: totalProjectsCount > 0 ? `${Math.round((cancelledProjectsCount / totalProjectsCount) * 100)}%` : '0%' },
-  ];
-
-  // Stage Progression distribution based on real project data
-  const stagesDefinition = [
-    { id: 1, title: 'Design for Purchase (No Survey)', color: '#3b82f6', keywords: ['purchase', 'no survey'] },
-    { id: 2, title: 'Survey for Design (by Area Size)', color: '#10b981', keywords: ['survey', 'area'] },
-    { id: 3, title: 'Design & Proposal', color: '#f59e0b', keywords: ['proposal', 'design', 'แบบ'] },
-    { id: 4, title: 'Submit to Sales', color: '#6366f1', keywords: ['sales', 'submit', 'เสนอราคา'] },
-    { id: 5, title: 'คุยกับลูกค้า', color: '#8b5cf6', keywords: ['ลูกค้า', 'customer', 'contact'] }
-  ];
-
-  const getStageIndexForProject = (p: Project, idx: number) => {
-    const text = `${p.name} ${p.description || ''} ${p.status || ''} ${p.projectTemplateName || ''} ${p.extraDetails?.jobType || ''}`.toLowerCase();
-    for (let i = 0; i < stagesDefinition.length; i++) {
-      if (stagesDefinition[i].keywords.some(kw => text.includes(kw))) {
-        return i;
-      }
-    }
-    return idx % stagesDefinition.length;
-  };
-
-  const stageStats = stagesDefinition.map((stg, stgIdx) => {
-    const stgProjects = filteredProjects.filter((p, pIdx) => getStageIndexForProject(p, pIdx) === stgIdx);
-    const pending = stgProjects.filter(p => p.status === 'Planning' || p.status === 'Pending' || p.status === 'To Do' || p.status === 'Draft' || p.status === 'บันทึกข้อมูลลูกค้า').length;
-    const active = stgProjects.filter(p => p.status === 'Active' || p.status === 'In Progress' || p.status === 'กำลังดำเนินการ').length;
-    const completed = stgProjects.filter(p => p.status === 'Completed' || p.status === 'Done' || p.status === 'เสร็จสิ้น').length;
-    return {
-      ...stg,
-      total: stgProjects.length,
-      pending,
-      active,
-      completed
-    };
-  });
 
   // Project value trend & total project value
   const totalProjectValue = filteredProjects.reduce((sum, p) => sum + (Number(p.projectValue) || Number(p.budget) || 0), 0);
@@ -260,171 +215,7 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
         </div>
       </div>
 
-      {/* ── ROW 1: 5 KPI SUMMARY CARDS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-        
-        {/* Card 1: Total */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>โครงการทั้งหมด</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Folder size={20} color="#10b981" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            {totalProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <TrendingUp size={12} /> ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
-          </div>
-        </div>
-
-        {/* Card 2: Active */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>กำลังดำเนินการ</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Zap size={20} color="#f59e0b" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#f59e0b' }}>
-            {activeProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <TrendingUp size={12} /> ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
-          </div>
-        </div>
-
-        {/* Card 3: Pending */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>รอการดำเนินการ</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Clock size={20} color="#ef4444" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#ef4444' }}>
-            {pendingProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-            ข้อมูลตามจริงในระบบ
-          </div>
-        </div>
-
-        {/* Card 4: Completed */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เสร็จสิ้น</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle2 size={20} color="#3b82f6" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#3b82f6' }}>
-            {completedProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <TrendingUp size={12} /> ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
-          </div>
-        </div>
-
-        {/* Card 5: Cancelled */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ยกเลิก</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(107, 114, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <XCircle size={20} color="#6b7280" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-muted)' }}>
-            {cancelledProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-            ข้อมูลตามจริงในระบบ
-          </div>
-        </div>
-
-      </div>
-
-      {/* ── ROW 2: STAGE PROGRESSION GRID & DONUT CHART ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 1.2fr', gap: '1.25rem', alignItems: 'start' }}>
-        
-        {/* Left: สถานะโครงการตามขั้นตอน */}
-        <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            สถานะโครงการตามขั้นตอน (Stage Progression)
-          </h3>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
-            {stageStats.map(stg => (
-              <div key={stg.id} style={{ background: 'var(--bg-tertiary)', padding: '0.85rem 0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>{stg.id}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {stg.title}
-                </span>
-                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  {stg.total} <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>โครงการ</span>
-                </div>
-                <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.4rem', fontSize: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                  <div>• ยังไม่เริ่ม: <strong style={{ color: 'var(--text-primary)' }}>{stg.pending}</strong></div>
-                  <div>• กำลังดำเนินการ: <strong style={{ color: '#f59e0b' }}>{stg.active}</strong></div>
-                  <div>• เสร็จสิ้น: <strong style={{ color: '#10b981' }}>{stg.completed}</strong></div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem' }}>
-            รวมทั้งหมด <span style={{ color: 'var(--accent-primary)', fontSize: '0.95rem' }}>{totalProjectsCount}</span> โครงการ
-          </div>
-        </div>
-
-        {/* Right: โครงการตามสถานะ (Donut Chart) */}
-        <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            โครงการตามสถานะ (Status Ratio)
-          </h3>
-
-          <div style={{ height: '180px', position: 'relative' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={75}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{totalProjectsCount}</div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>โครงการ</div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.775rem' }}>
-            {pieData.map(item => (
-              <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-primary)' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color }} />
-                  {item.name}
-                </span>
-                <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  {item.value} ({item.percent})
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
+      {/* ── ROW 3: VALUE TREND, RECENT PROJECTS, ACTIVITIES, DOCUMENTS ── */}
 
       {/* ── ROW 3: VALUE TREND, RECENT PROJECTS, ACTIVITIES, DOCUMENTS ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.8fr 1.2fr', gap: '1.25rem', alignItems: 'start' }}>

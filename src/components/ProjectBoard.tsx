@@ -14,7 +14,7 @@ interface ProjectBoardProps {
   currentUser?: User | null;
 }
 
-export const ProjectBoard: React.FC<ProjectBoardProps> = () => {
+export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projects = [] }) => {
   const [viewMode, setViewMode] = useState<'team' | 'kanban'>('team');
   const [selectedOverdueTeam, setSelectedOverdueTeam] = useState<string>('all');
 
@@ -155,7 +155,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = () => {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-            <span style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>128</span>
+            <span style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>{projects.length}</span>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>โครงการ</span>
           </div>
           <span style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
