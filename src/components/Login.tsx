@@ -100,11 +100,23 @@ export const Login = ({ onLogin, availableUsers }: LoginProps) => {
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-md)' }}>
-            <Clock size={28} color="white" />
+          <div style={{ 
+            width: '56px', 
+            height: '56px', 
+            borderRadius: '14px', 
+            background: '#059669', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)' 
+          }}>
+            <Clock size={32} color="white" strokeWidth={2.5} />
           </div>
-          <h1 className="text-gradient" style={{ fontSize: '2rem', fontWeight: 800 }}>BuildFlow</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>ระบบบริหารจัดการโครงการติดตั้ง & รีโนเวทบ้าน</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem', marginTop: '0.5rem' }}>
+            <h1 className="text-gradient" style={{ fontSize: '2.2rem', fontWeight: 900, margin: 0, lineHeight: 1.1 }}>PMT</h1>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: '0.2rem' }}>Project Management</span>
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.2rem' }}>ระบบบริหารจัดการโครงการติดตั้ง & รีโนเวทบ้าน</p>
         </div>
 
         {errorParam && (

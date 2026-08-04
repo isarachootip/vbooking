@@ -281,11 +281,23 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
       {/* Sidebar */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Clock size={20} color="white" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <div style={{ 
+              width: '36px', 
+              height: '36px', 
+              borderRadius: '9px', 
+              background: '#059669', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)'
+            }}>
+              <Clock size={22} color="white" strokeWidth={2.5} />
             </div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }} className="text-gradient">BuildFlow</h1>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
+              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, lineHeight: 1.15 }} className="text-gradient">PMT</h1>
+              <span style={{ fontSize: '0.58rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>Project Management</span>
+            </div>
           </div>
           <button 
             className="mobile-close-btn"

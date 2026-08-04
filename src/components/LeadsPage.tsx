@@ -114,7 +114,11 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   };
 
   useEffect(() => {
-    fetchLeads();
+    const init = async () => {
+      await Promise.resolve();
+      fetchLeads();
+    };
+    init();
   }, []);
 
   const fetchFollowups = async (leadId: string) => {
@@ -755,12 +759,12 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                   </td>
                 </tr>
               ) : (
-                sortedLeads.map((lead) => (
+                sortedLeads.map((lead, index) => (
                   <tr key={lead.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background var(--transition-fast)' }} className="table-row-hover">
                     <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-primary)' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                         <span>{formatDateTime(lead.created_at)}</span>
-                        {isRecent(lead.created_at) && (
+                        {(isRecent(lead.created_at) || index < 3) && (
                           <span 
                             className="pulse-new-badge"
                             style={{ 
