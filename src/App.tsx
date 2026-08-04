@@ -494,7 +494,7 @@ function App() {
 
   // Fetch initial data from PostgreSQL
   const fetchInitialData = () => {
-    fetch('/api/initial-data')
+    fetch(`/api/initial-data?t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
         setUsers(data.users || []);

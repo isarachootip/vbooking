@@ -35,6 +35,13 @@ app.use(express.static(path.join(__dirname, 'dist'), {
 // Serve Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Prevent API responses from being cached by the browser
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  next();
+});
+
+
 // Database Connection
 const connectionString = process.env.DATABASE_URL;
 const pool = new pg.Pool(

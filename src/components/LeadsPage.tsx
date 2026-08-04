@@ -546,6 +546,34 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
     }
   };
 
+  const formatDateTime = (dateStr?: string | Date | number | null): string => {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '-';
+      const yyyy = String(d.getFullYear());
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+    } catch {
+      return '-';
+    }
+  };
+
+  const isRecent = (dateStr?: string | Date | number | null): boolean => {
+    if (!dateStr) return false;
+    try {
+      const created = new Date(dateStr).getTime();
+      const now = new Date().getTime();
+      const diffHours = (now - created) / (1000 * 60 * 60);
+      return diffHours >= 0 && diffHours <= 24; // within 24 hours
+    } catch {
+      return false;
+    }
+  };
+
   const filteredLeads = leads.filter(l => {
     const matchesSearch = l.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (l.customer_phone && l.customer_phone.includes(searchTerm)) ||
@@ -555,8 +583,24 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
     return matchesSearch && matchesStatus && matchesJobType;
   });
 
+  const sortedLeads = [...filteredLeads].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return timeB - timeA;
+  });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem' }}>
+      <style>{`
+        @keyframes pulse-dot {
+          0% { transform: scale(0.95); opacity: 0.9; }
+          50% { transform: scale(1.05); opacity: 1; }
+          100% { transform: scale(0.95); opacity: 0.9; }
+        }
+        .pulse-new-badge {
+          animation: pulse-dot 1.5s infinite ease-in-out;
+        }
+      `}</style>
       
       {/* ── TOP HEADER & ACTIONS ── */}
       <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
@@ -687,9 +731,11 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 600 }}>
+                <th style={{ padding: '0.85rem 1rem' }}>วันเวลาที่เข้ามา</th>
+                <th style={{ padding: '0.85rem 1rem' }}>วันที่นัดหมาย</th>
+                <th style={{ padding: '0.85rem 1rem' }}>เบอร์โทร</th>
                 <th style={{ padding: '0.85rem 1rem' }}>ชื่อลูกค้า / ที่อยู่</th>
                 <th style={{ padding: '0.85rem 1rem' }}>พิกัดหน้างาน (Map/GPS)</th>
-                <th style={{ padding: '0.85rem 1rem' }}>นัดหมาย / การติดตามล่าสุด</th>
                 <th style={{ padding: '0.85rem 1rem' }}>ประเภทงาน</th>
                 <th style={{ padding: '0.85rem 1rem' }}>สถานะ</th>
                 <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>การดำเนินการ</th>
@@ -698,25 +744,71 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     กำลังโหลดข้อมูล...
                   </td>
                 </tr>
-              ) : filteredLeads.length === 0 ? (
+              ) : sortedLeads.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     ไม่พบข้อมูลลูกค้ามุ่งหวัง
                   </td>
                 </tr>
               ) : (
-                filteredLeads.map((lead) => (
+                sortedLeads.map((lead) => (
                   <tr key={lead.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background var(--transition-fast)' }} className="table-row-hover">
+                    <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span>{formatDateTime(lead.created_at)}</span>
+                        {isRecent(lead.created_at) && (
+                          <span 
+                            className="pulse-new-badge"
+                            style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: '0.2rem',
+                              background: 'linear-gradient(135deg, #ef4444, #f87171)', 
+                              color: 'white', 
+                              fontSize: '0.65rem', 
+                              fontWeight: 800, 
+                              padding: '0.15rem 0.4rem', 
+                              borderRadius: '4px',
+                              boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em'
+                            }}
+                          >
+                            <Sparkles size={10} /> New
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: '0.85rem 1rem' }}>
+                      {lead.appointment_date ? (
+                        <div style={{ background: 'rgba(147, 51, 234, 0.1)', border: '1px solid rgba(147, 51, 234, 0.2)', padding: '0.3rem 0.6rem', borderRadius: '6px', display: 'inline-flex', flexDirection: 'column', gap: '0.1rem' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}>
+                            <Calendar size={12} /> {lead.appointment_type || 'นัดหมาย'}: {lead.appointment_date}
+                          </span>
+                          {lead.appointment_assignee && (
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>👤 {lead.appointment_assignee}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>- ยังไม่มีนัดหมาย -</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
+                      {lead.customer_phone ? (
+                        <a href={`tel:${lead.customer_phone}`} style={{ textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} className="hover-lift">
+                          <Phone size={13} color="var(--accent-primary)" /> {lead.customer_phone}
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>-</span>
+                      )}
+                    </td>
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{lead.customer_name}</div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                        <Phone size={12} style={{ display: 'inline', marginRight: '3px' }} /> {lead.customer_phone || '-'}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{lead.customer_address || 'ไม่ระบุที่อยู่'}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{lead.customer_address || 'ไม่ระบุที่อยู่'}</div>
                     </td>
                     <td style={{ padding: '0.85rem 1rem' }}>
                       {lead.customer_latitude && lead.customer_longitude ? (
@@ -739,20 +831,6 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                         </a>
                       ) : (
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>- ไม่ได้ปักพิกัด -</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      {lead.appointment_date ? (
-                        <div style={{ background: 'rgba(147, 51, 234, 0.1)', border: '1px solid rgba(147, 51, 234, 0.2)', padding: '0.3rem 0.6rem', borderRadius: '6px', display: 'inline-flex', flexDirection: 'column', gap: '0.1rem' }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <Calendar size={12} /> {lead.appointment_type || 'นัดหมาย'}: {lead.appointment_date}
-                          </span>
-                          {lead.appointment_assignee && (
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>👤 {lead.appointment_assignee}</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>- ยังไม่มีนัดหมาย -</span>
                       )}
                     </td>
                     <td style={{ padding: '0.85rem 1rem' }}>
