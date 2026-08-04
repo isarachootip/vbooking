@@ -13,6 +13,7 @@ export interface TranslationDictionary {
   siteCheckInOut: string;
   chat: string;
   team: string;
+  userManagement: string;
   reports: string;
   settings: string;
   help: string;
@@ -65,6 +66,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     siteCheckInOut: 'เช็คอิน / เช็คเอาท์ช่าง',
     chat: 'แชทติดต่อช่าง',
     team: 'ช่างติดตั้ง & ทีมงาน',
+    userManagement: 'จัดการผู้ใช้งาน',
     reports: 'สรุปงบประมาณและต้นทุน',
     settings: 'ตั้งค่าระบบ',
     help: 'คู่มือระบบ BuildFlow',
@@ -115,6 +117,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     siteCheckInOut: 'Site Check-In / Out',
     chat: 'Technician Chat',
     team: 'Technicians & Team',
+    userManagement: 'User Management',
     reports: 'Financial Reports & Costs',
     settings: 'System Settings',
     help: 'BuildFlow User Guide',

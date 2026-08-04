@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { TimesheetEntry, User, GlobalRole, Project, ProjectRole } from '../types';
-import { Check, X, Clock, Award, Users, Plus, Edit, Trash2, Calendar, Home, Eye, EyeOff, RefreshCw, LayoutGrid, List } from 'lucide-react';
+import { Check, X, Clock, Award, Users, Plus, Edit, Trash2, Calendar, Home, LayoutGrid, List } from 'lucide-react';
 import { formatToDDMMYYYY, sortTimesheetsByLastUpdate } from '../utils';
-import { CustomDateInput } from './CustomDateInput';
 
 interface TeamApprovalsProps {
   users: User[];
@@ -39,8 +38,6 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
 
   const [globalRole, setGlobalRole] = useState<GlobalRole>('Employee');
   const [department, setDepartment] = useState('');
@@ -52,13 +49,38 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
   const [skills, setSkills] = useState('');
   const [avatar, setAvatar] = useState('');
 
-  // Camera states and refs
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  // Technician Detail Profile & ID Card Form states
+  const [modalViewMode, setModalViewMode] = useState<'card' | 'list'>('card');
+  const [taxId, setTaxId] = useState('');
+  const [idCardNumber, setIdCardNumber] = useState('');
+  const [idCardFiles, setIdCardFiles] = useState<Array<{ name: string; url?: string; type?: string; selected?: boolean }>>([]);
+  const [companyName, setCompanyName] = useState('');
+  const [lineId, setLineId] = useState('');
+  const [phones, setPhones] = useState<string[]>(['082-137-1123']);
+  const [jobTypes, setJobTypes] = useState<string[]>(['ติดตั้ง', 'service MTN']);
+  const [serviceZones, setServiceZones] = useState<string[]>(['นครปฐม', 'ราชบุรี']);
+  const [workSlots, setWorkSlots] = useState<string[]>(['Slot 1: เช้า', 'Slot 2: บ่าย 1', 'Slot 3: บ่าย 2']);
+  const [certificates, setCertificates] = useState<Array<{ name: string; url?: string; type?: string; selected?: boolean }>>([
+    { name: 'cert_elec.jpg', selected: true },
+    { name: 'cert_aircon.pdf', selected: true },
+    { name: 'resume_draft.txt', selected: true }
+  ]);
+  const [criminalRecord, setCriminalRecord] = useState('ไม่มี');
+  const [creditTermDays, setCreditTermDays] = useState(30);
+  const [technicianLevel, setTechnicianLevel] = useState('Standard');
+
   const hasRestored = useRef(false);
+
+  const formatThaiIdCard = (val: string) => {
+    const digits = val.replace(/\D/g, '').slice(0, 13);
+    let formatted = '';
+    if (digits.length > 0) formatted += digits.substring(0, 1);
+    if (digits.length > 1) formatted += '-' + digits.substring(1, 5);
+    if (digits.length > 5) formatted += '-' + digits.substring(5, 10);
+    if (digits.length > 10) formatted += '-' + digits.substring(10, 12);
+    if (digits.length > 12) formatted += '-' + digits.substring(12, 13);
+    return formatted;
+  };
 
   // Auto-save form draft to localStorage
   useEffect(() => {
@@ -75,13 +97,26 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
         gender,
         birthday,
         skills,
-        avatar
+        avatar,
+        taxId,
+        idCardNumber,
+        idCardFiles,
+        companyName,
+        lineId,
+        phones,
+        jobTypes,
+        serviceZones,
+        workSlots,
+        certificates,
+        criminalRecord,
+        creditTermDays,
+        technicianLevel
       };
       localStorage.setItem('nt_employee_form_draft', JSON.stringify(draft));
     } else {
       localStorage.removeItem('nt_employee_form_draft');
     }
-  }, [isModalOpen, editingUser, name, email, globalRole, department, selectedProjectId, projectRole, customRole, gender, birthday, skills, avatar]);
+  }, [isModalOpen, editingUser, name, email, globalRole, department, selectedProjectId, projectRole, customRole, gender, birthday, skills, avatar, taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel]);
 
   // Restore form draft on mount / when users list is ready
   useEffect(() => {
@@ -102,6 +137,23 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
         setBirthday(draft.birthday || '');
         setSkills(draft.skills || '');
         setAvatar(draft.avatar || '');
+        setTaxId(draft.taxId || '');
+        setIdCardNumber(draft.idCardNumber || '1-2345-67890-12-3');
+        setIdCardFiles(draft.idCardFiles || [{ name: 'id_card_front.jpg', selected: true }]);
+        setCompanyName(draft.companyName || '');
+        setLineId(draft.lineId || '');
+        setPhones(draft.phones || ['082-137-1123']);
+        setJobTypes(draft.jobTypes || ['ติดตั้ง', 'service MTN']);
+        setServiceZones(draft.serviceZones || ['นครปฐม', 'ราชบุรี']);
+        setWorkSlots(draft.workSlots || ['Slot 1: เช้า', 'Slot 2: บ่าย 1', 'Slot 3: บ่าย 2']);
+        setCertificates(draft.certificates || [
+          { name: 'cert_elec.jpg', selected: true },
+          { name: 'cert_aircon.pdf', selected: true },
+          { name: 'resume_draft.txt', selected: true }
+        ]);
+        setCriminalRecord(draft.criminalRecord || 'ไม่มี');
+        setCreditTermDays(draft.creditTermDays != null ? draft.creditTermDays : 30);
+        setTechnicianLevel(draft.technicianLevel || 'Standard');
         
         if (draft.editingUserId) {
           if (users.length > 0) {
@@ -125,108 +177,19 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
     }
   }, [users]);
 
-  // Stop camera if modal is closed
-  useEffect(() => {
-    if (!isModalOpen) {
-      stopCamera();
-    }
-  }, [isModalOpen]);
-
-  const startCamera = async (mode: 'user' | 'environment' = 'user') => {
-    setCameraError(null);
-    setIsCameraActive(true);
-    setFacingMode(mode);
-
-    // Stop existing stream if any
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: mode,
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        },
-        audio: false
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().catch(e => console.error("Video play error:", e));
-        };
-      }
-    } catch (err: any) {
-      console.error('Error accessing camera:', err);
-      setCameraError('ไม่สามารถเข้าถึงกล้องถ่ายภาพได้ (อาจไม่ได้รับอนุญาตหรืออุปกรณ์ไม่รองรับ)');
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    setIsCameraActive(false);
-    setCameraError(null);
-  };
-
-  const capturePhoto = () => {
-    if (videoRef.current) {
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
-      
-      const width = video.videoWidth || 640;
-      const height = video.videoHeight || 480;
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, width, height);
-        
-        // Compress/Resize
-        const MAX_SIZE = 600;
-        let finalWidth = width;
-        let finalHeight = height;
-        if (width > height && width > MAX_SIZE) {
-          finalHeight = Math.round((height * MAX_SIZE) / width);
-          finalWidth = MAX_SIZE;
-        } else if (height > MAX_SIZE) {
-          finalWidth = Math.round((width * MAX_SIZE) / height);
-          finalHeight = MAX_SIZE;
-        }
-        
-        const resizeCanvas = document.createElement('canvas');
-        resizeCanvas.width = finalWidth;
-        resizeCanvas.height = finalHeight;
-        const resizeCtx = resizeCanvas.getContext('2d');
-        if (resizeCtx) {
-          resizeCtx.drawImage(canvas, 0, 0, finalWidth, finalHeight);
-          const compressed = resizeCanvas.toDataURL('image/jpeg', 0.75);
-          setAvatar(compressed);
-        }
-      }
-      stopCamera();
-    }
-  };
-
   // Filter pending timesheets
   const pendingEntries = sortTimesheetsByLastUpdate(timesheets.filter(ts => ts.status === 'Pending'));
 
-  const calculateAge = (birthdayStr?: string) => {
-    if (!birthdayStr) return null;
-    const birthDate = new Date(birthdayStr);
+  const calculateAge = (birthDateStr: string) => {
+    if (!birthDateStr) return null;
+    const birthDate = new Date(birthDateStr);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
-    return age;
+    return age >= 0 ? age : null;
   };
 
   const getProjectName = (id: string) => projects.find(p => p.id === id)?.name || 'Unknown Project';
@@ -252,14 +215,32 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
     setEmail('');
     setPassword('');
     setGlobalRole('Employee');
-    setDepartment('');
+    setDepartment('Technician / Site');
     setSelectedProjectId('');
-    setProjectRole('Frontend dev');
+    setProjectRole('ช่างติดตั้ง');
     setCustomRole('');
     setGender('');
     setBirthday('');
-    setSkills('');
+    setSkills('งานไฟฟ้า, ติดตั้งแอร์');
     setAvatar('');
+    setTaxId('1-2345-67890-12-3');
+    setIdCardNumber('1-2345-67890-12-3');
+    setIdCardFiles([{ name: 'id_card_front.jpg', selected: true }]);
+    setCompanyName('ทีมช่างสมชาย เมธากุล (เทคทีม)');
+    setLineId('somchai_id');
+    setPhones(['082-137-1123']);
+    setJobTypes(['ติดตั้ง', 'service MTN']);
+    setServiceZones(['นครปฐม', 'ราชบุรี']);
+    setWorkSlots(['Slot 1: เช้า', 'Slot 2: บ่าย 1', 'Slot 3: บ่าย 2']);
+    setCertificates([
+      { name: 'cert_elec.jpg', selected: true },
+      { name: 'cert_aircon.pdf', selected: true },
+      { name: 'resume_draft.txt', selected: true }
+    ]);
+    setCriminalRecord('ไม่มี');
+    setCreditTermDays(30);
+    setTechnicianLevel('Standard');
+    setModalViewMode('card');
     setIsModalOpen(true);
   };
 
@@ -269,11 +250,29 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
     setEmail(user.email);
     setPassword('');
     setGlobalRole(user.globalRole);
-    setDepartment(user.department);
+    setDepartment(user.department || 'Technician / Site');
     setGender(user.gender || '');
     setBirthday(user.birthday || '');
-    setSkills(user.skills ? user.skills.join(', ') : '');
+    setSkills(user.skills ? user.skills.join(', ') : 'งานไฟฟ้า, ติดตั้งแอร์');
     setAvatar(user.avatar || '');
+    setTaxId(user.taxId || '1-2345-67890-12-3');
+    setIdCardNumber(user.idCardNumber || '1-2345-67890-12-3');
+    setIdCardFiles(user.idCardFiles && user.idCardFiles.length > 0 ? user.idCardFiles : [{ name: 'id_card_front.jpg', selected: true }]);
+    setCompanyName(user.companyName || user.name);
+    setLineId(user.lineId || '');
+    setPhones(user.phones && user.phones.length > 0 ? user.phones : ['082-137-1123']);
+    setJobTypes(user.jobTypes && user.jobTypes.length > 0 ? user.jobTypes : ['ติดตั้ง', 'service MTN']);
+    setServiceZones(user.serviceZones && user.serviceZones.length > 0 ? user.serviceZones : ['นครปฐม', 'ราชบุรี']);
+    setWorkSlots(user.workSlots && user.workSlots.length > 0 ? user.workSlots : ['Slot 1: เช้า', 'Slot 2: บ่าย 1', 'Slot 3: บ่าย 2']);
+    setCertificates(user.certificates && user.certificates.length > 0 ? user.certificates : [
+      { name: 'cert_elec.jpg', selected: true },
+      { name: 'cert_aircon.pdf', selected: true },
+      { name: 'resume_draft.txt', selected: true }
+    ]);
+    setCriminalRecord(user.criminalRecord || 'ไม่มี');
+    setCreditTermDays(user.creditTermDays != null ? user.creditTermDays : 30);
+    setTechnicianLevel(user.technicianLevel || 'Standard');
+    setModalViewMode('card');
     
     // Find current project membership
     const currentProj = projects.find(p => p.members && p.members.some(m => m.userId === user.id));
@@ -339,7 +338,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
     if (!editingUser && !password) return alert('Password is required for new employee');
 
     const userId = editingUser ? editingUser.id : 'u_' + Date.now();
-    const skillsArray = skills ? skills.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
+    const skillsArray = skills ? (typeof skills === 'string' ? skills.split(',').map(s => s.trim()).filter(s => s.length > 0) : skills) : [];
     
     const userData: User = {
       id: userId,
@@ -351,7 +350,20 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
       birthday,
       skills: skillsArray,
       avatar: avatar || `https://i.pravatar.cc/150?u=${userId}`,
-      ...(password ? { password } : {})
+      ...(password ? { password } : {}),
+      taxId,
+      idCardNumber,
+      idCardFiles,
+      companyName,
+      lineId,
+      phones,
+      jobTypes,
+      serviceZones,
+      workSlots,
+      certificates,
+      criminalRecord,
+      creditTermDays,
+      technicianLevel
     };
 
     // 1. Update users list
@@ -393,7 +405,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
     });
 
     setIsModalOpen(false);
-    showToast(editingUser ? '✅ อัปเดตข้อมูลพนักงานสำเร็จ!' : '✅ เพิ่มพนักงานใหม่สำเร็จ!');
+    showToast(editingUser ? '💾 บันทึกข้อมูลช่างเรียบร้อย' : '✨ เพิ่มข้อมูลช่างเข้าสู่ระบบเรียบร้อย');
   };
 
   const handleDeleteUser = (id: string) => {
@@ -1027,7 +1039,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
         </div>
       )}
 
-      {/* User Add/Edit Modal */}
+      {/* User Add/Edit Modal: Detail Profile ช่าง | Personal Information & Work Settings */}
       {isModalOpen && (
         <div style={{
           position: 'fixed',
@@ -1035,480 +1047,758 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(4px)',
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(6px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1100
+          zIndex: 1100,
+          padding: '1rem'
         }}>
           <div className="glass-panel" style={{ 
             padding: 0,
-            width: '650px', 
-            maxWidth: '95vw', 
-            maxHeight: '92vh',
+            width: '1100px', 
+            maxWidth: '98vw', 
+            maxHeight: '94vh',
             overflow: 'hidden',
             display: 'flex', 
             flexDirection: 'column',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            background: 'var(--bg-secondary)'
           }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-              <h2 className="text-gradient" style={{ fontSize: '1.4rem', margin: 0 }}>{editingUser ? 'Edit Employee' : 'Add Employee'}</h2>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
+            {/* Modal Header */}
+            <div style={{ 
+              padding: '1rem 1.5rem', 
+              background: '#0f172a',
+              borderBottom: '1px solid rgba(255,255,255,0.1)', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              flexShrink: 0,
+              gap: '1rem',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <span style={{ 
+                  background: '#f59e0b', 
+                  color: '#000', 
+                  fontWeight: 800, 
+                  fontSize: '0.75rem', 
+                  padding: '0.25rem 0.6rem', 
+                  borderRadius: '6px',
+                  letterSpacing: '0.5px'
+                }}>
+                  STEP 1 OF 5
+                </span>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  Detail Profile ช่าง <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 400 }}>| Personal Information & Work Settings</span>
+                </h2>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {/* View Mode Toggle inside modal */}
+                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0.2rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setModalViewMode('card')}
+                    style={{
+                      background: modalViewMode === 'card' ? '#f59e0b' : 'transparent',
+                      color: modalViewMode === 'card' ? '#000' : '#94a3b8',
+                      fontWeight: 700,
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <LayoutGrid size={14} /> แบบการ์ด (Card View)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalViewMode('list')}
+                    style={{
+                      background: modalViewMode === 'list' ? '#f59e0b' : 'transparent',
+                      color: modalViewMode === 'list' ? '#000' : '#94a3b8',
+                      fontWeight: 700,
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <List size={14} /> แบบรายการ (List View)
+                  </button>
+                </div>
+
+                <button 
+                  onClick={() => setIsModalOpen(false)} 
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#94a3b8', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-              {/* Scrollable fields area */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Full Name *</label>
-                <input 
-                  type="text" 
-                  value={name} 
-                  onChange={e => setName(e.target.value)} 
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Email *</label>
-                <input 
-                  type="email" 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    Password {editingUser ? '(Leave blank to keep current)' : '*'}
-                  </label>
-                  {editingUser && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPassword('password123');
-                        setShowPassword(true);
-                        showToast('Password reset to password123 (click Save to apply)');
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--accent-primary)',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.25rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      <RefreshCw size={12} /> Reset to password123
-                    </button>
-                  )}
-                </div>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <input 
-                    type={showPassword ? "text" : "password"} 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)} 
-                    placeholder={editingUser ? 'Leave blank to keep existing password' : 'Enter new password'}
-                    style={{ 
-                      width: '100%',
-                      background: 'var(--bg-tertiary)', 
-                      border: '1px solid var(--border-color)', 
-                      borderRadius: 'var(--radius-md)', 
-                      padding: '0.5rem 2.5rem 0.5rem 1rem', 
-                      color: 'var(--text-primary)', 
-                      outline: 'none' 
-                    }}
-                    required={!editingUser}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: '0.75rem',
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Department</label>
-                <input 
-                  type="text" 
-                  value={department} 
-                  onChange={e => setDepartment(e.target.value)} 
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Role</label>
-                <select 
-                  value={globalRole} 
-                  onChange={e => setGlobalRole(e.target.value as GlobalRole)}
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                >
-                  <option value="Employee">Employee</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Admin">Admin</option>
-                  <option value="User">User</option>
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Project Assignment</label>
-                <select 
-                  value={selectedProjectId} 
-                  onChange={e => setSelectedProjectId(e.target.value)}
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                >
-                  <option value="">None</option>
-                  {projects.map(proj => (
-                    <option key={proj.id} value={proj.id}>{proj.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedProjectId && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Project Role</label>
-                  <select 
-                    value={projectRole} 
-                    onChange={e => setProjectRole(e.target.value as ProjectRole)}
-                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                  >
-                    <option value="PM">PM (Project Manager)</option>
-                    <option value="Frontend dev">Frontend dev</option>
-                    <option value="Backend dev">Backend dev</option>
-                    <option value="QA">QA</option>
-                    <option value="UX/UI">UX/UI</option>
-                    <option value="System Analyst">System Analyst</option>
-                    <option value="Custom">Custom Role...</option>
-                  </select>
-                </div>
-              )}
-
-              {projectRole === 'Custom' && selectedProjectId && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Custom Project Role Name</label>
-                  <input 
-                    type="text" 
-                    value={customRole} 
-                    onChange={e => setCustomRole(e.target.value)} 
-                    placeholder="e.g. DevOps Engineer"
-                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                  />
-                </div>
-              )}
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Gender</label>
-                  <select 
-                    value={gender} 
-                    onChange={e => setGender(e.target.value as any)}
-                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                  >
-                    <option value="">Unspecified</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Birthday</label>
-                  <CustomDateInput 
-                    value={birthday} 
-                    onChange={e => setBirthday(e.target.value)} 
-                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.45rem 0.75rem', color: 'var(--text-primary)', outline: 'none' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Skills (Comma-separated)</label>
-                <input 
-                  type="text" 
-                  value={skills} 
-                  placeholder="e.g. React, TypeScript, Node.js"
-                  onChange={e => setSkills(e.target.value)} 
-                  list="common-skills"
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none' }}
-                />
-                <datalist id="common-skills">
-                  <option value="React" />
-                  <option value="TypeScript" />
-                  <option value="Node.js" />
-                  <option value="Docker" />
-                  <option value="DevOps" />
-                  <option value="Go" />
-                  <option value="Python" />
-                  <option value="PostgreSQL" />
-                  <option value="Figma" />
-                  <option value="UI/UX" />
-                </datalist>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Profile Picture</label>
-                
-                {isCameraActive ? (
-                  <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '0.75rem', 
-                    background: 'var(--bg-tertiary)', 
-                    padding: '1rem', 
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-color)',
-                    alignItems: 'center'
-                  }}>
-                    {cameraError ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', alignItems: 'center' }}>
-                        <div style={{ color: 'var(--accent-danger)', fontSize: '0.85rem', textAlign: 'center' }}>
-                          ⚠️ {cameraError}
-                        </div>
-                        <label style={{ 
-                          width: '100%',
-                          maxWidth: '240px',
-                          background: 'var(--accent-primary)', 
-                          padding: '0.6rem', 
-                          borderRadius: 'var(--radius-md)', 
-                          fontSize: '0.75rem', 
-                          textAlign: 'center', 
-                          cursor: 'pointer',
-                          color: 'white',
-                          display: 'block',
-                          fontWeight: 600
-                        }} className="hover-lift">
-                          📸 Take Photo (Use System Camera)
-                          <input 
-                            type="file" 
-                            accept="image/*"
-                            capture="user"
-                            onChange={(e) => {
-                              handleFileChange(e);
-                              stopCamera();
-                            }}
-                            style={{ display: 'none' }}
-                          />
-                        </label>
+              {/* Scrollable Content */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', background: '#0b0f19' }}>
+                {modalViewMode === 'card' ? (
+                  /* CARD VIEW: 3 Columns Grid */
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
+                    
+                    {/* Column 1: ข้อมูลส่วนตัวและติดต่อ */}
+                    <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+                        <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#38bdf8', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>1</span>
+                        <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'white', fontWeight: 700 }}>ข้อมูลส่วนตัวและติดต่อ (Personal & Contact Info)</h3>
                       </div>
-                    ) : (
-                      <div style={{ 
-                        position: 'relative', 
-                        width: '100%', 
-                        maxWidth: '320px', 
-                        aspectRatio: '4/3', 
-                        overflow: 'hidden', 
-                        borderRadius: 'var(--radius-md)', 
-                        background: '#000',
-                        border: '2px solid var(--accent-primary)',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
-                      }}>
-                        <video 
-                          ref={videoRef} 
-                          autoPlay 
-                          playsInline 
-                          muted 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ชื่อ-นามสกุล ช่าง * (Full Name *)</label>
+                        <input 
+                          type="text" 
+                          value={name} 
+                          onChange={e => setName(e.target.value)} 
+                          placeholder="ทีมช่างสมชาย เมธากุล (เทคทีม)"
+                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                          required
                         />
                       </div>
-                    )}
-                    
-                    <div style={{ display: 'flex', gap: '0.5rem', width: '100%', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {!cameraError && (
-                        <>
-                          <button 
-                            type="button"
-                            onClick={capturePhoto}
-                            style={{ 
-                              background: 'var(--accent-primary)', 
-                              color: 'white', 
-                              border: 'none', 
-                              padding: '0.6rem 1.25rem', 
-                              borderRadius: 'var(--radius-md)', 
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.25rem'
-                            }}
-                            className="hover-lift"
-                          >
-                            📸 Capture
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => startCamera(facingMode === 'user' ? 'environment' : 'user')}
-                            style={{ 
-                              background: 'var(--bg-secondary)', 
-                              color: 'var(--text-primary)', 
-                              border: '1px solid var(--border-color)', 
-                              padding: '0.6rem 1rem', 
-                              borderRadius: 'var(--radius-md)', 
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              cursor: 'pointer' 
-                            }}
-                            className="hover-lift"
-                          >
-                            🔄 Switch Camera
-                          </button>
-                        </>
-                      )}
-                      <button 
-                        type="button"
-                        onClick={stopCamera}
-                        style={{ 
-                          background: 'rgba(239, 68, 68, 0.15)', 
-                          color: 'var(--accent-danger)', 
-                          border: 'none', 
-                          padding: '0.6rem 1rem', 
-                          borderRadius: 'var(--radius-md)', 
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          cursor: 'pointer' 
-                        }}
-                        className="hover-lift"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    {avatar ? (
-                      <img src={avatar} alt="Preview" style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
-                    ) : (
-                      <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', border: '1px dashed var(--border-color)' }}>No Pic</div>
-                    )}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <label style={{ 
-                          flex: 1,
-                          background: 'var(--bg-tertiary)', 
-                          border: '1px solid var(--border-color)', 
-                          padding: '0.5rem', 
-                          borderRadius: 'var(--radius-md)', 
-                          fontSize: '0.75rem', 
-                          textAlign: 'center', 
-                          cursor: 'pointer',
-                          color: 'var(--text-primary)',
-                          display: 'block'
-                        }} className="hover-lift">
-                          📁 Choose Photo
-                          <input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            style={{ display: 'none' }}
-                          />
-                        </label>
-                        
-                        <button 
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>เบอร์โทร * (Phone Number *)</label>
+                          <span style={{ fontSize: '0.7rem', color: '#f59e0b' }}>(เลือกได้มากกว่า 1 เบอร์)</span>
+                        </div>
+                        {phones.map((phone, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '0.35rem' }}>
+                            <input 
+                              type="text" 
+                              value={phone} 
+                              onChange={e => {
+                                const next = [...phones];
+                                next[idx] = e.target.value;
+                                setPhones(next);
+                              }}
+                              placeholder="082-137-1123"
+                              style={{ flex: 1, background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                              required={idx === 0}
+                            />
+                            {phones.length > 1 && (
+                              <button type="button" onClick={() => setPhones(phones.filter((_, i) => i !== idx))} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
                           type="button"
-                          onClick={() => startCamera('user')}
-                          style={{ 
-                            flex: 1,
-                            background: 'var(--accent-primary)', 
-                            border: 'none',
-                            padding: '0.5rem', 
-                            borderRadius: 'var(--radius-md)', 
-                            fontSize: '0.75rem', 
-                            textAlign: 'center', 
-                            cursor: 'pointer',
-                            color: 'white',
-                            display: 'block',
-                            fontFamily: 'inherit',
-                            fontWeight: 500
-                          }} 
-                          className="hover-lift"
+                          onClick={() => setPhones([...phones, ''])}
+                          style={{ background: '#0f172a', border: '1px dashed #334155', borderRadius: '8px', padding: '0.45rem', color: '#f59e0b', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', marginTop: '0.2rem' }}
                         >
-                          📸 Take Photo
+                          + เพิ่มเบอร์โทรศัพท์
                         </button>
                       </div>
-                      <input 
-                        type="text" 
-                        value={avatar} 
-                        placeholder="Or paste Image URL"
-                        onChange={e => setAvatar(e.target.value)} 
-                        style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.35rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
-                      />
+
+                      {/* เลขบัตรประชาชน / เลขผู้เสียภาษี */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>เลขผู้เสียภาษี / ID Card * (13 หลัก)</label>
+                        <input 
+                          type="text" 
+                          value={idCardNumber || taxId} 
+                          onChange={e => {
+                            const formatted = formatThaiIdCard(e.target.value);
+                            setIdCardNumber(formatted);
+                            setTaxId(formatted);
+                          }} 
+                          placeholder="1-2345-67890-12-3"
+                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 700, outline: 'none' }}
+                          required
+                        />
+                      </div>
+
+                      {/* สำเนา/รูปถ่ายบัตรประชาชน Attach ID Card */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          💳 แนบรูป/สำเนาบัตรประชาชน (Attach ID Card Photo)
+                        </label>
+                        <label style={{ 
+                          border: '2px dashed #334155', 
+                          borderRadius: '8px', 
+                          padding: '0.75rem', 
+                          textAlign: 'center', 
+                          cursor: 'pointer',
+                          background: '#0f172a',
+                          color: '#94a3b8',
+                          fontSize: '0.75rem'
+                        }}>
+                          📷 คลิกแนบไฟล์บัตรประชาชน หรือลากไฟล์มาวาง
+                          <input 
+                            type="file" 
+                            accept="image/*,.pdf" 
+                            multiple 
+                            style={{ display: 'none' }} 
+                            onChange={e => {
+                              const files = e.target.files;
+                              if (!files) return;
+                              Array.from(files).forEach(f => {
+                                setIdCardFiles(prev => [...prev, { name: f.name, selected: true }]);
+                              });
+                            }}
+                          />
+                        </label>
+                        {idCardFiles.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
+                            {idCardFiles.map((file, idx) => (
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f172a', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #334155' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#e2e8f0', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={file.selected !== false} 
+                                    onChange={e => {
+                                      const next = [...idCardFiles];
+                                      next[idx].selected = e.target.checked;
+                                      setIdCardFiles(next);
+                                    }}
+                                    style={{ accentColor: '#38bdf8' }}
+                                  />
+                                  <span>💳 {file.name}</span>
+                                </label>
+                                <button type="button" onClick={() => setIdCardFiles(idCardFiles.filter((_, i) => i !== idx))} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ชื่อบริษัท / ร้าน</label>
+                        <input 
+                          type="text" 
+                          value={companyName} 
+                          onChange={e => setCompanyName(e.target.value)} 
+                          placeholder="ทีมช่างสมชาย เมธากุล (เทคทีม)"
+                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>อีเมล * (Email *)</label>
+                        <input 
+                          type="email" 
+                          value={email} 
+                          onChange={e => setEmail(e.target.value)} 
+                          placeholder="somchai@email.com"
+                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                          required
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>LINE ID</label>
+                        <input 
+                          type="text" 
+                          value={lineId} 
+                          onChange={e => setLineId(e.target.value)} 
+                          placeholder="somchai_id"
+                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                        />
+                      </div>
+
+                      {/* Profile Picture */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>รูปโปรไฟล์ ช่าง (Profile Avatar)</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <img src={avatar || `https://i.pravatar.cc/150?u=${name}`} alt="Avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #38bdf8' }} />
+                          <label style={{ background: '#0f172a', border: '1px solid #334155', color: '#cbd5e1', padding: '0.45rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>
+                            📁 เปลี่ยนรูป
+                            <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                          </label>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Column 2: ข้อมูลทักษะและงาน */}
+                    <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+                        <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#a855f7', color: 'white', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>2</span>
+                        <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'white', fontWeight: 700 }}>ข้อมูลทักษะและงาน (Skills & Services)</h3>
+                      </div>
+
+                      {/* ทักษะและความเชี่ยวชาญ */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ทักษะและความเชี่ยวชาญ *</label>
+                          <span style={{ fontSize: '0.7rem', color: '#a855f7' }}>(เลือกได้มากกว่า 1)</span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid #334155', minHeight: '44px' }}>
+                          {(typeof skills === 'string' ? skills.split(',').map(s=>s.trim()).filter(Boolean) : skills).map((sk, idx) => (
+                            <span key={idx} style={{ background: '#334155', color: 'white', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              {sk}
+                              <X size={12} style={{ cursor: 'pointer' }} onClick={() => {
+                                const arr = typeof skills === 'string' ? skills.split(',').map(s=>s.trim()).filter(Boolean) : skills;
+                                setSkills(arr.filter((_, i) => i !== idx).join(', '));
+                              }} />
+                            </span>
+                          ))}
+                        </div>
+                        <input 
+                          type="text" 
+                          placeholder="+ พิมพ์ทักษะแล้วกด Enter (เช่น งานไฟฟ้า, ติดตั้งแอร์)" 
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = e.currentTarget.value.trim();
+                              if (val) {
+                                const currentArr = typeof skills === 'string' ? skills.split(',').map(s=>s.trim()).filter(Boolean) : skills;
+                                setSkills([...currentArr, val].join(', '));
+                                e.currentTarget.value = '';
+                              }
+                            }
+                          }}
+                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}
+                        />
+                      </div>
+
+                      {/* ประเภทงานที่รับ */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ประเภทงานที่รับ * (Job Types *)</label>
+                          <span style={{ fontSize: '0.7rem', color: '#a855f7' }}>(เลือกได้มากกว่า 1)</span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid #334155', minHeight: '44px' }}>
+                          {jobTypes.map((jt, idx) => (
+                            <span key={idx} style={{ background: '#334155', color: 'white', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              {jt}
+                              <X size={12} style={{ cursor: 'pointer' }} onClick={() => setJobTypes(jobTypes.filter((_, i) => i !== idx))} />
+                            </span>
+                          ))}
+                        </div>
+                        <input 
+                          type="text" 
+                          placeholder="+ เพิ่มประเภทงาน (พิมพ์แล้วกด Enter)" 
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = e.currentTarget.value.trim();
+                              if (val) {
+                                setJobTypes([...jobTypes, val]);
+                                e.currentTarget.value = '';
+                              }
+                            }
+                          }}
+                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}
+                        />
+                      </div>
+
+                      {/* โซน / จังหวัดที่รับงาน */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>โซน / จังหวัดที่รับงาน * (Service Zones *)</label>
+                          <span style={{ fontSize: '0.7rem', color: '#a855f7' }}>(เลือกได้มากกว่า 1)</span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid #334155', minHeight: '44px' }}>
+                          {serviceZones.map((sz, idx) => (
+                            <span key={idx} style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.4)', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              📍 {sz}
+                              <X size={12} style={{ cursor: 'pointer' }} onClick={() => setServiceZones(serviceZones.filter((_, i) => i !== idx))} />
+                            </span>
+                          ))}
+                        </div>
+                        <input 
+                          type="text" 
+                          placeholder="+ พิมพ์จังหวัด/โซน แล้วกด Enter" 
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = e.currentTarget.value.trim();
+                              if (val) {
+                                setServiceZones([...serviceZones, val]);
+                                e.currentTarget.value = '';
+                              }
+                            }
+                          }}
+                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}
+                        />
+                      </div>
+
+                      {/* รอบเวลารับงานต่อวัน */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>รอบเวลารับงานต่อวัน * (Slots / Day *)</label>
+                          <span style={{ fontSize: '0.7rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>เพิ่มช่วงเวลาได้อิสระ</span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          {workSlots.map((slot, idx) => (
+                            <span key={idx} style={{ background: '#0f172a', border: '1px solid #3b82f6', color: '#60a5fa', fontSize: '0.75rem', padding: '0.3rem 0.6rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              ⏰ {slot}
+                              <X size={12} style={{ cursor: 'pointer' }} onClick={() => setWorkSlots(workSlots.filter((_, i) => i !== idx))} />
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Column 3: เอกสารและประวัติ & เงื่อนไขทางการค้า */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      {/* Section 3: เอกสารและประวัติ */}
+                      <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+                          <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#10b981', color: 'white', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>3</span>
+                          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'white', fontWeight: 700 }}>เอกสารและประวัติ (Availability & Docs)</h3>
+                        </div>
+
+                        {/* แนบรูป Certificate */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>แนบรูป Certificate (Attach Certificates)</label>
+                          <label style={{ 
+                            border: '2px dashed #334155', 
+                            borderRadius: '8px', 
+                            padding: '1rem', 
+                            textAlign: 'center', 
+                            cursor: 'pointer',
+                            background: '#0f172a',
+                            color: '#94a3b8',
+                            fontSize: '0.8rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '0.35rem'
+                          }}>
+                            <span style={{ fontSize: '1.2rem' }}>📤</span>
+                            <span>Drag and drop file upload หรือคลิกเลือกไฟล์</span>
+                            <input 
+                              type="file" 
+                              accept="image/*,.pdf,.doc,.docx,.txt" 
+                              multiple 
+                              style={{ display: 'none' }} 
+                              onChange={e => {
+                                const files = e.target.files;
+                                if (!files) return;
+                                Array.from(files).forEach(f => {
+                                  setCertificates(prev => [...prev, { name: f.name, selected: true }]);
+                                });
+                              }}
+                            />
+                          </label>
+
+                          {/* Certificate File List */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            {certificates.map((cert, idx) => (
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f172a', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #334155' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#e2e8f0', cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={cert.selected !== false} 
+                                    onChange={e => {
+                                      const next = [...certificates];
+                                      next[idx].selected = e.target.checked;
+                                      setCertificates(next);
+                                    }}
+                                    style={{ accentColor: '#3b82f6' }}
+                                  />
+                                  <span>📄 {cert.name}</span>
+                                </label>
+                                <button type="button" onClick={() => setCertificates(certificates.filter((_, i) => i !== idx))} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* ประวัติอาชญากรรม */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ประวัติอาชญากรรม * (Criminal Record *)</label>
+                          <select 
+                            value={criminalRecord} 
+                            onChange={e => setCriminalRecord(e.target.value)}
+                            style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                          >
+                            <option value="ไม่มี">ไม่มี (Clean Record)</option>
+                            <option value="มี (แนบเอกสารชี้แจง)">มี (แนบเอกสารชี้แจง)</option>
+                            <option value="อยู่ระหว่างตรวจสอบ">อยู่ระหว่างตรวจสอบ</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Section 5: เงื่อนไขทางการค้าและระดับ */}
+                      <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+                          <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#f59e0b', color: '#000', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>5</span>
+                          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'white', fontWeight: 700 }}>เงื่อนไขทางการค้าและระดับ (Financial & Level)</h3>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>Credit Term (วัน) *</label>
+                            <input 
+                              type="number" 
+                              value={creditTermDays} 
+                              onChange={e => setCreditTermDays(parseInt(e.target.value) || 0)} 
+                              style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ระดับช่าง (Level)</label>
+                            <select 
+                              value={technicianLevel} 
+                              onChange={e => setTechnicianLevel(e.target.value)}
+                              style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                            >
+                              <option value="Standard">Standard</option>
+                              <option value="Silver">Silver</option>
+                              <option value="Gold">Gold</option>
+                              <option value="VIP">VIP</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                ) : (
+                  /* LIST VIEW: Structured Step-by-Step Vertical List */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '900px', margin: '0 auto' }}>
+                    
+                    {/* List Section 1: ข้อมูลส่วนตัวและติดต่อ */}
+                    <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#38bdf8', fontWeight: 700, borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
+                        1. ข้อมูลส่วนตัวและติดต่อ (Personal & Contact Info)
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ชื่อ-นามสกุล ช่าง *</label>
+                          <input type="text" value={name} onChange={e => setName(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>เลขผู้เสียภาษี / ID Card *</label>
+                          <input type="text" value={idCardNumber || taxId} onChange={e => { const f = formatThaiIdCard(e.target.value); setIdCardNumber(f); setTaxId(f); }} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>เบอร์โทร *</label>
+                          <input type="text" value={phones[0] || ''} onChange={e => setPhones([e.target.value])} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>อีเมล *</label>
+                          <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ชื่อบริษัท / ร้าน</label>
+                          <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>LINE ID</label>
+                          <input type="text" value={lineId} onChange={e => setLineId(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                        </div>
+                      </div>
+
+                      {/* ID Card attachments in List view */}
+                      <div style={{ marginTop: '1rem', borderTop: '1px dashed #334155', paddingTop: '0.75rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>💳 เอกสาร/สำเนาบัตรประชาชน (ID Card Documents):</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.4rem' }}>
+                          {idCardFiles.map((f, idx) => (
+                            <span key={idx} style={{ background: '#0f172a', border: '1px solid #38bdf8', color: '#38bdf8', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              💳 {f.name}
+                            </span>
+                          ))}
+                          <label style={{ background: '#0f172a', border: '1px dashed #334155', color: '#94a3b8', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>
+                            + เพิ่มสำเนาบัตรประชาชน
+                            <input type="file" accept="image/*,.pdf" onChange={e => { if (e.target.files?.[0]) setIdCardFiles([...idCardFiles, { name: e.target.files[0].name, selected: true }]); }} style={{ display: 'none' }} />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* List Section 2: ข้อมูลทักษะและงาน */}
+                    <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#a855f7', fontWeight: 700, borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
+                        2. ข้อมูลทักษะและงาน (Skills & Services)
+                      </h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ทักษะและความเชี่ยวชาญ:</label>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.25rem' }}>
+                            {(typeof skills === 'string' ? skills.split(',').map(s=>s.trim()).filter(Boolean) : skills).map((sk, idx) => (
+                              <span key={idx} style={{ background: '#334155', color: 'white', fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>{sk}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ประเภทงานที่รับ:</label>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.25rem' }}>
+                            {jobTypes.map((jt, idx) => (
+                              <span key={idx} style={{ background: '#334155', color: 'white', fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>{jt}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>โซน / จังหวัดที่รับงาน:</label>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.25rem' }}>
+                            {serviceZones.map((sz, idx) => (
+                              <span key={idx} style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>📍 {sz}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* List Section 3: เอกสารและประวัติ (Availability & Docs) */}
+                    <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#10b981', fontWeight: 700, borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
+                        3. เอกสารและประวัติ (Availability & Docs)
+                      </h3>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {/* Certificate Attachments in List view */}
+                        <div>
+                          <label style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>
+                            แนบรูป Certificate (Attach Certificates)
+                          </label>
+                          
+                          <label style={{ 
+                            border: '2px dashed #334155', 
+                            borderRadius: '8px', 
+                            padding: '0.85rem', 
+                            textAlign: 'center', 
+                            cursor: 'pointer',
+                            background: '#0f172a',
+                            color: '#94a3b8',
+                            fontSize: '0.8rem',
+                            display: 'block',
+                            marginBottom: '0.75rem'
+                          }}>
+                            📤 Drag and drop file upload หรือคลิกเลือกไฟล์
+                            <input 
+                              type="file" 
+                              accept="image/*,.pdf,.doc,.docx,.txt" 
+                              multiple 
+                              style={{ display: 'none' }} 
+                              onChange={e => {
+                                const files = e.target.files;
+                                if (!files) return;
+                                Array.from(files).forEach(f => {
+                                  setCertificates(prev => [...prev, { name: f.name, selected: true }]);
+                                });
+                              }}
+                            />
+                          </label>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            {certificates.map((cert, idx) => (
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f172a', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #334155' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#e2e8f0', cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={cert.selected !== false} 
+                                    onChange={e => {
+                                      const next = [...certificates];
+                                      next[idx].selected = e.target.checked;
+                                      setCertificates(next);
+                                    }}
+                                    style={{ accentColor: '#3b82f6' }}
+                                  />
+                                  <span>📄 {cert.name}</span>
+                                </label>
+                                <button type="button" onClick={() => setCertificates(certificates.filter((_, i) => i !== idx))} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ประวัติอาชญากรรม * (Criminal Record *)</label>
+                          <select 
+                            value={criminalRecord} 
+                            onChange={e => setCriminalRecord(e.target.value)}
+                            style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem' }}
+                          >
+                            <option value="ไม่มี">ไม่มี (Clean Record)</option>
+                            <option value="มี (แนบเอกสารชี้แจง)">มี (แนบเอกสารชี้แจง)</option>
+                            <option value="อยู่ระหว่างตรวจสอบ">อยู่ระหว่างตรวจสอบ</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* List Section 5: เงื่อนไขทางการค้าและระดับ */}
+                    <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#f59e0b', fontWeight: 700, borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
+                        5. เงื่อนไขทางการค้าและระดับ (Financial & Level)
+                      </h3>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Credit Term (วัน) *</label>
+                          <input type="number" value={creditTermDays} onChange={e => setCreditTermDays(parseInt(e.target.value) || 0)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ระดับช่าง (Level)</label>
+                          <select value={technicianLevel} onChange={e => setTechnicianLevel(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }}>
+                            <option value="Standard">Standard</option>
+                            <option value="Silver">Silver</option>
+                            <option value="Gold">Gold</option>
+                            <option value="VIP">VIP</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 )}
               </div>
 
-              {selectedProjectId && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Role in Project</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <select 
-                      value={projectRole} 
-                      onChange={e => setProjectRole(e.target.value)}
-                      style={{ flex: 1, background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                    >
-                      <option value="Frontend dev">Frontend dev</option>
-                      <option value="Backend dev">Backend dev</option>
-                      <option value="PM">PM</option>
-                      <option value="SA">SA</option>
-                      <option value="Team Lead">Team Lead</option>
-                      <option value="DevOps">DevOps</option>
-                      <option value="QC">QC</option>
-                      <option value="Designer">Designer</option>
-                      <option value="Custom">Custom Role...</option>
-                    </select>
-
-                    {projectRole === 'Custom' && (
-                      <input 
-                        type="text" 
-                        placeholder="Type role..."
-                        value={customRole}
-                        onChange={e => setCustomRole(e.target.value)}
-                        style={{ flex: 1.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              </div>{/* end scrollable fields */}
-
-              {/* Save button — always visible at bottom */}
-              <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border-color)', flexShrink: 0 }}>
-                <button type="submit" style={{ 
-                  width: '100%',
-                  background: 'linear-gradient(135deg, var(--accent-primary), #4f46e5)', 
-                  color: 'white', 
-                  border: 'none', 
-                  padding: '1rem', 
-                  borderRadius: 'var(--radius-md)', 
-                  fontWeight: 700, 
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  letterSpacing: '0.5px',
-                }} className="hover-lift">
-                  💾 บันทึก / Save Employee
+              {/* Modal Footer / Save Bar */}
+              <div style={{ 
+                padding: '1rem 1.5rem', 
+                background: '#0f172a', 
+                borderTop: '1px solid rgba(255,255,255,0.1)', 
+                display: 'flex', 
+                justifyContent: 'flex-end', 
+                gap: '1rem',
+                flexShrink: 0
+              }}>
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  style={{ background: 'transparent', border: '1px solid #475569', color: '#94a3b8', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  ยกเลิก / Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  style={{ 
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+                    color: '#000', 
+                    border: 'none', 
+                    padding: '0.75rem 2rem', 
+                    borderRadius: '8px', 
+                    fontWeight: 800, 
+                    cursor: 'pointer',
+                    fontSize: '0.95rem',
+                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)'
+                  }} 
+                  className="hover-lift"
+                >
+                  💾 บันทึกข้อมูลช่าง / Save Profile
                 </button>
               </div>
             </form>

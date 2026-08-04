@@ -85,6 +85,19 @@ const initDB = async () => {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS line_user_id VARCHAR(100) UNIQUE;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS wfh_days TEXT[] DEFAULT '{}';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS tax_id VARCHAR(50);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS id_card_number VARCHAR(50);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS id_card_files JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS company_name VARCHAR(150);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS line_id VARCHAR(100);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS phones TEXT[] DEFAULT '{}';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS job_types TEXT[] DEFAULT '{}';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS service_zones TEXT[] DEFAULT '{}';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS work_slots TEXT[] DEFAULT '{}';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS certificates JSONB DEFAULT '[]'::jsonb;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS criminal_record VARCHAR(100) DEFAULT 'ไม่มี';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS credit_term_days INTEGER DEFAULT 30;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS technician_level VARCHAR(50) DEFAULT 'Standard';
     `);
 
     // Create Permission Schemes Table
@@ -354,6 +367,19 @@ const initDB = async () => {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS appointment_date VARCHAR(50);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS appointment_type VARCHAR(50);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS appointment_assignee VARCHAR(150);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_first_name VARCHAR(100);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_last_name VARCHAR(100);
+
+      UPDATE leads SET 
+        customer_first_name = CASE 
+          WHEN POSITION(' ' IN customer_name) > 0 THEN SUBSTRING(customer_name FROM 1 FOR POSITION(' ' IN customer_name) - 1)
+          ELSE customer_name 
+        END,
+        customer_last_name = CASE 
+          WHEN POSITION(' ' IN customer_name) > 0 THEN SUBSTRING(customer_name FROM POSITION(' ' IN customer_name) + 1)
+          ELSE '' 
+        END
+      WHERE customer_first_name IS NULL OR customer_first_name = '';
 
       CREATE TABLE IF NOT EXISTS lead_followups (
         id VARCHAR(50) PRIMARY KEY,
@@ -1419,7 +1445,20 @@ app.get('/api/initial-data', async (req, res) => {
       gender: u.gender,
       birthday: u.birthday,
       skills: u.skills,
-      wfhDays: u.wfh_days || []
+      wfhDays: u.wfh_days || [],
+      taxId: u.tax_id || '',
+      idCardNumber: u.id_card_number || '',
+      idCardFiles: u.id_card_files || [],
+      companyName: u.company_name || '',
+      lineId: u.line_id || '',
+      phones: u.phones || [],
+      jobTypes: u.job_types || [],
+      serviceZones: u.service_zones || [],
+      workSlots: u.work_slots || [],
+      certificates: u.certificates || [],
+      criminalRecord: u.criminal_record || 'ไม่มี',
+      creditTermDays: u.credit_term_days != null ? parseInt(u.credit_term_days) : 30,
+      technicianLevel: u.technician_level || 'Standard'
     }));
 
     const projects = projectsRes.rows.map(p => ({
@@ -1540,8 +1579,46 @@ app.get('/api/initial-data', async (req, res) => {
 });
 
 // Users REST API
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, name, email, avatar, global_role, department, gender, birthday, skills, wfh_days, tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level FROM users ORDER BY name ASC');
+    const users = result.rows.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      avatar: u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+      globalRole: u.global_role,
+      department: u.department || 'General',
+      gender: u.gender || '',
+      birthday: u.birthday || '',
+      skills: u.skills || [],
+      wfhDays: u.wfh_days || [],
+      taxId: u.tax_id || '',
+      idCardNumber: u.id_card_number || '',
+      idCardFiles: u.id_card_files || [],
+      companyName: u.company_name || '',
+      lineId: u.line_id || '',
+      phones: u.phones || [],
+      jobTypes: u.job_types || [],
+      serviceZones: u.service_zones || [],
+      workSlots: u.work_slots || [],
+      certificates: u.certificates || [],
+      criminalRecord: u.criminal_record || 'ไม่มี',
+      creditTermDays: u.credit_term_days != null ? parseInt(u.credit_term_days) : 30,
+      technicianLevel: u.technician_level || 'Standard'
+    }));
+    res.json(users);
+  } catch (err) {
+    console.error('Error fetching users:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/users', async (req, res) => {
-  const { id, name, email, avatar, globalRole, department, gender, birthday, skills, password, wfhDays } = req.body;
+  const { 
+    id, name, email, avatar, globalRole, department, gender, birthday, skills, password, wfhDays,
+    taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel
+  } = req.body;
   const cleanName = name ? name.replace(/\s+/g, ' ').trim() : '';
   let pwHash = null;
   try {
@@ -1556,8 +1633,11 @@ app.post('/api/users', async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO users (id, name, email, avatar, global_role, department, gender, birthday, skills, password_hash, wfh_days)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO users (
+         id, name, email, avatar, global_role, department, gender, birthday, skills, password_hash, wfh_days,
+         tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          email = EXCLUDED.email,
@@ -1568,8 +1648,26 @@ app.post('/api/users', async (req, res) => {
          birthday = EXCLUDED.birthday,
          skills = EXCLUDED.skills,
          password_hash = EXCLUDED.password_hash,
-         wfh_days = EXCLUDED.wfh_days`,
-      [id, cleanName, email, avatar, globalRole, department, gender, birthday, skills, pwHash, wfhDays || []]
+         wfh_days = EXCLUDED.wfh_days,
+         tax_id = EXCLUDED.tax_id,
+         id_card_number = EXCLUDED.id_card_number,
+         id_card_files = EXCLUDED.id_card_files,
+         company_name = EXCLUDED.company_name,
+         line_id = EXCLUDED.line_id,
+         phones = EXCLUDED.phones,
+         job_types = EXCLUDED.job_types,
+         service_zones = EXCLUDED.service_zones,
+         work_slots = EXCLUDED.work_slots,
+         certificates = EXCLUDED.certificates,
+         criminal_record = EXCLUDED.criminal_record,
+         credit_term_days = EXCLUDED.credit_term_days,
+         technician_level = EXCLUDED.technician_level`,
+      [
+        id, cleanName, email, avatar, globalRole, department, gender, birthday, skills || [], pwHash, wfhDays || [],
+        taxId || '', idCardNumber || '', JSON.stringify(idCardFiles || []), companyName || '', lineId || '',
+        phones || [], jobTypes || [], serviceZones || [], workSlots || [], JSON.stringify(certificates || []),
+        criminalRecord || 'ไม่มี', creditTermDays || 30, technicianLevel || 'Standard'
+      ]
     );
     res.json({ success: true });
   } catch (err) {
@@ -1581,9 +1679,19 @@ app.post('/api/users', async (req, res) => {
              id = $1, name = $2, avatar = $3,
              global_role = $4, department = $5,
              gender = $6, birthday = $7, skills = $8,
-             password_hash = $9, wfh_days = $10
-           WHERE email = $11`,
-          [id, cleanName, avatar, globalRole, department, gender, birthday, skills, pwHash, wfhDays || [], email]
+             password_hash = $9, wfh_days = $10,
+             tax_id = $11, id_card_number = $12, id_card_files = $13,
+             company_name = $14, line_id = $15, phones = $16,
+             job_types = $17, service_zones = $18, work_slots = $19,
+             certificates = $20, criminal_record = $21, credit_term_days = $22,
+             technician_level = $23
+           WHERE email = $24`,
+          [
+            id, cleanName, avatar, globalRole, department, gender, birthday, skills || [], pwHash, wfhDays || [],
+            taxId || '', idCardNumber || '', JSON.stringify(idCardFiles || []), companyName || '', lineId || '',
+            phones || [], jobTypes || [], serviceZones || [], workSlots || [], JSON.stringify(certificates || []),
+            criminalRecord || 'ไม่มี', creditTermDays || 30, technicianLevel || 'Standard', email
+          ]
         );
         res.json({ success: true, note: 'merged by email' });
       } catch (updateErr) {
@@ -3104,13 +3212,18 @@ app.get('/api/leads', async (req, res) => {
 // Create lead
 app.post('/api/leads', async (req, res) => {
   try {
-    const { id, customer_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, notes } = req.body;
+    const { id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, notes } = req.body;
     const leadId = id || `lead_${Date.now()}`;
     const now = new Date().toISOString();
+    
+    const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
+    const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');
+    const fullName = customer_name || `${fName} ${lName}`.trim();
+
     const result = await pool.query(
-      `INSERT INTO leads (id, customer_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, notes, created_at, updated_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [leadId, customer_name, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, 'New', notes, now, now]
+      `INSERT INTO leads (id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, notes, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+      [leadId, fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, 'New', notes, now, now]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -3123,13 +3236,18 @@ app.post('/api/leads', async (req, res) => {
 app.put('/api/leads/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { customer_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, appointment_date, appointment_type, appointment_assignee, notes, project_id } = req.body;
+    const { customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, appointment_date, appointment_type, appointment_assignee, notes, project_id } = req.body;
     const now = new Date().toISOString();
+
+    const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
+    const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');
+    const fullName = customer_name || `${fName} ${lName}`.trim();
+
     const result = await pool.query(
       `UPDATE leads 
-       SET customer_name = $1, customer_phone = $2, customer_address = $3, customer_latitude = $4, customer_longitude = $5, map_url = $6, job_type = $7, status = $8, appointment_date = $9, appointment_type = $10, appointment_assignee = $11, notes = $12, updated_at = $13, project_id = COALESCE($14, project_id)
-       WHERE id = $15 RETURNING *`,
-      [customer_name, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, status, appointment_date || null, appointment_type || null, appointment_assignee || null, notes, now, project_id, id]
+       SET customer_name = $1, customer_first_name = $2, customer_last_name = $3, customer_phone = $4, customer_address = $5, customer_latitude = $6, customer_longitude = $7, map_url = $8, job_type = $9, status = $10, appointment_date = $11, appointment_type = $12, appointment_assignee = $13, notes = $14, updated_at = $15, project_id = COALESCE($16, project_id)
+       WHERE id = $17 RETURNING *`,
+      [fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, status, appointment_date || null, appointment_type || null, appointment_assignee || null, notes, now, project_id, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
     res.json(result.rows[0]);

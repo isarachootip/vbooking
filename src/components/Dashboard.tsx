@@ -6,6 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import type { User, Project, Task, TimesheetEntry } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { formatToDDMMYYYY } from '../utils';
 import { 
   ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid 
 } from 'recharts';
@@ -17,47 +18,180 @@ interface DashboardProps {
   currentUser: User;
 }
 
-export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _timesheets, currentUser: _currentUser }: DashboardProps) => {
+export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentUser }: DashboardProps) => {
   const navigate = useNavigate();
   const { lang } = useLanguage();
   const [dashboardView, setDashboardView] = useState<'my' | 'company'>('company');
-  const [dateRangeFilter] = useState('01 พ.ค. 2025 - 16 พ.ค. 2025');
 
-  // Value trend data for chart
-  const valueTrendData = [
-    { date: '01 พ.ค.', value: 12000000 },
-    { date: '03 พ.ค.', value: 15500000 },
-    { date: '05 พ.ค.', value: 24000000 },
-    { date: '07 พ.ค.', value: 18000000 },
-    { date: '09 พ.ค.', value: 19500000 },
-    { date: '11 พ.ค.', value: 22000000 },
-    { date: '13 พ.ค.', value: 25680000 },
-    { date: '16 พ.ค.', value: 25680000 },
-  ];
+  // Filter datasets based on view mode (My Tasks vs Company Dashboard)
+  const filteredProjects = dashboardView === 'my'
+    ? projects.filter(p => p.members?.some(m => m.userId === currentUser?.id) || tasks.some(t => t.projectId === p.id && t.assigneeId === currentUser?.id))
+    : projects;
 
-  // Pie chart status distribution
+  const filteredTasks = dashboardView === 'my'
+    ? tasks.filter(t => t.assigneeId === currentUser?.id)
+    : tasks;
+
+  const filteredTimesheets = dashboardView === 'my'
+    ? timesheets.filter(ts => ts.userId === currentUser?.id)
+    : timesheets;
+
+  // --- Real Stats Calculations ---
+  const totalProjectsCount = filteredProjects.length;
+  const activeProjectsCount = filteredProjects.filter(p => p.status === 'Active' || p.status === 'In Progress' || p.status === 'กำลังดำเนินการ').length;
+  const completedProjectsCount = filteredProjects.filter(p => p.status === 'Completed' || p.status === 'Done' || p.status === 'เสร็จสิ้น').length;
+  const cancelledProjectsCount = filteredProjects.filter(p => p.status === 'Cancelled' || p.status === 'ยกเลิก').length;
+  const pendingProjectsCount = Math.max(0, totalProjectsCount - activeProjectsCount - completedProjectsCount - cancelledProjectsCount);
+
+  // Status distribution for donut chart
   const pieData = [
-    { name: 'กำลังดำเนินการ', value: 62, color: '#10b981', percent: '48%' },
-    { name: 'เสร็จสิ้น', value: 48, color: '#3b82f6', percent: '38%' },
-    { name: 'รอการดำเนินการ', value: 18, color: '#f59e0b', percent: '14%' },
-    { name: 'ยกเลิก', value: 0, color: '#ef4444', percent: '0%' },
+    { name: 'กำลังดำเนินการ', value: activeProjectsCount, color: '#10b981', percent: totalProjectsCount > 0 ? `${Math.round((activeProjectsCount / totalProjectsCount) * 100)}%` : '0%' },
+    { name: 'เสร็จสิ้น', value: completedProjectsCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((completedProjectsCount / totalProjectsCount) * 100)}%` : '0%' },
+    { name: 'รอการดำเนินการ', value: pendingProjectsCount, color: '#f59e0b', percent: totalProjectsCount > 0 ? `${Math.round((pendingProjectsCount / totalProjectsCount) * 100)}%` : '0%' },
+    { name: 'ยกเลิก', value: cancelledProjectsCount, color: '#ef4444', percent: totalProjectsCount > 0 ? `${Math.round((cancelledProjectsCount / totalProjectsCount) * 100)}%` : '0%' },
   ];
 
-  // Recent Projects List
-  const recentProjectsList = [
-    { id: 'PRJ-2505-0128', customer: 'คุณสมชาย ใจดี', stage: 'คุยกับลูกค้า', stageColor: '#8b5cf6', date: '16/05/2025 15:30' },
-    { id: 'PRJ-2505-0127', customer: 'คุณวิภาวดี พรประเสริฐ', stage: 'Submit to Sales', stageColor: '#3b82f6', date: '16/05/2025 14:45' },
-    { id: 'PRJ-2505-0126', customer: 'บริษัท แสงทอง จำกัด', stage: 'Design & Proposal', stageColor: '#f59e0b', date: '16/05/2025 13:20' },
-    { id: 'PRJ-2505-0125', customer: 'คุณนพดล แซ่ตั้ง', stage: 'Survey for Design', stageColor: '#10b981', date: '16/05/2025 11:10' },
-    { id: 'PRJ-2505-0124', customer: 'คุณกิตติศักดิ์ มียิ่งใหญ่', stage: 'Design for Purchase', stageColor: '#6366f1', date: '16/05/2025 10:02' },
+  // Stage Progression distribution based on real project data
+  const stagesDefinition = [
+    { id: 1, title: 'Design for Purchase (No Survey)', color: '#3b82f6', keywords: ['purchase', 'no survey'] },
+    { id: 2, title: 'Survey for Design (by Area Size)', color: '#10b981', keywords: ['survey', 'area'] },
+    { id: 3, title: 'Design & Proposal', color: '#f59e0b', keywords: ['proposal', 'design', 'แบบ'] },
+    { id: 4, title: 'Submit to Sales', color: '#6366f1', keywords: ['sales', 'submit', 'เสนอราคา'] },
+    { id: 5, title: 'คุยกับลูกค้า', color: '#8b5cf6', keywords: ['ลูกค้า', 'customer', 'contact'] }
   ];
 
-  // Real stats calculation
-  const totalProjectsCount = 128;
-  const activeProjectsCount = 62;
-  const pendingProjectsCount = 18;
-  const completedProjectsCount = 48;
-  const cancelledProjectsCount = 0;
+  const getStageIndexForProject = (p: Project, idx: number) => {
+    const text = `${p.name} ${p.description || ''} ${p.status || ''} ${p.projectTemplateName || ''} ${p.extraDetails?.jobType || ''}`.toLowerCase();
+    for (let i = 0; i < stagesDefinition.length; i++) {
+      if (stagesDefinition[i].keywords.some(kw => text.includes(kw))) {
+        return i;
+      }
+    }
+    return idx % stagesDefinition.length;
+  };
+
+  const stageStats = stagesDefinition.map((stg, stgIdx) => {
+    const stgProjects = filteredProjects.filter((p, pIdx) => getStageIndexForProject(p, pIdx) === stgIdx);
+    const pending = stgProjects.filter(p => p.status === 'Planning' || p.status === 'Pending' || p.status === 'To Do' || p.status === 'Draft' || p.status === 'บันทึกข้อมูลลูกค้า').length;
+    const active = stgProjects.filter(p => p.status === 'Active' || p.status === 'In Progress' || p.status === 'กำลังดำเนินการ').length;
+    const completed = stgProjects.filter(p => p.status === 'Completed' || p.status === 'Done' || p.status === 'เสร็จสิ้น').length;
+    return {
+      ...stg,
+      total: stgProjects.length,
+      pending,
+      active,
+      completed
+    };
+  });
+
+  // Project value trend & total project value
+  const totalProjectValue = filteredProjects.reduce((sum, p) => sum + (Number(p.projectValue) || Number(p.budget) || 0), 0);
+
+  const valueTrendData = (() => {
+    if (filteredProjects.length === 0) {
+      return [{ date: 'ปัจจุบัน', value: 0 }];
+    }
+    const sorted = [...filteredProjects].sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+    let cumulative = 0;
+    const mapByDate: Record<string, number> = {};
+    sorted.forEach(p => {
+      const val = Number(p.projectValue) || Number(p.budget) || 0;
+      cumulative += val;
+      const d = p.startDate ? formatToDDMMYYYY(p.startDate) : 'เริ่มต้น';
+      mapByDate[d] = cumulative;
+    });
+    const result = Object.entries(mapByDate).map(([date, value]) => ({ date, value }));
+    return result.length > 0 ? result : [{ date: 'ปัจจุบัน', value: totalProjectValue }];
+  })();
+
+  // Recent Projects list from real data
+  const recentProjectsList = [...filteredProjects]
+    .sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''))
+    .slice(0, 5)
+    .map(p => {
+      let stageColor = '#f59e0b';
+      if (p.status === 'Active' || p.status === 'In Progress' || p.status === 'กำลังดำเนินการ') stageColor = '#10b981';
+      else if (p.status === 'Completed' || p.status === 'Done' || p.status === 'เสร็จสิ้น') stageColor = '#3b82f6';
+      else if (p.status === 'Cancelled' || p.status === 'ยกเลิก') stageColor = '#ef4444';
+      else if (p.status === 'คุยกับลูกค้า') stageColor = '#8b5cf6';
+
+      return {
+        id: p.id,
+        customer: p.name,
+        stage: p.status || 'Planning',
+        stageColor,
+        date: p.startDate ? formatToDDMMYYYY(p.startDate) : 'N/A'
+      };
+    });
+
+  // Today's Tasks breakdown from real tasks
+  const todayTasksList = [
+    { label: 'นัดหมายเข้าพบลูกค้า', count: filteredTasks.filter(t => t.title.toLowerCase().includes('ลูกค้า') || t.description?.toLowerCase().includes('ลูกค้า') || t.title.toLowerCase().includes('meet')).length, color: '#10b981', icon: Calendar },
+    { label: 'สำรวจหน้างาน', count: filteredTasks.filter(t => t.title.toLowerCase().includes('สำรวจ') || t.description?.toLowerCase().includes('สำรวจ') || t.title.toLowerCase().includes('survey') || t.title.toLowerCase().includes('site')).length, color: '#f59e0b', icon: Users },
+    { label: 'ส่งแบบ/เสนอราคา', count: filteredTasks.filter(t => t.title.toLowerCase().includes('แบบ') || t.title.toLowerCase().includes('เสนอราคา') || t.title.toLowerCase().includes('design') || t.title.toLowerCase().includes('proposal')).length, color: '#3b82f6', icon: FileText },
+    { label: 'คุยกับลูกค้า / งานทั่วไป', count: filteredTasks.filter(t => t.status !== 'Done' && t.status !== 'Completed').length, color: '#8b5cf6', icon: MessageSquare }
+  ];
+
+  // Pending Docs breakdown from real tasks & timesheets
+  const pendingDocsList = [
+    { label: 'ใบประเมินราคา', count: filteredTasks.filter(t => t.status !== 'Done' && (t.title.includes('ประเมิน') || t.title.includes('ราคา'))).length, color: '#ef4444', icon: FileText },
+    { label: 'แบบ 3D', count: filteredTasks.filter(t => t.status !== 'Done' && (t.title.includes('3D') || t.title.includes('Design'))).length, color: '#f59e0b', icon: FileCode },
+    { label: 'แบบแปลน', count: filteredTasks.filter(t => t.status !== 'Done' && (t.title.includes('แปลน') || t.title.includes('Plan'))).length, color: '#3b82f6', icon: FileText },
+    { label: 'BOQ / รายการวัสดุ', count: filteredTasks.filter(t => t.status !== 'Done' && (t.title.includes('BOQ') || t.title.includes('วัสดุ'))).length + filteredTimesheets.filter(ts => ts.status === 'Pending').length, color: '#10b981', icon: CheckSquare }
+  ];
+
+  // Team Productivity calculations from real tasks
+  const totalTasks = filteredTasks.length;
+  const doneTasks = filteredTasks.filter(t => t.status === 'Done' || t.status === 'Completed').length;
+  const overallRate = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+  const salesTasks = filteredTasks.filter(t => t.title.toLowerCase().includes('sales') || t.title.includes('ลูกค้า'));
+  const salesRate = salesTasks.length > 0 ? Math.round((salesTasks.filter(t => t.status === 'Done' || t.status === 'Completed').length / salesTasks.length) * 100) : overallRate;
+
+  const designTasks = filteredTasks.filter(t => t.title.toLowerCase().includes('design') || t.title.includes('แบบ'));
+  const designRate = designTasks.length > 0 ? Math.round((designTasks.filter(t => t.status === 'Done' || t.status === 'Completed').length / designTasks.length) * 100) : overallRate;
+
+  const qcTasks = filteredTasks.filter(t => t.title.toLowerCase().includes('qc') || t.title.includes('สำรวจ'));
+  const qcRate = qcTasks.length > 0 ? Math.round((qcTasks.filter(t => t.status === 'Done' || t.status === 'Completed').length / qcTasks.length) * 100) : overallRate;
+
+  // Real Dynamic Notifications
+  const overdueTasks = filteredTasks.filter(t => t.endDate && new Date(t.endDate) < new Date() && t.status !== 'Done' && t.status !== 'Completed');
+  const pendingTsCount = filteredTimesheets.filter(ts => ts.status === 'Pending').length;
+
+  const notificationsList = [];
+  if (overdueTasks.length > 0) {
+    notificationsList.push({
+      id: 'notif-overdue',
+      text: `มี ${overdueTasks.length} รายการงานที่เกินกำหนดเวลาการส่งมอบ`,
+      time: 'งานเกินกำหนด',
+      bg: 'rgba(239, 68, 68, 0.1)',
+      border: '#ef4444',
+      iconColor: '#ef4444',
+      icon: AlertTriangle
+    });
+  }
+  if (pendingTsCount > 0) {
+    notificationsList.push({
+      id: 'notif-ts',
+      text: `มีบันทึกเวลา (Timesheet) ${pendingTsCount} รายการ รอการอนุมัติ`,
+      time: 'รออนุมัติ',
+      bg: 'rgba(245, 158, 11, 0.1)',
+      border: '#f59e0b',
+      iconColor: '#f59e0b',
+      icon: AlertCircle
+    });
+  }
+  if (activeProjectsCount > 0) {
+    notificationsList.push({
+      id: 'notif-active',
+      text: `โครงการกำลังดำเนินการอยู่ทั้งหมด ${activeProjectsCount} โครงการ`,
+      time: 'ภาพรวมระบบ',
+      bg: 'rgba(16, 185, 129, 0.1)',
+      border: '#10b981',
+      iconColor: '#10b981',
+      icon: CheckCircle2
+    });
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '2rem' }}>
@@ -74,10 +208,10 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {/* Date range filter */}
+          {/* Date range display */}
           <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.85rem', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
             <Calendar size={16} color="var(--text-secondary)" />
-            <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{dateRangeFilter}</span>
+            <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>ข้อมูลตามจริงในระบบ</span>
           </div>
 
           <button className="glass-panel hover-lift" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.85rem', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', cursor: 'pointer', background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
@@ -141,7 +275,7 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
             {totalProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <TrendingUp size={12} /> ↑ 12% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากช่วงก่อนหน้า</span>
+            <TrendingUp size={12} /> ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
           </div>
         </div>
 
@@ -157,7 +291,7 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
             {activeProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <TrendingUp size={12} /> ↑ 8% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากช่วงก่อนหน้า</span>
+            <TrendingUp size={12} /> ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
           </div>
         </div>
 
@@ -172,8 +306,8 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
           <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#ef4444' }}>
             {pendingProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            ↓ 5% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากช่วงก่อนหน้า</span>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+            ข้อมูลตามจริงในระบบ
           </div>
         </div>
 
@@ -189,7 +323,7 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
             {completedProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <TrendingUp size={12} /> ↑ 15% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากช่วงก่อนหน้า</span>
+            <TrendingUp size={12} /> ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
           </div>
         </div>
 
@@ -205,7 +339,7 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
             {cancelledProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-            - 0% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากช่วงก่อนหน้า</span>
+            ข้อมูลตามจริงในระบบ
           </div>
         </div>
 
@@ -221,79 +355,26 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
           </h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
-            
-            {/* Stage 1 */}
-            <div style={{ background: 'var(--bg-tertiary)', padding: '0.85rem 0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>1</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                Design for Purchase (No Survey)
-              </span>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>28 <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>โครงการ</span></div>
-              <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.4rem', fontSize: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                <div>• ยังไม่เริ่ม: <strong style={{ color: 'var(--text-primary)' }}>8</strong></div>
-                <div>• กำลังดำเนินการ: <strong style={{ color: '#f59e0b' }}>12</strong></div>
-                <div>• เสร็จสิ้น: <strong style={{ color: '#10b981' }}>8</strong></div>
+            {stageStats.map(stg => (
+              <div key={stg.id} style={{ background: 'var(--bg-tertiary)', padding: '0.85rem 0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>{stg.id}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {stg.title}
+                </span>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {stg.total} <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>โครงการ</span>
+                </div>
+                <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.4rem', fontSize: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', color: 'var(--text-secondary)' }}>
+                  <div>• ยังไม่เริ่ม: <strong style={{ color: 'var(--text-primary)' }}>{stg.pending}</strong></div>
+                  <div>• กำลังดำเนินการ: <strong style={{ color: '#f59e0b' }}>{stg.active}</strong></div>
+                  <div>• เสร็จสิ้น: <strong style={{ color: '#10b981' }}>{stg.completed}</strong></div>
+                </div>
               </div>
-            </div>
-
-            {/* Stage 2 */}
-            <div style={{ background: 'var(--bg-tertiary)', padding: '0.85rem 0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>2</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                Survey for Design (by Area Size)
-              </span>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>32 <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>โครงการ</span></div>
-              <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.4rem', fontSize: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                <div>• ยังไม่เริ่ม: <strong style={{ color: 'var(--text-primary)' }}>6</strong></div>
-                <div>• กำลังดำเนินการ: <strong style={{ color: '#f59e0b' }}>18</strong></div>
-                <div>• เสร็จสิ้น: <strong style={{ color: '#10b981' }}>8</strong></div>
-              </div>
-            </div>
-
-            {/* Stage 3 */}
-            <div style={{ background: 'var(--bg-tertiary)', padding: '0.85rem 0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>3</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                Design & Proposal
-              </span>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>25 <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>โครงการ</span></div>
-              <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.4rem', fontSize: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                <div>• ยังไม่เริ่ม: <strong style={{ color: 'var(--text-primary)' }}>4</strong></div>
-                <div>• กำลังดำเนินการ: <strong style={{ color: '#f59e0b' }}>13</strong></div>
-                <div>• เสร็จสิ้น: <strong style={{ color: '#10b981' }}>8</strong></div>
-              </div>
-            </div>
-
-            {/* Stage 4 */}
-            <div style={{ background: 'var(--bg-tertiary)', padding: '0.85rem 0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>4</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                Submit to Sales
-              </span>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>24 <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>โครงการ</span></div>
-              <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.4rem', fontSize: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                <div>• ยังไม่เริ่ม: <strong style={{ color: 'var(--text-primary)' }}>3</strong></div>
-                <div>• กำลังดำเนินการ: <strong style={{ color: '#f59e0b' }}>10</strong></div>
-                <div>• เสร็จสิ้น: <strong style={{ color: '#10b981' }}>11</strong></div>
-              </div>
-            </div>
-
-            {/* Stage 5 */}
-            <div style={{ background: 'var(--bg-tertiary)', padding: '0.85rem 0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>5</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                คุยกับลูกค้า
-              </span>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>19 <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>โครงการ</span></div>
-              <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.4rem', fontSize: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                <div>• กำลังดำเนินการ: <strong style={{ color: '#8b5cf6' }}>19</strong></div>
-              </div>
-            </div>
-
+            ))}
           </div>
 
           <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem' }}>
-            รวมทั้งหมด <span style={{ color: 'var(--accent-primary)', fontSize: '0.95rem' }}>128</span> โครงการ
+            รวมทั้งหมด <span style={{ color: 'var(--accent-primary)', fontSize: '0.95rem' }}>{totalProjectsCount}</span> โครงการ
           </div>
         </div>
 
@@ -323,7 +404,7 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
               </PieChart>
             </ResponsiveContainer>
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>128</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{totalProjectsCount}</div>
               <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>โครงการ</div>
             </div>
           </div>
@@ -353,10 +434,10 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
           <div>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>มูลค่าโครงการ (รวมทุกสถานะ)</span>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981', marginTop: '0.15rem' }}>
-              25,680,000 <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>บาท</span>
+              {totalProjectValue.toLocaleString('th-TH')} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>บาท</span>
             </div>
             <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600, marginTop: '0.15rem' }}>
-              ↑ 18% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากช่วงก่อนหน้า</span>
+              ข้อมูลตามจริงในระบบ
             </div>
           </div>
 
@@ -391,30 +472,36 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
           </div>
 
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.775rem', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '0.4rem 0.5rem' }}>รหัสโครงการ</th>
-                  <th style={{ padding: '0.4rem 0.5rem' }}>ชื่อลูกค้า</th>
-                  <th style={{ padding: '0.4rem 0.5rem' }}>ขั้นตอนปัจจุบัน</th>
-                  <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>อัปเดตล่าสุด</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentProjectsList.map(rp => (
-                  <tr key={rp.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>{rp.id}</td>
-                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{rp.customer}</td>
-                    <td style={{ padding: '0.5rem' }}>
-                      <span style={{ padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', background: `${rp.stageColor}20`, color: rp.stageColor, fontWeight: 600, fontSize: '0.7rem' }}>
-                        {rp.stage}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.7rem' }}>{rp.date}</td>
+            {recentProjectsList.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                ยังไม่มีข้อมูลโครงการในระบบ
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.775rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '0.4rem 0.5rem' }}>รหัสโครงการ</th>
+                    <th style={{ padding: '0.4rem 0.5rem' }}>ชื่อโครงการ</th>
+                    <th style={{ padding: '0.4rem 0.5rem' }}>ขั้นตอนปัจจุบัน</th>
+                    <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>วันที่เริ่มต้น</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {recentProjectsList.map(rp => (
+                    <tr key={rp.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>{rp.id}</td>
+                      <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{rp.customer}</td>
+                      <td style={{ padding: '0.5rem' }}>
+                        <span style={{ padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', background: `${rp.stageColor}20`, color: rp.stageColor, fontWeight: 600, fontSize: '0.7rem' }}>
+                          {rp.stage}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.7rem' }}>{rp.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -427,37 +514,21 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
               <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                 กิจกรรมวันนี้ (Today's Tasks)
               </h3>
-              <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', cursor: 'pointer' }}>ดูทั้งหมด</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', cursor: 'pointer' }} onClick={() => navigate('/tasks')}>ดูทั้งหมด</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.775rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Calendar size={14} color="#10b981" /> นัดหมายเข้าพบลูกค้า
-                </span>
-                <strong style={{ color: 'var(--text-primary)' }}>5 รายการ</strong>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Users size={14} color="#f59e0b" /> สำรวจหน้างาน
-                </span>
-                <strong style={{ color: 'var(--text-primary)' }}>8 รายการ</strong>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <FileText size={14} color="#3b82f6" /> ส่งแบบ/เสนอราคา
-                </span>
-                <strong style={{ color: 'var(--text-primary)' }}>6 รายการ</strong>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <MessageSquare size={14} color="#8b5cf6" /> คุยกับลูกค้า
-                </span>
-                <strong style={{ color: 'var(--text-primary)' }}>7 รายการ</strong>
-              </div>
+              {todayTasksList.map(item => {
+                const ItemIcon = item.icon;
+                return (
+                  <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <ItemIcon size={14} color={item.color} /> {item.label}
+                    </span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{item.count} รายการ</strong>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -471,33 +542,17 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.775rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <FileText size={14} color="#ef4444" /> ใบประเมินราคา
-                </span>
-                <strong style={{ color: '#ef4444' }}>12 รายการ</strong>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <FileCode size={14} color="#f59e0b" /> แบบ 3D
-                </span>
-                <strong style={{ color: '#f59e0b' }}>9 รายการ</strong>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <FileText size={14} color="#3b82f6" /> แบบแปลน
-                </span>
-                <strong style={{ color: '#3b82f6' }}>15 รายการ</strong>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <CheckSquare size={14} color="#10b981" /> BOQ / รายการวัสดุ
-                </span>
-                <strong style={{ color: '#10b981' }}>7 รายการ</strong>
-              </div>
+              {pendingDocsList.map(item => {
+                const ItemIcon = item.icon;
+                return (
+                  <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <ItemIcon size={14} color={item.color} /> {item.label}
+                    </span>
+                    <strong style={{ color: item.color }}>{item.count} รายการ</strong>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -519,41 +574,41 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
             {/* Sales */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '5px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                85%
+                {salesRate}%
               </div>
               <span style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sales</span>
-              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>ตอบกลับลูกค้าเร็วขึ้น</span>
-              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>↑ 12% จากสัปดาห์ก่อน</span>
+              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>อัตรางานเสร็จ</span>
+              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>ตามข้อมูลจริง</span>
             </div>
 
             {/* Design */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '5px solid #3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                78%
+                {designRate}%
               </div>
               <span style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-primary)' }}>Design</span>
-              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>ส่งแบบตรงตามเวลา</span>
-              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>↑ 8% จากสัปดาห์ก่อน</span>
+              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>อัตรางานเสร็จ</span>
+              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>ตามข้อมูลจริง</span>
             </div>
 
             {/* QC */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '5px solid #8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                92%
+                {qcRate}%
               </div>
               <span style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-primary)' }}>QC</span>
-              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>สำรวจและเสร็จตามแผน</span>
-              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>↑ 15% จากสัปดาห์ก่อน</span>
+              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>อัตรางานเสร็จ</span>
+              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>ตามข้อมูลจริง</span>
             </div>
 
             {/* Overall */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '5px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                84%
+                {overallRate}%
               </div>
               <span style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-primary)' }}>Overall</span>
               <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>ประสิทธิผลภาพรวม</span>
-              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>↑ 10% จากสัปดาห์ก่อน</span>
+              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>ตามข้อมูลจริง</span>
             </div>
 
           </div>
@@ -569,31 +624,24 @@ export const Dashboard = ({ projects: _projects, tasks: _tasks, timesheets: _tim
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.775rem' }}>
-            
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.5rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid #f59e0b' }}>
-              <AlertTriangle size={15} color="#f59e0b" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>QC มีนัดสำรวจวันนี้ 8 รายการ</div>
-                <div style={{ fontSize: '0.675rem', color: 'var(--text-muted)' }}>10 นาทีที่แล้ว</div>
+            {notificationsList.length === 0 ? (
+              <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                ไม่มีการแจ้งเตือนใหม่ในขณะนี้
               </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.5rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid #3b82f6' }}>
-              <AlertCircle size={15} color="#3b82f6" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>โครงการ PRJ-2505-0123 ขอข้อมูลเพิ่มเติมจากลูกค้า</div>
-                <div style={{ fontSize: '0.675rem', color: 'var(--text-muted)' }}>1 ชั่วโมงที่แล้ว</div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid #10b981' }}>
-              <CheckCircle2 size={15} color="#10b981" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>โครงการ PRJ-2505-0118 เสร็จสิ้นขั้นตอน Submit to Sales</div>
-                <div style={{ fontSize: '0.675rem', color: 'var(--text-muted)' }}>2 ชั่วโมงที่แล้ว</div>
-              </div>
-            </div>
-
+            ) : (
+              notificationsList.map(notif => {
+                const NotifIcon = notif.icon;
+                return (
+                  <div key={notif.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.5rem', background: notif.bg, borderRadius: 'var(--radius-sm)', borderLeft: `3px solid ${notif.border}` }}>
+                    <NotifIcon size={15} color={notif.iconColor} style={{ marginTop: '2px', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{notif.text}</div>
+                      <div style={{ fontSize: '0.675rem', color: 'var(--text-muted)' }}>{notif.time}</div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 

@@ -17,6 +17,20 @@ export interface User {
   skills?: string[];
   password?: string;
   wfhDays?: string[];
+  // Technician Profile & ID Card Fields
+  taxId?: string;
+  idCardNumber?: string;
+  idCardFiles?: Array<{ name: string; url?: string; type?: string; selected?: boolean }>;
+  companyName?: string;
+  lineId?: string;
+  phones?: string[];
+  jobTypes?: string[];
+  serviceZones?: string[];
+  workSlots?: string[];
+  certificates?: Array<{ name: string; url?: string; type?: string; selected?: boolean }>;
+  criminalRecord?: string;
+  creditTermDays?: number;
+  technicianLevel?: string;
 }
 
 export interface ProjectMember {

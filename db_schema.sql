@@ -170,6 +170,8 @@ CREATE INDEX IF NOT EXISTS idx_task_snapshots_task ON task_snapshots(task_id);
 CREATE TABLE IF NOT EXISTS leads (
     id VARCHAR(50) PRIMARY KEY,
     customer_name VARCHAR(150) NOT NULL,
+    customer_first_name VARCHAR(100),
+    customer_last_name VARCHAR(100),
     customer_phone VARCHAR(50),
     customer_address TEXT,
     customer_latitude NUMERIC,

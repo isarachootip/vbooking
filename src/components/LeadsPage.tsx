@@ -18,6 +18,8 @@ interface LeadFollowup {
 interface Lead {
   id: string;
   customer_name: string;
+  customer_first_name?: string;
+  customer_last_name?: string;
   customer_phone: string;
   customer_address: string;
   customer_latitude?: number | string | null;
@@ -72,7 +74,8 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   const [jobTypeFilter, setJobTypeFilter] = useState('All');
 
   // Form states matching Image 2 mockup
-  const [customerName, setCustomerName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerLatitude, setCustomerLatitude] = useState<string>('');
@@ -369,8 +372,11 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
 
     const combinedNotes = notes ? `${notes}\n\n[Details]: ${JSON.stringify(extraDetails)}` : `[Details]: ${JSON.stringify(extraDetails)}`;
 
+    const fullCustomerName = `${firstName.trim()} ${lastName.trim()}`.trim();
     const leadData = {
-      customer_name: customerName,
+      customer_name: fullCustomerName,
+      customer_first_name: firstName.trim(),
+      customer_last_name: lastName.trim(),
       customer_phone: customerPhone,
       customer_address: customerAddress,
       customer_latitude: customerLatitude ? parseFloat(customerLatitude) : null,
@@ -434,7 +440,20 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   const openModal = (lead: Lead | null = null) => {
     if (lead) {
       setEditingLead(lead);
-      setCustomerName(lead.customer_name);
+      if (lead.customer_first_name !== undefined && lead.customer_first_name !== null && lead.customer_first_name !== '') {
+        setFirstName(lead.customer_first_name);
+        setLastName(lead.customer_last_name || '');
+      } else {
+        const fullName = (lead.customer_name || '').trim();
+        const spaceIdx = fullName.indexOf(' ');
+        if (spaceIdx !== -1) {
+          setFirstName(fullName.substring(0, spaceIdx));
+          setLastName(fullName.substring(spaceIdx + 1).trim());
+        } else {
+          setFirstName(fullName);
+          setLastName('');
+        }
+      }
       setCustomerPhone(lead.customer_phone || '');
       setCustomerAddress(lead.customer_address || '');
       const latStr = lead.customer_latitude ? String(lead.customer_latitude) : '';
@@ -486,7 +505,8 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       }
     } else {
       setEditingLead(null);
-      setCustomerName('');
+      setFirstName('');
+      setLastName('');
       setCustomerPhone('');
       setCustomerAddress('');
       setCustomerLatitude('');
@@ -1021,17 +1041,32 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                          ชื่อลูกค้า *
+                          ชื่อ *
                         </label>
                         <input 
                           type="text" 
                           required
-                          value={customerName}
-                          onChange={e => setCustomerName(e.target.value)}
-                          placeholder="เช่น คุณสำราญ ศักดิ์ดี"
+                          value={firstName}
+                          onChange={e => setFirstName(e.target.value)}
+                          placeholder="เช่น สำราญ"
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                         />
                       </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                          นามสกุล
+                        </label>
+                        <input 
+                          type="text" 
+                          value={lastName}
+                          onChange={e => setLastName(e.target.value)}
+                          placeholder="เช่น ศักดิ์ดี"
+                          style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                           เบอร์โทรติดต่อ *
@@ -1045,9 +1080,6 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                         />
                       </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                           สาขาที่ดูแล *
@@ -1064,6 +1096,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           <option value="สาขาธนบุรี">สาขาธนบุรี</option>
                         </select>
                       </div>
+                    </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                           สถานะ Lead
@@ -1225,8 +1258,6 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                         </div>
                       )}
                     </div>
-
-                  </div>
 
                   {/* SECTION 2: หมายเหตุ & บันทึกเพิ่มเติม */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
