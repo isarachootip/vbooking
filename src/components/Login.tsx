@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, Shield, ArrowRight } from 'lucide-react';
+import { Shield, ArrowRight } from 'lucide-react';
 import type { User } from '../types';
 import { HouseLogo } from './HouseLogo';
 
