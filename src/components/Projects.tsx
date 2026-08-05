@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Users, Plus, X, Edit, Trash2, FileText, Layers, Search, Download, CheckCircle2, Clock, XCircle, Briefcase, ChevronLeft, ChevronRight, Eye, GitBranch } from 'lucide-react';
+import { Users, Plus, X, Edit, Trash2, FileText, Layers, Search, Download, CheckCircle2, Clock, Briefcase, ChevronLeft, ChevronRight, Eye, GitBranch } from 'lucide-react';
 import type { User, Project, ProjectStatus, ProjectRole, Task, PermissionScheme, ProjectWorkflow, TaskTemplate } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
@@ -558,7 +558,7 @@ export const Projects = ({
         </div>
       </div>
 
-      {/* ── TOP ROW: 5 SUMMARY CARDS ── */}
+      {/* ── TOP ROW: WORKFLOW STAGE KPI CARDS ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
         <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -571,69 +571,32 @@ export const Projects = ({
             {projects.length} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
           </div>
           <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
-            ↑ 12% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
+            ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
           </div>
         </div>
 
-        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>รอดำเนินการ</span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FileText size={18} color="#3b82f6" />
+        {/* Real Stage Metrics */}
+        {[
+          { label: 'ซื้อสำรวจ', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: projects.filter(p => p.status === 'ซื้อสำรวจ' || p.status === 'Planning' || p.status === 'Draft').length },
+          { label: 'QC (สำรวจ)', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: projects.filter(p => p.status === 'QC (สำรวจ)').length },
+          { label: 'ออกแบบ & ใบเสนอราคา', icon: CheckCircle2, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: projects.filter(p => p.status === 'ออกแบบ' || p.status === 'สร้างใบเสนอราคา').length },
+          { label: 'ลูกค้ายืนยัน / ชำระเงิน', icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', count: projects.filter(p => p.status === 'ลูกค้ายืนยัน' || p.status === 'ชำระเงิน' || p.status === 'Completed').length }
+        ].map((stg, i) => (
+          <div key={i} className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{stg.label}</span>
+              <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: stg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <stg.icon size={18} color={stg.color} />
+              </div>
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: stg.color }}>
+              {stg.count} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
+            </div>
+            <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+              ตามขั้นตอนปัจจุบัน
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#3b82f6' }}>
-            36 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
-            ↑ 8% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
-          </div>
-        </div>
-
-        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>กำลังดำเนินการ</span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Clock size={18} color="#f59e0b" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f59e0b' }}>
-            62 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
-            ↑ 15% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
-          </div>
-        </div>
-
-        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เสร็จสิ้น</span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle2 size={18} color="#10b981" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>
-            30 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
-            ↑ 20% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
-          </div>
-        </div>
-
-        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ยกเลิก</span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <XCircle size={18} color="#ef4444" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ef4444' }}>
-            4 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.725rem', color: '#ef4444', fontWeight: 600 }}>
-            ↓ 20% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>จากเดือนที่แล้ว</span>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* ── SEARCH & MULTI-FILTER BAR ── */}
@@ -659,11 +622,13 @@ export const Projects = ({
               onChange={e => setStatusFilter(e.target.value)}
               style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
             >
-              <option value="All">สถานะโปรเจกต์: ทั้งหมด</option>
-              <option value="Active">กำลังดำเนินการ</option>
-              <option value="Planning">รอดำเนินการ</option>
-              <option value="Completed">เสร็จสิ้น</option>
-              <option value="Cancelled">ยกเลิก</option>
+              <option value="All">ขั้นตอนโปรเจกต์: ทั้งหมด</option>
+              <option value="ซื้อสำรวจ">ซื้อสำรวจ</option>
+              <option value="QC (สำรวจ)">QC (สำรวจ)</option>
+              <option value="ออกแบบ">ออกแบบ</option>
+              <option value="สร้างใบเสนอราคา">สร้างใบเสนอราคา</option>
+              <option value="ลูกค้ายืนยัน">ลูกค้ายืนยัน</option>
+              <option value="ชำระเงิน">ชำระเงิน</option>
             </select>
           </div>
 

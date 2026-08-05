@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { 
-  Folder, Zap, Clock, CheckCircle2, XCircle, TrendingUp, Calendar, Filter, 
+  Folder, Clock, CheckCircle2, TrendingUp, Calendar, Filter, 
   Users, FileText, AlertTriangle, Bell, FileCode, CheckSquare, MessageSquare, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -279,69 +279,28 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
           </div>
         </div>
 
-        {/* Card 2: Active */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>กำลังดำเนินการ</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Zap size={20} color="#f59e0b" />
+        {/* Real Stage Metrics Cards */}
+        {[
+          { label: 'ซื้อสำรวจ', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: filteredProjects.filter(p => p.status === 'ซื้อสำรวจ' || p.status === 'Planning' || p.status === 'Draft').length },
+          { label: 'QC (สำรวจ)', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: filteredProjects.filter(p => p.status === 'QC (สำรวจ)').length },
+          { label: 'ออกแบบ & ใบเสนอราคา', icon: CheckCircle2, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: filteredProjects.filter(p => p.status === 'ออกแบบ' || p.status === 'สร้างใบเสนอราคา').length },
+          { label: 'ลูกค้ายืนยัน / ชำระเงิน', icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', count: filteredProjects.filter(p => p.status === 'ลูกค้ายืนยัน' || p.status === 'ชำระเงิน' || p.status === 'Completed').length }
+        ].map((stg, i) => (
+          <div key={i} className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{stg.label}</span>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: stg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <stg.icon size={20} color={stg.color} />
+              </div>
+            </div>
+            <div style={{ fontSize: '1.85rem', fontWeight: 800, color: stg.color }}>
+              {stg.count} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+              ตามขั้นตอนปัจจุบัน
             </div>
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#f59e0b' }}>
-            {activeProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <TrendingUp size={12} /> ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
-          </div>
-        </div>
-
-        {/* Card 3: Pending */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>รอการดำเนินการ</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Clock size={20} color="#ef4444" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#ef4444' }}>
-            {pendingProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-            ข้อมูลตามจริงในระบบ
-          </div>
-        </div>
-
-        {/* Card 4: Completed */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เสร็จสิ้น</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle2 size={20} color="#3b82f6" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#3b82f6' }}>
-            {completedProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <TrendingUp size={12} /> ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
-          </div>
-        </div>
-
-        {/* Card 5: Cancelled */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ยกเลิก</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(107, 114, 128, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <XCircle size={20} color="#6b7280" />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-muted)' }}>
-            {cancelledProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-            ข้อมูลตามจริงในระบบ
-          </div>
-        </div>
+        ))}
 
       </div>
 
