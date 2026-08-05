@@ -12,15 +12,15 @@
   --text-secondary: #334155;
   --text-muted: #475569;
   
-  --accent-primary: #059669; /* Emerald Green */
-  --accent-primary-hover: #047857;
-  --accent-secondary: #2563EB; /* Royal Blue */
+  --accent-primary: #8B0000; /* Maroon Red */
+  --accent-primary-hover: #700000;
+  --accent-secondary: #C2410C; /* Rust / Warm Orange for gradient */
   --accent-danger: #EF4444; /* Red */
   --accent-warning: #F59E0B; /* Amber */
   --accent-info: #0284C7; /* Sky Blue */
 
   --border-color: #E2E8F0;
-  --border-glass: rgba(5, 150, 105, 0.2);
+  --border-glass: rgba(139, 0, 0, 0.15);
   
   --border-glow: 1px solid #E2E8F0;
   --shadow-glow: 0 4px 20px rgba(0, 0, 0, 0.04);
@@ -66,19 +66,19 @@ html[data-theme='dark'], body[data-theme='dark'], body.dark-theme {
   --text-secondary: #94A3B8;
   --text-muted: #64748B;
   
-  --accent-primary: #00F5FF; /* Electric Cyan */
-  --accent-primary-hover: #00D2EB;
-  --accent-secondary: #D946EF; /* Vibrant Magenta */
+  --accent-primary: #FF4D4D; /* Vibrant Crimson Red */
+  --accent-primary-hover: #E63939;
+  --accent-secondary: #F43F5E; /* Deep Pinkish Red for gradient */
   --accent-danger: #EF4444; /* Red */
   --accent-warning: #F59E0B; /* Amber */
   --accent-info: #3B82F6; /* Blue */
 
   --border-color: #1e293b;
-  --border-glass: rgba(0, 245, 255, 0.15);
+  --border-glass: rgba(255, 77, 77, 0.15);
   
   /* Cyber-Neon Glow Elements */
-  --border-glow: 1px solid rgba(0, 245, 255, 0.25);
-  --shadow-glow: 0 0 15px rgba(0, 245, 255, 0.2), 0 0 30px rgba(217, 70, 239, 0.1);
+  --border-glow: 1px solid rgba(255, 77, 77, 0.25);
+  --shadow-glow: 0 0 15px rgba(255, 77, 77, 0.2), 0 0 30px rgba(244, 63, 94, 0.1);
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);

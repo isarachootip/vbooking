@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Clock, Shield, ArrowRight } from 'lucide-react';
 import type { User } from '../types';
+import { HouseLogo } from './HouseLogo';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -101,20 +102,21 @@ export const Login = ({ onLogin, availableUsers }: LoginProps) => {
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center' }}>
           <div style={{ 
-            width: '56px', 
-            height: '56px', 
-            borderRadius: '14px', 
-            background: '#059669', 
+            width: '84px', 
+            height: '60px', 
+            borderRadius: '12px', 
+            background: 'var(--accent-primary)', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
-            boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)' 
+            boxShadow: '0 4px 12px rgba(139, 0, 0, 0.25)',
+            padding: '4px'
           }}>
-            <Clock size={32} color="white" strokeWidth={2.5} />
+            <HouseLogo size={70} color="white" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem', marginTop: '0.5rem' }}>
             <h1 className="text-gradient" style={{ fontSize: '2.2rem', fontWeight: 900, margin: 0, lineHeight: 1.1 }}>PMT</h1>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: '0.2rem' }}>Project Management</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', marginTop: '0.2rem' }}>Design & Renovate Project Management</span>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.2rem' }}>ระบบบริหารจัดการโครงการติดตั้ง & รีโนเวทบ้าน</p>
         </div>
