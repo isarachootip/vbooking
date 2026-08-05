@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog } from 'lucide-react';
-import { HouseLogo } from './components/HouseLogo';
+import { PMTBrandLogo } from './components/PMTBrandLogo';
 import { Dashboard } from './components/Dashboard';
 import { Projects } from './components/Projects';
 import { Timesheet } from './components/Timesheet';
@@ -281,26 +281,8 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
 
       {/* Sidebar */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <div style={{ 
-              width: '46px', 
-              height: '32px', 
-              borderRadius: '8px', 
-              background: 'var(--accent-primary)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              boxShadow: '0 2px 4px rgba(139, 0, 0, 0.2)',
-              padding: '2px'
-            }}>
-              <HouseLogo size={36} color="white" />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
-              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, lineHeight: 1.15 }} className="text-gradient">PMT</h1>
-              <span style={{ fontSize: '0.52rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>Design & Renovate</span>
-            </div>
-          </div>
+        <div style={{ padding: '1.25rem 1.15rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-tertiary)' }}>
+          <PMTBrandLogo variant="sidebar" />
           <button 
             className="mobile-close-btn"
             onClick={() => setIsSidebarOpen(false)}

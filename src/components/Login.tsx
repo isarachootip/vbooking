@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Shield, ArrowRight } from 'lucide-react';
 import type { User } from '../types';
-import { HouseLogo } from './HouseLogo';
+import { PMTBrandLogo } from './PMTBrandLogo';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -101,24 +101,8 @@ export const Login = ({ onLogin, availableUsers }: LoginProps) => {
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center' }}>
-          <div style={{ 
-            width: '84px', 
-            height: '60px', 
-            borderRadius: '12px', 
-            background: 'var(--accent-primary)', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            boxShadow: '0 4px 12px rgba(139, 0, 0, 0.25)',
-            padding: '4px'
-          }}>
-            <HouseLogo size={70} color="white" />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem', marginTop: '0.5rem' }}>
-            <h1 className="text-gradient" style={{ fontSize: '2.2rem', fontWeight: 900, margin: 0, lineHeight: 1.1 }}>PMT</h1>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', marginTop: '0.2rem' }}>Design & Renovate Project Management</span>
-          </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.2rem' }}>ระบบบริหารจัดการโครงการติดตั้ง & รีโนเวทบ้าน</p>
+          <PMTBrandLogo variant="full" size="md" />
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.4rem', fontWeight: 500 }}>ระบบบริหารจัดการโครงการติดตั้ง &amp; รีโนเวทบ้าน</p>
         </div>
 
         {errorParam && (
