@@ -334,7 +334,7 @@ export const ProjectBoard: React.FC<ProjectBoardProps> = ({ projects = [] }) => 
         <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Kanban size={20} color="var(--accent-primary)" /> Dashboard (สถานะงานตามขั้นตอน)
+              <Kanban size={20} color="var(--accent-primary)" /> ผังสถานะงานตามขั้นตอน (Project Process Pipeline)
             </h3>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ลากการ์ดเพื่อย้ายขั้นตอน</span>
           </div>
