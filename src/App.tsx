@@ -281,12 +281,12 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
 
       {/* Sidebar */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div style={{ padding: '1.25rem 1.15rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-tertiary)' }}>
+        <div style={{ padding: 0, borderBottom: '1px solid var(--border-color)', position: 'relative', overflow: 'hidden', background: '#ece9e9' }}>
           <PMTBrandLogo variant="sidebar" />
           <button 
             className="mobile-close-btn"
             onClick={() => setIsSidebarOpen(false)}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'none', alignItems: 'center', justifyContent: 'center' }}
+            style={{ position: 'absolute', right: '10px', top: '10px', background: 'rgba(0,0,0,0.2)', border: 'none', color: '#ffffff', cursor: 'pointer', display: 'none', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', padding: '4px', zIndex: 10 }}
           >
             <X size={20} />
           </button>
