@@ -1068,11 +1068,11 @@ export const Projects = ({
                           onChange={e => setProjectType(e.target.value)}
                           style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem', fontWeight: 600 }}
                         >
-                          <option value="construction">🏗️ งานก่อสร้าง (Construction)</option>
-                          <option value="quick_service">⚡ งาน Quick service</option>
+                          <option value="renovate">🏡 งาน Renovate / รีโนเวท</option>
                           <option value="installation">🛠️ งานติดตั้ง (Installation)</option>
-                          <option value="dev">💻 งานพัฒนา (Development)</option>
-                          <option value="support">🛡️ งานซัพพอร์ต (Support)</option>
+                          <option value="quick_service">⚡ งาน Quick service (งานด่วน)</option>
+                          <option value="build">🛋️ งาน Built-in (บิวท์อิน)</option>
+                          <option value="ma">🔧 งาน Maintenance (ซ่อมบำรุง MA)</option>
                         </select>
                         {!editingProject && (
                           <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700, marginTop: '0.25rem' }}>
