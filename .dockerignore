@@ -6,7 +6,7 @@ docs
 scratch
 timesheet
 *.docx
-*.html
+user_manual.html
 *.pdf
 *.md
 vbooking_postman_collection.json
