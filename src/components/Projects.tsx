@@ -878,16 +878,21 @@ export const Projects = ({
 
                       {/* PIC / Responsible User */}
                       <td style={{ padding: '0.75rem 0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                          <img 
-                            src={getUserAvatar(project.members?.[0]?.userId || '') || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'} 
-                            alt="PIC Avatar" 
-                            style={{ width: '24px', height: '24px', borderRadius: '50%' }} 
-                          />
-                          <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                            {getUserName(project.members?.[0]?.userId || '')}
-                          </span>
-                        </div>
+                        {(() => {
+                          const picId = extra.picUser || project.members?.[0]?.userId || '';
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <img 
+                                src={getUserAvatar(picId) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'} 
+                                alt="PIC Avatar" 
+                                style={{ width: '24px', height: '24px', borderRadius: '50%' }} 
+                              />
+                              <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                {getUserName(picId)}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* Actions */}

@@ -505,7 +505,11 @@ function App() {
         setPermissionSchemes(data.permissionSchemes || []);
         setProjectWorkflows(data.projectWorkflows || []);
         setCostRates(data.costRates || []);
-        setSystemSettings(data.systemSettings || {});
+        const settings = data.systemSettings || {};
+        setSystemSettings(settings);
+        if (settings.master_project_types) {
+          localStorage.setItem('master_project_types_v3', settings.master_project_types);
+        }
         setLoading(false);
       })
       .catch(err => {

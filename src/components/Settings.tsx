@@ -605,20 +605,22 @@ export const Settings = ({
         >
           Milestone Templates
         </button>
-        <button 
-          onClick={() => setActiveTab('integrations')}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: activeTab === 'integrations' ? 'var(--text-primary)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'integrations' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-            padding: '0.5rem 1rem',
-            cursor: 'pointer',
-            fontWeight: activeTab === 'integrations' ? 600 : 400
-          }}
-        >
-          Git Webhook Integrations
-        </button>
+        {localStorage.getItem('show_dev_settings') === 'true' && (
+          <button 
+            onClick={() => setActiveTab('integrations')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: activeTab === 'integrations' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              borderBottom: activeTab === 'integrations' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+              padding: '0.5rem 1rem',
+              cursor: 'pointer',
+              fontWeight: activeTab === 'integrations' ? 600 : 400
+            }}
+          >
+            Git Webhook Integrations
+          </button>
+        )}
         <button 
           onClick={() => setActiveTab('permission_schemes')}
           style={{

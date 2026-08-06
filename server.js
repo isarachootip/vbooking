@@ -66,6 +66,40 @@ const dbHost = connectionString
   : (process.env.DB_HOST || 'localhost');
 console.log(`Connecting to PostgreSQL database host: ${dbHost}`);
 
+// Auth Middleware to protect backend API routes
+const requireAuth = async (req, res, next) => {
+  const publicPaths = [
+    '/api/auth/login', 
+    '/api/auth/line', 
+    '/api/auth/line/callback', 
+    '/api/db-status',
+    '/api/webhooks/github',
+    '/api/webhooks/gitlab'
+  ];
+  
+  if (publicPaths.some(p => req.path === p)) {
+    return next();
+  }
+
+  const userId = req.headers['x-user-id'] || req.query['userId'];
+  if (!userId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  try {
+    const userRes = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+    if (userRes.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid user session' });
+    }
+    next();
+  } catch (err) {
+    console.error('Auth middleware error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+app.use('/api', requireAuth);
+
 // Initialize DB schema & seed if empty
 const initDB = async () => {
   try {
