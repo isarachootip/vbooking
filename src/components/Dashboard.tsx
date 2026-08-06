@@ -135,36 +135,24 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
     { name: 'Maintenance (ซ่อมบำรุง MA)', value: maCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((maCount / totalProjectsCount) * 100)}%` : '0%' }
   ];
 
-  // Stage Progression distribution dynamically calculated from real project data
+  // Stage Progression distribution matching the Kanban workflow stages
   const stagesDefinition = [
-    { id: 1, title: 'Design for Purchase (No Survey)', color: '#3b82f6', keywords: ['purchase', 'no survey'] },
-    { id: 2, title: 'Survey for Design (by Area Size)', color: '#10b981', keywords: ['survey', 'area'] },
-    { id: 3, title: 'Design & Proposal', color: '#f59e0b', keywords: ['proposal', 'design', 'แบบ'] },
-    { id: 4, title: 'Submit to Sales', color: '#6366f1', keywords: ['sales', 'submit', 'เสนอราคา'] },
-    { id: 5, title: 'คุยกับลูกค้า', color: '#8b5cf6', keywords: ['ลูกค้า', 'customer', 'contact'] }
+    { id: 1, title: 'ซื้อสำรวจ', color: '#3b82f6', statuses: ['ซื้อสำรวจ', 'Planning', 'Draft', 'To Do', 'todo'] },
+    { id: 2, title: 'QC (สำรวจ)', color: '#f59e0b', statuses: ['QC (สำรวจ)', 'QC', 'qc'] },
+    { id: 3, title: 'ออกแบบ', color: '#8b5cf6', statuses: ['ออกแบบ', 'design'] },
+    { id: 4, title: 'สร้างใบเสนอราคา', color: '#6366f1', statuses: ['สร้างใบเสนอราคา', 'proposal', 'quote'] },
+    { id: 5, title: 'ลูกค้ายืนยัน', color: '#10b981', statuses: ['ลูกค้ายืนยัน'] },
+    { id: 6, title: 'ชำระเงิน', color: '#059669', statuses: ['ชำระเงิน'] },
+    { id: 7, title: 'กำลังดำเนินการ', color: '#3b82f6', statuses: ['กำลังดำเนินการ', 'Active', 'In Progress', 'active', 'inprogress'] },
+    { id: 8, title: 'เสร็จสิ้น', color: '#475569', statuses: ['เสร็จสิ้น', 'Completed', 'Done', 'completed', 'done'] }
   ];
 
-  const getStageIndexForProject = (p: Project, idx: number) => {
-    const text = `${p.name} ${p.description || ''} ${p.status || ''} ${p.projectTemplateName || ''} ${p.extraDetails?.jobType || ''}`.toLowerCase();
-    for (let i = 0; i < stagesDefinition.length; i++) {
-      if (stagesDefinition[i].keywords.some(kw => text.includes(kw))) {
-        return i;
-      }
-    }
-    return idx % stagesDefinition.length;
-  };
-
-  const stageStats = stagesDefinition.map((stg, stgIdx) => {
-    const stgProjects = filteredProjects.filter((p, pIdx) => getStageIndexForProject(p, pIdx) === stgIdx);
-    const pending = stgProjects.filter(p => p.status === 'Planning' || p.status === 'Pending' || p.status === 'To Do' || p.status === 'Draft' || p.status === 'บันทึกข้อมูลลูกค้า').length;
-    const active = stgProjects.filter(p => p.status === 'Active' || p.status === 'In Progress' || p.status === 'กำลังดำเนินการ').length;
-    const completed = stgProjects.filter(p => p.status === 'Completed' || p.status === 'Done' || p.status === 'เสร็จสิ้น').length;
+  const stageStats = stagesDefinition.map(stg => {
+    const stgProjects = filteredProjects.filter(p => stg.statuses.includes(p.status));
     return {
       ...stg,
       total: stgProjects.length,
-      pending,
-      active,
-      completed
+      projectsList: stgProjects
     };
   });
 
@@ -465,36 +453,125 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
 
       </div>
 
-      {/* ── ROW 2: STAGE PROGRESSION GRID & DONUT CHART (REAL DATA) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 1.2fr', gap: '1.25rem', alignItems: 'start' }}>
-        
-        {/* Left: สถานะโครงการตามขั้นตอน */}
-        <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            สถานะโครงการตามขั้นตอน (Stage Progression)
-          </h3>
+      {/* ── ROW 2: STAGE PROGRESSION GRID (REAL DATA) ── */}
+      <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+          สถานะโครงการตามขั้นตอน (Stage Progression)
+        </h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
-            {stageStats.map(stg => (
-              <div key={stg.id} style={{ background: 'var(--bg-tertiary)', padding: '0.85rem 0.65rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>{stg.id}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
+          {stageStats.map(stg => (
+            <div 
+              key={stg.id} 
+              style={{ 
+                background: 'var(--bg-tertiary)', 
+                padding: '0.85rem 0.65rem', 
+                borderRadius: 'var(--radius-md)', 
+                border: '1px solid var(--border-color)', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '0.75rem', 
+                minHeight: '260px'
+              }}
+            >
+              <div style={{ textAlign: 'center', borderBottom: '1px dashed var(--border-color)', paddingBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block' }}>ขั้นตอนที่ {stg.id}</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginTop: '0.15rem' }}>
                   {stg.title}
                 </span>
-                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  {stg.total} <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>โครงการ</span>
-                </div>
-                <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.4rem', fontSize: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                  <div>• ยังไม่เริ่ม: <strong style={{ color: 'var(--text-primary)' }}>{stg.pending}</strong></div>
-                  <div>• กำลังดำเนินการ: <strong style={{ color: '#f59e0b' }}>{stg.active}</strong></div>
-                  <div>• เสร็จสิ้น: <strong style={{ color: '#10b981' }}>{stg.completed}</strong></div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-primary)', marginTop: '0.35rem' }}>
+                  {stg.total} <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-secondary)' }}>โครงการ</span>
                 </div>
               </div>
-            ))}
+
+              {/* List of projects under this stage */}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '0.4rem', 
+                  overflowY: 'auto', 
+                  flex: 1,
+                  maxHeight: '180px',
+                  paddingRight: '2px'
+                }}
+                className="custom-scrollbar"
+              >
+                {stg.total === 0 ? (
+                  <div style={{ margin: 'auto', fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
+                    ไม่มีโครงการ
+                  </div>
+                ) : (
+                  stg.projectsList.map(proj => (
+                    <div 
+                      key={proj.id} 
+                      className="hover-lift"
+                      onClick={() => navigate(`/projects/${proj.id}`)}
+                      style={{ 
+                        background: 'var(--bg-secondary)', 
+                        padding: '0.5rem', 
+                        borderRadius: 'var(--radius-sm)', 
+                        border: '1px solid var(--border-color)', 
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: '0.725rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {proj.name}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.625rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                        <span>ID: {proj.id}</span>
+                        <span>{proj.startDate ? formatToDDMMYYYY(proj.startDate).substring(0, 10) : ''}</span>
+                      </div>
+                      {proj.projectValue ? (
+                        <div style={{ color: '#10b981', fontWeight: 700, fontSize: '0.675rem', marginTop: '0.2rem', textAlign: 'right' }}>
+                          ฿{(Number(proj.projectValue) || 0).toLocaleString('th-TH')}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem' }}>
+          รวมทั้งหมด <span style={{ color: 'var(--accent-primary)', fontSize: '0.95rem' }}>{totalProjectsCount}</span> โครงการ
+        </div>
+      </div>
+
+      {/* ── ROW 3: VALUE TREND & PROJECT TYPE RATIO CHARTS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr', gap: '1.25rem', alignItems: 'start' }}>
+        
+        {/* Left: มูลค่าโครงการ (Value Trend Chart) */}
+        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>มูลค่าโครงการ (รวมทุกสถานะ)</span>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981', marginTop: '0.15rem' }}>
+              {totalProjectValue.toLocaleString('th-TH')} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>บาท</span>
+            </div>
+            <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600, marginTop: '0.15rem' }}>
+              ข้อมูลตามจริงในระบบ
+            </div>
           </div>
 
-          <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem' }}>
-            รวมทั้งหมด <span style={{ color: 'var(--accent-primary)', fontSize: '0.95rem' }}>{totalProjectsCount}</span> โครงการ
+          <div style={{ height: '180px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={valueTrendData}>
+                <defs>
+                  <linearGradient id="valGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                <YAxis hide />
+                <Tooltip />
+                <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#valGrad)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -545,40 +622,11 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
         </div>
 
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.8fr 1.2fr', gap: '1.25rem', alignItems: 'start' }}>
+
+      {/* ── ROW 4: RECENT PROJECTS & TASKS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr', gap: '1.25rem', alignItems: 'start' }}>
         
-        {/* Left: มูลค่าโครงการ (Value Trend Chart) */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>มูลค่าโครงการ (รวมทุกสถานะ)</span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981', marginTop: '0.15rem' }}>
-              {totalProjectValue.toLocaleString('th-TH')} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>บาท</span>
-            </div>
-            <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600, marginTop: '0.15rem' }}>
-              ข้อมูลตามจริงในระบบ
-            </div>
-          </div>
-
-          <div style={{ height: '180px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={valueTrendData}>
-                <defs>
-                  <linearGradient id="valGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
-                <YAxis hide />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#valGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Center: โครงการล่าสุด */}
+        {/* Left: โครงการล่าสุด */}
         <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           <div className="flex-between">
             <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
@@ -623,7 +671,7 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
           </div>
         </div>
 
-        {/* Right Top & Bottom: กิจกรรมวันนี้ & เอกสารที่รอดำเนินการ */}
+        {/* Right: กิจกรรมวันนี้ & เอกสารที่รอดำเนินการ */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           
           {/* กิจกรรมวันนี้ */}
