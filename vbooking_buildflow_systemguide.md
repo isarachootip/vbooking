@@ -97,6 +97,10 @@ Advanced data visualization tools for project metrics and costs:
     *กราฟสถิติผู้ใช้งาน*: แสดงทิศทางชั่วโมงทำงานของพนักงานแต่ละคนตามตัวกรอง รายวัน รายเดือน และรายปี
 *   **Subtasks Overview in Summary tab**: A dedicated analytics card on the Tasks Summary tab showing overall subtask completion percentages and status counts.
     *ภาพรวมงานย่อยในแดชบอร์ด*: แดชบอร์ดสรุปความคืบหน้ารวมของ Subtask ทั้งหมดในโปรเจกต์ในหน้า Tasks Summary
+*   **Interactive Dashboard Categories**: Category filter tabs at the top of the main Dashboard (All, Quick Service, Installer, Renovate, Build-in, New House, Maintenance) which dynamically compute and update all dashboard stats on click.
+    *ตัวกรองหมวดหมู่โครงการใน Dashboard*: ปุ่มตัวกรองด้านบนสุดเพื่อกรองข้อมูลโครงการตามประเภทการทำงาน ซึ่งช่วยในการคำนวณและวิเคราะห์สถิติต่างๆ ในแดชบอร์ดทันทีที่คลิกเลือก
+*   **Full-Width Stage Progression & Project Details**: Reorganized dashboard layout to make the Stage Progression grid full-width, displaying a list of active projects under each workflow column (Project ID, Name, Start Date, Value) with direct project detail page redirection links.
+    *สถิติและรายชื่อโครงการย่อยตามขั้นตอน*: ปรับเปลี่ยนการจัดวางหน้าแดชบอร์ดให้มีขนาดเต็มหน้าจอเพื่อจำแนกและระบุรายชื่อโครงการที่ค้างอยู่ในแต่ละขั้นตอนการทำงาน ช่วยให้เห็นภาพรวมของโครงการย่อยทั้งหมด
 
 ---
 
@@ -142,8 +146,9 @@ CREATE DATABASE vbooking_db;
 เพื่อความยืดหยุ่นในการคำนวณสถิติของแดชบอร์ด ข้อมูลโครงการในฐานข้อมูลอาจมีโครงสร้าง ID แบบสั้น (Legacy Format) หรือแบบยาว (New Format) โดยระบบจะรวบรวมเข้าด้วยกันเพื่อออกรายงานอย่างถูกต้องดังนี้:
 *   **หมวดหมู่ Quick service**: รวบรวมข้อมูลโครงการที่มีสถานะ `projectType = 'quick'` หรือ `'quick_service'`
 *   **หมวดหมู่ Installer**: รวบรวมข้อมูลโครงการที่มีสถานะ `projectType = 'install'`, `'installation'` หรือ `'installer'`
-*   **หมวดหมู่ Renovate**: รวบรวมข้อมูลโครงการที่มีสถานะ `projectType = 'renovate'`, `'construction'`, `'new_house'` หรือไม่มีการระบุประเภท
+*   **หมวดหมู่ Renovate**: รวบรวมข้อมูลโครงการที่มีสถานะ `projectType = 'renovate'` หรือไม่มีการระบุประเภท
 *   **หมวดหมู่ Build-in**: รวบรวมข้อมูลโครงการที่มีสถานะ `projectType = 'build'` หรือ `'build_in'`
+*   **หมวดหมู่ New (สร้างบ้านใหม่)**: รวบรวมข้อมูลโครงการที่มีสถานะ `projectType = 'new_house'` หรือ `'construction'`
 *   **หมวดหมู่ Maintenance**: รวบรวมข้อมูลโครงการที่มีสถานะ `projectType = 'ma'`, `'support'` หรือ `'maintenance'`
 
 ---

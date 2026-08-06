@@ -418,6 +418,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               <p style={{ marginBottom: '0.5rem' }}>Recent productivity enhancements include:</p>
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
                 <li style={{ marginBottom: '0.25rem' }}>
+                  <strong>Dashboard Category Tabs:</strong> Added category filter buttons at the top of the main Dashboard (All, Quick Service, Installer, Renovate, Build-in, New House, Maintenance) which dynamically compute and recalculate all dashboard statistics on click.
+                </li>
+                <li style={{ marginBottom: '0.25rem' }}>
+                  <strong>Full-Width Stage Progression & Project Details:</strong> Expanded the Stage Progression box to full-width and redesigned it to display a scrollable list of active projects under each workflow stage (showing Project ID, Name, Start Date, Value) with direct redirect links.
+                </li>
+                <li style={{ marginBottom: '0.25rem' }}>
                   <strong>Project Plan Milestone Duplication Protection:</strong> When you generate milestones from templates in the <em>Project Plan</em>, once they are generated, the button changes to a disabled green <strong>Already</strong> badge. This prevents duplicate milestone creation.
                 </li>
                 <li style={{ marginBottom: '0.25rem' }}>
@@ -844,6 +850,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
             <div>
               <p style={{ marginBottom: '0.5rem' }}>ระบบได้เพิ่มการอำนวยความสะดวกในส่วนต่างๆ ดังนี้ครับ:</p>
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}>
+                  <strong>ตัวกรองหมวดหมู่โครงการใน Dashboard:</strong> เพิ่มแถบปุ่มตัวกรองด้านบนสุดในหน้าแรก แบ่งประเภทโครงการเป็น ทั้งหมด (All), Quick service, งานติดตั้ง, งานรีโนเวท, งานบิวท์อิน, สร้างบ้านใหม่, และซ่อมบำรุง MA เพื่อช่วยในการคำนวณและวิเคราะห์จำนวนโครงการตามประเภทจริงแบบเรียลไทม์
+                </li>
+                <li style={{ marginBottom: '0.25rem' }}>
+                  <strong>ปรับ Layout และสรุปโครงการรายขั้นตอน (Stage Progression):</strong> ขยายกล่องบอร์ดความคืบหน้าโครงการเป็นความกว้างเต็มหน้าจอเพื่อจำแนกโครงการย่อย รหัส ID วันที่ และงบประมาณในแต่ละขั้นตอนการทำงานจริง พร้อมทั้งย้ายแผนภูมิสัดส่วนประเภทโครงการลงมาอยู่ในแถวเดียวกันกับมูลค่าสะสมของโครงการ
+                </li>
                 <li style={{ marginBottom: '0.25rem' }}>
                   <strong>ป้องกันการสร้างแผนงานซ้ำ (Milestone Protection):</strong> ในหน้า <em>Project Plan</em> เมื่อกดปุ่ม Generate Milestones ไปเรียบร้อยแล้ว ปุ่มสีส้มเดิมจะเปลี่ยนเป็นปุ่มสีเขียว <strong>Already</strong> และอยู่ในสถานะ Disabled เพื่อแจ้งเตือนและป้องกันการกดซ้ำซ้อน
                 </li>
