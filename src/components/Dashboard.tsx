@@ -41,17 +41,17 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
 
   // Project Type breakdown distribution for donut chart
   const quickCount = filteredProjects.filter(p => p.projectType === 'quick' || p.projectType === 'quick_service').length;
-  const installCount = filteredProjects.filter(p => p.projectType === 'install' || p.projectType === 'installation').length;
-  const renovateCount = filteredProjects.filter(p => p.projectType === 'renovate' || p.projectType === 'construction' || !p.projectType).length;
-  const buildCount = filteredProjects.filter(p => p.projectType === 'build').length;
-  const maCount = filteredProjects.filter(p => p.projectType === 'ma' || p.projectType === 'support').length;
+  const installCount = filteredProjects.filter(p => p.projectType === 'install' || p.projectType === 'installation' || p.projectType === 'installer').length;
+  const renovateCount = filteredProjects.filter(p => p.projectType === 'renovate' || p.projectType === 'construction' || p.projectType === 'new_house' || !p.projectType).length;
+  const buildCount = filteredProjects.filter(p => p.projectType === 'build' || p.projectType === 'build_in').length;
+  const maCount = filteredProjects.filter(p => p.projectType === 'ma' || p.projectType === 'support' || p.projectType === 'maintenance').length;
 
   const pieData = [
-    { name: 'Renovate (งานรีโนเวท)', value: renovateCount, color: '#8B0000', percent: totalProjectsCount > 0 ? `${Math.round((renovateCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'Install (งานติดตั้ง)', value: installCount, color: '#f59e0b', percent: totalProjectsCount > 0 ? `${Math.round((installCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'Quick Service (งานด่วน)', value: quickCount, color: '#ef4444', percent: totalProjectsCount > 0 ? `${Math.round((quickCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'Built-in (งานบิวท์อิน)', value: buildCount, color: '#8b5cf6', percent: totalProjectsCount > 0 ? `${Math.round((buildCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'Maintenance (MA)', value: maCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((maCount / totalProjectsCount) * 100)}%` : '0%' }
+    { name: 'Renovate / New house', value: renovateCount, color: '#8B0000', percent: totalProjectsCount > 0 ? `${Math.round((renovateCount / totalProjectsCount) * 100)}%` : '0%' },
+    { name: 'Installer (งานติดตั้ง)', value: installCount, color: '#2563eb', percent: totalProjectsCount > 0 ? `${Math.round((installCount / totalProjectsCount) * 100)}%` : '0%' },
+    { name: 'Quick service (งานด่วน)', value: quickCount, color: '#f59e0b', percent: totalProjectsCount > 0 ? `${Math.round((quickCount / totalProjectsCount) * 100)}%` : '0%' },
+    { name: 'Build-in (งานบิวท์อิน)', value: buildCount, color: '#8b5cf6', percent: totalProjectsCount > 0 ? `${Math.round((buildCount / totalProjectsCount) * 100)}%` : '0%' },
+    { name: 'Maintenance (ซ่อมบำรุง)', value: maCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((maCount / totalProjectsCount) * 100)}%` : '0%' }
   ];
 
   // Stage Progression distribution dynamically calculated from real project data

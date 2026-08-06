@@ -39,16 +39,17 @@ export const Settings = ({
 
   // Master Project Types states
   const defaultMasterTypes = [
-    { id: 'construction', name: 'งานก่อสร้าง', badgeText: 'ก่อสร้าง 🇹🇭', color: '#059669', description: 'โครงการงานก่อสร้าง รีโนเวท และตกแต่งหน้างาน', isActive: true },
-    { id: 'quick_service', name: 'งาน Quick service', badgeText: 'Quick service ⚡', color: '#f59e0b', description: 'โครงการบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน', isActive: true },
-    { id: 'installation', name: 'งานติดตั้ง (installation)', badgeText: 'งานติดตั้ง 🛠️', color: '#2563eb', description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบและประกอบระบบ', isActive: true },
-    { id: 'dev', name: 'งานพัฒนา (Development)', badgeText: 'พัฒนา 💻', color: '#7c3aed', description: 'โครงการพัฒนาระบบ ซอฟต์แวร์ และแอปพลิเคชัน', isActive: true },
-    { id: 'support', name: 'งานซัพพอร์ต (Support)', badgeText: 'ซัพพอร์ต 🛡️', color: '#0891b2', description: 'โครงการดูแลระบบ งานบำรุงรักษารายเดือน', isActive: true }
+    { id: 'quick_service', name: 'Quick service', badgeText: 'Quick service ⚡', color: '#f59e0b', description: 'โครงการงานบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน', isActive: true },
+    { id: 'installer', name: 'Installer (งานติดตั้ง)', badgeText: 'งานติดตั้ง 🛠️', color: '#2563eb', description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบและประกอบระบบ', isActive: true },
+    { id: 'renovate', name: 'Renovate (งานรีโนเวท)', badgeText: 'Renovate 🏡', color: '#8B0000', description: 'โครงการปรับปรุง รีโนเวทบ้าน และตกแต่งอาคารสถานที่ครบวงจร', isActive: true },
+    { id: 'build_in', name: 'Build-in (งานบิวท์อิน)', badgeText: 'Build-in 🛋️', color: '#8b5cf6', description: 'โครงการออกแบบ ผลิต และติดตั้งงานเฟอร์นิเจอร์บิวท์อินเฉพาะทาง', isActive: true },
+    { id: 'new_house', name: 'New house (สร้างบ้านใหม่)', badgeText: 'New house 🏠', color: '#059669', description: 'โครงการงานก่อสร้างบ้านใหม่และอาคารสิ่งปลูกสร้าง', isActive: true },
+    { id: 'maintenance', name: 'Maintenance (งานซ่อมบำรุง MA)', badgeText: 'MA 🔧', color: '#3b82f6', description: 'โครงการดูแลระบบ งานบำรุงรักษาตามสัญญา MA', isActive: true }
   ];
 
   const [masterProjectTypes, setMasterProjectTypes] = useState(() => {
     try {
-      const saved = localStorage.getItem('master_project_types');
+      const saved = localStorage.getItem('master_project_types_v3');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return defaultMasterTypes;
@@ -64,7 +65,7 @@ export const Settings = ({
 
   const saveMasterTypes = (types: typeof defaultMasterTypes) => {
     setMasterProjectTypes(types);
-    localStorage.setItem('master_project_types', JSON.stringify(types));
+    localStorage.setItem('master_project_types_v3', JSON.stringify(types));
     fetch('/api/system-settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, DollarSign, Users, Kanban, ArrowRight } from 'lucide-react';
-import type { Project, User, Task } from '../types';
+import { Calendar, MapPin, DollarSign, Users, Layers, ArrowRight } from 'lucide-react';
+import type { Project, User, Task, ProjectStatus } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 
 interface ProjectBoardProps {
@@ -13,7 +13,27 @@ interface ProjectBoardProps {
 }
 
 export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [], currentUser }: ProjectBoardProps) => {
-  const [filterType, setFilterType] = useState<'construction' | 'dev' | 'support' | 'all'>('construction');
+  // Load master project types from local storage or fallback to defaults
+  const masterProjectTypes = (() => {
+    try {
+      const savedV3 = localStorage.getItem('master_project_types_v3');
+      if (savedV3) return JSON.parse(savedV3);
+      const savedV2 = localStorage.getItem('master_project_types_v2');
+      if (savedV2) return JSON.parse(savedV2);
+      const savedV1 = localStorage.getItem('master_project_types');
+      if (savedV1) return JSON.parse(savedV1);
+    } catch (e) {}
+    return [
+      { id: 'quick_service', name: 'Quick service', badgeText: 'Quick service ⚡', color: '#f59e0b', description: 'โครงการงานบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน', isActive: true },
+      { id: 'installer', name: 'Installer (งานติดตั้ง)', badgeText: 'งานติดตั้ง 🛠️', color: '#2563eb', description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบและประกอบระบบ', isActive: true },
+      { id: 'renovate', name: 'Renovate (งานรีโนเวท)', badgeText: 'Renovate 🏡', color: '#8B0000', description: 'โครงการปรับปรุง รีโนเวทบ้าน และตกแต่งอาคารสถานที่ครบวงจร', isActive: true },
+      { id: 'build_in', name: 'Build-in (งานบิวท์อิน)', badgeText: 'Build-in 🛋️', color: '#8b5cf6', description: 'โครงการออกแบบ ผลิต และติดตั้งงานเฟอร์นิเจอร์บิวท์อินเฉพาะทาง', isActive: true },
+      { id: 'new_house', name: 'New house (สร้างบ้านใหม่)', badgeText: 'New house 🏠', color: '#059669', description: 'โครงการงานก่อสร้างบ้านใหม่และอาคารสิ่งปลูกสร้าง', isActive: true },
+      { id: 'maintenance', name: 'Maintenance (งานซ่อมบำรุง MA)', badgeText: 'MA 🔧', color: '#3b82f6', description: 'โครงการดูแลระบบ งานบำรุงรักษาตามสัญญา MA', isActive: true }
+    ];
+  })();
+
+  const [filterType, setFilterType] = useState<string>('all');
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
 
   // Workflow Columns matching original setup shown in reference screenshot
@@ -45,7 +65,10 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
     if (!isMember) return false;
 
     if (filterType === 'all') return true;
-    return (p.projectType || 'construction') === filterType;
+    
+    // Normalize old construction to new_house/renovate to keep compatibility
+    const normalizedType = p.projectType === 'construction' ? 'new_house' : p.projectType;
+    return (normalizedType || 'new_house') === filterType;
   });
 
   const handleDragStart = (projectId: string) => {
@@ -58,20 +81,27 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
 
   const handleDrop = (columnId: string) => {
     if (!draggedProjectId || !setProjects) return;
-
     setProjects(prev => prev.map(p => {
-      if (p.id === draggedProjectId) {
-        let status = columnId;
-        if (columnId === 'เสร็จสิ้น') {
-          status = 'Completed';
-        }
-        return { ...p, status };
-      }
-      return p;
-    }));
+      if (p.id !== draggedProjectId) return p;
+      
+      let newStatus: ProjectStatus = p.status;
+      if (columnId === 'ซื้อสำรวจ') newStatus = 'Planning';
+      else if (columnId === 'กำลังดำเนินการ') newStatus = 'Active';
+      else if (columnId === 'เสร็จสิ้น') newStatus = 'Completed';
+      else newStatus = columnId as ProjectStatus;
 
+      return {
+        ...p,
+        status: newStatus
+      };
+    }));
     setDraggedProjectId(null);
   };
+
+  const filterTabs = [
+    { id: 'all', label: 'แสดงทั้งหมด' },
+    ...masterProjectTypes.filter((t: any) => t.isActive !== false).map((t: any) => ({ id: t.id, label: t.badgeText || t.name }))
+  ];
 
   const getProjectProgress = (projectId: string): number => {
     const projTasks = tasks.filter(t => t.projectId === projectId && !t.parentId);
@@ -84,13 +114,13 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
   const getUserAvatar = (userId: string) => users.find(u => u.id === userId)?.avatar || '';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingBottom: '2rem' }}>
+    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
       
-      {/* ── HEADER & FILTER BAR ── */}
+      {/* ── KANBAN HEADER ── */}
       <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Kanban size={26} color="var(--accent-primary)" /> โปรเจกต์บอร์ด (Project Pipeline Board)
+          <h1 className="text-gradient" style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Layers size={26} color="var(--accent-primary)" /> บอร์ดขั้นตอนงานโครงการ (Project Kanban Board)
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0, marginTop: '0.25rem' }}>
             ย้ายขั้นตอนการดำเนินโครงการติดตั้งและงานก่อสร้างระดับสูง (Drag & Drop Card)
@@ -98,16 +128,11 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
         </div>
 
         {/* Filter Tab controls */}
-        <div style={{ display: 'flex', gap: '0.35rem', background: 'var(--bg-tertiary)', padding: '0.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-          {[
-            { id: 'construction', label: 'Construction 🇹🇭' },
-            { id: 'dev', label: 'Development' },
-            { id: 'support', label: 'Support' },
-            { id: 'all', label: 'Show All' }
-          ].map(t => (
+        <div style={{ display: 'flex', gap: '0.35rem', background: 'var(--bg-tertiary)', padding: '0.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
+          {filterTabs.map(t => (
             <button
               key={t.id}
-              onClick={() => setFilterType(t.id as any)}
+              onClick={() => setFilterType(t.id)}
               style={{
                 padding: '0.45rem 1rem',
                 border: 'none',

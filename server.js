@@ -46,7 +46,12 @@ app.use('/api', (req, res, next) => {
 const connectionString = process.env.DATABASE_URL;
 const pool = new pg.Pool(
   connectionString 
-    ? { connectionString, ssl: connectionString.includes('neon') ? { rejectUnauthorized: false } : false }
+    ? { 
+        connectionString, 
+        ssl: (connectionString.includes('neon') || connectionString.includes('sslmode=require') || process.env.DB_SSL === 'true') 
+          ? { rejectUnauthorized: false } 
+          : false 
+      }
     : {
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5432'),
@@ -1966,7 +1971,7 @@ app.post('/api/projects', async (req, res) => {
             );
           }
         }
-      } else if (projectType === 'construction') {
+      } else if (projectType === 'construction' || projectType === 'renovate' || projectType === 'new_house') {
         // Auto-generate construction phases
         const phases = [
           { title: 'ซื้อสำรวจ', desc: 'ลูกค้าซื้อสิทธิ์สำรวจหน้างานและระบุขอบเขตความต้องการ', startPct: 0, endPct: 8, est: 4 },

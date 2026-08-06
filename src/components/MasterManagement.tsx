@@ -23,19 +23,19 @@ export interface MasterProjectType {
 export const defaultMasterTypes: MasterProjectType[] = [
   {
     id: 'quick_service',
-    name: 'Quick Service (งานด่วน)',
-    badgeText: 'Quick Service ⚡',
-    color: '#ef4444',
+    name: 'Quick service',
+    badgeText: 'Quick service ⚡',
+    color: '#f59e0b',
     iconName: 'Zap',
     description: 'โครงการงานบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน มีเฉพาะ Task เดี่ยว ดำเนินการเสร็จรวดเร็ว',
     isActive: true,
     taskTypeStyle: 'single'
   },
   {
-    id: 'installation',
-    name: 'Install (งานติดตั้ง)',
-    badgeText: 'Install 🛠️',
-    color: '#f59e0b',
+    id: 'installer',
+    name: 'Installer (งานติดตั้ง)',
+    badgeText: 'งานติดตั้ง 🛠️',
+    color: '#2563eb',
     iconName: 'Wrench',
     description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบคุณภาพประกอบระบบ และส่งมอบงานติดตั้งหน้างาน',
     isActive: true,
@@ -52,9 +52,9 @@ export const defaultMasterTypes: MasterProjectType[] = [
     taskTypeStyle: 'workflow'
   },
   {
-    id: 'build',
-    name: 'Built-in (งานบิวท์อิน)',
-    badgeText: 'Built-in 🛋️',
+    id: 'build_in',
+    name: 'Build-in (งานบิวท์อิน)',
+    badgeText: 'Build-in 🛋️',
     color: '#8b5cf6',
     iconName: 'Box',
     description: 'โครงการออกแบบ ผลิต และติดตั้งงานเฟอร์นิเจอร์บิวท์อินเฉพาะทาง',
@@ -62,12 +62,22 @@ export const defaultMasterTypes: MasterProjectType[] = [
     taskTypeStyle: 'workflow'
   },
   {
-    id: 'ma',
+    id: 'new_house',
+    name: 'New house (สร้างบ้านใหม่)',
+    badgeText: 'New house 🏠',
+    color: '#059669',
+    iconName: 'Home',
+    description: 'โครงการงานก่อสร้างบ้านใหม่และอาคารสิ่งปลูกสร้าง',
+    isActive: true,
+    taskTypeStyle: 'workflow'
+  },
+  {
+    id: 'maintenance',
     name: 'Maintenance (งานซ่อมบำรุง MA)',
     badgeText: 'MA 🔧',
     color: '#3b82f6',
     iconName: 'ShieldCheck',
-    description: 'โครงการดูแลระบบ ซ่อมแซมบำรุงรักษาตามรอบระยะเวลาสัญญา (Maintenance Agreement)',
+    description: 'โครงการดูแลระบบ ซ่อมแซมบำรุงรักษาตามสัญญา MA',
     isActive: true,
     taskTypeStyle: 'sla'
   }
@@ -82,7 +92,7 @@ export const MasterManagement = ({
   // Master Project Types State
   const [masterTypes, setMasterTypes] = useState<MasterProjectType[]>(() => {
     try {
-      const saved = localStorage.getItem('master_project_types_v2');
+      const saved = localStorage.getItem('master_project_types_v3');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
     return defaultMasterTypes;
@@ -101,7 +111,7 @@ export const MasterManagement = ({
   // Save Master Project Types
   const handleSaveTypes = (newTypes: MasterProjectType[]) => {
     setMasterTypes(newTypes);
-    localStorage.setItem('master_project_types_v2', JSON.stringify(newTypes));
+    localStorage.setItem('master_project_types_v3', JSON.stringify(newTypes));
     fetch('/api/system-settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

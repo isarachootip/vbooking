@@ -28,6 +28,30 @@ export const Projects = ({
   setProjectWorkflows,
   taskTemplates = []
 }: ProjectsProps) => {
+  // Load master project types from local storage or fallback to defaults
+  const masterProjectTypes = (() => {
+    try {
+      // Check v3 first
+      const savedV3 = localStorage.getItem('master_project_types_v3');
+      if (savedV3) return JSON.parse(savedV3);
+      // Check v2 (from MasterManagement)
+      const savedV2 = localStorage.getItem('master_project_types_v2');
+      if (savedV2) return JSON.parse(savedV2);
+      // Check v1 (from Settings)
+      const savedV1 = localStorage.getItem('master_project_types');
+      if (savedV1) return JSON.parse(savedV1);
+    } catch (e) {}
+    // Fallback to merged list containing both v1 and v2 defaults
+    return [
+      { id: 'quick_service', name: 'Quick service', badgeText: 'Quick service ⚡', color: '#f59e0b', description: 'โครงการงานบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน', isActive: true },
+      { id: 'installer', name: 'Installer (งานติดตั้ง)', badgeText: 'งานติดตั้ง 🛠️', color: '#2563eb', description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบและประกอบระบบ', isActive: true },
+      { id: 'renovate', name: 'Renovate (งานรีโนเวท)', badgeText: 'Renovate 🏡', color: '#8B0000', description: 'โครงการปรับปรุง รีโนเวทบ้าน และตกแต่งอาคารสถานที่ครบวงจร', isActive: true },
+      { id: 'build_in', name: 'Build-in (งานบิวท์อิน)', badgeText: 'Build-in 🛋️', color: '#8b5cf6', description: 'โครงการออกแบบ ผลิต และติดตั้งงานเฟอร์นิเจอร์บิวท์อินเฉพาะทาง', isActive: true },
+      { id: 'new_house', name: 'New house (สร้างบ้านใหม่)', badgeText: 'New house 🏠', color: '#059669', description: 'โครงการงานก่อสร้างบ้านใหม่และอาคารสิ่งปลูกสร้าง', isActive: true },
+      { id: 'maintenance', name: 'Maintenance (งานซ่อมบำรุง MA)', badgeText: 'MA 🔧', color: '#3b82f6', description: 'โครงการดูแลระบบ งานบำรุงรักษาตามสัญญา MA', isActive: true }
+    ];
+  })();
+
   const location = useLocation();
   const [highlightedProjectId, setHighlightedProjectId] = useState<string | null>(null);
 
@@ -281,12 +305,12 @@ export const Projects = ({
       permissionSchemeId: permissionSchemeId,
       projectType,
       supportTaskStyle: projectType === 'support' ? supportTaskStyle : undefined,
-      address: projectType === 'construction' ? address : undefined,
-      projectValue: projectType === 'construction' ? parseNumberFromCommas(projectValue) : undefined,
-      invoicedValue: projectType === 'construction' ? parseNumberFromCommas(invoicedValue) : undefined,
-      collectedValue: projectType === 'construction' ? parseNumberFromCommas(collectedValue) : undefined,
-      plannedExpense: projectType === 'construction' ? parseNumberFromCommas(plannedExpense) : undefined,
-      actualExpense: projectType === 'construction' ? parseNumberFromCommas(actualExpense) : undefined,
+      address: (projectType === 'construction' || projectType === 'renovate' || projectType === 'new_house' || projectType === 'build_in') ? address : undefined,
+      projectValue: (projectType === 'construction' || projectType === 'renovate' || projectType === 'new_house' || projectType === 'build_in') ? parseNumberFromCommas(projectValue) : undefined,
+      invoicedValue: (projectType === 'construction' || projectType === 'renovate' || projectType === 'new_house' || projectType === 'build_in') ? parseNumberFromCommas(invoicedValue) : undefined,
+      collectedValue: (projectType === 'construction' || projectType === 'renovate' || projectType === 'new_house' || projectType === 'build_in') ? parseNumberFromCommas(collectedValue) : undefined,
+      plannedExpense: (projectType === 'construction' || projectType === 'renovate' || projectType === 'new_house' || projectType === 'build_in') ? parseNumberFromCommas(plannedExpense) : undefined,
+      actualExpense: (projectType === 'construction' || projectType === 'renovate' || projectType === 'new_house' || projectType === 'build_in') ? parseNumberFromCommas(actualExpense) : undefined,
       projectTemplateName: projectTemplateName || undefined,
       extraDetails
     };
@@ -778,8 +802,28 @@ export const Projects = ({
 
                       {/* Building Type */}
                       <td style={{ padding: '0.75rem 0.75rem' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {extra.buildingType === 'คอนโด' ? '🏢 คอนโด' : extra.buildingType === 'อาคารพาณิชย์' ? '🏭 อาคารพาณิชย์' : extra.buildingType === 'สำนักงาน' ? '🏢 สำนักงาน' : extra.buildingType === 'โรงงาน/คลังสินค้า' ? '🏭 โรงงาน' : '🏠 บ้านเดี่ยว'}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', width: 'fit-content' }}>
+                            {extra.buildingType === 'คอนโด' ? '🏢 คอนโด' : extra.buildingType === 'อาคารพาณิชย์' ? '🏭 อาคารพาณิชย์' : extra.buildingType === 'สำนักงาน' ? '🏢 สำนักงาน' : extra.buildingType === 'โรงงาน/คลังสินค้า' ? '🏭 โรงงาน' : '🏠 บ้านเดี่ยว'}
+                          </div>
+                          {(() => {
+                            const matchType = masterProjectTypes.find((t: any) => t.id === project.projectType);
+                            if (!matchType) return null;
+                            return (
+                              <span style={{ 
+                                padding: '0.15rem 0.4rem', 
+                                borderRadius: '4px', 
+                                fontSize: '0.7rem', 
+                                fontWeight: 700, 
+                                background: (matchType.color || '#059669') + '20', 
+                                color: matchType.color || '#059669',
+                                border: `1px solid ${matchType.color || '#059669'}30`,
+                                width: 'fit-content'
+                              }}>
+                                {matchType.badgeText || matchType.name}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </td>
 
@@ -942,7 +986,7 @@ export const Projects = ({
                 <div className="flex-between" style={{ alignItems: 'flex-start' }}>
                   <div>
                     <h3 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{project.name}</h3>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{ 
                         fontSize: '0.75rem', 
                         padding: '0.25rem 0.75rem', 
@@ -953,6 +997,23 @@ export const Projects = ({
                       }}>
                         {project.status}
                       </span>
+                      {(() => {
+                        const matchType = masterProjectTypes.find((t: any) => t.id === project.projectType);
+                        if (!matchType) return null;
+                        return (
+                          <span style={{ 
+                            fontSize: '0.75rem', 
+                            padding: '0.25rem 0.75rem', 
+                            borderRadius: 'var(--radius-full)', 
+                            background: (matchType.color || '#059669') + '20', 
+                            color: matchType.color || '#059669',
+                            border: `1px solid ${matchType.color || '#059669'}30`,
+                            fontWeight: 600
+                          }}>
+                            {matchType.badgeText || matchType.name}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -1068,11 +1129,14 @@ export const Projects = ({
                           onChange={e => setProjectType(e.target.value)}
                           style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem', fontWeight: 600 }}
                         >
-                          <option value="renovate">🏡 งาน Renovate / รีโนเวท</option>
-                          <option value="installation">🛠️ งานติดตั้ง (Installation)</option>
-                          <option value="quick_service">⚡ งาน Quick service (งานด่วน)</option>
-                          <option value="build">🛋️ งาน Built-in (บิวท์อิน)</option>
-                          <option value="ma">🔧 งาน Maintenance (ซ่อมบำรุง MA)</option>
+                          {masterProjectTypes
+                            .filter((t: any) => t.isActive !== false)
+                            .map((t: any) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name} ({t.badgeText || t.name})
+                              </option>
+                            ))
+                          }
                         </select>
                         {!editingProject && (
                           <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700, marginTop: '0.25rem' }}>
