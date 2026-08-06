@@ -363,6 +363,17 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate phone number: must be required and digits only
+    const trimmedPhone = customerPhone.trim();
+    if (!trimmedPhone) {
+      alert('กรุณากรอกเบอร์โทรติดต่อ');
+      return;
+    }
+    if (!/^\d+$/.test(trimmedPhone)) {
+      alert('เบอร์โทรติดต่อต้องเป็นตัวเลขทั้งหมดเท่านั้น');
+      return;
+    }
+    
     const extraDetails = {
       buildingType: buildingType === 'อื่นๆ' && customBuildingType ? `อื่นๆ: ${customBuildingType}` : buildingType,
       customBuildingType,
@@ -1157,8 +1168,8 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           type="text" 
                           required
                           value={customerPhone}
-                          onChange={e => setCustomerPhone(e.target.value)}
-                          placeholder="093-265-2639"
+                          onChange={e => setCustomerPhone(e.target.value.replace(/\D/g, ''))}
+                          placeholder="เช่น 0932652639"
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                         />
                       </div>
