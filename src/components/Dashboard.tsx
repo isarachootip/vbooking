@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { 
   Folder, Clock, CheckCircle2, TrendingUp, Calendar, Filter, 
-  Users, FileText, AlertTriangle, Bell, FileCode, CheckSquare, MessageSquare, AlertCircle
+  Users, FileText, AlertTriangle, Bell, FileCode, CheckSquare, MessageSquare, AlertCircle,
+  Zap, Wrench, Home, Box, ShieldCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User, Project, Task, TimesheetEntry } from '../types';
@@ -22,19 +23,97 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
   const navigate = useNavigate();
   const { lang } = useLanguage();
   const [dashboardView, setDashboardView] = useState<'my' | 'company'>('company');
+  const [selectedType, setSelectedType] = useState<string>('all');
 
   // Filter datasets based on view mode (My Tasks vs Company Dashboard)
-  const filteredProjects = dashboardView === 'my'
+  const modeFilteredProjects = dashboardView === 'my'
     ? projects.filter(p => p.members?.some(m => m.userId === currentUser?.id) || tasks.some(t => t.projectId === p.id && t.assigneeId === currentUser?.id))
     : projects;
 
-  const filteredTasks = dashboardView === 'my'
+  const modeFilteredTasks = dashboardView === 'my'
     ? tasks.filter(t => t.assigneeId === currentUser?.id)
     : tasks;
 
-  const filteredTimesheets = dashboardView === 'my'
+  const modeFilteredTimesheets = dashboardView === 'my'
     ? timesheets.filter(ts => ts.userId === currentUser?.id)
     : timesheets;
+
+  // Filter datasets based on selected project type
+  const filteredProjects = modeFilteredProjects.filter(p => {
+    if (selectedType === 'all') return true;
+    const type = p.projectType || '';
+    if (selectedType === 'quick_service') {
+      return type === 'quick' || type === 'quick_service';
+    }
+    if (selectedType === 'installer') {
+      return type === 'install' || type === 'installation' || type === 'installer';
+    }
+    if (selectedType === 'renovate') {
+      return type === 'renovate' || !type;
+    }
+    if (selectedType === 'build_in') {
+      return type === 'build' || type === 'build_in';
+    }
+    if (selectedType === 'new_house') {
+      return type === 'new_house' || type === 'construction';
+    }
+    if (selectedType === 'maintenance') {
+      return type === 'ma' || type === 'support' || type === 'maintenance';
+    }
+    return true;
+  });
+
+  const filteredTasks = modeFilteredTasks.filter(t => {
+    if (selectedType === 'all') return true;
+    const project = projects.find(p => p.id === t.projectId);
+    if (!project) return false;
+    const type = project.projectType || '';
+    if (selectedType === 'quick_service') {
+      return type === 'quick' || type === 'quick_service';
+    }
+    if (selectedType === 'installer') {
+      return type === 'install' || type === 'installation' || type === 'installer';
+    }
+    if (selectedType === 'renovate') {
+      return type === 'renovate' || !type;
+    }
+    if (selectedType === 'build_in') {
+      return type === 'build' || type === 'build_in';
+    }
+    if (selectedType === 'new_house') {
+      return type === 'new_house' || type === 'construction';
+    }
+    if (selectedType === 'maintenance') {
+      return type === 'ma' || type === 'support' || type === 'maintenance';
+    }
+    return true;
+  });
+
+  const filteredTimesheets = modeFilteredTimesheets.filter(ts => {
+    if (selectedType === 'all') return true;
+    const project = projects.find(p => p.id === ts.projectId);
+    if (!project) return false;
+    const type = project.projectType || '';
+    if (selectedType === 'quick_service') {
+      return type === 'quick' || type === 'quick_service';
+    }
+    if (selectedType === 'installer') {
+      return type === 'install' || type === 'installation' || type === 'installer';
+    }
+    if (selectedType === 'renovate') {
+      return type === 'renovate' || !type;
+    }
+    if (selectedType === 'build_in') {
+      return type === 'build' || type === 'build_in';
+    }
+    if (selectedType === 'new_house') {
+      return type === 'new_house' || type === 'construction';
+    }
+    if (selectedType === 'maintenance') {
+      return type === 'ma' || type === 'support' || type === 'maintenance';
+    }
+    return true;
+  });
 
   // --- Real Stats Calculations (Strictly calculated from real projects in DB) ---
   const totalProjectsCount = filteredProjects.length;
@@ -42,16 +121,18 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
   // Project Type breakdown distribution for donut chart
   const quickCount = filteredProjects.filter(p => p.projectType === 'quick' || p.projectType === 'quick_service').length;
   const installCount = filteredProjects.filter(p => p.projectType === 'install' || p.projectType === 'installation' || p.projectType === 'installer').length;
-  const renovateCount = filteredProjects.filter(p => p.projectType === 'renovate' || p.projectType === 'construction' || p.projectType === 'new_house' || !p.projectType).length;
+  const renovateCount = filteredProjects.filter(p => p.projectType === 'renovate' || !p.projectType).length;
+  const newCount = filteredProjects.filter(p => p.projectType === 'new_house' || p.projectType === 'construction').length;
   const buildCount = filteredProjects.filter(p => p.projectType === 'build' || p.projectType === 'build_in').length;
   const maCount = filteredProjects.filter(p => p.projectType === 'ma' || p.projectType === 'support' || p.projectType === 'maintenance').length;
 
   const pieData = [
-    { name: 'Renovate / New house', value: renovateCount, color: '#8B0000', percent: totalProjectsCount > 0 ? `${Math.round((renovateCount / totalProjectsCount) * 100)}%` : '0%' },
+    { name: 'Renovate (งานรีโนเวท)', value: renovateCount, color: '#8B0000', percent: totalProjectsCount > 0 ? `${Math.round((renovateCount / totalProjectsCount) * 100)}%` : '0%' },
+    { name: 'New (สร้างบ้านใหม่)', value: newCount, color: '#059669', percent: totalProjectsCount > 0 ? `${Math.round((newCount / totalProjectsCount) * 100)}%` : '0%' },
     { name: 'Installer (งานติดตั้ง)', value: installCount, color: '#2563eb', percent: totalProjectsCount > 0 ? `${Math.round((installCount / totalProjectsCount) * 100)}%` : '0%' },
     { name: 'Quick service (งานด่วน)', value: quickCount, color: '#f59e0b', percent: totalProjectsCount > 0 ? `${Math.round((quickCount / totalProjectsCount) * 100)}%` : '0%' },
     { name: 'Build-in (งานบิวท์อิน)', value: buildCount, color: '#8b5cf6', percent: totalProjectsCount > 0 ? `${Math.round((buildCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'Maintenance (ซ่อมบำรุง)', value: maCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((maCount / totalProjectsCount) * 100)}%` : '0%' }
+    { name: 'Maintenance (ซ่อมบำรุง MA)', value: maCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((maCount / totalProjectsCount) * 100)}%` : '0%' }
   ];
 
   // Stage Progression distribution dynamically calculated from real project data
@@ -261,6 +342,59 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ── PROJECT TYPE TABS ── */}
+      <div 
+        className="glass-panel" 
+        style={{ 
+          display: 'flex', 
+          gap: '0.5rem', 
+          padding: '0.5rem', 
+          borderRadius: 'var(--radius-lg)', 
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}
+      >
+        {[
+          { id: 'all', nameTh: 'โครงการทั้งหมด (All)', nameEn: 'All Projects', color: 'var(--accent-primary)', icon: Folder },
+          { id: 'quick_service', nameTh: 'Quick service ⚡', nameEn: 'Quick service ⚡', color: '#f59e0b', icon: Zap },
+          { id: 'installer', nameTh: 'งานติดตั้ง 🛠️', nameEn: 'Installer Service 🛠️', color: '#2563eb', icon: Wrench },
+          { id: 'renovate', nameTh: 'งานรีโนเวท 🏡', nameEn: 'Renovate Service 🏡', color: '#8B0000', icon: Home },
+          { id: 'build_in', nameTh: 'งานบิวท์อิน 🛋️', nameEn: 'Build-in 🛋️', color: '#8b5cf6', icon: Box },
+          { id: 'new_house', nameTh: 'สร้างบ้านใหม่ 🏠', nameEn: 'New House 🏠', color: '#059669', icon: Home },
+          { id: 'maintenance', nameTh: 'ซ่อมบำรุง MA 🔧', nameEn: 'MA Service 🔧', color: '#3b82f6', icon: ShieldCheck }
+        ].map(type => {
+          const Icon = type.icon;
+          const isActive = selectedType === type.id;
+          return (
+            <button
+              key={type.id}
+              onClick={() => setSelectedType(type.id)}
+              className="hover-lift"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.55rem 1.15rem',
+                borderRadius: 'var(--radius-md)',
+                border: isActive ? `1px solid ${type.color}` : '1px solid transparent',
+                background: isActive ? type.color : 'var(--bg-tertiary)',
+                color: isActive ? 'white' : 'var(--text-secondary)',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: isActive ? `0 4px 12px ${type.color}35` : 'none'
+              }}
+            >
+              <Icon size={15} color={isActive ? 'white' : type.color} />
+              <span>{lang === 'th' ? type.nameTh : type.nameEn}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── ROW 1: 5 DYNAMIC KPI SUMMARY CARDS (REAL DATA) ── */}
