@@ -1,16 +1,16 @@
 # Stage 1: Build the React client app
-FROM node:20-alpine AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci || npm install
+RUN npm install
 
 COPY . .
 RUN npm run build
 
 # Stage 2: Production runtime environment
-FROM node:20-alpine
+FROM node:22-slim
 
 WORKDIR /app
 
