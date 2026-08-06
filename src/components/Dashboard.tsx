@@ -418,10 +418,34 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
 
         {/* Real Stage Metrics Cards */}
         {[
-          { label: 'ซื้อสำรวจ', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: filteredProjects.filter(p => p.status === 'ซื้อสำรวจ' || p.status === 'Planning' || p.status === 'Draft').length },
-          { label: 'QC (สำรวจ)', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: filteredProjects.filter(p => p.status === 'QC (สำรวจ)').length },
-          { label: 'ออกแบบ & ใบเสนอราคา', icon: CheckCircle2, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: filteredProjects.filter(p => p.status === 'ออกแบบ' || p.status === 'สร้างใบเสนอราคา').length },
-          { label: 'ลูกค้ายืนยัน / ชำระเงิน', icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', count: filteredProjects.filter(p => p.status === 'ลูกค้ายืนยัน' || p.status === 'ชำระเงิน' || p.status === 'Completed').length }
+          { 
+            label: 'ซื้อสำรวจ', 
+            icon: FileText, 
+            color: '#3b82f6', 
+            bg: 'rgba(59, 130, 246, 0.15)', 
+            count: filteredProjects.filter(p => ['ซื้อสำรวจ', 'Planning', 'Draft', 'To Do', 'todo'].includes(p.status)).length 
+          },
+          { 
+            label: 'QC (สำรวจ)', 
+            icon: Clock, 
+            color: '#f59e0b', 
+            bg: 'rgba(245, 158, 11, 0.15)', 
+            count: filteredProjects.filter(p => ['QC (สำรวจ)', 'QC', 'qc'].includes(p.status)).length 
+          },
+          { 
+            label: 'ออกแบบ & ใบเสนอราคา', 
+            icon: CheckCircle2, 
+            color: '#8b5cf6', 
+            bg: 'rgba(139, 92, 246, 0.15)', 
+            count: filteredProjects.filter(p => ['ออกแบบ', 'สร้างใบเสนอราคา', 'ออกแบบ & ใบเสนอราคา', 'design', 'proposal', 'quote'].includes(p.status)).length 
+          },
+          { 
+            label: 'ลูกค้ายืนยัน / ชำระเงิน', 
+            icon: CheckCircle2, 
+            color: '#10b981', 
+            bg: 'rgba(16, 185, 129, 0.15)', 
+            count: filteredProjects.filter(p => ['ลูกค้ายืนยัน', 'ชำระเงิน', 'ลูกค้ายืนยัน / ชำระเงิน', 'Completed', 'Done', 'เสร็จสิ้น', 'In Progress', 'Active', 'กำลังดำเนินการ', 'done', 'completed', 'active', 'inprogress'].includes(p.status)).length 
+          }
         ].map((stg, i) => (
           <div key={i} className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
