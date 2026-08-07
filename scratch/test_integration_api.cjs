@@ -143,6 +143,52 @@ async function test() {
   console.assert(deleteZoneRes.status === 200, 'Test 9 Failed: Should delete zone');
   console.log('✅ Test 9 Passed: DELETE /zones/:id works!');
 
+  // Test 9: POST Branch (Create/Upsert)
+  const testBranch = {
+    id: 'br-test-999',
+    code: 'B999',
+    name: 'สาขาซิงค์ทดสอบ',
+    province: 'กรุงเทพมหานคร',
+    status: 'Active',
+    fullName: 'บริษัท ทดสอบ การจำกัด (สาขาซิงค์ทดสอบ)',
+    address: '999/999 ถนนพญาไท เขตราชเทวี 10400',
+    latitude: 13.7563,
+    longitude: 100.5018,
+    openTime: '08:00',
+    closeTime: '22:00',
+    phone: '1308',
+    storeGroup: 'HBY'
+  };
+  const createBranchRes = await request('POST', '/api/integration/branches', testBranch, true);
+  console.assert(createBranchRes.status === 200, 'Test 9 Failed: Should create branch');
+  console.assert(createBranchRes.data.branch.name === 'สาขาซิงค์ทดสอบ', 'Test 9 Failed: Branch name mismatch');
+  console.log('✅ Test 9 Passed: POST /branches (Create/Upsert) works!');
+
+  // Test 10: PUT Branch (Update)
+  const updateBranchPayload = {
+    code: 'B999-UPDATED',
+    name: 'สาขาซิงค์ทดสอบ (แก้ไข)',
+    province: 'นนทบุรี',
+    status: 'Active',
+    fullName: 'บริษัท ทดสอบ การจำกัด (สาขาซิงค์ทดสอบ - แก้ไข)',
+    address: '999/999 ถนนปากเกร็ด 11120',
+    latitude: 13.9188,
+    longitude: 100.4188,
+    openTime: '09:00',
+    closeTime: '21:00',
+    phone: '1308',
+    storeGroup: 'TWD'
+  };
+  const updateBranchRes = await request('PUT', `/api/integration/branches/${testBranch.id}`, updateBranchPayload, true);
+  console.assert(updateBranchRes.status === 200, 'Test 10 Failed: Should update branch');
+  console.assert(updateBranchRes.data.branch.province === 'นนทบุรี', 'Test 10 Failed: Province mismatch');
+  console.log('✅ Test 10 Passed: PUT /branches/:id (Update) works!');
+
+  // Test 11: DELETE Branch
+  const deleteBranchRes = await request('DELETE', `/api/integration/branches/${testBranch.id}`, null, true);
+  console.assert(deleteBranchRes.status === 200, 'Test 11 Failed: Should delete branch');
+  console.log('✅ Test 11 Passed: DELETE /branches/:id works!');
+
   console.log('\n⭐ ALL INTEGRATION API TESTS PASSED SUCCESSFULLY! ⭐\n');
 }
 

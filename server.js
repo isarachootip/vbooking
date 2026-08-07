@@ -438,6 +438,24 @@ const initDB = async () => {
         created_at VARCHAR(50) NOT NULL,
         created_by VARCHAR(150)
       );
+
+      CREATE TABLE IF NOT EXISTS branches (
+        id VARCHAR(255) PRIMARY KEY,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        name VARCHAR(255) NOT NULL,
+        province VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'Active',
+        full_name VARCHAR(255),
+        address TEXT,
+        latitude NUMERIC(10,8),
+        longitude NUMERIC(11,8),
+        open_time VARCHAR(50) DEFAULT '07:00',
+        close_time VARCHAR(50) DEFAULT '21:00',
+        phone VARCHAR(50) DEFAULT '1308',
+        store_group VARCHAR(100) DEFAULT 'TWD',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // Seed default cost rates if table is empty
@@ -1510,6 +1528,7 @@ app.get('/api/initial-data', async (req, res) => {
     const projectWorkflowsRes = await pool.query('SELECT * FROM project_workflows');
     const costRatesRes = await pool.query('SELECT * FROM cost_rates');
     const settingsRes = await pool.query('SELECT * FROM system_settings');
+    const branchesRes = await pool.query('SELECT * FROM branches ORDER BY name ASC');
     const systemSettings = {};
     settingsRes.rows.forEach(row => {
       systemSettings[row.setting_key] = row.setting_value;
@@ -1652,6 +1671,26 @@ app.get('/api/initial-data', async (req, res) => {
       currency: cr.currency || 'THB'
     }));
 
+    let branches = branchesRes.rows.map(b => ({
+      id: b.id,
+      code: b.code,
+      name: b.name,
+      province: b.province,
+      status: b.status,
+      fullName: b.full_name,
+      address: b.address,
+      latitude: b.latitude ? parseFloat(b.latitude) : undefined,
+      longitude: b.longitude ? parseFloat(b.longitude) : undefined,
+      openTime: b.open_time,
+      closeTime: b.close_time,
+      phone: b.phone,
+      storeGroup: b.store_group
+    }));
+
+    if (branches.length === 0) {
+      branches = cachedBranches.length > 0 ? cachedBranches : FALLBACK_BRANCHES;
+    }
+
     res.json({ 
       users, 
       projects, 
@@ -1664,7 +1703,7 @@ app.get('/api/initial-data', async (req, res) => {
       projectWorkflows, 
       costRates, 
       systemSettings,
-      branches: cachedBranches.length > 0 ? cachedBranches : FALLBACK_BRANCHES
+      branches
     });
   } catch (err) {
     console.error('Error fetching initial data:', err);
@@ -3741,6 +3780,138 @@ integrationRouter.get('/skills', async (req, res) => {
     res.json({ success: true, skills });
   } catch (err) {
     console.error('Error fetching integration skills:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// --- BRANCHES CRUD ---
+
+// 1. GET /api/integration/branches - List all branches
+integrationRouter.get('/branches', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM branches ORDER BY name ASC');
+    res.json({ success: true, branches: result.rows });
+  } catch (err) {
+    console.error('Error fetching integration branches:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 2. POST /api/integration/branches - Create / Upsert a branch
+integrationRouter.post('/branches', async (req, res) => {
+  const { 
+    id, code, name, province, status, fullName, address, 
+    latitude, longitude, openTime, closeTime, phone, storeGroup 
+  } = req.body;
+
+  if (!id || !code || !name) {
+    return res.status(400).json({ error: 'Missing required fields: id, code, name' });
+  }
+
+  try {
+    const query = `
+      INSERT INTO branches (
+        id, code, name, province, status, full_name, address, 
+        latitude, longitude, open_time, close_time, phone, store_group, created_at, updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        code = EXCLUDED.code,
+        name = EXCLUDED.name,
+        province = EXCLUDED.province,
+        status = EXCLUDED.status,
+        full_name = EXCLUDED.full_name,
+        address = EXCLUDED.address,
+        latitude = EXCLUDED.latitude,
+        longitude = EXCLUDED.longitude,
+        open_time = EXCLUDED.open_time,
+        close_time = EXCLUDED.close_time,
+        phone = EXCLUDED.phone,
+        store_group = EXCLUDED.store_group,
+        updated_at = NOW()
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      id,
+      code,
+      name,
+      province || null,
+      status || 'Active',
+      fullName || null,
+      address || null,
+      latitude ? parseFloat(latitude) : null,
+      longitude ? parseFloat(longitude) : null,
+      openTime || '07:00',
+      closeTime || '21:00',
+      phone || '1308',
+      storeGroup || 'TWD'
+    ]);
+    res.json({ success: true, branch: result.rows[0] });
+  } catch (err) {
+    console.error('Error upserting integration branch:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 3. PUT /api/integration/branches/:id - Update an existing branch
+integrationRouter.put('/branches/:id', async (req, res) => {
+  const { id } = req.params;
+  const { 
+    code, name, province, status, fullName, address, 
+    latitude, longitude, openTime, closeTime, phone, storeGroup 
+  } = req.body;
+
+  if (!code || !name) {
+    return res.status(400).json({ error: 'Missing required fields: code, name' });
+  }
+
+  try {
+    const query = `
+      UPDATE branches
+      SET 
+        code = $1, name = $2, province = $3, status = $4, full_name = $5, 
+        address = $6, latitude = $7, longitude = $8, open_time = $9, 
+        close_time = $10, phone = $11, store_group = $12, updated_at = NOW()
+      WHERE id = $13
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      code,
+      name,
+      province || null,
+      status || 'Active',
+      fullName || null,
+      address || null,
+      latitude ? parseFloat(latitude) : null,
+      longitude ? parseFloat(longitude) : null,
+      openTime || '07:00',
+      closeTime || '21:00',
+      phone || '1308',
+      storeGroup || 'TWD',
+      id
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+    res.json({ success: true, branch: result.rows[0] });
+  } catch (err) {
+    console.error('Error updating integration branch:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 4. DELETE /api/integration/branches/:id - Delete a branch
+integrationRouter.delete('/branches/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM branches WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Branch not found' });
+    }
+    res.json({ success: true, message: 'Branch deleted successfully', branch: result.rows[0] });
+  } catch (err) {
+    console.error('Error deleting integration branch:', err);
     res.status(500).json({ error: 'Database error' });
   }
 });
