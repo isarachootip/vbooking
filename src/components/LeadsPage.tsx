@@ -48,9 +48,10 @@ interface Lead {
 
 interface LeadsPageProps {
   currentUser: User | null;
+  branches?: any[];
 }
 
-export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
+export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,7 +89,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
 
   const [jobType, setJobType] = useState('Quick Service');
   const [status, setStatus] = useState('New');
-  const [branch, setBranch] = useState('สาขาบางนา');
+  const [branch, setBranch] = useState(() => (branches && branches.length > 0) ? branches[0].name : 'สาขาบางนา');
   const [buildingType, setBuildingType] = useState('บ้านเดี่ยว');
   const [customBuildingType, setCustomBuildingType] = useState('');
   const [areaSize, setAreaSize] = useState('');
@@ -512,7 +513,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
             setCustomRequiredWorkType(details.customRequiredWorkType || '');
           }
 
-          setBranch(details.branch || 'สาขาบางนา');
+          setBranch(details.branch || (branches.length > 0 ? branches[0].name : 'สาขาบางนา'));
         } else {
           setNotes(lead.notes || '');
         }
@@ -531,7 +532,7 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
       setSmartInput('');
       setJobType('Quick Service');
       setStatus('New');
-      setBranch('สาขาบางนา');
+      setBranch(branches.length > 0 ? branches[0].name : 'สาขาบางนา');
       setBuildingType('บ้านเดี่ยว');
       setCustomBuildingType('');
       setAreaSize('');
@@ -1182,11 +1183,21 @@ export const LeadsPage = ({ currentUser }: LeadsPageProps) => {
                           onChange={e => setBranch(e.target.value)}
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                         >
-                          <option value="สาขาบางนา">สาขาบางนา</option>
-                          <option value="สาขารัชดา">สาขารัชดา</option>
-                          <option value="สาขาบางพลี">สาขาบางพลี</option>
-                          <option value="สาขาพระราม 3">สาขาพระราม 3</option>
-                          <option value="สาขาธนบุรี">สาขาธนบุรี</option>
+                          {branches && branches.length > 0 ? (
+                            branches.map(b => (
+                              <option key={b.id || b.code} value={b.name}>
+                                {b.name}
+                              </option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="สาขาบางนา">สาขาบางนา</option>
+                              <option value="สาขารัชดา">สาขารัชดา</option>
+                              <option value="สาขาบางพลี">สาขาบางพลี</option>
+                              <option value="สาขาพระราม 3">สาขาพระราม 3</option>
+                              <option value="สาขาธนบุรี">สาขาธนบุรี</option>
+                            </>
+                          )}
                         </select>
                       </div>
                     </div>

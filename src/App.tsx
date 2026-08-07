@@ -466,6 +466,7 @@ function App() {
   const [projectWorkflows, setProjectWorkflows] = useState<ProjectWorkflow[]>([]);
   const [costRates, setCostRates] = useState<CostRate[]>([]);
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({});
+  const [branches, setBranches] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(() => getLocalStorage<User | null>('nt_current_user', null));
   const [loading, setLoading] = useState(true);
   // Actual-hours modal state
@@ -505,6 +506,7 @@ function App() {
         setPermissionSchemes(data.permissionSchemes || []);
         setProjectWorkflows(data.projectWorkflows || []);
         setCostRates(data.costRates || []);
+        setBranches(data.branches || []);
         const settings = data.systemSettings || {};
         setSystemSettings(settings);
         if (settings.master_project_types) {
@@ -520,6 +522,13 @@ function App() {
         setTimesheets(mockTimesheets);
         setTaskTemplates([]);
         setCostRates([]);
+        setBranches([
+          { id: 'br-01', code: 'B01', name: 'สาขาพระราม 9', province: 'กรุงเทพมหานคร', status: 'Active' },
+          { id: 'br-02', code: 'B02', name: 'สาขาเอกมัย-รามอินทรา', province: 'กรุงเทพมหานคร', status: 'Active' },
+          { id: 'br-03', code: 'B03', name: 'สาขาราชพฤกษ์', province: 'นนทบุรี', status: 'Active' },
+          { id: 'br-04', code: 'B04', name: 'สาขาบางนา', province: 'สมุทรปราการ', status: 'Active' },
+          { id: 'br-st-60016', code: 'B16', name: 'สาขาภูเก็ต เฟสติวัล', province: 'ภูเก็ต', status: 'Active' }
+        ]);
         setLoading(false);
       });
   };
@@ -991,8 +1000,8 @@ function App() {
       <AppLayout currentUser={currentUser} tasks={tasks} onLogout={handleLogout}>
         <Routes>
           <Route path="/" element={<Dashboard projects={projects} tasks={tasks} timesheets={timesheets} currentUser={currentUser} />} />
-          <Route path="/leads" element={<LeadsPage currentUser={currentUser} />} />
-          <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} />} />
+          <Route path="/leads" element={<LeadsPage currentUser={currentUser} branches={branches} />} />
+          <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} branches={branches} />} />
           <Route path="/projects/:id" element={<ProjectDetail projects={projects} setProjects={handleSetProjects} users={users} currentUser={currentUser} tasks={tasks} setTasks={handleSetTasks} projectWorkflows={projectWorkflows} />} />
 
           <Route path="/project-board" element={<ProjectBoard projects={projects} setProjects={handleSetProjects} tasks={tasks} users={users} currentUser={currentUser} />} />

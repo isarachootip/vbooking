@@ -15,6 +15,7 @@ interface ProjectsProps {
   projectWorkflows: ProjectWorkflow[];
   setProjectWorkflows: React.Dispatch<React.SetStateAction<ProjectWorkflow[]>>;
   taskTemplates?: TaskTemplate[];
+  branches?: any[];
 }
 
 export const Projects = ({ 
@@ -26,7 +27,8 @@ export const Projects = ({
   currentUser, 
   projectWorkflows, 
   setProjectWorkflows,
-  taskTemplates = []
+  taskTemplates = [],
+  branches = []
 }: ProjectsProps) => {
   // Load master project types from local storage or fallback to defaults
   const masterProjectTypes = (() => {
@@ -680,13 +682,23 @@ export const Projects = ({
               style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
             >
               <option value="All">สาขา: ทั้งหมด</option>
-              <option value="สาขาบางนา">สาขาบางนา</option>
-              <option value="สาขารัชดา">สาขารัชดา</option>
-              <option value="สาขาบางพลี">สาขาบางพลี</option>
-              <option value="สาขาพระราม 3">สาขาพระราม 3</option>
-              <option value="สาขาธนบุรี">สาขาธนบุรี</option>
-              <option value="สาขาระยอง">สาขาระยอง</option>
-              <option value="สาขาอโศก">สาขาอโศก</option>
+              {branches && branches.length > 0 ? (
+                branches.map(b => (
+                  <option key={b.id || b.code} value={b.name}>
+                    {b.name}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="สาขาบางนา">สาขาบางนา</option>
+                  <option value="สาขารัชดา">สาขารัชดา</option>
+                  <option value="สาขาบางพลี">สาขาบางพลี</option>
+                  <option value="สาขาพระราม 3">สาขาพระราม 3</option>
+                  <option value="สาขาธนบุรี">สาขาธนบุรี</option>
+                  <option value="สาขาระยอง">สาขาระยอง</option>
+                  <option value="สาขาอโศก">สาขาอโศก</option>
+                </>
+              )}
             </select>
           </div>
 
@@ -1162,10 +1174,20 @@ export const Projects = ({
                           style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.55rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.875rem' }}
                         >
                           <option value="">เลือกสาขา</option>
-                          <option value="สำนักงานใหญ่">สำนักงานใหญ่</option>
-                          <option value="สาขา สุขุมวิท">สาขา สุขุมวิท</option>
-                          <option value="สาขา บางนา">สาขา บางนา</option>
-                          <option value="สาขา เชียงใหม่">สาขา เชียงใหม่</option>
+                          {branches && branches.length > 0 ? (
+                            branches.map(b => (
+                              <option key={b.id || b.code} value={b.name}>
+                                {b.name}
+                              </option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="สำนักงานใหญ่">สำนักงานใหญ่</option>
+                              <option value="สาขา สุขุมวิท">สาขา สุขุมวิท</option>
+                              <option value="สาขา บางนา">สาขา บางนา</option>
+                              <option value="สาขา เชียงใหม่">สาขา เชียงใหม่</option>
+                            </>
+                          )}
                         </select>
                       </div>
 

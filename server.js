@@ -1461,6 +1461,41 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// --- Remote Branches Cache (Fetched from VQ System) ---
+const FALLBACK_BRANCHES = [
+  { id: 'br-01', code: 'B01', name: 'สาขาพระราม 9', province: 'กรุงเทพมหานคร', status: 'Active' },
+  { id: 'br-02', code: 'B02', name: 'สาขาเอกมัย-รามอินทรา', province: 'กรุงเทพมหานคร', status: 'Active' },
+  { id: 'br-03', code: 'B03', name: 'สาขาราชพฤกษ์', province: 'นนทบุรี', status: 'Active' },
+  { id: 'br-04', code: 'B04', name: 'สาขาบางนา', province: 'สมุทรปราการ', status: 'Active' },
+  { id: 'br-st-60016', code: 'B16', name: 'สาขาภูเก็ต เฟสติวัล', province: 'ภูเก็ต', status: 'Active' }
+];
+
+let cachedBranches = [];
+
+async function fetchRemoteBranches() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 seconds timeout
+    const response = await fetch('https://vibepjm.online/api/branches', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.branches && Array.isArray(data.branches)) {
+        cachedBranches = data.branches;
+        console.log(`ℹ️ Cached ${cachedBranches.length} remote branches from vibepjm.online`);
+        return;
+      }
+    }
+  } catch (err) {
+    console.error('⚠️ Failed to fetch remote branches from vibepjm.online:', err.message);
+  }
+}
+
+// Fetch on startup
+setTimeout(fetchRemoteBranches, 2000);
+// Periodically refresh cache every hour
+setInterval(fetchRemoteBranches, 60 * 60 * 1000);
+
 // Initial load
 app.get('/api/initial-data', async (req, res) => {
   try {
@@ -1617,7 +1652,20 @@ app.get('/api/initial-data', async (req, res) => {
       currency: cr.currency || 'THB'
     }));
 
-    res.json({ users, projects, tasks, timesheets, taskTemplates, sprints, releases, permissionSchemes, projectWorkflows, costRates, systemSettings });
+    res.json({ 
+      users, 
+      projects, 
+      tasks, 
+      timesheets, 
+      taskTemplates, 
+      sprints, 
+      releases, 
+      permissionSchemes, 
+      projectWorkflows, 
+      costRates, 
+      systemSettings,
+      branches: cachedBranches.length > 0 ? cachedBranches : FALLBACK_BRANCHES
+    });
   } catch (err) {
     console.error('Error fetching initial data:', err);
     res.status(500).json({ error: err.message });
