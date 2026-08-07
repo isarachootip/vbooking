@@ -3484,6 +3484,269 @@ app.get('/api/user-manual', async (req, res) => {
   }
 });
 
+// ====================================================
+// VQ SYSTEM INTEGRATION API ENDPOINTS (Approach 2 REST API)
+// ====================================================
+
+// API Key Validation Middleware
+function validateIntegrationKey(req, res, next) {
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.INTEGRATION_API_KEY || 'bf_vq_sync_secret_2026';
+  if (!apiKey || apiKey !== expectedKey) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing API Key' });
+  }
+  next();
+}
+
+// Apply validation middleware to all integration routes
+const integrationRouter = express.Router();
+integrationRouter.use(validateIntegrationKey);
+
+// --- ZONES CRUD ---
+
+// 1. GET /api/integration/zones - List all zones
+integrationRouter.get('/zones', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM zones ORDER BY code ASC');
+    res.json({ success: true, zones: result.rows });
+  } catch (err) {
+    console.error('Error fetching integration zones:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 2. POST /api/integration/zones - Create / Upsert a zone
+integrationRouter.post('/zones', async (req, res) => {
+  const { id, code, name, description, coverage_zipcodes } = req.body;
+  if (!id || !code || !name) {
+    return res.status(400).json({ error: 'Missing required fields: id, code, name' });
+  }
+  try {
+    const query = `
+      INSERT INTO zones (id, code, name, description, coverage_zipcodes, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        code = EXCLUDED.code,
+        name = EXCLUDED.name,
+        description = EXCLUDED.description,
+        coverage_zipcodes = EXCLUDED.coverage_zipcodes,
+        updated_at = NOW()
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      id, 
+      code, 
+      name, 
+      description || null, 
+      JSON.stringify(coverage_zipcodes || [])
+    ]);
+    res.json({ success: true, zone: result.rows[0] });
+  } catch (err) {
+    console.error('Error upserting integration zone:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 3. PUT /api/integration/zones/:id - Update an existing zone
+integrationRouter.put('/zones/:id', async (req, res) => {
+  const { id } = req.params;
+  const { code, name, description, coverage_zipcodes } = req.body;
+  if (!code || !name) {
+    return res.status(400).json({ error: 'Missing required fields: code, name' });
+  }
+  try {
+    const query = `
+      UPDATE zones
+      SET code = $1, name = $2, description = $3, coverage_zipcodes = $4, updated_at = NOW()
+      WHERE id = $5
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      code, 
+      name, 
+      description || null, 
+      JSON.stringify(coverage_zipcodes || []), 
+      id
+    ]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Zone not found' });
+    }
+    res.json({ success: true, zone: result.rows[0] });
+  } catch (err) {
+    console.error('Error updating integration zone:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 4. DELETE /api/integration/zones/:id - Delete a zone
+integrationRouter.delete('/zones/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM zones WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Zone not found' });
+    }
+    res.json({ success: true, message: 'Zone deleted successfully', zone: result.rows[0] });
+  } catch (err) {
+    console.error('Error deleting integration zone:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// --- TECHNICIANS CRUD ---
+
+// 1. GET /api/integration/technicians - List all technicians
+integrationRouter.get('/technicians', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM technicians ORDER BY name ASC');
+    res.json({ success: true, technicians: result.rows });
+  } catch (err) {
+    console.error('Error fetching integration technicians:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 2. POST /api/integration/technicians - Create / Upsert a technician
+integrationRouter.post('/technicians', async (req, res) => {
+  const { 
+    id, user_id, code, name, phone, avatar, tier, rating, status, 
+    primary_zone, secondary_zones, skills, extra_data 
+  } = req.body;
+  
+  if (!id || !code || !name) {
+    return res.status(400).json({ error: 'Missing required fields: id, code, name' });
+  }
+  
+  try {
+    const query = `
+      INSERT INTO technicians (
+        id, user_id, code, name, phone, avatar, tier, rating, status, 
+        primary_zone, secondary_zones, skills, extra_data, created_at, updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        user_id = EXCLUDED.user_id,
+        code = EXCLUDED.code,
+        name = EXCLUDED.name,
+        phone = EXCLUDED.phone,
+        avatar = EXCLUDED.avatar,
+        tier = EXCLUDED.tier,
+        rating = EXCLUDED.rating,
+        status = EXCLUDED.status,
+        primary_zone = EXCLUDED.primary_zone,
+        secondary_zones = EXCLUDED.secondary_zones,
+        skills = EXCLUDED.skills,
+        extra_data = EXCLUDED.extra_data,
+        updated_at = NOW()
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      id,
+      user_id || null,
+      code,
+      name,
+      phone || null,
+      avatar || null,
+      tier || 'Standard',
+      rating ? parseFloat(rating) : 5.0,
+      status || 'Active',
+      primary_zone || null,
+      JSON.stringify(secondary_zones || []),
+      JSON.stringify(skills || []),
+      JSON.stringify(extra_data || {})
+    ]);
+    res.json({ success: true, technician: result.rows[0] });
+  } catch (err) {
+    console.error('Error upserting integration technician:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 3. PUT /api/integration/technicians/:id - Update an existing technician
+integrationRouter.put('/technicians/:id', async (req, res) => {
+  const { id } = req.params;
+  const { 
+    user_id, code, name, phone, avatar, tier, rating, status, 
+    primary_zone, secondary_zones, skills, extra_data 
+  } = req.body;
+  
+  if (!code || !name) {
+    return res.status(400).json({ error: 'Missing required fields: code, name' });
+  }
+  
+  try {
+    const query = `
+      UPDATE technicians
+      SET 
+        user_id = $1, code = $2, name = $3, phone = $4, avatar = $5, 
+        tier = $6, rating = $7, status = $8, primary_zone = $9, 
+        secondary_zones = $10, skills = $11, extra_data = $12, updated_at = NOW()
+      WHERE id = $13
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      user_id || null,
+      code,
+      name,
+      phone || null,
+      avatar || null,
+      tier || 'Standard',
+      rating ? parseFloat(rating) : 5.0,
+      status || 'Active',
+      primary_zone || null,
+      JSON.stringify(secondary_zones || []),
+      JSON.stringify(skills || []),
+      JSON.stringify(extra_data || {}),
+      id
+    ]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Technician not found' });
+    }
+    res.json({ success: true, technician: result.rows[0] });
+  } catch (err) {
+    console.error('Error updating integration technician:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 4. DELETE /api/integration/technicians/:id - Delete a technician
+integrationRouter.delete('/technicians/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM technicians WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Technician not found' });
+    }
+    res.json({ success: true, message: 'Technician deleted successfully', technician: result.rows[0] });
+  } catch (err) {
+    console.error('Error deleting integration technician:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// --- SKILLS AGGREGATION ---
+
+// 1. GET /api/integration/skills - List all unique skills across all technicians
+integrationRouter.get('/skills', async (req, res) => {
+  try {
+    const query = `
+      SELECT DISTINCT jsonb_array_elements_text(skills) as skill 
+      FROM technicians 
+      WHERE skills IS NOT NULL AND jsonb_typeof(skills) = 'array' 
+      ORDER BY skill;
+    `;
+    const result = await pool.query(query);
+    const skills = result.rows.map(r => r.skill);
+    res.json({ success: true, skills });
+  } catch (err) {
+    console.error('Error fetching integration skills:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.use('/api/integration', integrationRouter);
+
 // Using app.use instead of app.get('/(.*)', ...) to avoid path-to-regexp v6 incompatibility
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
