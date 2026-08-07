@@ -431,6 +431,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 </li>
                 <li style={{ marginBottom: '0.25rem' }}>
                   <strong>Tasks Assignee Filter:</strong> In the <em>Tasks & Agile Planner</em> board, you can click on any project member's avatar on the right side of the sub-navbar to filter the active view to only show tasks assigned to them.
+                <li style={{ marginBottom: '0.25rem' }}>
+                  <strong>VQ Branch Integration:</strong> Dynamically loads branch lists from the VQ system (vibepjm.online) to populate dropdowns in Leads creation, Projects filters, and Project creation, with automated backend caching and fallbacks.
                 </li>
                 <li>
                   <strong>Smart Log Time Button:</strong> In the Dashboard task list, the <em>"+ Log Time"</em> button is automatically hidden if a task is moved past the "In Progress" status (e.g. Done, Review, pending).
@@ -864,6 +866,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 </li>
                 <li style={{ marginBottom: '0.25rem' }}>
                   <strong>กรองงานตามผู้รับผิดชอบ (Assignee Filter):</strong> ในหน้า <em>Tasks</em> (หน้าคัมบังบอร์ด) คุณสามารถคลิกที่รูปโปรไฟล์ (Avatar) ของสมาชิกแต่ละคนในโปรเจกต์ได้เลยเพื่อเลือกดูเฉพาะงานของคนนั้นในหน้าบอร์ด, แบ็กล็อก, ไทม์ไลน์ ฯลฯ
+                <li style={{ marginBottom: '0.25rem' }}>
+                  <strong>เชื่อมโยงข้อมูลสาขาจากระบบ VQ (Branch Sync):</strong> ระบบจะดึงข้อมูลรายชื่อสาขาทั้งหมด (กว่า 99 สาขา) ส่งตรงมาจาก backend ของระบบจัดการช่าง VQ (vibepjm.online) นำมาแสดงผลในแบบฟอร์มบันทึก Lead, ฟิลเตอร์โปรเจกต์ และแบบฟอร์มสร้างโครงการใหม่โดยอัตโนมัติ โดยมีระบบเก็บแคชและระบบสำรองกรณีฉุกเฉินช่วยให้งานเดินได้อย่างราบรื่น
                 </li>
                 <li>
                   <strong>ซ่อนปุ่มบันทึกเวลาตามสถานะงาน (Smart Log Time):</strong> ในหน้า Dashboard ปุ่ม <em>"+ Log Time"</em> จะถูกซ่อนอัตโนมัติเมื่องานถูกย้ายเลยสถานะ In Progress ไปแล้ว (เช่น เมื่อขึ้น Review, Done หรือ pending) เพื่อลดความผิดพลาดในการลงเวลาการทำงานครับ
