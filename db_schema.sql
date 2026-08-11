@@ -92,6 +92,23 @@ CREATE TABLE IF NOT EXISTS tasks (
     issue_type VARCHAR(50) DEFAULT 'Task' -- 'Bug', 'Story', 'Task', 'Sub-task'
 );
 
+-- 5.5 Master Project Types
+CREATE TABLE IF NOT EXISTS master_project_types (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    description TEXT,
+    default_columns JSONB DEFAULT '["To Do", "In Progress", "Review", "Done"]'::jsonb,
+    created_at VARCHAR(50)
+);
+
+-- 5.6 Milestone Templates
+CREATE TABLE IF NOT EXISTS milestone_templates (
+    id VARCHAR(50) PRIMARY KEY,
+    master_type_id VARCHAR(50) REFERENCES master_project_types(id) ON DELETE CASCADE,
+    name VARCHAR(150) NOT NULL,
+    sequence_order INTEGER DEFAULT 0
+);
+
 -- 6. Task Templates Table
 CREATE TABLE IF NOT EXISTS task_templates (
     id VARCHAR(50) PRIMARY KEY,
@@ -101,7 +118,9 @@ CREATE TABLE IF NOT EXISTS task_templates (
     start_percent NUMERIC NOT NULL DEFAULT 0,
     end_percent NUMERIC NOT NULL DEFAULT 100,
     estimated_hours NUMERIC NOT NULL DEFAULT 0,
-    project_template_name VARCHAR(100) DEFAULT 'General'
+    project_template_name VARCHAR(100) DEFAULT 'General',
+    milestone_template_id VARCHAR(50) REFERENCES milestone_templates(id) ON DELETE SET NULL,
+    required_proof VARCHAR(50) -- e.g. 'check_in_photo', 'check_out_photo'
 );
 
 -- 7. Timesheets Table

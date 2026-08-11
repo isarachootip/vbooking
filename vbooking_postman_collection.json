@@ -1,87 +1,520 @@
 {
 	"info": {
-		"_postman_id": "vbooking-api-collection",
-		"name": "vbooking / BuildFlow API Integration Collection",
-		"description": "Postman Collection สำหรับทดสอบยิง API ระบบ vbooking (vibepjm.online) และซิงก์เข้า BuildFlow (buildflowx.online)",
+		"_postman_id": "vbooking-api-collection-v2",
+		"name": "vbooking & BuildFlow API Integration",
+		"description": "Postman Collection สำหรับทดสอบ API ระบบ vbooking (vibepjm.online) และการเชื่อมต่อซิงก์ข้อมูลฝั่ง BuildFlow (buildflowx.online)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "1. Dispatch Direct to BuildFlow (Relay Proxy)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
+			"name": "Leads & Dispatch API",
+			"item": [
+				{
+					"name": "1. Dispatch Direct to BuildFlow (Relay Proxy)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"projectId\": \"P020826-001\",\n  \"customerName\": \"คุณวิชัย ใจดี\",\n  \"customerPhone\": \"081-234-5678\",\n  \"customerAddress\": \"99/1 ถ.สุขุมวิท กรุงเทพฯ\",\n  \"jobDetails\": \"ติดตั้งระบบไฟ Smart Home ห้องครัว\",\n  \"assignedTeam\": \"ทีมช่าง A\"\n}"
+						},
+						"url": {
+							"raw": "{{vq_base_url}}/api/buildflow/dispatch",
+							"host": [
+								"{{vq_base_url}}"
+							],
+							"path": [
+								"api",
+								"buildflow",
+								"dispatch"
+							]
+						}
 					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"projectId\": \"P020826-001\",\n  \"customerName\": \"คุณวิชัย ใจดี\",\n  \"customerPhone\": \"081-234-5678\",\n  \"customerAddress\": \"99/1 ถ.สุขุมวิท กรุงเทพฯ\",\n  \"jobDetails\": \"ติดตั้งระบบไฟ Smart Home ห้องครัว\",\n  \"assignedTeam\": \"ทีมช่าง A\"\n}"
 				},
-				"url": {
-					"raw": "https://vibepjm.online/api/buildflow/dispatch",
-					"protocol": "https",
-					"host": [
-						"vibepjm",
-						"online"
-					],
-					"path": [
-						"api",
-						"buildflow",
-						"dispatch"
+				{
+					"name": "2. Send Direct to BuildFlow API",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"project_id\": \"P020826-001\",\n  \"customer_name\": \"คุณวิชัย ใจดี\",\n  \"customer_phone\": \"081-234-5678\",\n  \"installation_details\": \"รีโนเวทห้องครัวและติดตั้ง Smart Home\",\n  \"technician_team\": \"ทีมช่าง A\"\n}"
+						},
+						"url": {
+							"raw": "{{buildflow_base_url}}/api/v1/projects",
+							"host": [
+								"{{buildflow_base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"projects"
+							]
+						}
+					}
+				},
+				{
+					"name": "3. Get VQ Integration Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{vq_base_url}}/api/integration-logs",
+							"host": [
+								"{{vq_base_url}}"
+							],
+							"path": [
+								"api",
+								"integration-logs"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "REST Integration API (BuildFlow)",
+			"item": [
+				{
+					"name": "Zones CRUD",
+					"item": [
+						{
+							"name": "GET List All Zones",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/zones",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"zones"
+									]
+								}
+							}
+						},
+						{
+							"name": "POST Upsert Zone",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"id\": \"zone-postman-test\",\n  \"code\": \"Z-PM-101\",\n  \"name\": \"เขตทดสอบผ่าน Postman\",\n  \"description\": \"เขตที่สร้างขึ้นมาทดสอบระบบ Integration API\",\n  \"coverage_zipcodes\": [\"10110\", \"10120\"]\n}"
+								},
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/zones",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"zones"
+									]
+								}
+							}
+						},
+						{
+							"name": "PUT Update Zone",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"code\": \"Z-PM-101-UPDATED\",\n  \"name\": \"เขตทดสอบผ่าน Postman (แก้ไขแล้ว)\",\n  \"description\": \"แก้ไขผ่าน API PUT ใน Postman\",\n  \"coverage_zipcodes\": [\"10110\"]\n}"
+								},
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/zones/zone-postman-test",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"zones",
+										"zone-postman-test"
+									]
+								}
+							}
+						},
+						{
+							"name": "DELETE Zone",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/zones/zone-postman-test",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"zones",
+										"zone-postman-test"
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Technicians CRUD",
+					"item": [
+						{
+							"name": "GET List All Technicians",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/technicians",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"technicians"
+									]
+								}
+							}
+						},
+						{
+							"name": "POST Upsert Technician",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"id\": \"tech-postman-test\",\n  \"code\": \"T-PM-099\",\n  \"name\": \"ช่างทดสอบ Postman\",\n  \"phone\": \"099-123-4567\",\n  \"avatar\": \"https://i.pravatar.cc/150?u=tech-postman-test\",\n  \"tier\": \"Gold\",\n  \"rating\": 4.9,\n  \"status\": \"Active\",\n  \"primary_zone\": \"zone-postman-test\",\n  \"secondary_zones\": [],\n  \"skills\": [\"ติดตั้งเครื่องกรองน้ำ\", \"เดินสายไฟสนาม\"],\n  \"extra_data\": {\n    \"notes\": \"ทดสอบการสร้างผ่าน Postman\"\n  }\n}"
+								},
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/technicians",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"technicians"
+									]
+								}
+							}
+						},
+						{
+							"name": "PUT Update Technician",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"code\": \"T-PM-099-UPDATED\",\n  \"name\": \"ช่างทดสอบ Postman (แก้ไขข้อมูล)\",\n  \"phone\": \"099-765-4321\",\n  \"tier\": \"Premium\",\n  \"rating\": 5.0,\n  \"status\": \"Available\",\n  \"skills\": [\"ติดตั้งเครื่องกรองน้ำ\", \"เดินสายไฟสนาม\", \"ล้างแอร์\"]\n}"
+								},
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/technicians/tech-postman-test",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"technicians",
+										"tech-postman-test"
+									]
+								}
+							}
+						},
+						{
+							"name": "DELETE Technician",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/technicians/tech-postman-test",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"technicians",
+										"tech-postman-test"
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Skills Aggregation",
+					"item": [
+						{
+							"name": "GET List Unique Skills",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/skills",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"skills"
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Branches CRUD",
+					"item": [
+						{
+							"name": "GET List All Branches",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/branches",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"branches"
+									]
+								}
+							}
+						},
+						{
+							"name": "POST Upsert Branch",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"id\": \"branch-postman-test\",\n  \"code\": \"B-PM-777\",\n  \"name\": \"สาขาทดสอบ Postman\",\n  \"province\": \"กรุงเทพมหานคร\",\n  \"status\": \"Active\",\n  \"fullName\": \"ไทวัสดุ สาขาทดสอบระบบ API\",\n  \"address\": \"123 ถนนสุขุมวิท เขตวัฒนา กรุงเทพฯ 10110\",\n  \"latitude\": 13.736717,\n  \"longitude\": 100.560432,\n  \"openTime\": \"08:00\",\n  \"closeTime\": \"20:00\",\n  \"phone\": \"1308\",\n  \"storeGroup\": \"TWD\"\n}"
+								},
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/branches",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"branches"
+									]
+								}
+							}
+						},
+						{
+							"name": "PUT Update Branch",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"code\": \"B-PM-777-UPDATED\",\n  \"name\": \"สาขาทดสอบ Postman (อัปเดต)\",\n  \"province\": \"นนทบุรี\",\n  \"status\": \"Active\",\n  \"fullName\": \"ไทวัสดุ สาขาทดสอบระบบ API (นนทบุรี)\",\n  \"address\": \"456 ถนนติวานนท์ อำเภอปากเกร็ด นนทบุรี 11120\",\n  \"latitude\": 13.912345,\n  \"longitude\": 100.512345,\n  \"openTime\": \"09:00\",\n  \"closeTime\": \"21:00\",\n  \"phone\": \"1308\",\n  \"storeGroup\": \"TWD\"\n}"
+								},
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/branches/branch-postman-test",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"branches",
+										"branch-postman-test"
+									]
+								}
+							}
+						},
+						{
+							"name": "DELETE Branch",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "x-api-key",
+										"value": "{{integration_api_key}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{buildflow_base_url}}/api/integration/branches/branch-postman-test",
+									"host": [
+										"{{buildflow_base_url}}"
+									],
+									"path": [
+										"api",
+										"integration",
+										"branches",
+										"branch-postman-test"
+									]
+								}
+							}
+						}
 					]
 				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
 			}
 		},
 		{
-			"name": "2. Send Direct to BuildFlow API (buildflowx.online)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"project_id\": \"P020826-001\",\n  \"customer_name\": \"คุณวิชัย ใจดี\",\n  \"customer_phone\": \"081-234-5678\",\n  \"installation_details\": \"รีโนเวทห้องครัวและติดตั้ง Smart Home\",\n  \"technician_team\": \"ทีมช่าง A\"\n}"
-				},
-				"url": {
-					"raw": "https://buildflowx.online/api/v1/projects",
-					"protocol": "https",
-					"host": [
-						"buildflowx",
-						"online"
-					],
-					"path": [
-						"api",
-						"v1",
-						"projects"
-					]
-				}
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
 			}
+		}
+	],
+	"variable": [
+		{
+			"key": "vq_base_url",
+			"value": "https://vibepjm.online",
+			"type": "string"
 		},
 		{
-			"name": "3. Get Integration Logs (PostgreSQL / Coolify)",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "https://vibepjm.online/api/integration-logs",
-					"protocol": "https",
-					"host": [
-						"vibepjm",
-						"online"
-					],
-					"path": [
-						"api",
-						"integration-logs"
-					]
-				}
-			}
+			"key": "buildflow_base_url",
+			"value": "https://buildflowx.online",
+			"type": "string"
+		},
+		{
+			"key": "integration_api_key",
+			"value": "bf_vq_sync_secret_2026",
+			"type": "string"
 		}
 	]
 }

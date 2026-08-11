@@ -35,6 +35,71 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
+  // Camera states
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hasRestored = useRef(false);
+
+  // Auto-save form draft to localStorage
+  useEffect(() => {
+    if (isModalOpen) {
+      const draft = {
+        editingEntryId,
+        projectId,
+        taskId,
+        hours,
+        startTime,
+        endTime,
+        description,
+        workResults,
+        imageUrl,
+        selectedDate: selectedDate ? selectedDate.toISOString() : null,
+      };
+      localStorage.setItem('nt_timesheet_form_draft', JSON.stringify(draft));
+    } else {
+      localStorage.removeItem('nt_timesheet_form_draft');
+    }
+  }, [isModalOpen, editingEntryId, projectId, taskId, hours, startTime, endTime, description, workResults, imageUrl, selectedDate]);
+
+  // Restore form draft on mount
+  useEffect(() => {
+    if (hasRestored.current) return;
+    const savedDraft = localStorage.getItem('nt_timesheet_form_draft');
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        setEditingEntryId(draft.editingEntryId || null);
+        setProjectId(draft.projectId || '');
+        setTaskId(draft.taskId || '');
+        setHours(draft.hours || '');
+        setStartTime(draft.startTime || '');
+        setEndTime(draft.endTime || '');
+        setDescription(draft.description || '');
+        setWorkResults(draft.workResults || '');
+        setImageUrl(draft.imageUrl || '');
+        if (draft.selectedDate) {
+          setSelectedDate(new Date(draft.selectedDate));
+        }
+        setIsModalOpen(true);
+      } catch (e) {
+        console.error('Failed to restore timesheet draft:', e);
+      }
+    }
+    hasRestored.current = true;
+  }, []);
+
+  // Release camera if modal closes
+  useEffect(() => {
+    if (!isModalOpen) {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+      }
+      setIsCameraActive(false);
+    }
+  }, [isModalOpen, stream]);
+
   const location = useLocation();
   const hasAutoOpened = useRef(false);
 
@@ -193,6 +258,87 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
     setSelectedDate(new Date(entry.date));
     setEditingEntryId(entry.id);
     setIsModalOpen(true);
+  };
+
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      setStream(mediaStream);
+      setIsCameraActive(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      }, 100);
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      alert("Could not access camera. Please check permissions.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setIsCameraActive(false);
+  };
+
+  const uploadBase64Image = async (base64: string) => {
+    setIsUploading(true);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file: base64,
+          fileName: `capture_${Date.now()}.jpg`,
+          type: 'image/jpeg'
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setImageUrl(data.url);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to upload image');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error uploading captured image');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+    
+    const MAX_SIZE = 600;
+    let targetWidth = width;
+    let targetHeight = height;
+    
+    if (width > height && width > MAX_SIZE) {
+      targetHeight = Math.round((height * MAX_SIZE) / width);
+      targetWidth = MAX_SIZE;
+    } else if (height > MAX_SIZE) {
+      targetWidth = Math.round((width * MAX_SIZE) / height);
+      targetHeight = MAX_SIZE;
+    }
+    
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+      uploadBase64Image(dataUrl);
+    }
+    stopCamera();
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1322,6 +1468,28 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                       <X size={12} style={{ margin: 'auto' }} />
                     </button>
                   </div>
+                ) : isCameraActive ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '320px' }}>
+                    <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-color)', background: '#000', position: 'relative', aspectRatio: '4/3' }}>
+                      <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button 
+                        type="button" 
+                        onClick={capturePhoto} 
+                        style={{ padding: '0.4rem 0.8rem', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                      >
+                        Capture Photo
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={stopCamera} 
+                        style={{ padding: '0.4rem 0.8rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontSize: '0.8rem' }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <input 
@@ -1351,6 +1519,27 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                       <Paperclip size={14} />
                       {isUploading ? 'Uploading...' : 'Choose Image'}
                     </label>
+                    <button 
+                      type="button" 
+                      onClick={startCamera} 
+                      disabled={isUploading}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.5rem', 
+                        padding: '0.5rem 1rem', 
+                        background: 'var(--bg-tertiary)', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: 'var(--radius-md)', 
+                        color: 'var(--text-secondary)', 
+                        cursor: isUploading ? 'not-allowed' : 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                      className="hover-lift"
+                    >
+                      <span style={{ fontSize: '14px' }}>📷</span>
+                      Use Camera
+                    </button>
                   </div>
                 )}
               </div>

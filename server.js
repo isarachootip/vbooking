@@ -244,6 +244,27 @@ const initDB = async () => {
       UPDATE tasks SET updated_at = created_at WHERE updated_at IS NULL;
     `);
 
+    // Create Master Project Types Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS master_project_types (
+        id VARCHAR(50) PRIMARY KEY,
+        name VARCHAR(150) NOT NULL,
+        description TEXT,
+        default_columns JSONB DEFAULT '["To Do", "In Progress", "Review", "Done"]'::jsonb,
+        created_at VARCHAR(50)
+      );
+    `);
+
+    // Create Milestone Templates Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS milestone_templates (
+        id VARCHAR(50) PRIMARY KEY,
+        master_type_id VARCHAR(50) REFERENCES master_project_types(id) ON DELETE CASCADE,
+        name VARCHAR(150) NOT NULL,
+        sequence_order INTEGER DEFAULT 0
+      );
+    `);
+
     // Create Task Templates Table
     await client.query(`
       CREATE TABLE IF NOT EXISTS task_templates (
@@ -257,6 +278,8 @@ const initDB = async () => {
         project_template_name VARCHAR(100) DEFAULT 'General'
       );
       ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS project_template_name VARCHAR(100) DEFAULT 'General';
+      ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS milestone_template_id VARCHAR(50) REFERENCES milestone_templates(id) ON DELETE SET NULL;
+      ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS required_proof VARCHAR(50);
     `);
 
     // Create Project Messages Table (for internal chat)
@@ -663,6 +686,26 @@ const initDB = async () => {
         );
       }
       console.log('Seeding finished successfully.');
+    }
+
+    // Seed Master Project Types if empty
+    const masterTypeCount = await client.query('SELECT COUNT(*) FROM master_project_types');
+    if (parseInt(masterTypeCount.rows[0].count) === 0) {
+      console.log('Seeding Master Project Types...');
+      const defaultMasterTypes = [
+        { id: 'mpt_1', name: 'Quick Service', description: 'งานจัดส่งและติดตั้งที่จบไว', default_columns: '["To Do", "In Progress", "QA Check", "Done"]' },
+        { id: 'mpt_2', name: 'Installation', description: 'งานติดตั้งที่มีความซับซ้อนขึ้นมาอีกระดับ', default_columns: '["To Do", "Site Prep", "In Progress", "QA Check-in", "QA Check-out", "Done"]' },
+        { id: 'mpt_3', name: 'Renovate', description: 'งานปรับปรุงบ้านที่ใช้ระยะเวลายาวนาน มีหลายเฟส', default_columns: '["To Do", "Design", "Demolition", "Construction", "QA Check-in", "QA Check-out", "Done"]' },
+        { id: 'mpt_4', name: 'New Home', description: 'งานสร้างบ้านใหม่ตั้งแต่ต้นจนจบ', default_columns: '["To Do", "Permit", "Foundation", "Structure", "Architecture", "QA Check-in", "QA Check-out", "Done"]' },
+        { id: 'mpt_5', name: 'Maintenance', description: 'งานดูแลรักษาและซ่อมบำรุง', default_columns: '["To Do", "In Progress", "QA Check", "Done"]' }
+      ];
+      for (const mt of defaultMasterTypes) {
+        await client.query(
+          'INSERT INTO master_project_types (id, name, description, default_columns, created_at) VALUES ($1, $2, $3, $4, $5)',
+          [mt.id, mt.name, mt.description, mt.default_columns, new Date().toISOString()]
+        );
+      }
+      console.log('Seeded Master Project Types.');
     }
 
     // Seed task templates if empty
@@ -1929,6 +1972,97 @@ async function generateFormattedProjectId() {
 }
 
 // Projects REST API
+// --- Master Project Types API ---
+app.get('/api/master-types', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM master_project_types ORDER BY name ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.post('/api/master-types', async (req, res) => {
+  const { id, name, description, defaultColumns } = req.body;
+  try {
+    const newId = id || 'mpt_' + Date.now();
+    const cols = defaultColumns ? JSON.stringify(defaultColumns) : '["To Do", "In Progress", "Review", "Done"]';
+    await pool.query(
+      'INSERT INTO master_project_types (id, name, description, default_columns, created_at) VALUES ($1, $2, $3, $4, $5)',
+      [newId, name, description, cols, new Date().toISOString()]
+    );
+    res.json({ success: true, id: newId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.put('/api/master-types/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, description, defaultColumns } = req.body;
+  try {
+    const cols = defaultColumns ? JSON.stringify(defaultColumns) : null;
+    await pool.query(
+      'UPDATE master_project_types SET name = COALESCE($1, name), description = COALESCE($2, description), default_columns = COALESCE($3, default_columns) WHERE id = $4',
+      [name, description, cols, id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.delete('/api/master-types/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM master_project_types WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// --- Milestone Templates API ---
+app.get('/api/master-types/:masterTypeId/milestones', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM milestone_templates WHERE master_type_id = $1 ORDER BY sequence_order ASC', [req.params.masterTypeId]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.post('/api/master-types/:masterTypeId/milestones', async (req, res) => {
+  const { id, name, sequenceOrder } = req.body;
+  const masterTypeId = req.params.masterTypeId;
+  try {
+    const newId = id || 'mst_' + Date.now();
+    await pool.query(
+      'INSERT INTO milestone_templates (id, master_type_id, name, sequence_order) VALUES ($1, $2, $3, $4)',
+      [newId, masterTypeId, name, sequenceOrder || 0]
+    );
+    res.json({ success: true, id: newId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.delete('/api/milestones/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM milestone_templates WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+
 app.post('/api/projects', async (req, res) => {
   let { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense, projectTemplateName, extraDetails } = req.body;
   try {
@@ -1938,7 +2072,16 @@ app.post('/api/projects', async (req, res) => {
 
     const checkExist = await pool.query('SELECT 1 FROM projects WHERE id = $1', [id]);
     const isNew = checkExist.rows.length === 0;
-    const cols = customColumns || ["To Do", "In Progress", "Review", "Done"];
+    
+    let cols = customColumns || ["To Do", "In Progress", "Review", "Done"];
+    
+    // Auto-fetch default columns from master_project_types if it's a new project and cols was not explicitly provided
+    if (isNew && projectType && (!customColumns || customColumns.length === 0)) {
+      const typeRes = await pool.query('SELECT default_columns FROM master_project_types WHERE id = $1 OR name = $1', [projectType]);
+      if (typeRes.rows.length > 0 && typeRes.rows[0].default_columns) {
+         cols = typeof typeRes.rows[0].default_columns === 'string' ? JSON.parse(typeRes.rows[0].default_columns) : typeRes.rows[0].default_columns;
+      }
+    }
 
     await pool.query(
       `INSERT INTO projects (id, name, description, status, start_date, end_date, budget, members, custom_columns, permission_scheme_id, project_type, support_task_style, address, project_value, invoiced_value, collected_value, planned_expense, actual_expense, extra_details)
@@ -2020,6 +2163,45 @@ app.post('/api/projects', async (req, res) => {
               new Date().toISOString(),
               taskStartStr,
               taskEndStr
+            ]
+          );
+        }
+        
+        // Add QA Check-in / Check-out if columns have it
+        if (cols.includes('QA Check-in')) {
+          await pool.query(
+            `INSERT INTO tasks (id, project_id, assignee_id, title, description, status, priority, estimated_hours, created_at, start_date, end_date, sprint_id, release_id, story_points, issue_type)
+             VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10, NULL, NULL, 0, 'QA')`,
+            [
+              't_' + Math.random().toString(36).substr(2, 9),
+              id,
+              '[QA] Check-in',
+              'Check-in and upload site condition photos before starting work.',
+              'QA Check-in',
+              'Urgent',
+              1,
+              new Date().toISOString(),
+              startDate,
+              startDate
+            ]
+          );
+        }
+
+        if (cols.includes('QA Check-out')) {
+          await pool.query(
+            `INSERT INTO tasks (id, project_id, assignee_id, title, description, status, priority, estimated_hours, created_at, start_date, end_date, sprint_id, release_id, story_points, issue_type)
+             VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10, NULL, NULL, 0, 'QA')`,
+            [
+              't_' + Math.random().toString(36).substr(2, 9),
+              id,
+              '[QA] Check-out',
+              'Check-out and upload finished site photos for handover.',
+              'QA Check-out',
+              'Urgent',
+              1,
+              new Date().toISOString(),
+              endDate || startDate,
+              endDate || startDate
             ]
           );
         }

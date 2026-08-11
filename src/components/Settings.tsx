@@ -62,6 +62,7 @@ export const Settings = ({
   const [masterTypeColor, setMasterTypeColor] = useState('#059669');
   const [masterTypeBadge, setMasterTypeBadge] = useState('');
   const [masterTypeDesc, setMasterTypeDesc] = useState('');
+  const [masterTypeColumns, setMasterTypeColumns] = useState('To Do, In Progress, Review, Done');
 
   const saveMasterTypes = (types: typeof defaultMasterTypes) => {
     setMasterProjectTypes(types);
@@ -2534,6 +2535,7 @@ export const Settings = ({
                 setMasterTypeBadge('');
                 setMasterTypeColor('#059669');
                 setMasterTypeDesc('');
+                setMasterTypeColumns('To Do, In Progress, Review, Done');
                 setIsTypeModalOpen(true);
               }}
               style={{
@@ -2641,6 +2643,7 @@ export const Settings = ({
                     badgeText: masterTypeBadge || masterTypeName,
                     color: masterTypeColor,
                     description: masterTypeDesc,
+                    defaultColumns: masterTypeColumns.split(',').map(c => c.trim()).filter(Boolean),
                     isActive: true
                   };
 
@@ -2694,10 +2697,22 @@ export const Settings = ({
                     <textarea
                       value={masterTypeDesc}
                       onChange={(e) => setMasterTypeDesc(e.target.value)}
-                      placeholder="อธิบายวัตถุประสงค์ของประเภทโครงการนี้..."
+                      placeholder="อธิบายลักษณะของโครงการประเภทนี้..."
                       style={{ padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', outline: 'none', minHeight: '60px', resize: 'vertical' }}
                     />
                   </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>คอลัมน์ Kanban เริ่มต้น (คั่นด้วยเครื่องหมายจุลภาค ,)</label>
+                    <textarea
+                      value={masterTypeColumns}
+                      onChange={(e) => setMasterTypeColumns(e.target.value)}
+                      placeholder="To Do, In Progress, QA Check-in, QA Check-out, Done"
+                      style={{ padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', outline: 'none', minHeight: '60px', resize: 'vertical' }}
+                    />
+                  </div>
+
+
 
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
                     <button
