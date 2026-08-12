@@ -491,8 +491,24 @@ function App() {
 
   // Fetch initial data from PostgreSQL
   const fetchInitialData = () => {
-    fetch(`/api/initial-data?t=${Date.now()}`)
-      .then(res => res.json())
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    const storedUserStr = localStorage.getItem('nt_current_user');
+    if (storedUserStr) {
+      try {
+        const storedUser = JSON.parse(storedUserStr);
+        if (storedUser && storedUser.id) {
+          headers['x-user-id'] = storedUser.id;
+        }
+      } catch (e) {}
+    }
+
+    fetch(`/api/initial-data?t=${Date.now()}`, { headers })
+      .then(res => {
+        if (!res.ok) throw new Error('API returned status ' + res.status);
+        return res.json();
+      })
       .then(data => {
         setUsers(data.users || []);
         setProjects(data.projects || []);
