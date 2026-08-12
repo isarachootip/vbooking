@@ -69,15 +69,15 @@ console.log(`Connecting to PostgreSQL database host: ${dbHost}`);
 // Auth Middleware to protect backend API routes
 const requireAuth = async (req, res, next) => {
   const publicPaths = [
-    '/api/auth/login', 
-    '/api/auth/line', 
-    '/api/auth/line/callback', 
-    '/api/db-status',
-    '/api/webhooks/github',
-    '/api/webhooks/gitlab'
+    '/auth/login', 
+    '/auth/line', 
+    '/auth/line/callback', 
+    '/db-status',
+    '/webhooks/github',
+    '/webhooks/gitlab'
   ];
   
-  if (publicPaths.some(p => req.path === p)) {
+  if (publicPaths.some(p => req.path === p || req.path.startsWith(p))) {
     return next();
   }
 
