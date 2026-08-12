@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import type { TaskTemplate, TaskPriority, PermissionScheme, User, CostRate } from '../types';
+import type { TaskTemplate, TaskPriority, PermissionScheme, User, CostRate, MasterProjectType } from '../types';
 import { Plus, Trash2, Edit, X, Save, Shield, ShieldCheck, Coins, AlertTriangle, RefreshCw, FileUp, Sparkles, FileSpreadsheet, Lock, Eye, EyeOff, Key } from 'lucide-react';
 
 interface SettingsProps {
   taskTemplates: TaskTemplate[];
-  setTaskTemplates: React.Dispatch<React.SetStateAction<TaskTemplate[]>>;
+  setTaskTemplates?: React.Dispatch<React.SetStateAction<TaskTemplate[]>>;
+  masterProjectTypes: MasterProjectType[];
+  setMasterProjectTypes?: React.Dispatch<React.SetStateAction<MasterProjectType[]>>;
   permissionSchemes: PermissionScheme[];
   setPermissionSchemes: React.Dispatch<React.SetStateAction<PermissionScheme[]>>;
   currentUser: User | null;
@@ -18,8 +20,10 @@ interface SettingsProps {
 }
 
 export const Settings = ({ 
-  taskTemplates, 
-  setTaskTemplates, 
+  taskTemplates,
+  setTaskTemplates,
+  masterProjectTypes,
+  setMasterProjectTypes,
   permissionSchemes, 
   setPermissionSchemes, 
   currentUser,
@@ -37,25 +41,7 @@ export const Settings = ({
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
   const [activeTab, setActiveTab] = useState<'templates' | 'integrations' | 'permission_schemes' | 'cost_rates' | 'security' | 'data_management' | 'system_config' | 'master_project_types'>('templates');
 
-  // Master Project Types states
-  const defaultMasterTypes = [
-    { id: 'quick_service', name: 'Quick service', badgeText: 'Quick service ⚡', color: '#f59e0b', description: 'โครงการงานบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน', isActive: true },
-    { id: 'installer', name: 'Installer (งานติดตั้ง)', badgeText: 'งานติดตั้ง 🛠️', color: '#2563eb', description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบและประกอบระบบ', isActive: true },
-    { id: 'renovate', name: 'Renovate (งานรีโนเวท)', badgeText: 'Renovate 🏡', color: '#8B0000', description: 'โครงการปรับปรุง รีโนเวทบ้าน และตกแต่งอาคารสถานที่ครบวงจร', isActive: true },
-    { id: 'build_in', name: 'Build-in (งานบิวท์อิน)', badgeText: 'Build-in 🛋️', color: '#8b5cf6', description: 'โครงการออกแบบ ผลิต และติดตั้งงานเฟอร์นิเจอร์บิวท์อินเฉพาะทาง', isActive: true },
-    { id: 'new_house', name: 'New house (สร้างบ้านใหม่)', badgeText: 'New house 🏠', color: '#059669', description: 'โครงการงานก่อสร้างบ้านใหม่และอาคารสิ่งปลูกสร้าง', isActive: true },
-    { id: 'maintenance', name: 'Maintenance (งานซ่อมบำรุง MA)', badgeText: 'MA 🔧', color: '#3b82f6', description: 'โครงการดูแลระบบ งานบำรุงรักษาตามสัญญา MA', isActive: true }
-  ];
-
-  const [masterProjectTypes, setMasterProjectTypes] = useState(() => {
-    try {
-      const saved = localStorage.getItem('master_project_types_v3');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return defaultMasterTypes;
-  });
-
-  const [editingMasterType, setEditingMasterType] = useState<{ id: string; name: string; badgeText: string; color: string; description: string; isActive: boolean } | null>(null);
+  const [editingMasterType, setEditingMasterType] = useState<MasterProjectType | null>(null);
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [masterTypeName, setMasterTypeName] = useState('');
   const [masterTypeId, setMasterTypeId] = useState('');
@@ -64,14 +50,10 @@ export const Settings = ({
   const [masterTypeDesc, setMasterTypeDesc] = useState('');
   const [masterTypeColumns, setMasterTypeColumns] = useState('To Do, In Progress, Review, Done');
 
-  const saveMasterTypes = (types: typeof defaultMasterTypes) => {
-    setMasterProjectTypes(types);
-    localStorage.setItem('master_project_types_v3', JSON.stringify(types));
-    fetch('/api/system-settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ master_project_types: JSON.stringify(types) })
-    }).catch(() => {});
+  const saveMasterTypes = (types: MasterProjectType[]) => {
+    if (setMasterProjectTypes) {
+      setMasterProjectTypes(types);
+    }
   };
 
 
@@ -305,16 +287,16 @@ export const Settings = ({
     };
 
     if (editingTemplate) {
-      setTaskTemplates(prev => prev.map(t => t.id === editingTemplate.id ? tplData : t));
+      if (setTaskTemplates) setTaskTemplates(prev => prev.map(t => t.id === editingTemplate.id ? tplData : t));
     } else {
-      setTaskTemplates(prev => [...prev, tplData]);
+      if (setTaskTemplates) setTaskTemplates(prev => [...prev, tplData]);
     }
     setIsModalOpen(false);
   };
 
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this task template? Newly created projects will not generate this task.')) {
-      setTaskTemplates(prev => prev.filter(t => t.id !== id));
+      if (setTaskTemplates) setTaskTemplates(prev => prev.filter(t => t.id !== id));
     }
   };
 
@@ -500,8 +482,7 @@ export const Settings = ({
     }
   };
 
-  // Input sync helpers for new row
-  const handleNewDayChange = (val: string) => {
+  const handleNewPerDayChange = (val: string) => {
     setNewPerDay(val);
     const num = parseFloat(val);
     if (!isNaN(num)) {
@@ -511,7 +492,7 @@ export const Settings = ({
     }
   };
 
-  const handleNewHourChange = (val: string) => {
+  const handleNewPerHourChange = (val: string) => {
     setNewPerHour(val);
     const num = parseFloat(val);
     if (!isNaN(num)) {
@@ -1320,7 +1301,7 @@ export const Settings = ({
                               step="any" 
                               placeholder="Daily rate..." 
                               value={newPerDay} 
-                              onChange={e => handleNewDayChange(e.target.value)} 
+                              onChange={e => handleNewPerDayChange(e.target.value)} 
                               style={inlineInputStyle} 
                             />
                           </td>
@@ -1330,7 +1311,7 @@ export const Settings = ({
                               step="any" 
                               placeholder="Hourly rate..." 
                               value={newPerHour} 
-                              onChange={e => handleNewHourChange(e.target.value)} 
+                              onChange={e => handleNewPerHourChange(e.target.value)} 
                               style={inlineInputStyle} 
                             />
                           </td>
@@ -1682,7 +1663,7 @@ export const Settings = ({
                       console.error('Bulk post failed:', err);
                     }
 
-                    setTaskTemplates(prev => [...prev, ...newTpls]);
+                    if (setTaskTemplates) setTaskTemplates(prev => [...prev, ...newTpls]);
                     alert(`นำเข้า Task งานในแม่แบบสำเร็จจำนวน ${newTpls.length} ขั้นตอน!`);
                     setIsImportModalOpen(false);
                     setImportText('');
@@ -1762,7 +1743,7 @@ export const Settings = ({
                       });
                     } catch (err) {}
 
-                    setTaskTemplates(prev => [...prev, ...renovationTemplates]);
+                    if (setTaskTemplates) setTaskTemplates(prev => [...prev, ...renovationTemplates]);
                     alert('นำเข้าแม่แบบ "งานรีโนเวทบ้าน" สำเร็จ 8 ขั้นตอน!');
                     setIsPresetModalOpen(false);
                   }}
@@ -1803,7 +1784,7 @@ export const Settings = ({
                       });
                     } catch (err) {}
 
-                    setTaskTemplates(prev => [...prev, ...elecTemplates]);
+                    if (setTaskTemplates) setTaskTemplates(prev => [...prev, ...elecTemplates]);
                     alert('นำเข้าแม่แบบ "งานระบบไฟฟ้า-ประปา" สำเร็จ 6 ขั้นตอน!');
                     setIsPresetModalOpen(false);
                   }}

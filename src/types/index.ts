@@ -75,6 +75,9 @@ export interface Project {
   projectTemplateName?: string;
   extraDetails?: {
     notes?: string;
+    surveyAppNo?: string;
+    questionnaireNo?: string;
+    qtNo?: string;
     branch?: string;
     customerStaffPic?: string;
     refStartDate?: string;
@@ -203,6 +206,8 @@ export interface MasterProjectType {
   badgeText: string;
   description?: string;
   isActive: boolean;
+  iconName?: string;
+  taskTypeStyle?: 'single' | 'workflow' | 'sla';
 }
 
 

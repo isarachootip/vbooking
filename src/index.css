@@ -8,6 +8,10 @@
   --bg-tertiary: #F1F5F9;
   --bg-glass: rgba(255, 255, 255, 0.95);
   
+  --card-bg: #FFFFFF;
+  --input-bg: #FFFFFF;
+  --table-header-bg: rgba(0, 0, 0, 0.02);
+  
   --text-primary: #0F172A;
   --text-secondary: #334155;
   --text-muted: #475569;
@@ -61,6 +65,10 @@ html[data-theme='dark'], body[data-theme='dark'], body.dark-theme {
   --bg-secondary: #0d111a;
   --bg-tertiary: #141b29;
   --bg-glass: rgba(13, 17, 26, 0.65);
+  
+  --card-bg: #0d111a;
+  --input-bg: #06080c;
+  --table-header-bg: rgba(255, 255, 255, 0.03);
   
   --text-primary: #F1F5F9;
   --text-secondary: #94A3B8;

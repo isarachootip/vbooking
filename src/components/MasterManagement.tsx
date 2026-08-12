@@ -1,24 +1,17 @@
 import React, { useState } from 'react';
-import type { TaskTemplate, User } from '../types';
+import type { TaskTemplate, User, MasterProjectType } from '../types';
 import { Layers, Plus, Trash2, Edit, Database, Layers3, Sparkles } from 'lucide-react';
 
 interface MasterManagementProps {
   taskTemplates: TaskTemplate[];
   setTaskTemplates?: React.Dispatch<React.SetStateAction<TaskTemplate[]>>;
+  masterProjectTypes: MasterProjectType[];
+  setMasterProjectTypes?: React.Dispatch<React.SetStateAction<MasterProjectType[]>>;
   currentUser: User | null;
   fetchInitialData?: () => void;
 }
 
-export interface MasterProjectType {
-  id: string;
-  name: string;
-  badgeText: string;
-  color: string;
-  iconName: string;
-  description: string;
-  isActive: boolean;
-  taskTypeStyle: 'single' | 'workflow' | 'sla';
-}
+
 
 export const defaultMasterTypes: MasterProjectType[] = [
   {
@@ -85,18 +78,14 @@ export const defaultMasterTypes: MasterProjectType[] = [
 
 export const MasterManagement = ({
   taskTemplates,
+  masterProjectTypes,
+  setMasterProjectTypes,
   currentUser: _currentUser
 }: MasterManagementProps) => {
   const [activeTab, setActiveTab] = useState<'project_types' | 'task_templates' | 'workflow_stages'>('project_types');
 
-  // Master Project Types State
-  const [masterTypes, setMasterTypes] = useState<MasterProjectType[]>(() => {
-    try {
-      const saved = localStorage.getItem('master_project_types_v3');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return defaultMasterTypes;
-  });
+  // Use props instead of local state
+  const masterTypes = masterProjectTypes && masterProjectTypes.length > 0 ? masterProjectTypes : defaultMasterTypes;
 
   // Modal States for Project Type
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
@@ -110,13 +99,9 @@ export const MasterManagement = ({
 
   // Save Master Project Types
   const handleSaveTypes = (newTypes: MasterProjectType[]) => {
-    setMasterTypes(newTypes);
-    localStorage.setItem('master_project_types_v3', JSON.stringify(newTypes));
-    fetch('/api/system-settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ master_project_types: JSON.stringify(newTypes) })
-    }).catch(() => {});
+    if (setMasterProjectTypes) {
+      setMasterProjectTypes(newTypes);
+    }
   };
 
   const handleOpenEditType = (t: MasterProjectType) => {
@@ -125,7 +110,7 @@ export const MasterManagement = ({
     setTypeName(t.name);
     setTypeBadge(t.badgeText);
     setTypeColor(t.color);
-    setTypeDesc(t.description);
+    setTypeDesc(t.description || '');
     setTypeStyle(t.taskTypeStyle || 'workflow');
     setIsTypeModalOpen(true);
   };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Users, Plus, X, Edit, Trash2, FileText, Layers, Search, Download, CheckCircle2, Clock, Briefcase, ChevronLeft, ChevronRight, Eye, GitBranch } from 'lucide-react';
-import type { User, Project, ProjectStatus, ProjectRole, Task, PermissionScheme, ProjectWorkflow, TaskTemplate } from '../types';
+import type { User, Project, ProjectStatus, ProjectRole, Task, PermissionScheme, ProjectWorkflow, TaskTemplate, MasterProjectType } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 
@@ -15,6 +15,7 @@ interface ProjectsProps {
   projectWorkflows: ProjectWorkflow[];
   setProjectWorkflows: React.Dispatch<React.SetStateAction<ProjectWorkflow[]>>;
   taskTemplates?: TaskTemplate[];
+  masterProjectTypes?: MasterProjectType[];
   branches?: any[];
 }
 
@@ -28,31 +29,9 @@ export const Projects = ({
   projectWorkflows, 
   setProjectWorkflows,
   taskTemplates = [],
+  masterProjectTypes = [],
   branches = []
 }: ProjectsProps) => {
-  // Load master project types from local storage or fallback to defaults
-  const masterProjectTypes = (() => {
-    try {
-      // Check v3 first
-      const savedV3 = localStorage.getItem('master_project_types_v3');
-      if (savedV3) return JSON.parse(savedV3);
-      // Check v2 (from MasterManagement)
-      const savedV2 = localStorage.getItem('master_project_types_v2');
-      if (savedV2) return JSON.parse(savedV2);
-      // Check v1 (from Settings)
-      const savedV1 = localStorage.getItem('master_project_types');
-      if (savedV1) return JSON.parse(savedV1);
-    } catch (e) {}
-    // Fallback to merged list containing both v1 and v2 defaults
-    return [
-      { id: 'quick_service', name: 'Quick service', badgeText: 'Quick service ⚡', color: '#f59e0b', description: 'โครงการงานบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน', isActive: true },
-      { id: 'installer', name: 'Installer (งานติดตั้ง)', badgeText: 'งานติดตั้ง 🛠️', color: '#2563eb', description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบและประกอบระบบ', isActive: true },
-      { id: 'renovate', name: 'Renovate (งานรีโนเวท)', badgeText: 'Renovate 🏡', color: '#8B0000', description: 'โครงการปรับปรุง รีโนเวทบ้าน และตกแต่งอาคารสถานที่ครบวงจร', isActive: true },
-      { id: 'build_in', name: 'Build-in (งานบิวท์อิน)', badgeText: 'Build-in 🛋️', color: '#8b5cf6', description: 'โครงการออกแบบ ผลิต และติดตั้งงานเฟอร์นิเจอร์บิวท์อินเฉพาะทาง', isActive: true },
-      { id: 'new_house', name: 'New house (สร้างบ้านใหม่)', badgeText: 'New house 🏠', color: '#059669', description: 'โครงการงานก่อสร้างบ้านใหม่และอาคารสิ่งปลูกสร้าง', isActive: true },
-      { id: 'maintenance', name: 'Maintenance (งานซ่อมบำรุง MA)', badgeText: 'MA 🔧', color: '#3b82f6', description: 'โครงการดูแลระบบ งานบำรุงรักษาตามสัญญา MA', isActive: true }
-    ];
-  })();
 
   const location = useLocation();
   const [highlightedProjectId, setHighlightedProjectId] = useState<string | null>(null);
@@ -113,6 +92,9 @@ export const Projects = ({
   const [refStartDate, setRefStartDate] = useState('');
   const [isAllDay, setIsAllDay] = useState(false);
   const [surveyTicketNo, setSurveyTicketNo] = useState('');
+  const [surveyAppNo, setSurveyAppNo] = useState('');
+  const [questionnaireNo, setQuestionnaireNo] = useState('');
+  const [qtNo, setQtNo] = useState('');
   const [surveyQtNo, setSurveyQtNo] = useState('');
   const [renovateQtNo, setRenovateQtNo] = useState('');
   const [renovateTicketNo, setRenovateTicketNo] = useState('');
@@ -215,6 +197,9 @@ export const Projects = ({
     setRefStartDate(extra.refStartDate || '');
     setIsAllDay(extra.isAllDay || false);
     setSurveyTicketNo(extra.surveyTicketNo || '');
+    setSurveyAppNo(extra.surveyAppNo || '');
+    setQuestionnaireNo(extra.questionnaireNo || '');
+    setQtNo(extra.qtNo || '');
     setSurveyQtNo(extra.surveyQtNo || '');
     setRenovateQtNo(extra.renovateQtNo || '');
     setRenovateTicketNo(extra.renovateTicketNo || '');
@@ -279,6 +264,9 @@ export const Projects = ({
       refStartDate,
       isAllDay,
       surveyTicketNo,
+      surveyAppNo,
+      questionnaireNo,
+      qtNo,
       surveyQtNo,
       renovateQtNo,
       renovateTicketNo,
@@ -750,7 +738,9 @@ export const Projects = ({
                   <th style={{ padding: '0.75rem 0.75rem' }}>ประเภทงาน</th>
                   <th style={{ padding: '0.75rem 0.75rem' }}>สถานะโปรเจกต์</th>
                   <th style={{ padding: '0.75rem 0.75rem' }}>ขั้นตอนปัจจุบัน (Workflow)</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>เลขที่เอกสาร</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>หมายเลขสมัครสำรวจ</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>หมายเลขแบบสอบถาม</th>
+                  <th style={{ padding: '0.75rem 0.75rem' }}>ปรับปรุงหมายเลข QT</th>
                   <th style={{ padding: '0.75rem 0.75rem' }}>ลูกค้า</th>
                   <th style={{ padding: '0.75rem 0.75rem' }}>สาขา</th>
                   <th style={{ padding: '0.75rem 0.75rem' }}>วันที่สร้าง</th>
@@ -866,11 +856,14 @@ export const Projects = ({
                       </td>
 
                       {/* Document No */}
-                      <td style={{ padding: '0.75rem 0.75rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                          <span>{extra.surveyTicketNo || `ST-2505-000${idx+1}`}</span>
-                          <span>{extra.surveyQtNo || `QT-2505-001${idx}`}</span>
-                        </div>
+                      <td style={{ padding: '0.75rem 0.75rem', fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+                        {extra.surveyAppNo || '-'}
+                      </td>
+                      <td style={{ padding: '0.75rem 0.75rem', fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+                        {extra.questionnaireNo || '-'}
+                      </td>
+                      <td style={{ padding: '0.75rem 0.75rem', fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+                        {extra.qtNo || '-'}
                       </td>
 
                       {/* Customer */}
@@ -1322,6 +1315,19 @@ export const Projects = ({
                           onChange={e => setSurveyQtNo(e.target.value)} 
                           style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem 0.6rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
                         />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>หมายเลขสมัครสำรวจ (Survey App No)</label>
+                        <input type="text" placeholder="ระบุหมายเลข" value={surveyAppNo} onChange={e => setSurveyAppNo(e.target.value)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem 0.6rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>หมายเลขแบบสอบถาม (Questionnaire No)</label>
+                        <input type="text" placeholder="ระบุหมายเลข" value={questionnaireNo} onChange={e => setQuestionnaireNo(e.target.value)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem 0.6rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ปรับปรุงหมายเลข QT</label>
+                        <input type="text" placeholder="ระบุหมายเลข" value={qtNo} onChange={e => setQtNo(e.target.value)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.45rem 0.6rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }} />
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>

@@ -103,7 +103,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
   const fetchLeads = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/leads');
+      const response = await fetch('/api/leads', { headers: { 'X-User-Id': currentUser?.id || '' } });
       if (response.ok) {
         const data = await response.json();
         setLeads(data);
@@ -125,7 +125,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
 
   const fetchFollowups = async (leadId: string) => {
     try {
-      const res = await fetch(`/api/leads/${leadId}/followups`);
+      const res = await fetch(`/api/leads/${leadId}/followups`, { headers: { 'X-User-Id': currentUser?.id || '' } });
       if (res.ok) {
         const data = await res.json();
         setFollowupsList(data);
@@ -154,7 +154,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
     try {
       const res = await fetch(`/api/leads/${selectedLeadForFollowup.id}/followups`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
         body: JSON.stringify({
           activity_type: activityType,
           appointment_date: appointmentDate,
@@ -409,13 +409,13 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
       if (editingLead) {
         response = await fetch(`/api/leads/${editingLead.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
           body: JSON.stringify(leadData),
         });
       } else {
         response = await fetch('/api/leads', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
           body: JSON.stringify(leadData),
         });
       }
@@ -437,7 +437,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
     try {
       const response = await fetch(`/api/leads/${leadId}/convert`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
         body: JSON.stringify({ admin_id: currentUser?.id }),
       });
       

@@ -1,33 +1,15 @@
 import { useState } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { Project, User } from '../types';
+import type { Project, User, MasterProjectType } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 
 interface ProjectTimelineProps {
   projects: Project[];
   currentUser: User | null;
+  masterProjectTypes?: MasterProjectType[];
 }
 
-export const ProjectTimeline = ({ projects, currentUser }: ProjectTimelineProps) => {
-  // Load master project types from local storage or fallback to defaults
-  const masterProjectTypes = (() => {
-    try {
-      const savedV3 = localStorage.getItem('master_project_types_v3');
-      if (savedV3) return JSON.parse(savedV3);
-      const savedV2 = localStorage.getItem('master_project_types_v2');
-      if (savedV2) return JSON.parse(savedV2);
-      const savedV1 = localStorage.getItem('master_project_types');
-      if (savedV1) return JSON.parse(savedV1);
-    } catch (e) {}
-    return [
-      { id: 'quick_service', name: 'Quick service', badgeText: 'Quick service ⚡', color: '#f59e0b', description: 'โครงการงานบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน', isActive: true },
-      { id: 'installer', name: 'Installer (งานติดตั้ง)', badgeText: 'งานติดตั้ง 🛠️', color: '#2563eb', description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบและประกอบระบบ', isActive: true },
-      { id: 'renovate', name: 'Renovate (งานรีโนเวท)', badgeText: 'Renovate 🏡', color: '#8B0000', description: 'โครงการปรับปรุง รีโนเวทบ้าน และตกแต่งอาคารสถานที่ครบวงจร', isActive: true },
-      { id: 'build_in', name: 'Build-in (งานบิวท์อิน)', badgeText: 'Build-in 🛋️', color: '#8b5cf6', description: 'โครงการออกแบบ ผลิต และติดตั้งงานเฟอร์นิเจอร์บิวท์อินเฉพาะทาง', isActive: true },
-      { id: 'new_house', name: 'New house (สร้างบ้านใหม่)', badgeText: 'New house 🏠', color: '#059669', description: 'โครงการงานก่อสร้างบ้านใหม่และอาคารสิ่งปลูกสร้าง', isActive: true },
-      { id: 'maintenance', name: 'Maintenance (งานซ่อมบำรุง MA)', badgeText: 'MA 🔧', color: '#3b82f6', description: 'โครงการดูแลระบบ งานบำรุงรักษาตามสัญญา MA', isActive: true }
-    ];
-  })();
+export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = [] }: ProjectTimelineProps) => {
 
   const [currentDate, setCurrentDate] = useState<Date>(new Date(2026, 6, 1)); // Default to July 2026 as in screenshot context
   const [filterType, setFilterType] = useState<string>('all');

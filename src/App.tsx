@@ -23,7 +23,7 @@ import { ProjectDetail } from './components/ProjectDetail';
 import { LeadsPage } from './components/LeadsPage';
 
 import { mockUsers, mockProjects, mockTasks, mockTimesheets } from './data/mockData';
-import type { User, Project, Task, TimesheetEntry, TaskTemplate, Sprint, Release, PermissionScheme, ProjectWorkflow, CostRate } from './types';
+import type { User, Project, Task, TimesheetEntry, TaskTemplate, Sprint, Release, PermissionScheme, ProjectWorkflow, CostRate, MasterProjectType } from './types';
 import { formatToDDMMYYYY } from './utils';
 import { useLanguage } from './i18n/LanguageContext';
 import './index.css';
@@ -460,6 +460,7 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [timesheets, setTimesheets] = useState<TimesheetEntry[]>([]);
   const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([]);
+  const [masterProjectTypes, setMasterProjectTypes] = useState<MasterProjectType[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [releases, setReleases] = useState<Release[]>([]);
   const [permissionSchemes, setPermissionSchemes] = useState<PermissionScheme[]>([]);
@@ -509,9 +510,16 @@ function App() {
         setBranches(data.branches || []);
         const settings = data.systemSettings || {};
         setSystemSettings(settings);
+        
         if (settings.master_project_types) {
-          localStorage.setItem('master_project_types_v3', settings.master_project_types);
+          try {
+            const parsedTypes = JSON.parse(settings.master_project_types);
+            setMasterProjectTypes(parsedTypes);
+          } catch(e) {
+            console.error('Failed to parse master_project_types', e);
+          }
         }
+        
         setLoading(false);
       })
       .catch(err => {
@@ -521,6 +529,7 @@ function App() {
         setTasks(mockTasks);
         setTimesheets(mockTimesheets);
         setTaskTemplates([]);
+        setMasterProjectTypes([]);
         setCostRates([]);
         setBranches([
           { id: 'br-01', code: 'B01', name: 'สาขาพระราม 9', province: 'กรุงเทพมหานคร', status: 'Active' },
@@ -750,6 +759,20 @@ function App() {
         });
       }
       return nextTpl;
+    });
+  };
+
+  const handleSetMasterProjectTypes: React.Dispatch<React.SetStateAction<MasterProjectType[]>> = (value) => {
+    setMasterProjectTypes(prev => {
+      const nextTypes = typeof value === 'function' ? value(prev) : value;
+      fetch('/api/system-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
+        body: JSON.stringify({ master_project_types: JSON.stringify(nextTypes) })
+      }).catch(err => {
+        console.error('Failed to save master project types to system settings', err);
+      });
+      return nextTypes;
     });
   };
 
@@ -1001,11 +1024,11 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard projects={projects} tasks={tasks} timesheets={timesheets} currentUser={currentUser} />} />
           <Route path="/leads" element={<LeadsPage currentUser={currentUser} branches={branches} />} />
-          <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} branches={branches} />} />
+          <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} masterProjectTypes={masterProjectTypes} branches={branches} />} />
           <Route path="/projects/:id" element={<ProjectDetail projects={projects} setProjects={handleSetProjects} users={users} currentUser={currentUser} tasks={tasks} setTasks={handleSetTasks} projectWorkflows={projectWorkflows} />} />
 
-          <Route path="/project-board" element={<ProjectBoard projects={projects} setProjects={handleSetProjects} tasks={tasks} users={users} currentUser={currentUser} />} />
-          <Route path="/project-timeline" element={<ProjectTimeline projects={projects} currentUser={currentUser} />} />
+          <Route path="/project-board" element={<ProjectBoard projects={projects} setProjects={handleSetProjects} tasks={tasks} users={users} currentUser={currentUser} masterProjectTypes={masterProjectTypes} />} />
+          <Route path="/project-timeline" element={<ProjectTimeline projects={projects} currentUser={currentUser} masterProjectTypes={masterProjectTypes} />} />
           <Route path="/project-plan" element={<ProjectPlan projects={projects} tasks={tasks} setTasks={handleSetTasks} users={users} taskTemplates={taskTemplates} permissionSchemes={permissionSchemes} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
           <Route path="/tasks" element={<Tasks tasks={tasks} setTasks={handleSetTasks} projects={projects} users={users} sprints={sprints} setSprints={handleSetSprints} releases={releases} setReleases={handleSetReleases} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} permissionSchemes={permissionSchemes} currentUser={currentUser} taskTemplates={taskTemplates} />} />
           <Route path="/timesheet" element={<Timesheet timesheets={timesheets} setTimesheets={handleSetTimesheets} projects={projects} tasks={tasks} currentUser={currentUser} users={users} />} />
@@ -1013,9 +1036,9 @@ function App() {
           <Route path="/chat" element={<ProjectChat projects={projects} users={users} currentUser={currentUser} systemSettings={systemSettings} />} />
           <Route path="/team" element={<TeamApprovals users={users} setUsers={handleSetUsers} timesheets={timesheets} setTimesheets={handleSetTimesheets} projects={projects} setProjects={handleSetProjects} tasks={tasks} currentUser={currentUser} />} />
           <Route path="/users" element={<UserManagement users={users} setUsers={handleSetUsers} projects={projects} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
-          <Route path="/master-management" element={<MasterManagement taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
+          <Route path="/master-management" element={<MasterManagement taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
           <Route path="/reports" element={<Reports timesheets={timesheets} projects={projects} users={users} currentUser={currentUser} tasks={tasks} costRates={costRates} sprints={sprints} />} />
-          <Route path="/settings" element={<Settings taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} permissionSchemes={permissionSchemes} setPermissionSchemes={handleSetPermissionSchemes} currentUser={currentUser} costRates={costRates} setCostRates={handleSetCostRates} systemSettings={systemSettings} setSystemSettings={setSystemSettings} fetchInitialData={fetchInitialData} users={users} setUsers={handleSetUsers} />} />
+          <Route path="/settings" element={<Settings taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} permissionSchemes={permissionSchemes} setPermissionSchemes={handleSetPermissionSchemes} currentUser={currentUser} costRates={costRates} setCostRates={handleSetCostRates} systemSettings={systemSettings} setSystemSettings={setSystemSettings} fetchInitialData={fetchInitialData} users={users} setUsers={handleSetUsers} />} />
           <Route path="/help" element={<KnowledgeBase currentUser={currentUser} />} />
         </Routes>
       </AppLayout>
