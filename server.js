@@ -2004,8 +2004,8 @@ app.post('/api/pricebook', async (req, res) => {
   const { id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active } = req.body;
   try {
     await pool.query(
-      \`INSERT INTO service_price_book (id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\`,
+      `INSERT INTO service_price_book (id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active]
     );
     res.json({ success: true });
