@@ -23,7 +23,7 @@ import { ProjectDetail } from './components/ProjectDetail';
 import { LeadsPage } from './components/LeadsPage';
 
 import { mockUsers, mockProjects, mockTasks, mockTimesheets } from './data/mockData';
-import type { User, Project, Task, TimesheetEntry, TaskTemplate, Sprint, Release, PermissionScheme, ProjectWorkflow, CostRate, MasterProjectType } from './types';
+import type { User, Project, Task, TimesheetEntry, TaskTemplate, Sprint, Release, PermissionScheme, ProjectWorkflow, CostRate, MasterProjectType, SystemSettings, Branch, ServicePriceItem } from './types';
 import { formatToDDMMYYYY } from './utils';
 import { useLanguage } from './i18n/LanguageContext';
 import './index.css';
@@ -450,10 +450,6 @@ const ActualHoursModal = ({ task, onConfirm, onCancel }: ActualHoursModalProps) 
   );
 };
 
-
-
-
-
 function App() {
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -466,8 +462,9 @@ function App() {
   const [permissionSchemes, setPermissionSchemes] = useState<PermissionScheme[]>([]);
   const [projectWorkflows, setProjectWorkflows] = useState<ProjectWorkflow[]>([]);
   const [costRates, setCostRates] = useState<CostRate[]>([]);
-  const [systemSettings, setSystemSettings] = useState<Record<string, any>>({});
-  const [branches, setBranches] = useState<any[]>([]);
+  const [systemSettings, setSystemSettings] = useState<SystemSettings>({});
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [priceBook, setPriceBook] = useState<ServicePriceItem[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(() => getLocalStorage<User | null>('nt_current_user', null));
   const [loading, setLoading] = useState(true);
   // Actual-hours modal state
@@ -508,6 +505,7 @@ function App() {
         setProjectWorkflows(data.projectWorkflows || []);
         setCostRates(data.costRates || []);
         setBranches(data.branches || []);
+        setPriceBook(data.priceBook || []);
         const settings = data.systemSettings || {};
         setSystemSettings(settings);
         
@@ -1036,7 +1034,7 @@ function App() {
           <Route path="/chat" element={<ProjectChat projects={projects} users={users} currentUser={currentUser} systemSettings={systemSettings} />} />
           <Route path="/team" element={<TeamApprovals users={users} setUsers={handleSetUsers} timesheets={timesheets} setTimesheets={handleSetTimesheets} projects={projects} setProjects={handleSetProjects} tasks={tasks} currentUser={currentUser} />} />
           <Route path="/users" element={<UserManagement users={users} setUsers={handleSetUsers} projects={projects} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
-          <Route path="/master-management" element={<MasterManagement taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
+          <Route path="/master-management" element={<MasterManagement taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} priceBook={priceBook} setPriceBook={setPriceBook} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
           <Route path="/reports" element={<Reports timesheets={timesheets} projects={projects} users={users} currentUser={currentUser} tasks={tasks} costRates={costRates} sprints={sprints} />} />
           <Route path="/settings" element={<Settings taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} permissionSchemes={permissionSchemes} setPermissionSchemes={handleSetPermissionSchemes} currentUser={currentUser} costRates={costRates} setCostRates={handleSetCostRates} systemSettings={systemSettings} setSystemSettings={setSystemSettings} fetchInitialData={fetchInitialData} users={users} setUsers={handleSetUsers} />} />
           <Route path="/help" element={<KnowledgeBase currentUser={currentUser} />} />

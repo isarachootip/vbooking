@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import type { TaskTemplate, User, MasterProjectType } from '../types';
-import { Layers, Plus, Trash2, Edit, Database, Layers3, Sparkles } from 'lucide-react';
+import type { TaskTemplate, User, MasterProjectType, ServicePriceItem } from '../types';
+import { Layers, Plus, Trash2, Edit, Database, Layers3, Sparkles, BookOpen } from 'lucide-react';
+import { PriceBookManager } from './PriceBookManager';
 
 interface MasterManagementProps {
   taskTemplates: TaskTemplate[];
   setTaskTemplates?: React.Dispatch<React.SetStateAction<TaskTemplate[]>>;
   masterProjectTypes: MasterProjectType[];
-  setMasterProjectTypes?: React.Dispatch<React.SetStateAction<MasterProjectType[]>>;
+  setMasterProjectTypes?: (types: MasterProjectType[]) => void;
+  priceBook?: ServicePriceItem[];
+  setPriceBook?: (pb: ServicePriceItem[]) => void;
   currentUser: User | null;
   fetchInitialData?: () => void;
 }
@@ -80,9 +83,11 @@ export const MasterManagement = ({
   taskTemplates,
   masterProjectTypes,
   setMasterProjectTypes,
+  priceBook = [],
+  setPriceBook,
   currentUser: _currentUser
 }: MasterManagementProps) => {
-  const [activeTab, setActiveTab] = useState<'project_types' | 'task_templates' | 'workflow_stages'>('project_types');
+  const [activeTab, setActiveTab] = useState<'project_types' | 'task_templates' | 'workflow_stages' | 'price_book'>('project_types');
 
   // Use props instead of local state
   const masterTypes = masterProjectTypes && masterProjectTypes.length > 0 ? masterProjectTypes : defaultMasterTypes;
@@ -261,6 +266,27 @@ export const MasterManagement = ({
           }}
         >
           <Sparkles size={16} /> 3. Workflow Stages
+        </button>
+
+        <button
+          onClick={() => setActiveTab('price_book')}
+          style={{
+            padding: '0.75rem 1.25rem',
+            border: 'none',
+            background: activeTab === 'price_book' ? 'var(--accent-primary)' : 'transparent',
+            color: activeTab === 'price_book' ? 'white' : 'var(--text-secondary)',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            borderRadius: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <BookOpen size={18} />
+          ฐานข้อมูลราคา (Price Book)
         </button>
       </div>
 
@@ -456,6 +482,11 @@ export const MasterManagement = ({
             ))}
           </div>
         </div>
+      )}
+
+      {/* ── TAB 4: PRICE BOOK ── */}
+      {activeTab === 'price_book' && (
+        <PriceBookManager priceBook={priceBook} setPriceBook={setPriceBook!} />
       )}
 
       {/* ── MODAL: ADD / EDIT MASTER PROJECT TYPE ── */}

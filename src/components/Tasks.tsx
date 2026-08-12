@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import type { Task, TaskStatus, TaskPriority, Project, User, Sprint, Release, TaskCommit, TaskTemplate } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
-import { Plus, Filter, Clock, X, Edit, Trash2, GripVertical, Calendar, Bug, FileText, CheckSquare, Layers, GitBranch, GitCommit, ChevronRight, ChevronDown, BarChart3, CalendarRange } from 'lucide-react';
+import { Plus, Filter, Clock, X, Edit, Trash2, GripVertical, Calendar, Bug, FileText, CheckSquare, Layers, GitBranch, GitCommit, ChevronRight, ChevronDown, BarChart3, CalendarRange, Paperclip, PenTool, Download } from 'lucide-react';
+import { ImageAnnotator } from './ImageAnnotator';
+import { DailyReportPDF } from './DailyReportPDF';
 import {
   DndContext,
   DragOverlay,
@@ -1270,6 +1272,9 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
   const [releaseId, setReleaseId] = useState('');
   const [storyPoints, setStoryPoints] = useState('');
   const [issueType, setIssueType] = useState<'Bug' | 'Story' | 'Task' | 'Sub-task'>('Task');
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [annotatingImageIndex, setAnnotatingImageIndex] = useState<number | null>(null);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Backlog Grooming states
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -1610,6 +1615,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
     setReleaseId('');
     setStoryPoints('');
     setIssueType('Task');
+    setAttachments([]);
     setIsModalOpen(true);
   };
 
@@ -1630,6 +1636,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
     setReleaseId(task.releaseId || '');
     setStoryPoints(task.storyPoints ? String(task.storyPoints) : '');
     setIssueType(task.issueType || 'Task');
+    setAttachments(task.attachments || []);
     setIsModalOpen(true);
   };
 
@@ -1700,6 +1707,8 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
       releaseId: releaseId || undefined,
       storyPoints: spVal || undefined,
       issueType: taskCategory === 'Sub' ? 'Sub-task' : issueType,
+      attachments,
+      updatedAt: new Date().toISOString(),
     };
 
     if (editingTask) {
@@ -2108,6 +2117,27 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
           >
             <Plus size={18} /> Add Task
           </button>
+          
+          {selectedProject !== 'all' && (
+            <button
+              onClick={() => setIsPdfModalOpen(true)}
+              style={{
+                background: 'white',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                padding: '0.75rem 1.5rem',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+              className="hover-lift"
+            >
+              <Download size={18} /> Daily Report PDF
+            </button>
+          )}
         </div>
       </div>
 
@@ -4268,6 +4298,82 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
                 </div>
               </div>
 
+              {/* Attachments & Annotation */}
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="flex-between">
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem' }}>
+                    <Paperclip size={16} /> Attachments & Photos
+                  </h4>
+                  <label 
+                    style={{ 
+                      cursor: 'pointer', 
+                      fontSize: '0.8rem', 
+                      color: 'var(--accent-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                    className="hover-lift"
+                  >
+                    <Plus size={14} /> Add Image
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            if (ev.target?.result) {
+                              setAttachments([...attachments, ev.target.result as string]);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                
+                {attachments.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.75rem' }}>
+                    {attachments.map((url, idx) => (
+                      <div key={idx} style={{ position: 'relative', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)' }} className="group">
+                        <img src={url} alt={`Attachment ${idx}`} style={{ width: '100%', height: '100px', objectFit: 'cover' }} />
+                        <div 
+                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity"
+                        >
+                          <button 
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setAnnotatingImageIndex(idx); }}
+                            style={{ background: 'white', color: '#111', padding: '0.25rem', borderRadius: '4px', border: 'none', cursor: 'pointer' }}
+                            title="Draw / Annotate"
+                          >
+                            <PenTool size={14} />
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={(e) => { 
+                              e.preventDefault(); 
+                              setAttachments(attachments.filter((_, i) => i !== idx)); 
+                            }}
+                            style={{ background: '#ef4444', color: 'white', padding: '0.25rem', borderRadius: '4px', border: 'none', cursor: 'pointer' }}
+                            title="Remove"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '1rem', border: '1px dashed var(--border-color)', borderRadius: '6px' }}>
+                    No photos or attachments yet.
+                  </p>
+                )}
+              </div>
+
               {/* Commit History Panel */}
               {editingTask && (
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -4341,6 +4447,27 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
             </form>
           </div>
         </div>
+      )}
+
+      {annotatingImageIndex !== null && attachments[annotatingImageIndex] && (
+        <ImageAnnotator
+          imageUrl={attachments[annotatingImageIndex]}
+          onSave={(annotatedImage) => {
+            const newAttachments = [...attachments];
+            newAttachments[annotatingImageIndex] = annotatedImage;
+            setAttachments(newAttachments);
+            setAnnotatingImageIndex(null);
+          }}
+          onCancel={() => setAnnotatingImageIndex(null)}
+        />
+      )}
+
+      {isPdfModalOpen && selectedProject !== 'all' && (
+        <DailyReportPDF
+          project={projects.find(p => p.id === selectedProject)!}
+          tasks={tasks.filter(t => t.projectId === selectedProject && (t.status === 'Done' || t.status === 'In Progress'))}
+          onClose={() => setIsPdfModalOpen(false)}
+        />
       )}
     </div>
   );

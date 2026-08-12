@@ -60,6 +60,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.25rem' }}><strong>Gantt Chart & Timeline:</strong> Visual project planning to see overlapping tasks and bottlenecks.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Timesheet & Approvals:</strong> Employees can log daily work hours, which are sent to PMs or Admins for approval.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Task Template Importer:</strong> Bulk import task templates via CSV, JSON, or standard industry presets (Home Renovation, Electrical, Plumbing).</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Service Price Book:</strong> Master database for material costs, labor costs, and selling prices to automate BOQ and quotation margins.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Resource & Cost Tracking:</strong> Labor rates, Man-Days, and budget calculations.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>AI Assistant:</strong> Built-in Chatbot powered by Google Gemini (or OpenAI) to help answer system questions.</li>
                 <li><strong>Role-Based Access Control (RBAC):</strong> Granular permission schemes for Admins, Managers, PMs, and Members.</li>
@@ -496,6 +497,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.25rem' }}><strong>Gantt Chart & Timeline:</strong> วางแผนงานระยะยาว เปรียบเทียบแผนจริงกับแผนแม่แบบ</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Timesheet & Approvals:</strong> บันทึกชั่วโมงทำงานช่างและส่งให้ผู้จัดการกดอนุมัติ</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Task Template Importer:</strong> นำเข้าแม่แบบงานสำเร็จรูปผ่าน CSV, JSON หรือเลือกจากชุดแม่แบบมาตรฐาน (รีโนเวทบ้าน, ระบบไฟฟ้า-ประปา)</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Service Price Book:</strong> ฐานข้อมูลกลางสำหรับจัดการต้นทุนวัสดุ ค่าแรง และราคาขาย พร้อมช่วยคำนวณกำไร (Margin) เพื่อใช้ทำใบเสนอราคา (BOQ) อัตโนมัติ</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Resource & Cost Tracking:</strong> กำหนดอัตราค่าแรงช่าง และคำนวณต้นทุน/กำไรโครงการอัตโนมัติ</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>AI Assistant:</strong> แชทบอทอัจฉริยะที่เชื่อมต่อกับ Google Gemini (หรือ OpenAI) ช่วยตอบคำถามและให้คำแนะนำ</li>
                 <li><strong>Role-Based Access Control (RBAC):</strong> ระบบกำหนดสิทธิ์การเข้าถึงข้อมูลที่ละเอียด ตั้งแต่ระดับ Admin, Manager, PM จนถึง Member</li>
@@ -1047,6 +1049,22 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               </ul>
             </div>
           )
+        },
+        {
+          id: 'f8',
+          question: 'How to manage the Service Price Book and Margin %?',
+          icon: Database,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>The Service Price Book is a centralized database used to store master prices for generating Quotations and BOQs (Bill of Quantities).</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Accessing the Price Book:</strong> Navigate to <code>Settings &gt; Master Management</code> and click the "Service Price Book" tab.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Cost & Price Configuration:</strong> When adding an item, you can specify the Material Cost, Labor Cost, and Selling Price.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Automatic Margin Calculation:</strong> The system automatically calculates the Gross Margin percentage using the formula: <code>((Selling Price - Total Cost) / Selling Price) * 100</code>.</li>
+                <li><strong>Visual Indicators:</strong> Margins of 30% or higher are highlighted in <span style={{ color: '#10b981', fontWeight: 600 }}>green</span>, helping Sales and PMs instantly spot profitable items, while lower margins are highlighted in orange.</li>
+              </ul>
+            </div>
+          )
         }
       ]
     },
@@ -1175,6 +1193,22 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.25rem' }}><strong>การพล็อตแบบ 2 แท่งซ้อนกัน:</strong> ในโหมดเปรียบเทียบ แต่ละ Milestone จะมีแท่งทึบด้านบน (แทนแผนเปรียบเทียบหรือแผนปัจจุบัน) และแท่งเส้นประด้านล่าง (แทนแผนตั้งต้น Baseline)</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>เส้นประคลาดเคลื่อนและป้ายระบุล่าช้า:</strong> หากแผนปัจจุบันเลื่อนช้าออกไป จะมีเส้นป้ายเตือน (เช่น <code>+5d Delay</code>) เชื่อมส่วนปลายแสดงความกว้างของวันที่ช้ากว่าแผน</li>
                 <li><strong>แก้แล้วแสดงผลทันที:</strong> สามารถปรับเปลี่ยนวันที่ในตาราง Milestones & Subtasks ด้านล่างเพื่อดูผลทดสอบการเลื่อนของแท่งและเปอร์เซ็นต์ส่วนต่างสะสมได้ทันทีครับ</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f8',
+          question: 'วิธีการจัดการฐานข้อมูลราคา (Service Price Book) และคำนวณกำไร?',
+          icon: Database,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ฐานข้อมูลราคา (Service Price Book) คือระบบศูนย์กลางสำหรับบันทึกต้นทุนและราคาขายมาตรฐาน เพื่อนำไปใช้ออกใบเสนอราคาและ BOQ:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การเข้าใช้งาน:</strong> ไปที่เมนู <code>ตั้งค่าระบบ (Settings) &gt; Master Management</code> แล้วเลือกแท็บ "ฐานข้อมูลราคา (Price Book)"</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การตั้งราคา:</strong> เมื่อเพิ่มรายการใหม่ คุณสามารถกรอกรายละเอียด ต้นทุนวัสดุ ต้นทุนค่าแรง และ ราคาขายรวม ได้ทันที</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การคำนวณกำไรอัตโนมัติ:</strong> ระบบจะคำนวณกำไรขั้นต้น (Gross Margin %) ให้อัตโนมัติด้วยสูตร <code>((ราคาขาย - ต้นทุนรวม) / ราคาขาย) * 100</code></li>
+                <li><strong>แถบสีแสดงผลกำไร:</strong> รายการที่ได้กำไรมากกว่าหรือเท่ากับ 30% ระบบจะแสดงป้ายกำไรเป็น <span style={{ color: '#10b981', fontWeight: 600 }}>สีเขียว</span> เพื่อให้ผู้บริหารหรือ Sales ทราบได้ทันทีว่ารายการนี้ทำกำไรได้ดี หากน้อยกว่า 30% จะเป็นสีส้ม</li>
               </ul>
             </div>
           )

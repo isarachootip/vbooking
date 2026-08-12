@@ -405,6 +405,22 @@ const initDB = async () => {
       );
     `);
 
+    // Create Service Price Book Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS service_price_book (
+        id VARCHAR(50) PRIMARY KEY,
+        category VARCHAR(100),
+        service_name VARCHAR(255) NOT NULL,
+        unit_type VARCHAR(50) NOT NULL,
+        material_cost NUMERIC DEFAULT 0,
+        labor_cost NUMERIC DEFAULT 0,
+        selling_price NUMERIC DEFAULT 0,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Create System Settings Table
     await client.query(`
       CREATE TABLE IF NOT EXISTS system_settings (
@@ -1572,6 +1588,7 @@ app.get('/api/initial-data', async (req, res) => {
     const costRatesRes = await pool.query('SELECT * FROM cost_rates');
     const settingsRes = await pool.query('SELECT * FROM system_settings');
     const branchesRes = await pool.query('SELECT * FROM branches ORDER BY name ASC');
+    const priceBookRes = await pool.query('SELECT * FROM service_price_book ORDER BY category ASC, service_name ASC');
     const systemSettings = {};
     settingsRes.rows.forEach(row => {
       systemSettings[row.setting_key] = row.setting_value;
@@ -1746,7 +1763,8 @@ app.get('/api/initial-data', async (req, res) => {
       projectWorkflows, 
       costRates, 
       systemSettings,
-      branches
+      branches,
+      priceBook: priceBookRes.rows
     });
   } catch (err) {
     console.error('Error fetching initial data:', err);
@@ -1970,6 +1988,58 @@ async function generateFormattedProjectId() {
   const runningStr = String(running).padStart(3, '0');
   return `${prefix}-${runningStr}`;
 }
+
+// --- Service Price Book API ---
+app.get('/api/pricebook', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM service_price_book ORDER BY category ASC, service_name ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch price book' });
+  }
+});
+
+app.post('/api/pricebook', async (req, res) => {
+  const { id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active } = req.body;
+  try {
+    await pool.query(
+      \`INSERT INTO service_price_book (id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\`,
+      [id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to add price item' });
+  }
+});
+
+app.put('/api/pricebook/:id', async (req, res) => {
+  const { category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active } = req.body;
+  try {
+    await pool.query(
+      \`UPDATE service_price_book 
+       SET category = $1, service_name = $2, unit_type = $3, material_cost = $4, labor_cost = $5, selling_price = $6, is_active = $7, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $8\`,
+      [category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update price item' });
+  }
+});
+
+app.delete('/api/pricebook/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM service_price_book WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete price item' });
+  }
+});
 
 // Projects REST API
 // --- Master Project Types API ---

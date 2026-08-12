@@ -141,6 +141,7 @@ export interface Task {
   releaseId?: string;
   storyPoints?: number;
   issueType?: 'Bug' | 'Story' | 'Task' | 'Sub-task';
+  attachments?: string[];
   updatedAt?: string;
 }
 
@@ -210,6 +211,32 @@ export interface MasterProjectType {
   taskTypeStyle?: 'single' | 'workflow' | 'sla';
 }
 
+export type SystemSettings = Record<string, any>;
+
+export interface Branch {
+  id: string;
+  code?: string;
+  name: string;
+  province?: string;
+  status?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  openTime?: string;
+  closeTime?: string;
+  phone?: string;
+  storeGroup?: string;
+}
 
 
+export interface ServicePriceItem {
+  id: string;
+  category: string;
+  service_name: string;
+  unit_type: string;
+  material_cost: number;
+  labor_cost: number;
+  selling_price: number;
+  is_active: boolean;
+}
 
