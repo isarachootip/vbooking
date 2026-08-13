@@ -519,6 +519,11 @@ export const Projects = ({
     const matchesBranch = branchFilter === 'All' || (extra.branch || 'สาขาบางนา') === branchFilter;
 
     return matchesSearch && matchesStatus && matchesType && matchesBranch;
+  }).sort((a, b) => {
+    // Phase 12: Sort by convertedAt or startDate descending
+    const dateA = new Date((a as any).convertedAt || a.startDate).getTime();
+    const dateB = new Date((b as any).convertedAt || b.startDate).getTime();
+    return dateB - dateA;
   });
 
   return (
@@ -591,7 +596,8 @@ export const Projects = ({
 
         {/* Real Stage Metrics */}
         {[
-          { label: 'ซื้อสำรวจ', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: projects.filter(p => p.status === 'ซื้อสำรวจ' || p.status === 'Planning' || p.status === 'Draft').length },
+          { label: 'To Do', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: projects.filter(p => p.status === 'To Do' || p.status === 'Planning' || p.status === 'Draft').length },
+          { label: 'ซื้อสำรวจ', icon: FileText, color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.15)', count: projects.filter(p => p.status === 'ซื้อสำรวจ').length },
           { label: 'QC (สำรวจ)', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: projects.filter(p => p.status === 'QC (สำรวจ)').length },
           { label: 'ออกแบบ & ใบเสนอราคา', icon: CheckCircle2, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: projects.filter(p => p.status === 'ออกแบบ' || p.status === 'สร้างใบเสนอราคา').length },
           { label: 'ลูกค้ายืนยัน / ชำระเงิน', icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', count: projects.filter(p => p.status === 'ลูกค้ายืนยัน' || p.status === 'ชำระเงิน' || p.status === 'Completed').length }
@@ -637,6 +643,7 @@ export const Projects = ({
               style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
             >
               <option value="All">ขั้นตอนโปรเจกต์: ทั้งหมด</option>
+              <option value="To Do">To Do</option>
               <option value="ซื้อสำรวจ">ซื้อสำรวจ</option>
               <option value="QC (สำรวจ)">QC (สำรวจ)</option>
               <option value="ออกแบบ">ออกแบบ</option>
@@ -733,23 +740,17 @@ export const Projects = ({
                       checked={selectedProjectIds.length > 0 && selectedProjectIds.length === filteredProjectsList.length}
                     />
                   </th>
-                  <th style={{ padding: '0.75rem 0.5rem', width: '40px' }}>No.</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>ชื่อโปรเจกต์</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>ประเภทงาน</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>สถานะโปรเจกต์</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>ขั้นตอนปัจจุบัน (Workflow)</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>หมายเลขสมัครสำรวจ</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>หมายเลขแบบสอบถาม</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>ปรับปรุงหมายเลข QT</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>ลูกค้า</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>สาขา</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>วันที่สร้าง</th>
-                  <th style={{ padding: '0.75rem 0.75rem' }}>ผู้รับผิดชอบ</th>
-                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>ดำเนินการ</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>ชื่อโครงการ</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>ข้อมูลลูกค้า</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>สถานะ</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>สาขา / อ้างอิง</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Converted Date</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>ทีมงาน (PIC)</th>
+                  <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>ดำเนินการ</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredProjectsList.map((project, idx) => {
+                {filteredProjectsList.map((project, index) => {
                   const extra = project.extraDetails || {};
                   const isChecked = selectedProjectIds.includes(project.id);
                   const isHighlighted = highlightedProjectId === project.id;
@@ -764,141 +765,101 @@ export const Projects = ({
                   const wf = workflowSteps[idx % workflowSteps.length];
 
                   return (
-                    <tr 
-                      key={project.id} 
-                      id={project.id}
-                      style={{ 
-                        borderBottom: '1px solid var(--border-color)', 
-                        background: isHighlighted ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                        transition: 'background 0.2s'
-                      }}
-                      className="hover-bg"
-                    >
-                      <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
-                        <input 
-                          type="checkbox" 
-                          checked={isChecked} 
-                          onChange={e => {
-                            if (e.target.checked) setSelectedProjectIds(prev => [...prev, project.id]);
-                            else setSelectedProjectIds(prev => prev.filter(id => id !== project.id));
-                          }}
-                        />
-                      </td>
-
-                      <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                        {idx + 1}
-                      </td>
-
-                      {/* Project ID & Name */}
-                      <td style={{ padding: '0.75rem 0.75rem' }}>
-                        <Link to={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent-primary)' }} className="hover-underline">
-                            {project.id.length > 15 ? project.id.substring(0, 15) : project.id}
-                          </span>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                            {project.name}
-                          </span>
-                        </Link>
-                      </td>
-
-
-                      {/* Building Type */}
-                      <td style={{ padding: '0.75rem 0.75rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', width: 'fit-content' }}>
-                            {extra.buildingType === 'คอนโด' ? '🏢 คอนโด' : extra.buildingType === 'อาคารพาณิชย์' ? '🏭 อาคารพาณิชย์' : extra.buildingType === 'สำนักงาน' ? '🏢 สำนักงาน' : extra.buildingType === 'โรงงาน/คลังสินค้า' ? '🏭 โรงงาน' : '🏠 บ้านเดี่ยว'}
+                      <tr 
+                        key={project.id} 
+                        id={project.id}
+                        style={{ 
+                          borderBottom: '1px solid var(--border-color)', 
+                          background: selectedProjectIds.includes(project.id) ? 'var(--bg-secondary)' : (highlightedProjectId === project.id ? 'var(--highlight-bg, rgba(239, 68, 68, 0.1))' : 'transparent'),
+                          transition: 'background-color 0.3s ease'
+                        }}
+                      >
+                        <td style={{ padding: '0.85rem 1rem' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedProjectIds.includes(project.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedProjectIds(prev => [...prev, project.id]);
+                              else setSelectedProjectIds(prev => prev.filter(id => id !== project.id));
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
+                        <td style={{ padding: '0.85rem 1rem' }}>
+                          <Link to={`/projects/${project.id}`} style={{ textDecoration: 'none' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              {project.id}
+                              {isNew && <span style={{ fontSize: '0.65rem', background: '#ef4444', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>🔥 New!</span>}
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                              {project.projectType === 'dev' && <span style={{ color: '#8b5cf6' }}>💻 ซอฟต์แวร์</span>}
+                              {project.projectType !== 'dev' && <span style={{ color: '#f59e0b' }}>🏗️ งานช่าง</span>}
+                            </div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.2rem' }}>{project.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                              {extra.buildingType || 'บ้านเดี่ยว'}
+                            </div>
+                          </Link>
+                        </td>
+                        {/* Phase 12 Customer Info */}
+                        <td style={{ padding: '0.85rem 1rem' }}>
+                          <div style={{ color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 500 }}>
+                            {(project as any).customerName || extra.customerStaffPic || '-'}
                           </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {(project as any).customerPhone || '-'}
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.85rem 1rem' }}>
+                          <span style={{ 
+                            padding: '0.25rem 0.75rem', 
+                            borderRadius: '9999px', 
+                            fontSize: '0.75rem', 
+                            fontWeight: 600,
+                            background: project.status === 'Done' ? 'rgba(16, 185, 129, 0.15)' : 
+                                      project.status === 'Active' ? 'rgba(59, 130, 246, 0.15)' : 
+                                      project.status === 'In Progress' ? 'rgba(245, 158, 11, 0.15)' : 
+                                      'rgba(156, 163, 175, 0.15)',
+                            color: project.status === 'Done' ? '#10b981' : 
+                                   project.status === 'Active' ? '#3b82f6' : 
+                                   project.status === 'In Progress' ? '#f59e0b' : 
+                                   '#6b7280',
+                            border: `1px solid ${
+                              project.status === 'Done' ? 'rgba(16, 185, 129, 0.3)' : 
+                              project.status === 'Active' ? 'rgba(59, 130, 246, 0.3)' : 
+                              project.status === 'In Progress' ? 'rgba(245, 158, 11, 0.3)' : 
+                              'rgba(156, 163, 175, 0.3)'
+                            }`
+                          }}>
+                            {project.status === 'Done' ? 'ส่งมอบแล้ว' : project.status === 'Active' ? 'กำลังดำเนินงาน' : project.status === 'In Progress' ? 'อยู่ระหว่างเข้าทำ' : 'วางแผน'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.85rem 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          <div style={{ fontWeight: 500 }}>{extra.branch || 'สาขาบางนา'}</div>
+                          {extra.surveyTicketNo && <div style={{ fontSize: '0.75rem' }}>🎫 {extra.surveyTicketNo}</div>}
+                        </td>
+                        <td style={{ padding: '0.85rem 1rem' }}>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>Converted:</span> {(project as any).convertedAt ? formatToDDMMYYYY((project as any).convertedAt) : formatToDDMMYYYY(project.startDate)}
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.85rem 1rem' }}>
                           {(() => {
-                            const matchType = masterProjectTypes.find((t: any) => t.id === project.projectType);
-                            if (!matchType) return null;
+                            const picId = extra.picUser || project.members?.[0]?.userId || '';
                             return (
-                              <span style={{ 
-                                padding: '0.15rem 0.4rem', 
-                                borderRadius: '4px', 
-                                fontSize: '0.7rem', 
-                                fontWeight: 700, 
-                                background: (matchType.color || '#059669') + '20', 
-                                color: matchType.color || '#059669',
-                                border: `1px solid ${matchType.color || '#059669'}30`,
-                                width: 'fit-content'
-                              }}>
-                                {matchType.badgeText || matchType.name}
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                                <img 
+                                  src={getUserAvatar(picId) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'} 
+                                  alt="PIC Avatar" 
+                                  style={{ width: '24px', height: '24px', borderRadius: '50%' }} 
+                                />
+                                <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                  {getUserName(picId)}
+                                </span>
+                              </div>
                             );
                           })()}
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td style={{ padding: '0.75rem 0.75rem' }}>
-                        <span style={{ 
-                          padding: '0.25rem 0.65rem', 
-                          borderRadius: 'var(--radius-full)', 
-                          fontSize: '0.725rem',
-                          fontWeight: 700,
-                          background: project.status === 'Active' ? 'rgba(245, 158, 11, 0.15)' : project.status === 'Completed' ? 'rgba(16, 185, 129, 0.15)' : project.status === 'Cancelled' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                          color: project.status === 'Active' ? '#f59e0b' : project.status === 'Completed' ? '#10b981' : project.status === 'Cancelled' ? '#ef4444' : '#3b82f6',
-                        }}>
-                          {project.status === 'Active' ? 'กำลังดำเนินการ' : project.status === 'Completed' ? 'เสร็จสิ้น' : project.status === 'Cancelled' ? 'ยกเลิก' : 'รอดำเนินการ'}
-                        </span>
-                      </td>
-
-                      {/* Workflow Step */}
-                      <td style={{ padding: '0.75rem 0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: wf.color, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0 }}>
-                            {wf.step}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                            {wf.label}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Document No */}
-                      <td style={{ padding: '0.75rem 0.75rem', fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                        {extra.surveyAppNo || '-'}
-                      </td>
-                      <td style={{ padding: '0.75rem 0.75rem', fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                        {extra.questionnaireNo || '-'}
-                      </td>
-                      <td style={{ padding: '0.75rem 0.75rem', fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                        {extra.qtNo || '-'}
-                      </td>
-
-                      {/* Customer */}
-                      <td style={{ padding: '0.75rem 0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {extra.customerStaffPic || (idx % 2 === 0 ? 'คุณสมชาย ใจดี' : 'คุณวิภาวดี พรประเสริฐ')}
-                      </td>
-
-                      {/* Branch */}
-                      <td style={{ padding: '0.75rem 0.75rem', color: 'var(--text-secondary)' }}>
-                        {extra.branch || (idx % 3 === 0 ? 'สาขาบางนา' : idx % 3 === 1 ? 'สาขารัชดา' : 'สาขาบางพลี')}
-                      </td>
-
-                      {/* Created Date */}
-                      <td style={{ padding: '0.75rem 0.75rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                        {formatToDDMMYYYY(project.startDate)}
-                      </td>
-
-                      {/* PIC / Responsible User */}
-                      <td style={{ padding: '0.75rem 0.75rem' }}>
-                        {(() => {
-                          const picId = extra.picUser || project.members?.[0]?.userId || '';
-                          return (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                              <img 
-                                src={getUserAvatar(picId) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100'} 
-                                alt="PIC Avatar" 
-                                style={{ width: '24px', height: '24px', borderRadius: '50%' }} 
-                              />
-                              <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {getUserName(picId)}
-                              </span>
-                            </div>
-                          );
-                        })()}
-                      </td>
+                        </td>
 
                       {/* Actions */}
                       <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>

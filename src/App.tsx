@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity } from 'lucide-react';
 import { PMTBrandLogo } from './components/PMTBrandLogo';
 import { Dashboard } from './components/Dashboard';
+import { ExecutiveDashboard } from './components/ExecutiveDashboard';
 import { Projects } from './components/Projects';
 import { Timesheet } from './components/Timesheet';
 import { SiteCheckInOut } from './components/SiteCheckInOut';
@@ -294,6 +295,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
         </div>
         
         <nav style={{ padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }} onClick={() => setIsSidebarOpen(false)}>
+          <SidebarItem icon={Activity} label="Executive Dashboard" path="/exec-dashboard" />
           <SidebarItem icon={LayoutDashboard} label={t.dashboard} path="/" />
           <SidebarItem icon={Users} label={t.leads} path="/leads" />
           <SidebarItem icon={Briefcase} label={t.projects} path="/projects" />
@@ -1036,6 +1038,7 @@ function App() {
       )}
       <AppLayout currentUser={currentUser} tasks={tasks} onLogout={handleLogout}>
         <Routes>
+          <Route path="/exec-dashboard" element={<ExecutiveDashboard currentUser={currentUser} />} />
           <Route path="/" element={<Dashboard projects={projects} tasks={tasks} timesheets={timesheets} currentUser={currentUser} />} />
           <Route path="/leads" element={<LeadsPage currentUser={currentUser} branches={branches} />} />
           <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} masterProjectTypes={masterProjectTypes} branches={branches} />} />

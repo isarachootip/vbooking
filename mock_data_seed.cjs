@@ -14,54 +14,83 @@ const runSeed = async () => {
     
     // 1. Users
     const users = [
-      { id: 'u_1001', name: 'Somchai (PM)', email: 'somchai.pm@example.com', role: 'admin' },
-      { id: 'u_1002', name: 'Nadech (Dev)', email: 'nadech.dev@example.com', role: 'member' },
-      { id: 'u_1003', name: 'Yaya (Tester)', email: 'yaya.test@example.com', role: 'member' },
-      { id: 'u_1004', name: 'Tony (Client)', email: 'tony.client@example.com', role: 'client' },
+      { id: 'u_1001', name: 'Somchai (PM)', email: 'somchai.pm@example.com', role: 'admin', skills: [] },
+      { id: 'u_1002', name: 'Nadech (Dev)', email: 'nadech.dev@example.com', role: 'member', skills: [] },
+      { id: 'u_1003', name: 'Yaya (QC Tech)', email: 'yaya.test@example.com', role: 'member', skills: ['QC', 'Wiring'] },
+      { id: 'u_1004', name: 'Tony (Client)', email: 'tony.client@example.com', role: 'client', skills: [] },
+      { id: 'u_1005', name: 'Mario (Senior Tech)', email: 'mario.tech@example.com', role: 'member', skills: ['QC', 'Plumbing'] },
     ];
     
     for (const u of users) {
       await pool.query(
-        `INSERT INTO users (id, name, email, global_role) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
-        [u.id, u.name, u.email, u.role]
+        `INSERT INTO users (id, name, email, global_role, skills) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, skills = EXCLUDED.skills`,
+        [u.id, u.name, u.email, u.role, u.skills]
       );
     }
     console.log('Users seeded.');
 
-    // 2. Projects
+    // 2. Projects (Wipe and recreate with Smart Project IDs)
+    await pool.query('DELETE FROM tasks'); // Delete tasks first due to FK
+    await pool.query('DELETE FROM projects');
+    
+    // Generate date string DDMMYYYY
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(d.getFullYear());
+    const dateStr = `${dd}${mm}${yyyy}`;
+
     const projects = [
       { 
-        id: 'p_2001', name: 'Smart Hotel Renovation', status: 'Active', 
-        budget: 500000, type: 'construction',
+        id: `PQBNA${dateStr}0001`, name: 'ซ่อมท่อน้ำแตก ด่วน', status: 'In Progress', 
+        budget: 5000, type: 'Quick service', address: 'Bangna',
+        start_date: '2026-08-10', end_date: '2026-08-15'
+      },
+      { 
+        id: `PIHQ0${dateStr}0002`, name: 'ติดตั้งแอร์ 5 ตัว อาคาร A', status: 'To Do', 
+        budget: 15000, type: 'Installer Service', address: 'HQ0',
+        start_date: '2026-08-14', end_date: '2026-08-20'
+      },
+      { 
+        id: `PRRM9${dateStr}0003`, name: 'Renovate ออฟฟิศชั้น 2', status: 'Active', 
+        budget: 500000, type: 'Renovate Service', address: 'Rama 9',
         start_date: '2026-08-01', end_date: '2026-12-31'
       },
       { 
-        id: 'p_2002', name: 'CRM NextGen Implementation', status: 'Active', 
-        budget: 150000, type: 'dev',
-        start_date: '2026-08-10', end_date: '2026-09-30'
+        id: `PBBNA${dateStr}0004`, name: 'บิ้วอินตู้เสื้อผ้าและครัว', status: 'Done', 
+        budget: 120000, type: 'Build-In', address: 'Bangna',
+        start_date: '2026-07-01', end_date: '2026-07-15'
+      },
+      { 
+        id: `PNLTP${dateStr}0005`, name: 'สร้างบ้าน 2 ชั้น โครงการ Z', status: 'Planning', 
+        budget: 4500000, type: 'New House', address: 'Lat Phrao',
+        start_date: '2026-09-01', end_date: '2027-03-31'
+      },
+      { 
+        id: `PMRM9${dateStr}0006`, name: 'MA ดูแลระบบไฟรายปี', status: 'Active', 
+        budget: 50000, type: 'MA Service', address: 'Rama 9',
+        start_date: '2026-01-01', end_date: '2026-12-31'
       }
     ];
 
     for (const p of projects) {
       await pool.query(
-        `INSERT INTO projects (id, name, status, start_date, end_date, budget, project_type) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
-        [p.id, p.name, p.status, p.start_date, p.end_date, p.budget, p.type]
+        `INSERT INTO projects (id, name, status, start_date, end_date, budget, project_type, address) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING`,
+        [p.id, p.name, p.status, p.start_date, p.end_date, p.budget, p.type, p.address]
       );
     }
-    console.log('Projects seeded.');
+    console.log('Projects seeded with Smart IDs.');
 
     // 3. Tasks
     const tasks = [
-      // Project 1 Tasks
-      { id: 't_3001', pid: 'p_2001', assignee: 'u_1001', title: 'Site Inspection & Measurement', status: 'Done', prio: 'High', est: 8 },
-      { id: 't_3002', pid: 'p_2001', assignee: 'u_1002', title: 'Demolish old walls in Lobby', status: 'In Progress', prio: 'Urgent', est: 16 },
-      { id: 't_3003', pid: 'p_2001', assignee: null, title: 'Install new smart lighting system', status: 'To Do', prio: 'Medium', est: 24 },
+      // Quick Service Tasks
+      { id: 't_3001', pid: projects[0].id, assignee: 'u_1001', title: 'ตรวจเช็คท่อน้ำ', status: 'Done', prio: 'High', est: 2 },
+      { id: 't_3002', pid: projects[0].id, assignee: 'u_1002', title: 'เปลี่ยนท่อและอุดรอยรั่ว', status: 'In Progress', prio: 'Urgent', est: 4 },
       
-      // Project 2 Tasks
-      { id: 't_3004', pid: 'p_2002', assignee: 'u_1001', title: 'Gather Requirements from Sales Team', status: 'Done', prio: 'High', est: 12 },
-      { id: 't_3005', pid: 'p_2002', assignee: 'u_1002', title: 'Develop API for Customer Data', status: 'In Progress', prio: 'High', est: 40 },
-      { id: 't_3006', pid: 'p_2002', assignee: 'u_1003', title: 'Write Automated Tests for API', status: 'To Do', prio: 'Medium', est: 16 },
+      // Renovate Tasks
+      { id: 't_3004', pid: projects[2].id, assignee: 'u_1001', title: 'รื้อถอนกำแพงเดิม', status: 'Done', prio: 'High', est: 12 },
+      { id: 't_3005', pid: projects[2].id, assignee: 'u_1002', title: 'ติดตั้งฝ้าเพดาน', status: 'In Progress', prio: 'High', est: 40 },
     ];
 
     for (const t of tasks) {

@@ -137,14 +137,15 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
 
   // Stage Progression distribution matching the Kanban workflow stages
   const stagesDefinition = [
-    { id: 1, title: 'ซื้อสำรวจ', color: '#3b82f6', statuses: ['ซื้อสำรวจ', 'Planning', 'Draft', 'To Do', 'todo'] },
-    { id: 2, title: 'QC (สำรวจ)', color: '#f59e0b', statuses: ['QC (สำรวจ)', 'QC', 'qc'] },
-    { id: 3, title: 'ออกแบบ', color: '#8b5cf6', statuses: ['ออกแบบ', 'design'] },
-    { id: 4, title: 'สร้างใบเสนอราคา', color: '#6366f1', statuses: ['สร้างใบเสนอราคา', 'proposal', 'quote'] },
-    { id: 5, title: 'ลูกค้ายืนยัน', color: '#10b981', statuses: ['ลูกค้ายืนยัน'] },
-    { id: 6, title: 'ชำระเงิน', color: '#059669', statuses: ['ชำระเงิน'] },
-    { id: 7, title: 'กำลังดำเนินการ', color: '#3b82f6', statuses: ['กำลังดำเนินการ', 'Active', 'In Progress', 'active', 'inprogress'] },
-    { id: 8, title: 'เสร็จสิ้น', color: '#475569', statuses: ['เสร็จสิ้น', 'Completed', 'Done', 'completed', 'done'] }
+    { id: 1, title: 'To Do', color: '#3b82f6', statuses: ['To Do', 'Planning', 'Draft', 'todo'] },
+    { id: 2, title: 'ซื้อสำรวจ', color: '#0ea5e9', statuses: ['ซื้อสำรวจ'] },
+    { id: 3, title: 'QC (สำรวจ)', color: '#f59e0b', statuses: ['QC (สำรวจ)', 'QC', 'qc'] },
+    { id: 4, title: 'ออกแบบ', color: '#8b5cf6', statuses: ['ออกแบบ', 'design'] },
+    { id: 5, title: 'สร้างใบเสนอราคา', color: '#6366f1', statuses: ['สร้างใบเสนอราคา', 'proposal', 'quote'] },
+    { id: 6, title: 'ลูกค้ายืนยัน', color: '#10b981', statuses: ['ลูกค้ายืนยัน'] },
+    { id: 7, title: 'ชำระเงิน', color: '#059669', statuses: ['ชำระเงิน'] },
+    { id: 8, title: 'กำลังดำเนินการ', color: '#3b82f6', statuses: ['กำลังดำเนินการ', 'Active', 'In Progress', 'active', 'inprogress'] },
+    { id: 9, title: 'เสร็จสิ้น', color: '#475569', statuses: ['เสร็จสิ้น', 'Completed', 'Done', 'completed', 'done'] }
   ];
 
   const stageStats = stagesDefinition.map(stg => {
@@ -407,11 +408,18 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
         {/* Real Stage Metrics Cards */}
         {[
           { 
-            label: 'ซื้อสำรวจ', 
+            label: 'To Do', 
             icon: FileText, 
             color: '#3b82f6', 
             bg: 'rgba(59, 130, 246, 0.15)', 
-            count: filteredProjects.filter(p => ['ซื้อสำรวจ', 'Planning', 'Draft', 'To Do', 'todo'].includes(p.status)).length 
+            count: filteredProjects.filter(p => ['To Do', 'Planning', 'Draft', 'todo'].includes(p.status)).length 
+          },
+          { 
+            label: 'ซื้อสำรวจ', 
+            icon: FileText, 
+            color: '#0ea5e9', 
+            bg: 'rgba(14, 165, 233, 0.15)', 
+            count: filteredProjects.filter(p => ['ซื้อสำรวจ'].includes(p.status)).length 
           },
           { 
             label: 'QC (สำรวจ)', 

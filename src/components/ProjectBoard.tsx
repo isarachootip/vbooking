@@ -20,6 +20,7 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
 
   // Workflow Columns matching original setup shown in reference screenshot
   const columns = [
+    { id: 'To Do', title: 'To Do' },
     { id: 'ซื้อสำรวจ', title: 'ซื้อสำรวจ' },
     { id: 'QC (สำรวจ)', title: 'QC (สำรวจ)' },
     { id: 'ออกแบบ', title: 'ออกแบบ' },
@@ -34,10 +35,10 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
   const getProjectColumn = (project: Project): string => {
     const status = project.status;
     if (columns.some(c => c.id === status)) return status;
-    if (status === 'Planning' || status === 'Draft' || status === 'To Do') return 'ซื้อสำรวจ';
+    if (status === 'Planning' || status === 'Draft') return 'To Do';
     if (status === 'In Progress' || status === 'Active') return 'กำลังดำเนินการ';
     if (status === 'Completed' || status === 'Done') return 'เสร็จสิ้น';
-    return 'ซื้อสำรวจ';
+    return 'To Do';
   };
 
   const filteredProjects = projects.filter(p => {
@@ -66,11 +67,11 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
     setProjects(prev => prev.map(p => {
       if (p.id !== draggedProjectId) return p;
       
-      let newStatus: ProjectStatus = p.status;
-      if (columnId === 'ซื้อสำรวจ') newStatus = 'Planning';
+      let newStatus: ProjectStatus = columnId as ProjectStatus;
+      // Convert standard columns back to DB status if needed
+      if (columnId === 'To Do') newStatus = 'Planning';
       else if (columnId === 'กำลังดำเนินการ') newStatus = 'Active';
       else if (columnId === 'เสร็จสิ้น') newStatus = 'Completed';
-      else newStatus = columnId as ProjectStatus;
 
       return {
         ...p,

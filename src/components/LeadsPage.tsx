@@ -69,6 +69,12 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
   const [assigneeName, setAssigneeName] = useState(currentUser?.name || 'แอดมิน');
   const [followupNotes, setFollowupNotes] = useState('');
   const [followupNewStatus, setFollowupNewStatus] = useState('Contacted');
+  
+  // Site Visit Enhanced Fields
+  const [siteCoordinatorName, setSiteCoordinatorName] = useState('');
+  const [siteCoordinatorPhone, setSiteCoordinatorPhone] = useState('');
+  const [siteCoordinatorLineId, setSiteCoordinatorLineId] = useState('');
+  const [siteMapUrl, setSiteMapUrl] = useState('');
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,8 +92,12 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
   const [smartInput, setSmartInput] = useState<string>('');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
+  const [requireVisit, setRequireVisit] = useState(false);
+  const [surveyDate, setSurveyDate] = useState('');
+  const [surveyorId, setSurveyorId] = useState('');
+  const [availableSurveyors, setAvailableSurveyors] = useState<any[]>([]);
 
-  const [jobType, setJobType] = useState('Quick Service');
+  const [jobType, setJobType] = useState('Quick service');
   const [status, setStatus] = useState('New');
   const [branch, setBranch] = useState(() => (branches && branches.length > 0) ? branches[0].name : 'สาขาบางนา');
   const [buildingType, setBuildingType] = useState('บ้านเดี่ยว');
@@ -100,13 +110,24 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
   const [customRequiredWorkType, setCustomRequiredWorkType] = useState('');
   const [notes, setNotes] = useState('');
 
-  const fetchLeads = async () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalLeads, setTotalLeads] = useState(0);
+
+  const fetchLeads = async (page = 1) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/leads', { headers: { 'X-User-Id': currentUser?.id || '' } });
+      const response = await fetch(`/api/leads?page=${page}&limit=20`, { headers: { 'X-User-Id': currentUser?.id || '' } });
       if (response.ok) {
-        const data = await response.json();
-        setLeads(data);
+        const result = await response.json();
+        if (result.data && result.pagination) {
+          setLeads(result.data);
+          setCurrentPage(result.pagination.page);
+          setTotalPages(result.pagination.totalPages);
+          setTotalLeads(result.pagination.total);
+        } else {
+          setLeads(result);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch leads', err);
@@ -114,6 +135,27 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
       setIsLoading(false);
     }
   };
+
+  const fetchAvailableSurveyors = async (dateStr: string) => {
+    try {
+      const response = await fetch(`/api/users/available-surveyors?date=${encodeURIComponent(dateStr)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableSurveyors(data);
+        if (data.length > 0 && !surveyorId) {
+          setSurveyorId(data[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching surveyors:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (surveyDate) {
+      fetchAvailableSurveyors(surveyDate);
+    }
+  }, [surveyDate]);
 
   useEffect(() => {
     const init = async () => {
@@ -143,6 +185,10 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
     setAssigneeName(currentUser?.name || 'แอดมิน');
     setFollowupNotes('');
     setFollowupNewStatus(lead.status === 'New' ? 'Contacted' : lead.status);
+    setSiteCoordinatorName('');
+    setSiteCoordinatorPhone('');
+    setSiteCoordinatorLineId('');
+    setSiteMapUrl('');
     setIsFollowupModalOpen(true);
     fetchFollowups(lead.id);
   };
@@ -150,6 +196,18 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
   const handleSaveFollowup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLeadForFollowup) return;
+
+    // Validation for Visit Plan
+    if (followupNewStatus === 'Qualified' || requireVisit) {
+      if (!siteCoordinatorName || !siteCoordinatorPhone || !siteCoordinatorLineId || !customerLatitude || !customerLongitude) {
+        alert('กรุณากรอกข้อมูลนัดหมายเข้าสำรวจ (Site Visit & Logistics): ชื่อผู้ประสานงาน, เบอร์โทร, LINE ID และพิกัดแผนที่ให้ครบถ้วนก่อนบันทึกสถานะนัดหมายเข้าพื้นที่');
+        return;
+      }
+      if (!surveyDate || !surveyorId) {
+        alert('กรุณาระบุวันเวลานัดหมาย และเลือกช่างประเมินหน้างาน (QC Surveyor) ก่อนบันทึกการเข้าสำรวจ');
+        return;
+      }
+    }
 
     try {
       const res = await fetch(`/api/leads/${selectedLeadForFollowup.id}/followups`, {
@@ -162,6 +220,12 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
           assignee_name: assigneeName,
           notes: followupNotes,
           new_status: followupNewStatus,
+          site_coordinator_name: siteCoordinatorName,
+          site_coordinator_phone: siteCoordinatorPhone,
+          site_coordinator_line_id: siteCoordinatorLineId,
+          site_map_url: siteMapUrl,
+          survey_date: surveyDate,
+          surveyor_id: surveyorId,
           created_by: currentUser?.name || 'Admin',
         }),
       });
@@ -402,6 +466,11 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
       job_type: jobType,
       status: status,
       notes: combinedNotes,
+      coordinator_name: siteCoordinatorName,
+      coordinator_phone: siteCoordinatorPhone,
+      coordinator_line_id: siteCoordinatorLineId,
+      survey_date: surveyDate,
+      surveyor_id: surveyorId,
     };
 
     try {
@@ -481,6 +550,23 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
       setMapUrl(lead.map_url || '');
       setJobType(lead.job_type);
       setStatus(lead.status);
+      setSiteCoordinatorName(lead.coordinator_name || '');
+      setSiteCoordinatorPhone(lead.coordinator_phone || '');
+      setSiteCoordinatorLineId(lead.coordinator_line_id || '');
+      
+      if (lead.survey_date) {
+        // Format survey_date to YYYY-MM-DDThh:mm for datetime-local
+        try {
+          const dt = new Date(lead.survey_date);
+          const formattedDt = new Date(dt.getTime() - (dt.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+          setSurveyDate(formattedDt);
+        } catch {
+          setSurveyDate('');
+        }
+      } else {
+        setSurveyDate('');
+      }
+      setSurveyorId(lead.surveyor_id || '');
 
       // Extract extra details if available
       try {
@@ -520,6 +606,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
       } catch {
         setNotes(lead.notes || '');
       }
+      setRequireVisit(lead.status === 'Qualified' || !!lead.coordinator_name);
     } else {
       setEditingLead(null);
       setFirstName('');
@@ -530,7 +617,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
       setCustomerLongitude('');
       setMapUrl('');
       setSmartInput('');
-      setJobType('Quick Service');
+      setJobType('Quick service');
       setStatus('New');
       setBranch(branches.length > 0 ? branches[0].name : 'สาขาบางนา');
       setBuildingType('บ้านเดี่ยว');
@@ -542,6 +629,12 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
       setRequiredWorkTypes([]);
       setCustomRequiredWorkType('');
       setNotes('');
+      setRequireVisit(false);
+      setSiteCoordinatorName('');
+      setSiteCoordinatorPhone('');
+      setSiteCoordinatorLineId('');
+      setSurveyDate('');
+      setSurveyorId('');
     }
     setIsModalOpen(true);
   };
@@ -736,9 +829,12 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
           style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
         >
           <option value="All">ประเภทงานทั้งหมด</option>
-          <option value="Quick Service">Quick Service (งานซ่อมด่วน)</option>
-          <option value="Installation">Installation (งานติดตั้ง)</option>
-          <option value="Renovation">Renovation (งานรีโนเวท)</option>
+          <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
+          <option value="Installer Service">Installer Service (งานติดตั้ง)</option>
+          <option value="Renovate Service">Renovate Service (งานรีโนเวท)</option>
+          <option value="Build-In">Build-In (งานบิ้วอิน)</option>
+          <option value="New House">New House (สร้างบ้านใหม่)</option>
+          <option value="MA Service">MA Service (งานซ่อมบำรุง)</option>
         </select>
       </div>
 
@@ -899,6 +995,59 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
         </div>
       </div>
 
+      {/* Pagination Controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '0 0.5rem' }}>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          รวม {totalLeads} รายการ (หน้า {currentPage} / {totalPages})
+        </span>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button 
+            onClick={() => fetchLeads(currentPage - 1)} 
+            disabled={currentPage === 1 || isLoading}
+            style={{ padding: '0.3rem 0.8rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1 }}
+          >
+            ก่อนหน้า
+          </button>
+          
+          <div style={{ display: 'flex', gap: '0.2rem' }}>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              // Show pages around current page
+              let pageNum = i + 1;
+              if (totalPages > 5 && currentPage > 3) {
+                pageNum = currentPage - 2 + i;
+                if (pageNum > totalPages) pageNum = totalPages - (4 - i);
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => fetchLeads(pageNum)}
+                  style={{
+                    padding: '0.3rem 0.6rem',
+                    borderRadius: '4px',
+                    background: currentPage === pageNum ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                    color: currentPage === pageNum ? 'white' : 'var(--text-primary)',
+                    border: '1px solid',
+                    borderColor: currentPage === pageNum ? 'var(--accent-primary)' : 'var(--border-color)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <button 
+            onClick={() => fetchLeads(currentPage + 1)} 
+            disabled={currentPage === totalPages || isLoading || totalPages === 0}
+            style={{ padding: '0.3rem 0.8rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1 }}
+          >
+            ถัดไป
+          </button>
+        </div>
+      </div>
+
       {/* ── FOLLOW-UP & APPOINTMENT MODAL (บันทึกการติดต่อ / หมายกำหนดนัดไปพบลูกค้า) ── */}
       {isFollowupModalOpen && selectedLeadForFollowup && (
         <div style={{
@@ -1016,6 +1165,59 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
                   </div>
                 </div>
               </div>
+
+              {/* SITE COORDINATOR DETAILS (Conditional) */}
+              {activityType.includes('site') && (
+                <div style={{ background: 'rgba(37, 99, 235, 0.05)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(37, 99, 235, 0.2)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2563eb', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <MapPin size={16} /> ข้อมูลผู้ประสานงานหน้างาน และ พิกัด (Site Coordinator & Location)
+                  </span>
+                  
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ลิงก์ Google Maps / พิกัดสถานที่</label>
+                    <input 
+                      type="text"
+                      value={siteMapUrl}
+                      onChange={e => setSiteMapUrl(e.target.value)}
+                      placeholder="วางลิงก์ Google Maps หรือพิกัด เช่น 13.851979, 100.643406"
+                      style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ชื่อผู้ประสานงานหน้างาน</label>
+                      <input 
+                        type="text"
+                        value={siteCoordinatorName}
+                        onChange={e => setSiteCoordinatorName(e.target.value)}
+                        placeholder="ชื่อผู้ประสานงาน"
+                        style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>เบอร์โทรศัพท์ (หน้างาน)</label>
+                      <input 
+                        type="text"
+                        value={siteCoordinatorPhone}
+                        onChange={e => setSiteCoordinatorPhone(e.target.value)}
+                        placeholder="เบอร์ติดต่อ"
+                        style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Line ID (หน้างาน)</label>
+                      <input 
+                        type="text"
+                        value={siteCoordinatorLineId}
+                        onChange={e => setSiteCoordinatorLineId(e.target.value)}
+                        placeholder="Line ID"
+                        style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
@@ -1343,6 +1545,61 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
                         </button>
                       </div>
 
+                      {/* COORDINATOR INFO (REQUIRED IF VISIT PLAN) */}
+                      {requireVisit && (
+                        <div style={{ padding: '0.8rem', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.8rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <AlertCircle size={14} /> ข้อมูลผู้ประสานงานในพื้นที่ (บังคับกรอก)
+                          </h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>ชื่อผู้ประสานงาน *</label>
+                              <input type="text" value={siteCoordinatorName} onChange={e => setSiteCoordinatorName(e.target.value)} style={{ width: '100%', padding: '0.4rem', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.8rem' }} />
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>เบอร์โทรศัพท์ *</label>
+                              <input type="text" value={siteCoordinatorPhone} onChange={e => setSiteCoordinatorPhone(e.target.value)} style={{ width: '100%', padding: '0.4rem', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.8rem' }} />
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>LINE ID *</label>
+                            <input type="text" value={siteCoordinatorLineId} onChange={e => setSiteCoordinatorLineId(e.target.value)} style={{ width: '100%', padding: '0.4rem', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.8rem' }} />
+                          </div>
+
+                          <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed rgba(239, 68, 68, 0.2)' }}>
+                            <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <Clock size={14} /> นัดหมายช่างประเมิน (Smart QC Dispatch)
+                            </h4>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>วันและเวลานัดหมาย *</label>
+                                <input 
+                                  type="datetime-local" 
+                                  value={surveyDate} 
+                                  onChange={e => setSurveyDate(e.target.value)} 
+                                  style={{ width: '100%', padding: '0.4rem', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.8rem' }} 
+                                />
+                              </div>
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>เลือกช่างที่คิวว่าง (QC) *</label>
+                                <select 
+                                  value={surveyorId}
+                                  onChange={e => setSurveyorId(e.target.value)}
+                                  disabled={!surveyDate}
+                                  style={{ width: '100%', padding: '0.4rem', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.8rem', opacity: !surveyDate ? 0.5 : 1 }}
+                                >
+                                  {!surveyDate && <option value="">เลือกเวลาเพื่อดึงรายชื่อ...</option>}
+                                  {surveyDate && availableSurveyors.length === 0 && <option value="">ไม่มีช่างว่างในช่วงเวลานี้</option>}
+                                  {availableSurveyors.map(u => (
+                                    <option key={u.id} value={u.id}>{u.name} ({u.global_role})</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* LIVE EMBEDDED GOOGLE MAP PREVIEW */}
                       {((customerLatitude && customerLongitude) || customerAddress) && (
                         <div style={{ marginTop: '0.35rem', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
@@ -1398,9 +1655,12 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
                           onChange={e => setJobType(e.target.value)}
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 700 }}
                         >
-                          <option value="Quick Service">Quick Service (งานซ่อมด่วน)</option>
-                          <option value="Installation">Installation (งานติดตั้ง)</option>
-                          <option value="Renovation">Renovation (งานรีโนเวท)</option>
+                          <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
+                          <option value="Installer Service">Installer Service (งานติดตั้ง)</option>
+                          <option value="Renovate Service">Renovate Service (งานรีโนเวท)</option>
+                          <option value="Build-In">Build-In (งานบิ้วอิน)</option>
+                          <option value="New House">New House (สร้างบ้านใหม่)</option>
+                          <option value="MA Service">MA Service (งานซ่อมบำรุง)</option>
                         </select>
                       </div>
 

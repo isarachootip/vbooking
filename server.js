@@ -1640,7 +1640,11 @@ app.get('/api/initial-data', async (req, res) => {
       collectedValue: parseFloat(p.collected_value || '0'),
       plannedExpense: parseFloat(p.planned_expense || '0'),
       actualExpense: parseFloat(p.actual_expense || '0'),
-      extraDetails: p.extra_details || {}
+      extraDetails: p.extra_details || {},
+      leadId: p.lead_id,
+      customerName: p.customer_name,
+      customerPhone: p.customer_phone,
+      convertedAt: p.converted_at
     }));
 
     const tasks = tasksRes.rows.map(t => ({
@@ -1773,6 +1777,39 @@ app.get('/api/initial-data', async (req, res) => {
 });
 
 // Users REST API
+app.get('/api/users/available-surveyors', async (req, res) => {
+  const { date } = req.query;
+  try {
+    // 1. Get users with 'QC' skill
+    const result = await pool.query("SELECT id, name, global_role FROM users WHERE 'QC' = ANY(skills)");
+    const qcUsers = result.rows;
+
+    if (!date) {
+      return res.json(qcUsers);
+    }
+
+    // 2. Check availability
+    const availableUsers = [];
+    for (const u of qcUsers) {
+      // Find any lead assigned to this surveyor within +/- 3 hours (10800 seconds)
+      const busyRes = await pool.query(
+        `SELECT id FROM leads 
+         WHERE surveyor_id = $1 
+         AND survey_date IS NOT NULL 
+         AND ABS(EXTRACT(EPOCH FROM (CAST(survey_date AS TIMESTAMP) - CAST($2 AS TIMESTAMP)))) < 10800`, 
+        [u.id, date]
+      );
+      if (busyRes.rows.length === 0) {
+        availableUsers.push(u);
+      }
+    }
+    res.json(availableUsers);
+  } catch (err) {
+    console.error('Error fetching available surveyors:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, name, email, avatar, global_role, department, gender, birthday, skills, wfh_days, tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level FROM users ORDER BY name ASC');
@@ -1962,13 +1999,37 @@ app.post('/api/users/change-password', async (req, res) => {
 });
 
 
-// Helper function: Generate Project ID in format Pddmmyy-running (e.g. P010826-001)
-async function generateFormattedProjectId() {
+// Helper function: Generate Project ID in format P+Job+Store+Date+Running (e.g. PQBNA171020260001)
+async function generateFormattedProjectId(jobType, branch) {
+  // Job Type Mapping
+  let jobPrefix = 'O'; // Other
+  if (jobType) {
+    const jt = jobType.toLowerCase();
+    if (jt.includes('quick')) jobPrefix = 'Q';
+    else if (jt.includes('install')) jobPrefix = 'I';
+    else if (jt.includes('renovat')) jobPrefix = 'R';
+    else if (jt.includes('build')) jobPrefix = 'B';
+    else if (jt.includes('new')) jobPrefix = 'N';
+    else if (jt.includes('ma service')) jobPrefix = 'M';
+  }
+
+  // Branch Mapping (Default to HQ0 if not found, BNA for Bangna)
+  let branchPrefix = 'HQ0';
+  if (branch) {
+    const br = branch.toLowerCase();
+    if (br.includes('บางนา') || br.includes('bangna')) branchPrefix = 'BNA';
+    else if (br.includes('พระราม') || br.includes('rama')) branchPrefix = 'RM9';
+    else if (br.includes('ลาดพร้าว') || br.includes('lat phrao')) branchPrefix = 'LTP';
+    else branchPrefix = branch.substring(0, 3).toUpperCase();
+  }
+
   const d = new Date();
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yy = String(d.getFullYear()).slice(-2);
-  const prefix = `P${dd}${mm}${yy}`;
+  const yyyy = String(d.getFullYear());
+  const dateStr = `${dd}${mm}${yyyy}`;
+  
+  const prefix = `P${jobPrefix}${branchPrefix}${dateStr}`;
 
   const res = await pool.query(
     "SELECT id FROM projects WHERE id LIKE $1 ORDER BY id DESC LIMIT 1",
@@ -1978,68 +2039,23 @@ async function generateFormattedProjectId() {
   let running = 1;
   if (res.rows.length > 0) {
     const lastId = res.rows[0].id;
-    const numPart = lastId.replace(prefix, '').replace('-', '');
+    const numPart = lastId.replace(prefix, ''); // Extract running part
     const lastNum = parseInt(numPart, 10);
     if (!isNaN(lastNum)) {
       running = lastNum + 1;
     }
   }
 
-  const runningStr = String(running).padStart(3, '0');
-  return `${prefix}-${runningStr}`;
+  const runningStr = String(running).padStart(4, '0'); // 4 digits as requested
+  return `${prefix}${runningStr}`;
 }
-
 // --- Service Price Book API ---
-app.get('/api/pricebook', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM service_price_book ORDER BY category ASC, service_name ASC');
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch price book' });
-  }
-});
-
-app.post('/api/pricebook', async (req, res) => {
-  const { id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active } = req.body;
-  try {
-    await pool.query(
-      `INSERT INTO service_price_book (id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [id, category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to add price item' });
-  }
-});
-
-app.put('/api/pricebook/:id', async (req, res) => {
-  const { category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active } = req.body;
-  try {
-    await pool.query(
-      `UPDATE service_price_book 
-       SET category = $1, service_name = $2, unit_type = $3, material_cost = $4, labor_cost = $5, selling_price = $6, is_active = $7, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8`,
-      [category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active, req.params.id]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update price item' });
-  }
-});
-
-app.delete('/api/pricebook/:id', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM service_price_book WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to delete price item' });
-  }
-});
+const serviceRoutes = require('./src/routes/serviceRoutes');
+const quotationRoutes = require('./src/routes/quotationRoutes');
+const dashboardRoutes = require('./src/routes/dashboardRoutes');
+app.use('/api/pricebook', serviceRoutes);
+app.use('/api/quotations', quotationRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Projects REST API
 // --- Master Project Types API ---
@@ -2137,7 +2153,7 @@ app.post('/api/projects', async (req, res) => {
   let { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense, projectTemplateName, extraDetails } = req.body;
   try {
     if (!id || id.startsWith('p_')) {
-      id = await generateFormattedProjectId();
+      id = await generateFormattedProjectId(projectType, '');
     }
 
     const checkExist = await pool.query('SELECT 1 FROM projects WHERE id = $1', [id]);
@@ -2623,12 +2639,20 @@ async function validateTransition(userId, projectId, taskObject, newStatus) {
 
 // Tasks REST API
 app.post('/api/tasks', async (req, res) => {
-  const { id, projectId, assigneeId, title, description, status, priority, estimatedHours, createdAt, parentId, startDate, endDate, sprintId, releaseId, storyPoints, issueType } = req.body;
+  const { id, projectId, assigneeId, title, description, status, priority, estimatedHours, createdAt, parentId, startDate, endDate, sprintId, releaseId, storyPoints, issueType, afterImage } = req.body;
   const userId = req.headers['x-user-id'];
   try {
     // Check if it is an update
     const oldTaskRes = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
     const oldTask = oldTaskRes.rows[0];
+
+    // Phase 9 Constraint: Require afterImage when marking as Done
+    if (status === 'Done') {
+      const existingAfterImage = oldTask ? oldTask.after_image : null;
+      if (!afterImage && !existingAfterImage) {
+        return res.status(400).json({ error: 'Proof of Work (After Image) is required to close this task.' });
+      }
+    }
 
     if (userId) {
       if (oldTask) {
@@ -2662,8 +2686,8 @@ app.post('/api/tasks', async (req, res) => {
     const updatedAt = req.body.updatedAt || new Date().toISOString();
 
     await pool.query(
-      `INSERT INTO tasks (id, project_id, assignee_id, title, description, status, priority, estimated_hours, created_at, parent_id, start_date, end_date, sprint_id, release_id, story_points, issue_type, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+      `INSERT INTO tasks (id, project_id, assignee_id, title, description, status, priority, estimated_hours, created_at, parent_id, start_date, end_date, sprint_id, release_id, story_points, issue_type, updated_at, after_image)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
        ON CONFLICT (id) DO UPDATE SET
          project_id = EXCLUDED.project_id,
          assignee_id = EXCLUDED.assignee_id,
@@ -2680,6 +2704,7 @@ app.post('/api/tasks', async (req, res) => {
          release_id = EXCLUDED.release_id,
          story_points = EXCLUDED.story_points,
          issue_type = EXCLUDED.issue_type,
+         after_image = COALESCE(EXCLUDED.after_image, tasks.after_image),
          updated_at = EXCLUDED.updated_at`,
       [
         id, 
@@ -3209,7 +3234,7 @@ app.post('/api/webhooks/gitlab', async (req, res) => {
 
 // Timesheets REST API
 app.post('/api/timesheets', async (req, res) => {
-  const { id, userId, projectId, taskId, date, hours, plannedHours, startTime, endTime, description, status, approvedBy, approvedAt, imageUrl, workResults } = req.body;
+  const { id, userId, projectId, taskId, date, hours, plannedHours, startTime, endTime, description, status, approvedBy, approvedAt, imageUrl, workResults, checkInLat, checkInLng, beforeImage } = req.body;
   const updatedAt = new Date().toISOString();
   try {
     // Check existing status before update to detect transitions
@@ -3217,8 +3242,8 @@ app.post('/api/timesheets', async (req, res) => {
     const oldStatus = existingTimesheet.rows[0]?.status;
 
     await pool.query(
-      `INSERT INTO timesheets (id, user_id, project_id, task_id, date, hours, planned_hours, start_time, end_time, description, status, approved_by, approved_at, image_url, work_results, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      `INSERT INTO timesheets (id, user_id, project_id, task_id, date, hours, planned_hours, start_time, end_time, description, status, approved_by, approved_at, image_url, work_results, updated_at, check_in_lat, check_in_lng, before_image)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        ON CONFLICT (id) DO UPDATE SET
          user_id = EXCLUDED.user_id,
          project_id = EXCLUDED.project_id,
@@ -3234,8 +3259,11 @@ app.post('/api/timesheets', async (req, res) => {
          approved_at = EXCLUDED.approved_at,
          image_url = EXCLUDED.image_url,
          work_results = EXCLUDED.work_results,
+         check_in_lat = COALESCE(EXCLUDED.check_in_lat, timesheets.check_in_lat),
+         check_in_lng = COALESCE(EXCLUDED.check_in_lng, timesheets.check_in_lng),
+         before_image = COALESCE(EXCLUDED.before_image, timesheets.before_image),
          updated_at = EXCLUDED.updated_at`,
-      [id, userId, projectId, taskId, date, hours, plannedHours ?? null, startTime || null, endTime || null, description, status, approvedBy, approvedAt, imageUrl || null, workResults || null, updatedAt]
+      [id, userId, projectId, taskId, date, hours, plannedHours ?? null, startTime || null, endTime || null, description, status, approvedBy, approvedAt, imageUrl || null, workResults || null, updatedAt, checkInLat || null, checkInLng || null, beforeImage || null]
     );
 
     // Send email notifications asynchronously (non-blocking)
@@ -3582,107 +3610,9 @@ app.post('/api/clean-tasks', async (req, res) => {
 // ==========================================
 // LEADS API
 // ==========================================
+const leadRoutes = require('./src/routes/leadRoutes');
+app.use('/api/leads', leadRoutes);
 
-// Get all leads
-app.get('/api/leads', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM leads ORDER BY created_at DESC');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching leads:', err);
-    res.status(500).json({ error: 'Failed to fetch leads' });
-  }
-});
-
-// Create lead
-app.post('/api/leads', async (req, res) => {
-  try {
-    const { id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, notes } = req.body;
-    const leadId = id || `lead_${Date.now()}`;
-    const now = new Date().toISOString();
-    
-    const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
-    const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');
-    const fullName = customer_name || `${fName} ${lName}`.trim();
-
-    const result = await pool.query(
-      `INSERT INTO leads (id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, notes, created_at, updated_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-      [leadId, fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, 'New', notes, now, now]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error creating lead:', err);
-    res.status(500).json({ error: 'Failed to create lead' });
-  }
-});
-
-// Update lead
-app.put('/api/leads/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, appointment_date, appointment_type, appointment_assignee, notes, project_id } = req.body;
-    const now = new Date().toISOString();
-
-    const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
-    const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');
-    const fullName = customer_name || `${fName} ${lName}`.trim();
-
-    const result = await pool.query(
-      `UPDATE leads 
-       SET customer_name = $1, customer_first_name = $2, customer_last_name = $3, customer_phone = $4, customer_address = $5, customer_latitude = $6, customer_longitude = $7, map_url = $8, job_type = $9, status = $10, appointment_date = $11, appointment_type = $12, appointment_assignee = $13, notes = $14, updated_at = $15, project_id = COALESCE($16, project_id)
-       WHERE id = $17 RETURNING *`,
-      [fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, status, appointment_date || null, appointment_type || null, appointment_assignee || null, notes, now, project_id, id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error updating lead:', err);
-    res.status(500).json({ error: 'Failed to update lead' });
-  }
-});
-
-// Get followups for a lead
-app.get('/api/leads/:id/followups', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query('SELECT * FROM lead_followups WHERE lead_id = $1 ORDER BY created_at DESC', [id]);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching followups:', err);
-    res.status(500).json({ error: 'Failed to fetch followups' });
-  }
-});
-
-// Add followup log / appointment
-app.post('/api/leads/:id/followups', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { activity_type, appointment_date, appointment_time, assignee_name, notes, new_status, created_by } = req.body;
-    const followupId = `flw_${Date.now()}`;
-    const now = new Date().toISOString();
-
-    const result = await pool.query(
-      `INSERT INTO lead_followups (id, lead_id, activity_type, appointment_date, appointment_time, assignee_name, notes, created_at, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [followupId, id, activity_type, appointment_date || null, appointment_time || null, assignee_name || null, notes || null, now, created_by || 'Admin']
-    );
-
-    // Update Lead status and appointment info
-    const fullAppointmentStr = appointment_date ? `${appointment_date} ${appointment_time || ''}`.trim() : null;
-    await pool.query(
-      `UPDATE leads 
-       SET status = COALESCE($1, status), appointment_date = $2, appointment_type = $3, appointment_assignee = $4, updated_at = $5
-       WHERE id = $6`,
-      [new_status || null, fullAppointmentStr, activity_type, assignee_name, now, id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error adding followup:', err);
-    res.status(500).json({ error: 'Failed to add followup' });
-  }
-});
 
 
 // Convert lead to project
@@ -3699,7 +3629,7 @@ app.post('/api/leads/:id/convert', async (req, res) => {
         return res.status(400).json({ error: 'Lead is already converted to a project.'});
     }
 
-    const projectId = await generateFormattedProjectId();
+    const projectId = await generateFormattedProjectId(lead.job_type, '');
     const now = new Date().toISOString();
     const end = new Date();
     end.setDate(end.getDate() + 7);
