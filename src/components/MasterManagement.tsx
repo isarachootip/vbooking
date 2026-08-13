@@ -12,6 +12,8 @@ interface MasterManagementProps {
   setPriceBook?: (pb: ServicePriceItem[]) => void;
   currentUser: User | null;
   fetchInitialData?: () => void;
+  masterBranches?: any[];
+  masterZones?: any[];
 }
 
 
@@ -85,9 +87,12 @@ export const MasterManagement = ({
   setMasterProjectTypes,
   priceBook = [],
   setPriceBook,
-  currentUser: _currentUser
+  currentUser: _currentUser,
+  fetchInitialData,
+  masterBranches = [],
+  masterZones = []
 }: MasterManagementProps) => {
-  const [activeTab, setActiveTab] = useState<'project_types' | 'task_templates' | 'workflow_stages' | 'price_book'>('project_types');
+  const [activeTab, setActiveTab] = useState<'project_types' | 'task_templates' | 'workflow_stages' | 'price_book' | 'vq_branches' | 'vq_zones'>('project_types');
 
   // Use props instead of local state
   const masterTypes = masterProjectTypes && masterProjectTypes.length > 0 ? masterProjectTypes : defaultMasterTypes;
@@ -288,6 +293,48 @@ export const MasterManagement = ({
           <BookOpen size={18} />
           ฐานข้อมูลราคา (Price Book)
         </button>
+
+        <button
+          onClick={() => setActiveTab('vq_branches')}
+          style={{
+            padding: '0.75rem 1.25rem',
+            border: 'none',
+            background: activeTab === 'vq_branches' ? 'var(--accent-primary)' : 'transparent',
+            color: activeTab === 'vq_branches' ? 'white' : 'var(--text-secondary)',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            borderRadius: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <Database size={18} />
+          ข้อมูลสาขา (VQ)
+        </button>
+
+        <button
+          onClick={() => setActiveTab('vq_zones')}
+          style={{
+            padding: '0.75rem 1.25rem',
+            border: 'none',
+            background: activeTab === 'vq_zones' ? 'var(--accent-primary)' : 'transparent',
+            color: activeTab === 'vq_zones' ? 'white' : 'var(--text-secondary)',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            borderRadius: '8px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <Database size={18} />
+          ข้อมูลโซน (VQ)
+        </button>
       </div>
 
       {/* ── TAB 1: MASTER PROJECT TYPES (5 GROUPS) ── */}
@@ -487,6 +534,76 @@ export const MasterManagement = ({
       {/* ── TAB 4: PRICE BOOK ── */}
       {activeTab === 'price_book' && (
         <PriceBookManager priceBook={priceBook} setPriceBook={setPriceBook!} />
+      )}
+
+      {/* ── TAB 5: VQ BRANCHES (READ ONLY) ── */}
+      {activeTab === 'vq_branches' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
+            <div>
+              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>ข้อมูลสาขา (เชื่อมต่อจากระบบ VQ)</h3>
+              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>ข้อมูลสำหรับใช้แบบอ่านอย่างเดียว เพื่อให้อ้างอิงสาขาตรงกับระบบบริหารช่าง VQ</p>
+            </div>
+          </div>
+          <div className="table-responsive">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '80px' }}>รหัส</th>
+                  <th>ชื่อสาขา</th>
+                  <th>จังหวัด</th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {masterBranches.length > 0 ? masterBranches.map(b => (
+                  <tr key={b.id}>
+                    <td><span className="badge" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>{b.code}</span></td>
+                    <td style={{ fontWeight: 600 }}>{b.name}</td>
+                    <td>{b.province}</td>
+                    <td>
+                      <span className="badge" style={{ background: b.status === 'Active' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: b.status === 'Active' ? '#10b981' : '#ef4444' }}>
+                        {b.status}
+                      </span>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>ไม่มีข้อมูลสาขา</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 6: VQ ZONES (READ ONLY) ── */}
+      {activeTab === 'vq_zones' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
+            <div>
+              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>ข้อมูลโซนพื้นที่ (เชื่อมต่อจากระบบ VQ)</h3>
+              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>รวบรวมโซนพื้นที่ทั้งหมดที่ช่างในระบบ VQ รับผิดชอบ (ข้อมูลอ่านอย่างเดียว)</p>
+            </div>
+          </div>
+          <div className="table-responsive">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ชื่อโซนพื้นที่ (Zone Name)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {masterZones.length > 0 ? masterZones.map(z => (
+                  <tr key={z.id}>
+                    <td style={{ fontWeight: 600 }}>{z.name}</td>
+                  </tr>
+                )) : (
+                  <tr><td style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>ไม่มีข้อมูลโซนพื้นที่</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* ── MODAL: ADD / EDIT MASTER PROJECT TYPE ── */}

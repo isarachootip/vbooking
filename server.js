@@ -154,6 +154,22 @@ const initDB = async () => {
         description TEXT,
         permissions JSONB NOT NULL
       );
+      
+      CREATE TABLE IF NOT EXISTS master_branches (
+          id VARCHAR(50) PRIMARY KEY,
+          code VARCHAR(50),
+          name VARCHAR(150) NOT NULL,
+          province VARCHAR(100),
+          status VARCHAR(50) DEFAULT 'Active',
+          created_at VARCHAR(50),
+          updated_at VARCHAR(50)
+      );
+
+      CREATE TABLE IF NOT EXISTS master_zones (
+          id VARCHAR(100) PRIMARY KEY,
+          name VARCHAR(150) NOT NULL,
+          created_at VARCHAR(50)
+      );
     `);
 
     // Create Projects Table
@@ -1559,7 +1575,30 @@ async function fetchRemoteBranches() {
       const data = await response.json();
       if (data && data.branches && Array.isArray(data.branches)) {
         cachedBranches = data.branches;
-        console.log(`ℹ️ Cached ${cachedBranches.length} remote branches from vibepjm.online`);
+        
+        // UPSERT into DB
+        let count = 0;
+        for (const branch of data.branches) {
+          await pool.query(`
+            INSERT INTO master_branches (id, code, name, province, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $6)
+            ON CONFLICT (id) DO UPDATE SET
+              code = EXCLUDED.code,
+              name = EXCLUDED.name,
+              province = EXCLUDED.province,
+              status = EXCLUDED.status,
+              updated_at = EXCLUDED.updated_at
+          `, [
+            branch.id,
+            branch.code || '',
+            branch.name,
+            branch.province || '',
+            branch.status || 'Active',
+            new Date().toISOString()
+          ]);
+          count++;
+        }
+        console.log(`ℹ️ Cached and UPSERTED ${count} remote branches from vibepjm.online into master_branches`);
         return;
       }
     }
@@ -1568,10 +1607,75 @@ async function fetchRemoteBranches() {
   }
 }
 
+async function fetchRemoteTechnicians() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch('https://vibepjm.online/api/technicians', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.technicians && Array.isArray(data.technicians)) {
+        console.log(`ℹ️ Fetched ${data.technicians.length} remote technicians from vibepjm.online. Upserting to DB...`);
+        let count = 0;
+        for (const tech of data.technicians) {
+          const email = `${tech.id.toLowerCase()}@vq.local`;
+          const zones = [];
+          if (tech.primaryZone) zones.push(tech.primaryZone);
+          if (Array.isArray(tech.secondaryZones)) zones.push(...tech.secondaryZones);
+          const phones = tech.phone ? [tech.phone] : [];
+          
+          await pool.query(`
+            INSERT INTO users (id, name, email, avatar, global_role, department, technician_level, phones, service_zones, skills)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            ON CONFLICT (id) DO UPDATE SET
+              name = EXCLUDED.name,
+              avatar = EXCLUDED.avatar,
+              technician_level = EXCLUDED.technician_level,
+              phones = EXCLUDED.phones,
+              service_zones = EXCLUDED.service_zones
+          `, [
+            tech.id, 
+            tech.name, 
+            email, 
+            tech.avatar || '', 
+            'Vendor', 
+            'Field Service', 
+            tech.tier || 'Standard', 
+            phones, 
+            zones,
+            ['Installation', 'Survey']
+          ]);
+
+          // UPSERT unique zones into master_zones
+          for (const zone of zones) {
+            if (!zone) continue;
+            // Create a pseudo-ID from zone name (e.g. "[BKK] กรุงเทพฯ..." -> base64 or clean string)
+            const zoneId = Buffer.from(zone).toString('base64').substring(0, 50);
+            await pool.query(`
+              INSERT INTO master_zones (id, name, created_at)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (id) DO UPDATE SET
+                name = EXCLUDED.name
+            `, [zoneId, zone, new Date().toISOString()]);
+          }
+
+          count++;
+        }
+        console.log(`✅ Upserted ${count} technicians from VQ into BuildFlow DB.`);
+      }
+    }
+  } catch (err) {
+    console.error('⚠️ Failed to fetch remote technicians from vibepjm.online:', err.message);
+  }
+}
+
 // Fetch on startup
 setTimeout(fetchRemoteBranches, 2000);
+setTimeout(fetchRemoteTechnicians, 3000);
 // Periodically refresh cache every hour
 setInterval(fetchRemoteBranches, 60 * 60 * 1000);
+setInterval(fetchRemoteTechnicians, 60 * 60 * 1000);
 
 // Initial load
 app.get('/api/initial-data', async (req, res) => {
@@ -1588,6 +1692,8 @@ app.get('/api/initial-data', async (req, res) => {
     const costRatesRes = await pool.query('SELECT * FROM cost_rates');
     const settingsRes = await pool.query('SELECT * FROM system_settings');
     const branchesRes = await pool.query('SELECT * FROM branches ORDER BY name ASC');
+    const masterBranchesRes = await pool.query('SELECT * FROM master_branches ORDER BY name ASC');
+    const masterZonesRes = await pool.query('SELECT * FROM master_zones ORDER BY name ASC');
     const priceBookRes = await pool.query('SELECT * FROM service_price_book ORDER BY category ASC, service_name ASC');
     const systemSettings = {};
     settingsRes.rows.forEach(row => {
@@ -1755,6 +1861,22 @@ app.get('/api/initial-data', async (req, res) => {
       branches = cachedBranches.length > 0 ? cachedBranches : FALLBACK_BRANCHES;
     }
 
+    const masterBranches = masterBranchesRes.rows.map(b => ({
+      id: b.id,
+      code: b.code,
+      name: b.name,
+      province: b.province,
+      status: b.status,
+      createdAt: b.created_at,
+      updatedAt: b.updated_at
+    }));
+
+    const masterZones = masterZonesRes.rows.map(z => ({
+      id: z.id,
+      name: z.name,
+      createdAt: z.created_at
+    }));
+
     res.json({ 
       users, 
       projects, 
@@ -1768,6 +1890,8 @@ app.get('/api/initial-data', async (req, res) => {
       costRates, 
       systemSettings,
       branches,
+      masterBranches,
+      masterZones,
       priceBook: priceBookRes.rows
     });
   } catch (err) {

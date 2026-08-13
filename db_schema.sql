@@ -219,6 +219,24 @@ CREATE TABLE IF NOT EXISTS permission_schemes (
     permissions JSONB NOT NULL
 );
 
+-- 1.6 Master Branches (Synced from VQ)
+CREATE TABLE IF NOT EXISTS master_branches (
+    id VARCHAR(50) PRIMARY KEY,
+    code VARCHAR(50),
+    name VARCHAR(150) NOT NULL,
+    province VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'Active',
+    created_at VARCHAR(50),
+    updated_at VARCHAR(50)
+);
+
+-- 1.7 Master Zones (Synced from VQ)
+CREATE TABLE IF NOT EXISTS master_zones (
+    id VARCHAR(100) PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    created_at VARCHAR(50)
+);
+
 -- 2. Projects Table
 CREATE TABLE IF NOT EXISTS projects (
     id VARCHAR(50) PRIMARY KEY,

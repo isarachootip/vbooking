@@ -33,6 +33,22 @@ export interface User {
   technicianLevel?: string;
 }
 
+export interface MasterBranch {
+  id: string;
+  code: string;
+  name: string;
+  province: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface MasterZone {
+  id: string;
+  name: string;
+  createdAt?: string;
+}
+
 export interface ProjectMember {
   userId: string;
   role: ProjectRole;

@@ -466,6 +466,8 @@ function App() {
   const [costRates, setCostRates] = useState<CostRate[]>([]);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({});
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [masterBranches, setMasterBranches] = useState<MasterBranch[]>([]);
+  const [masterZones, setMasterZones] = useState<MasterZone[]>([]);
   const [priceBook, setPriceBook] = useState<ServicePriceItem[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(() => getLocalStorage<User | null>('nt_current_user', null));
   const [loading, setLoading] = useState(true);
@@ -522,7 +524,10 @@ function App() {
         setPermissionSchemes(data.permissionSchemes || []);
         setProjectWorkflows(data.projectWorkflows || []);
         setCostRates(data.costRates || []);
+        setSystemSettings(data.systemSettings || {});
         setBranches(data.branches || []);
+        setMasterBranches(data.masterBranches || []);
+        setMasterZones(data.masterZones || []);
         setPriceBook(data.priceBook || []);
         const settings = data.systemSettings || {};
         setSystemSettings(settings);
@@ -1053,7 +1058,7 @@ function App() {
           <Route path="/chat" element={<ProjectChat projects={projects} users={users} currentUser={currentUser} systemSettings={systemSettings} />} />
           <Route path="/team" element={<TeamApprovals users={users} setUsers={handleSetUsers} timesheets={timesheets} setTimesheets={handleSetTimesheets} projects={projects} setProjects={handleSetProjects} tasks={tasks} currentUser={currentUser} />} />
           <Route path="/users" element={<UserManagement users={users} setUsers={handleSetUsers} projects={projects} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
-          <Route path="/master-management" element={<MasterManagement taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} priceBook={priceBook} setPriceBook={setPriceBook} currentUser={currentUser} fetchInitialData={fetchInitialData} />} />
+          <Route path="/master-management" element={<MasterManagement taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} priceBook={priceBook} setPriceBook={setPriceBook} currentUser={currentUser} fetchInitialData={fetchInitialData} masterBranches={masterBranches} masterZones={masterZones} />} />
           <Route path="/reports" element={<Reports timesheets={timesheets} projects={projects} users={users} currentUser={currentUser} tasks={tasks} costRates={costRates} sprints={sprints} />} />
           <Route path="/settings" element={<Settings taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} permissionSchemes={permissionSchemes} setPermissionSchemes={handleSetPermissionSchemes} currentUser={currentUser} costRates={costRates} setCostRates={handleSetCostRates} systemSettings={systemSettings} setSystemSettings={setSystemSettings} fetchInitialData={fetchInitialData} users={users} setUsers={handleSetUsers} />} />
           <Route path="/help" element={<KnowledgeBase currentUser={currentUser} />} />
