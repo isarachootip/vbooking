@@ -2019,9 +2019,9 @@ app.put('/api/pricebook/:id', async (req, res) => {
   const { category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active } = req.body;
   try {
     await pool.query(
-      \`UPDATE service_price_book 
+      `UPDATE service_price_book 
        SET category = $1, service_name = $2, unit_type = $3, material_cost = $4, labor_cost = $5, selling_price = $6, is_active = $7, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8\`,
+       WHERE id = $8`,
       [category, service_name, unit_type, material_cost, labor_cost, selling_price, is_active, req.params.id]
     );
     res.json({ success: true });
