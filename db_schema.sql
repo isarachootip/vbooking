@@ -219,3 +219,18 @@ CREATE TABLE IF NOT EXISTS lead_followups (
     created_at VARCHAR(50) NOT NULL,
     created_by VARCHAR(150)
 );
+
+-- 13. Service Price Book Table
+CREATE TABLE IF NOT EXISTS service_price_book (
+    id VARCHAR(50) PRIMARY KEY,
+    service_name VARCHAR(200) NOT NULL,
+    category VARCHAR(100),
+    unit_type VARCHAR(50),
+    labor_cost NUMERIC DEFAULT 0,
+    material_cost NUMERIC DEFAULT 0,
+    selling_price NUMERIC DEFAULT 0,
+    default_margin_percent NUMERIC DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at VARCHAR(50),
+    updated_at VARCHAR(50)
+);
