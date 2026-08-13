@@ -1,4 +1,4 @@
-const pool = require('../../testdb.js'); // Assuming this is how pool is exported, let me verify soon.
+const pool = require('../config/db.cjs');
 
 exports.getLeads = async (req, res) => {
   try {

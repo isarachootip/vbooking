@@ -1,4 +1,4 @@
-const pool = require('../../testdb.js');
+const pool = require('../config/db.cjs');
 
 exports.createQuotation = async (req, res) => {
   try {

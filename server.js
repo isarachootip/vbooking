@@ -8,7 +8,9 @@ import { sendEmail } from './mailService.js';
 import crypto from 'crypto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
+import { createRequire } from 'module';
 
+const require = createRequire(import.meta.url);
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -2174,9 +2176,9 @@ async function generateFormattedProjectId(jobType, branch) {
   return `${prefix}${runningStr}`;
 }
 // --- Service Price Book API ---
-const serviceRoutes = require('./src/routes/serviceRoutes');
-const quotationRoutes = require('./src/routes/quotationRoutes');
-const dashboardRoutes = require('./src/routes/dashboardRoutes');
+const serviceRoutes = require('./src/routes/serviceRoutes.cjs');
+const quotationRoutes = require('./src/routes/quotationRoutes.cjs');
+const dashboardRoutes = require('./src/routes/dashboardRoutes.cjs');
 app.use('/api/pricebook', serviceRoutes);
 app.use('/api/quotations', quotationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -3734,7 +3736,7 @@ app.post('/api/clean-tasks', async (req, res) => {
 // ==========================================
 // LEADS API
 // ==========================================
-const leadRoutes = require('./src/routes/leadRoutes');
+const leadRoutes = require('./src/routes/leadRoutes.cjs');
 app.use('/api/leads', leadRoutes);
 
 
