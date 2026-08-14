@@ -465,9 +465,9 @@ function App() {
   const [projectWorkflows, setProjectWorkflows] = useState<ProjectWorkflow[]>([]);
   const [costRates, setCostRates] = useState<CostRate[]>([]);
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({});
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [masterBranches, setMasterBranches] = useState<MasterBranch[]>([]);
-  const [masterZones, setMasterZones] = useState<MasterZone[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [masterBranches, setMasterBranches] = useState<any[]>([]);
+  const [masterZones, setMasterZones] = useState<any[]>([]);
   const [priceBook, setPriceBook] = useState<ServicePriceItem[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(() => getLocalStorage<User | null>('nt_current_user', null));
   const [loading, setLoading] = useState(true);

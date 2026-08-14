@@ -762,7 +762,7 @@ export const Projects = ({
                     { step: 3, label: 'Survey for Design & Renovation Proposal', color: '#f59e0b' },
                     { step: 4, label: 'Renovation Proposal Survey (No Design)', color: '#8b5cf6' },
                   ];
-                  const wf = workflowSteps[idx % workflowSteps.length];
+                  const wf = workflowSteps[index % workflowSteps.length];
 
                   return (
                       <tr 
@@ -789,7 +789,7 @@ export const Projects = ({
                           <Link to={`/projects/${project.id}`} style={{ textDecoration: 'none' }}>
                             <div style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                               {project.id}
-                              {isNew && <span style={{ fontSize: '0.65rem', background: '#ef4444', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>🔥 New!</span>}
+                              {project.status === 'Planning' && <span style={{ fontSize: '0.65rem', background: '#ef4444', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>🔥 New!</span>}
                             </div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                               {project.projectType === 'dev' && <span style={{ color: '#8b5cf6' }}>💻 ซอฟต์แวร์</span>}

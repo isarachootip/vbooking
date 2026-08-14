@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles, Calendar, Clock, History } from 'lucide-react';
+import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles, Calendar, Clock, History, AlertCircle } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
@@ -44,6 +44,11 @@ interface Lead {
   required_work_types?: string[];
   custom_required_work_type?: string;
   branch?: string;
+  coordinator_name?: string | null;
+  coordinator_phone?: string | null;
+  coordinator_line_id?: string | null;
+  survey_date?: string | null;
+  surveyor_id?: string | null;
 }
 
 interface LeadsPageProps {

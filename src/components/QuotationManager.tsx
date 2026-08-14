@@ -154,6 +154,7 @@ export const QuotationManager = () => {
                     {quo.status}
                   </span>
                 </td>
+                <td style={{ padding: '1rem' }}>
                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                     <button style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }} title="พิมพ์เอกสาร"><Printer size={18} /></button>
                     {quo.status !== 'Converted' && (
