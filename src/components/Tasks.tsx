@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Task, TaskStatus, TaskPriority, Project, User, Sprint, Release, TaskCommit, TaskTemplate } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
+import { getWorkflowColumnsForType, ALL_WORKFLOW_COLUMNS } from '../config/workflows';
 import { Plus, Filter, Clock, X, Edit, Trash2, GripVertical, Calendar, Bug, FileText, CheckSquare, Layers, GitBranch, GitCommit, ChevronRight, ChevronDown, BarChart3, CalendarRange, Paperclip, PenTool, Download } from 'lucide-react';
 import { ImageAnnotator } from './ImageAnnotator';
 import { DailyReportPDF } from './DailyReportPDF';
@@ -468,7 +469,7 @@ function DroppableColumn({
   const isHighlighted = isOver || overColumnId === colStatus;
 
   const colHeaderColors: Record<string, string> = {
-    'To Do': '#6366f1',
+    'Todo': '#6366f1',
     'In Progress': '#f59e0b',
     'Review': '#3b82f6',
     'Done': '#10b981',
@@ -1257,7 +1258,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
   // Form states
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<TaskStatus>('To Do');
+  const [status, setStatus] = useState<TaskStatus>('Todo');
   const [priority, setPriority] = useState<TaskPriority>('Medium');
   const [estimatedHours, setEstimatedHours] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
@@ -1407,7 +1408,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
       projectId: selectedProject,
       title: qTitle.trim(),
       description: '',
-      status: activeColumns[0] || 'To Do',
+      status: activeColumns[0] || 'Todo',
       priority: 'Medium',
       estimatedHours: 0,
       createdAt: new Date().toISOString(),
@@ -1480,12 +1481,12 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
   // Load project-specific columns
   const getProjectColumns = () => {
     if (selectedProject === 'all') {
-      return ['To Do', 'In Progress', 'Review', 'Done'];
+      return ALL_WORKFLOW_COLUMNS;
     }
     const proj = projects.find((p) => p.id === selectedProject);
     return proj?.customColumns && proj.customColumns.length > 0
       ? proj.customColumns
-      : ['To Do', 'In Progress', 'Review', 'Done'];
+      : getWorkflowColumnsForType(proj?.projectType);
   };
 
   const activeColumns = getProjectColumns();
@@ -1587,7 +1588,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
     setEditingTask(null);
     setTitle('');
     setDescription('');
-    setStatus(activeColumns[0] || 'To Do');
+    setStatus(activeColumns[0] || 'Todo');
     setPriority('Medium');
     setEstimatedHours('');
     setAssigneeId('');
@@ -2344,7 +2345,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
         ).filter(t => !assigneeFilter || t.assigneeId === assigneeFilter);
         const columns = activeColumns;
         const doneCol = columns[columns.length - 1] || 'Done';
-        const todoCol = columns[0] || 'To Do';
+        const todoCol = columns[0] || 'Todo';
         const inProgressCol = columns.length > 2 ? columns[1] : 'In Progress';
         const reviewCol = columns.length > 3 ? columns[2] : 'Review';
 
@@ -2615,10 +2616,10 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
         };
         
         const statusBg: Record<string, string> = {
-          'Done': 'rgba(16, 185, 129, 0.25)',
-          'In Progress': 'rgba(59, 130, 246, 0.25)',
+          'Todo': 'rgba(107, 114, 128, 0.15)',
+          'In Progress': 'rgba(245, 158, 11, 0.15)',
           'Review': 'rgba(245, 158, 11, 0.25)',
-          'To Do': 'rgba(107, 114, 128, 0.15)',
+          'Done': 'rgba(16, 185, 129, 0.25)',
         };
         
         // Group by sprint
@@ -2901,7 +2902,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
                           const bar = getBarStyle(task);
                           const isDragging = dragInfo?.taskId === task.id;
                           const pColor = priorityColors[task.priority] || '#6B7280';
-                          const sBg = statusBg[task.status] || statusBg['To Do'];
+                          const sBg = statusBg[task.status] || statusBg['Todo'];
                           
                           return (
                             <div
@@ -4073,7 +4074,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
                     }}
                   >
                     <option value="Main">Main Task (Milestone / Parent)</option>
-                    <option value="Sub">Subtask (To Do under Main Task)</option>
+                    <option value="Sub">Subtask (Todo under Main Task)</option>
                   </select>
                 </div>
               </div>

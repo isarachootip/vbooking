@@ -11,6 +11,7 @@ import { formatToDDMMYYYY } from '../utils';
 import { 
   ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid 
 } from 'recharts';
+import { getWorkflowStagesForType } from '../config/workflows';
 
 interface DashboardProps {
   projects: Project[];
@@ -41,24 +42,24 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
   // Filter datasets based on selected project type
   const filteredProjects = modeFilteredProjects.filter(p => {
     if (selectedType === 'all') return true;
-    const type = p.projectType || '';
+    const type = (p.projectType || '').toLowerCase().trim();
     if (selectedType === 'quick_service') {
-      return type === 'quick' || type === 'quick_service';
+      return type === 'quick' || type === 'quick_service' || type === 'quick service' || p.id.startsWith('PQ');
     }
     if (selectedType === 'installer') {
-      return type === 'install' || type === 'installation' || type === 'installer';
+      return type === 'install' || type === 'installation' || type === 'installer' || type === 'installer service' || p.id.startsWith('PI');
     }
     if (selectedType === 'renovate') {
-      return type === 'renovate' || !type;
+      return type === 'renovate' || type === 'renovate service' || (!type && !p.id.startsWith('PQ') && !p.id.startsWith('PI') && !p.id.startsWith('PM') && !p.id.startsWith('PB') && !p.id.startsWith('PN'));
     }
     if (selectedType === 'build_in') {
-      return type === 'build' || type === 'build_in';
+      return type === 'build' || type === 'build_in' || type === 'build-in' || p.id.startsWith('PB');
     }
     if (selectedType === 'new_house') {
-      return type === 'new_house' || type === 'construction';
+      return type === 'new_house' || type === 'new house' || type === 'construction' || p.id.startsWith('PN');
     }
     if (selectedType === 'maintenance') {
-      return type === 'ma' || type === 'support' || type === 'maintenance';
+      return type === 'ma' || type === 'support' || type === 'maintenance' || type === 'ma service' || p.id.startsWith('PM');
     }
     return true;
   });
@@ -67,24 +68,24 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
     if (selectedType === 'all') return true;
     const project = projects.find(p => p.id === t.projectId);
     if (!project) return false;
-    const type = project.projectType || '';
+    const type = (project.projectType || '').toLowerCase().trim();
     if (selectedType === 'quick_service') {
-      return type === 'quick' || type === 'quick_service';
+      return type === 'quick' || type === 'quick_service' || type === 'quick service' || project.id.startsWith('PQ');
     }
     if (selectedType === 'installer') {
-      return type === 'install' || type === 'installation' || type === 'installer';
+      return type === 'install' || type === 'installation' || type === 'installer' || type === 'installer service' || project.id.startsWith('PI');
     }
     if (selectedType === 'renovate') {
-      return type === 'renovate' || !type;
+      return type === 'renovate' || type === 'renovate service' || (!type && !project.id.startsWith('PQ') && !project.id.startsWith('PI') && !project.id.startsWith('PM') && !project.id.startsWith('PB') && !project.id.startsWith('PN'));
     }
     if (selectedType === 'build_in') {
-      return type === 'build' || type === 'build_in';
+      return type === 'build' || type === 'build_in' || type === 'build-in' || project.id.startsWith('PB');
     }
     if (selectedType === 'new_house') {
-      return type === 'new_house' || type === 'construction';
+      return type === 'new_house' || type === 'new house' || type === 'construction' || project.id.startsWith('PN');
     }
     if (selectedType === 'maintenance') {
-      return type === 'ma' || type === 'support' || type === 'maintenance';
+      return type === 'ma' || type === 'support' || type === 'maintenance' || type === 'ma service' || project.id.startsWith('PM');
     }
     return true;
   });
@@ -93,24 +94,24 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
     if (selectedType === 'all') return true;
     const project = projects.find(p => p.id === ts.projectId);
     if (!project) return false;
-    const type = project.projectType || '';
+    const type = (project.projectType || '').toLowerCase().trim();
     if (selectedType === 'quick_service') {
-      return type === 'quick' || type === 'quick_service';
+      return type === 'quick' || type === 'quick_service' || type === 'quick service' || project.id.startsWith('PQ');
     }
     if (selectedType === 'installer') {
-      return type === 'install' || type === 'installation' || type === 'installer';
+      return type === 'install' || type === 'installation' || type === 'installer' || type === 'installer service' || project.id.startsWith('PI');
     }
     if (selectedType === 'renovate') {
-      return type === 'renovate' || !type;
+      return type === 'renovate' || type === 'renovate service' || (!type && !project.id.startsWith('PQ') && !project.id.startsWith('PI') && !project.id.startsWith('PM') && !project.id.startsWith('PB') && !project.id.startsWith('PN'));
     }
     if (selectedType === 'build_in') {
-      return type === 'build' || type === 'build_in';
+      return type === 'build' || type === 'build_in' || type === 'build-in' || project.id.startsWith('PB');
     }
     if (selectedType === 'new_house') {
-      return type === 'new_house' || type === 'construction';
+      return type === 'new_house' || type === 'new house' || type === 'construction' || project.id.startsWith('PN');
     }
     if (selectedType === 'maintenance') {
-      return type === 'ma' || type === 'support' || type === 'maintenance';
+      return type === 'ma' || type === 'support' || type === 'maintenance' || type === 'ma service' || project.id.startsWith('PM');
     }
     return true;
   });
@@ -135,21 +136,17 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
     { name: 'Maintenance (ซ่อมบำรุง MA)', value: maCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((maCount / totalProjectsCount) * 100)}%` : '0%' }
   ];
 
-  // Stage Progression distribution matching the Kanban workflow stages
-  const stagesDefinition = [
-    { id: 1, title: 'To Do', color: '#3b82f6', statuses: ['To Do', 'Planning', 'Draft', 'todo'] },
-    { id: 2, title: 'ซื้อสำรวจ', color: '#0ea5e9', statuses: ['ซื้อสำรวจ'] },
-    { id: 3, title: 'QC (สำรวจ)', color: '#f59e0b', statuses: ['QC (สำรวจ)', 'QC', 'qc'] },
-    { id: 4, title: 'ออกแบบ', color: '#8b5cf6', statuses: ['ออกแบบ', 'design'] },
-    { id: 5, title: 'สร้างใบเสนอราคา', color: '#6366f1', statuses: ['สร้างใบเสนอราคา', 'proposal', 'quote'] },
-    { id: 6, title: 'ลูกค้ายืนยัน', color: '#10b981', statuses: ['ลูกค้ายืนยัน'] },
-    { id: 7, title: 'ชำระเงิน', color: '#059669', statuses: ['ชำระเงิน'] },
-    { id: 8, title: 'กำลังดำเนินการ', color: '#3b82f6', statuses: ['กำลังดำเนินการ', 'Active', 'In Progress', 'active', 'inprogress'] },
-    { id: 9, title: 'เสร็จสิ้น', color: '#475569', statuses: ['เสร็จสิ้น', 'Completed', 'Done', 'completed', 'done'] }
-  ];
+  // Stage Progression distribution dynamically matching the standardized workflow stages for each project type
+  const stagesDefinition = getWorkflowStagesForType(selectedType);
 
   const stageStats = stagesDefinition.map(stg => {
-    const stgProjects = filteredProjects.filter(p => stg.statuses.includes(p.status));
+    const stgProjects = filteredProjects.filter(p => {
+      const pStatus = (p.status || '').trim().toLowerCase();
+      return stg.statuses.some(s => s.toLowerCase() === pStatus) || 
+             (stg.key === 'To Do' && (pStatus === 'planning' || pStatus === 'draft')) ||
+             (stg.key === 'Assign ช่าง' && (pStatus === 'active' || pStatus === 'กำลังดำเนินการ')) ||
+             (stg.key === 'Close' && (pStatus === 'completed' || pStatus === 'done'));
+    });
     return {
       ...stg,
       total: stgProjects.length,
@@ -405,42 +402,42 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
           </div>
         </div>
 
-        {/* Real Stage Metrics Cards */}
+        {/* Standard Workflow KPI Cards */}
         {[
           { 
             label: 'To Do', 
             icon: FileText, 
             color: '#3b82f6', 
             bg: 'rgba(59, 130, 246, 0.15)', 
-            count: filteredProjects.filter(p => ['To Do', 'Planning', 'Draft', 'todo'].includes(p.status)).length 
+            count: filteredProjects.filter(p => ['To Do', 'Todo', 'Planning', 'Draft', 'todo'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
           },
           { 
-            label: 'ซื้อสำรวจ', 
+            label: 'Survey (สำรวจ)', 
             icon: FileText, 
             color: '#0ea5e9', 
             bg: 'rgba(14, 165, 233, 0.15)', 
-            count: filteredProjects.filter(p => ['ซื้อสำรวจ'].includes(p.status)).length 
+            count: filteredProjects.filter(p => ['Buy-Survey', 'Survey', 'ซื้อสำรวจ', 'QC (สำรวจ)'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
           },
           { 
-            label: 'QC (สำรวจ)', 
-            icon: Clock, 
-            color: '#f59e0b', 
-            bg: 'rgba(245, 158, 11, 0.15)', 
-            count: filteredProjects.filter(p => ['QC (สำรวจ)', 'QC', 'qc'].includes(p.status)).length 
-          },
-          { 
-            label: 'ออกแบบ & ใบเสนอราคา', 
+            label: 'Design & ชำระเงิน', 
             icon: CheckCircle2, 
             color: '#8b5cf6', 
             bg: 'rgba(139, 92, 246, 0.15)', 
-            count: filteredProjects.filter(p => ['ออกแบบ', 'สร้างใบเสนอราคา', 'ออกแบบ & ใบเสนอราคา', 'design', 'proposal', 'quote'].includes(p.status)).length 
+            count: filteredProjects.filter(p => ['Design', 'ออกแบบ', 'สร้างใบเสนอราคา', 'ชำระเงิน', 'ลูกค้ายืนยัน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
           },
           { 
-            label: 'ลูกค้ายืนยัน / ชำระเงิน', 
+            label: 'Assign ช่าง & หน้างาน', 
+            icon: Clock, 
+            color: '#f59e0b', 
+            bg: 'rgba(245, 158, 11, 0.15)', 
+            count: filteredProjects.filter(p => ['Assign ช่าง', 'Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
+          },
+          { 
+            label: 'QC, Aftersale & Close', 
             icon: CheckCircle2, 
             color: '#10b981', 
             bg: 'rgba(16, 185, 129, 0.15)', 
-            count: filteredProjects.filter(p => ['ลูกค้ายืนยัน', 'ชำระเงิน', 'ลูกค้ายืนยัน / ชำระเงิน', 'Completed', 'Done', 'เสร็จสิ้น', 'In Progress', 'Active', 'กำลังดำเนินการ', 'done', 'completed', 'active', 'inprogress'].includes(p.status)).length 
+            count: filteredProjects.filter(p => ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
           }
         ].map((stg, i) => (
           <div key={i} className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
@@ -510,7 +507,7 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
                     ไม่มีโครงการ
                   </div>
                 ) : (
-                  stg.projectsList.map(proj => (
+                  stg.projectsList.map((proj: any) => (
                     <div 
                       key={proj.id} 
                       className="hover-lift"

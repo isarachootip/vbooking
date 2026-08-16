@@ -49,14 +49,16 @@ interface Lead {
   coordinator_line_id?: string | null;
   survey_date?: string | null;
   surveyor_id?: string | null;
+  sales_contact_id?: string | null;
 }
 
 interface LeadsPageProps {
   currentUser: User | null;
   branches?: any[];
+  users?: User[];
 }
 
-export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
+export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageProps) => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,6 +102,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
   const [requireVisit, setRequireVisit] = useState(false);
   const [surveyDate, setSurveyDate] = useState('');
   const [surveyorId, setSurveyorId] = useState('');
+  const [salesContactId, setSalesContactId] = useState(currentUser?.id || '');
   const [availableSurveyors, setAvailableSurveyors] = useState<any[]>([]);
 
   const [jobType, setJobType] = useState('Quick service');
@@ -476,6 +479,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
       coordinator_line_id: siteCoordinatorLineId,
       survey_date: surveyDate,
       surveyor_id: surveyorId,
+      sales_contact_id: salesContactId,
     };
 
     try {
@@ -572,6 +576,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
         setSurveyDate('');
       }
       setSurveyorId(lead.surveyor_id || '');
+      setSalesContactId(lead.sales_contact_id || currentUser?.id || '');
 
       // Extract extra details if available
       try {
@@ -640,6 +645,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
       setSiteCoordinatorLineId('');
       setSurveyDate('');
       setSurveyorId('');
+      setSalesContactId(currentUser?.id || '');
     }
     setIsModalOpen(true);
   };
@@ -854,6 +860,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
                 <th style={{ padding: '0.85rem 1rem' }}>เบอร์โทร</th>
                 <th style={{ padding: '0.85rem 1rem' }}>ชื่อลูกค้า / ที่อยู่</th>
                 <th style={{ padding: '0.85rem 1rem' }}>พิกัดหน้างาน (Map/GPS)</th>
+                <th style={{ padding: '0.85rem 1rem' }}>ผู้ดูแล (Owner)</th>
                 <th style={{ padding: '0.85rem 1rem' }}>ประเภทงาน</th>
                 <th style={{ padding: '0.85rem 1rem' }}>สถานะ</th>
                 <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>การดำเนินการ</th>
@@ -868,7 +875,7 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
                 </tr>
               ) : sortedLeads.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     ไม่พบข้อมูลลูกค้ามุ่งหวัง
                   </td>
                 </tr>
@@ -1425,6 +1432,22 @@ export const LeadsPage = ({ currentUser, branches = [] }: LeadsPageProps) => {
                           {status === 'Converted' && <option value="Converted">Converted (แปลงเป็นงานแล้ว)</option>}
                         </select>
                       </div>
+                    </div>
+                    
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                        พนักงานขาย (Deal Owner)
+                      </label>
+                      <select
+                        value={salesContactId}
+                        onChange={e => setSalesContactId(e.target.value)}
+                        style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+                      >
+                        <option value="">- เลือกพนักงานขาย -</option>
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>

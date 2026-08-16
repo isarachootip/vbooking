@@ -4,6 +4,7 @@ import { Users, Plus, X, Edit, Trash2, FileText, Layers, Search, Download, Check
 import type { User, Project, ProjectStatus, ProjectRole, Task, PermissionScheme, ProjectWorkflow, TaskTemplate, MasterProjectType } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
+import { getWorkflowColumnsForType, STAGE_CONFIG, ALL_WORKFLOW_COLUMNS, mapStatusToColumn } from '../config/workflows';
 
 interface ProjectsProps {
   projects: Project[];
@@ -72,7 +73,7 @@ export const Projects = ({
   const [endDate, setEndDate] = useState('');
   const [budget, setBudget] = useState('');
   const [members, setMembers] = useState<{ userId: string; role: ProjectRole; manDayRate?: number }[]>([]);
-  const [customColumnsText, setCustomColumnsText] = useState('To Do, In Progress, Review, Done');
+  const [customColumnsText, setCustomColumnsText] = useState('Todo, In Progress, Review, Done');
   const [permissionSchemeId, setPermissionSchemeId] = useState('scheme_default');
   const [projectType, setProjectType] = useState<string>('construction');
 
@@ -178,7 +179,7 @@ export const Projects = ({
     setEndDate(project.endDate || '');
     setBudget(project.budget ? formatNumberWithCommas(String(project.budget)) : '');
     setMembers(project.members);
-    setCustomColumnsText(project.customColumns ? project.customColumns.join(', ') : 'To Do, In Progress, Review, Done');
+    setCustomColumnsText(project.customColumns ? project.customColumns.join(', ') : 'Todo, In Progress, Review, Done');
     setPermissionSchemeId(project.permissionSchemeId || 'scheme_default');
     setProjectType(project.projectType || 'construction');
     setProjectTemplateName(project.projectTemplateName || 'Workflow vFIX');
@@ -291,7 +292,7 @@ export const Projects = ({
       endDate: endDate || undefined,
       budget: budget ? parseNumberFromCommas(budget) : undefined,
       members,
-      customColumns: cols.length > 0 ? cols : ['To Do', 'In Progress', 'Review', 'Done'],
+      customColumns: editingProject ? (cols.length > 0 ? cols : getWorkflowColumnsForType(projectType)) : getWorkflowColumnsForType(projectType),
       permissionSchemeId: permissionSchemeId,
       projectType,
       supportTaskStyle: projectType === 'support' ? supportTaskStyle : undefined,
@@ -358,10 +359,10 @@ export const Projects = ({
     setWorkflowEditingProject(project);
     const wf = projectWorkflows.find(w => w.projectId === project.id);
     if (wf) {
-      setWfStatuses(wf.statuses || project.customColumns || ["To Do", "In Progress", "Review", "Done"]);
+      setWfStatuses(wf.statuses || project.customColumns || ["Todo", "In Progress", "Review", "Done"]);
       setWfTransitions(wf.transitions || []);
     } else {
-      const cols = project.customColumns || ["To Do", "In Progress", "Review", "Done"];
+      const cols = project.customColumns || ["Todo", "In Progress", "Review", "Done"];
       setWfStatuses(cols);
       setWfTransitions([]);
     }
@@ -514,7 +515,9 @@ export const Projects = ({
       (extra.customerStaffPic && extra.customerStaffPic.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (extra.surveyTicketNo && extra.surveyTicketNo.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = statusFilter === 'All' || project.status === statusFilter;
+    const matchesStatus = statusFilter === 'All' || 
+      project.status === statusFilter ||
+      (STAGE_CONFIG[statusFilter] && STAGE_CONFIG[statusFilter].statuses.some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase()));
     const matchesType = buildingTypeFilter === 'All' || (extra.buildingType || 'บ้านเดี่ยว') === buildingTypeFilter;
     const matchesBranch = branchFilter === 'All' || (extra.branch || 'สาขาบางนา') === branchFilter;
 
@@ -527,19 +530,19 @@ export const Projects = ({
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       
-      {/* Top Header & Action Buttons */}
+      {/* ── HEADER BANNER ── */}
       <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0 }}>
-            ภาพรวมโครงการ (Projects)
+          <h1 className="text-gradient" style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Layers size={26} color="var(--accent-primary)" /> โครงการทั้งหมด (Projects)
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
-            จัดการรายชื่อโครงการติดตั้ง งานก่อสร้าง และทีมงานรับผิดชอบ
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0, marginTop: '0.25rem' }}>
+            บริหารจัดการโครงการ ติดตามความคืบหน้า และควบคุมกระบวนการปฏิบัติงานตามขั้นตอน
           </p>
         </div>
-        
+
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button 
             onClick={() => setViewMode(prev => prev === 'table' ? 'cards' : 'table')} 
@@ -550,40 +553,45 @@ export const Projects = ({
           </button>
 
           <button 
-            onClick={exportToCSV} 
-            className="glass-panel hover-lift" 
+            onClick={exportToCSV}
+            className="glass-panel hover-lift"
             style={{ padding: '0.5rem 0.85rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', outline: 'none', fontSize: '0.85rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}
           >
             <Download size={16} /> ส่งออกข้อมูล
           </button>
 
           {canCreateProject() && (
-            <button onClick={openAddModal} style={{ 
-              background: '#10b981', 
-              color: 'white', 
-              border: 'none', 
-              padding: '0.55rem 1.25rem', 
-              borderRadius: 'var(--radius-md)', 
-              fontWeight: 700, 
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.9rem'
-            }} className="hover-lift">
+            <button 
+              onClick={openAddModal}
+              className="hover-lift"
+              style={{ 
+                background: '#10b981', 
+                color: 'white', 
+                border: 'none', 
+                padding: '0.55rem 1.25rem', 
+                borderRadius: 'var(--radius-md)', 
+                fontWeight: 700, 
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.9rem'
+              }}
+            >
               <Plus size={18} /> + สร้างโปรเจกต์
             </button>
           )}
         </div>
       </div>
 
-      {/* ── TOP ROW: WORKFLOW STAGE KPI CARDS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+      {/* ── STAGE METRIC CARDS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
+        {/* Total Card */}
+        <div className="glass-panel" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', borderLeft: '4px solid var(--accent-primary)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>โครงการทั้งหมด</span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Briefcase size={18} color="#10b981" />
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Briefcase size={18} color="var(--accent-primary)" />
             </div>
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
@@ -594,13 +602,13 @@ export const Projects = ({
           </div>
         </div>
 
-        {/* Real Stage Metrics */}
+        {/* Standard Workflow Stage Metrics */}
         {[
-          { label: 'To Do', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: projects.filter(p => p.status === 'To Do' || p.status === 'Planning' || p.status === 'Draft').length },
-          { label: 'ซื้อสำรวจ', icon: FileText, color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.15)', count: projects.filter(p => p.status === 'ซื้อสำรวจ').length },
-          { label: 'QC (สำรวจ)', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: projects.filter(p => p.status === 'QC (สำรวจ)').length },
-          { label: 'ออกแบบ & ใบเสนอราคา', icon: CheckCircle2, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: projects.filter(p => p.status === 'ออกแบบ' || p.status === 'สร้างใบเสนอราคา').length },
-          { label: 'ลูกค้ายืนยัน / ชำระเงิน', icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', count: projects.filter(p => p.status === 'ลูกค้ายืนยัน' || p.status === 'ชำระเงิน' || p.status === 'Completed').length }
+          { label: 'To Do', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: projects.filter(p => ['To Do', 'Todo', 'Planning', 'Draft'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { label: 'Survey (สำรวจ)', icon: FileText, color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.15)', count: projects.filter(p => ['Buy-Survey', 'Survey', 'ซื้อสำรวจ', 'QC (สำรวจ)'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { label: 'Design / ชำระเงิน', icon: CheckCircle2, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: projects.filter(p => ['Design', 'ออกแบบ', 'ชำระเงิน', 'ลูกค้ายืนยัน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { label: 'Assign ช่าง / หน้างาน', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: projects.filter(p => ['Assign ช่าง', 'Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { label: 'QC / Aftersale / Close', icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', count: projects.filter(p => ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length }
         ].map((stg, i) => (
           <div key={i} className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -643,13 +651,9 @@ export const Projects = ({
               style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem' }}
             >
               <option value="All">ขั้นตอนโปรเจกต์: ทั้งหมด</option>
-              <option value="To Do">To Do</option>
-              <option value="ซื้อสำรวจ">ซื้อสำรวจ</option>
-              <option value="QC (สำรวจ)">QC (สำรวจ)</option>
-              <option value="ออกแบบ">ออกแบบ</option>
-              <option value="สร้างใบเสนอราคา">สร้างใบเสนอราคา</option>
-              <option value="ลูกค้ายืนยัน">ลูกค้ายืนยัน</option>
-              <option value="ชำระเงิน">ชำระเงิน</option>
+              {ALL_WORKFLOW_COLUMNS.map(colKey => (
+                <option key={colKey} value={colKey}>{colKey}</option>
+              ))}
             </select>
           </div>
 
@@ -811,28 +815,29 @@ export const Projects = ({
                           </div>
                         </td>
                         <td style={{ padding: '0.85rem 1rem' }}>
-                          <span style={{ 
-                            padding: '0.25rem 0.75rem', 
-                            borderRadius: '9999px', 
-                            fontSize: '0.75rem', 
-                            fontWeight: 600,
-                            background: project.status === 'Done' ? 'rgba(16, 185, 129, 0.15)' : 
-                                      project.status === 'Active' ? 'rgba(59, 130, 246, 0.15)' : 
-                                      project.status === 'In Progress' ? 'rgba(245, 158, 11, 0.15)' : 
-                                      'rgba(156, 163, 175, 0.15)',
-                            color: project.status === 'Done' ? '#10b981' : 
-                                   project.status === 'Active' ? '#3b82f6' : 
-                                   project.status === 'In Progress' ? '#f59e0b' : 
-                                   '#6b7280',
-                            border: `1px solid ${
-                              project.status === 'Done' ? 'rgba(16, 185, 129, 0.3)' : 
-                              project.status === 'Active' ? 'rgba(59, 130, 246, 0.3)' : 
-                              project.status === 'In Progress' ? 'rgba(245, 158, 11, 0.3)' : 
-                              'rgba(156, 163, 175, 0.3)'
-                            }`
-                          }}>
-                            {project.status === 'Done' ? 'ส่งมอบแล้ว' : project.status === 'Active' ? 'กำลังดำเนินงาน' : project.status === 'In Progress' ? 'อยู่ระหว่างเข้าทำ' : 'วางแผน'}
-                          </span>
+                          {(() => {
+                            const conf = STAGE_CONFIG[project.status] || {
+                              color: project.status === 'Done' ? '#10b981' : project.status === 'Active' ? '#3b82f6' : '#6b7280',
+                              bg: project.status === 'Done' ? 'rgba(16, 185, 129, 0.15)' : project.status === 'Active' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(156, 163, 175, 0.15)'
+                            };
+                            return (
+                              <span style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.25rem 0.75rem', 
+                                borderRadius: '9999px', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 700,
+                                background: conf.bg,
+                                color: conf.color,
+                                border: `1px solid ${conf.color}40`
+                              }}>
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: conf.color }} />
+                                {project.status || 'To Do'}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td style={{ padding: '0.85rem 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                           <div style={{ fontWeight: 500 }}>{extra.branch || 'สาขาบางนา'}</div>
@@ -840,7 +845,20 @@ export const Projects = ({
                         </td>
                         <td style={{ padding: '0.85rem 1rem' }}>
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                            <span style={{ color: 'var(--text-muted)' }}>Converted:</span> {(project as any).convertedAt ? formatToDDMMYYYY((project as any).convertedAt) : formatToDDMMYYYY(project.startDate)}
+                            <span style={{ color: 'var(--text-muted)' }}>Converted:</span> 
+                            <br/>
+                            {(() => {
+                              const d = (project as any).convertedAt || project.startDate;
+                              if (!d) return '-';
+                              const dateObj = new Date(d);
+                              if (isNaN(dateObj.getTime())) return String(d);
+                              const dateStr = formatToDDMMYYYY(d);
+                              let timeStr = '';
+                              if (String(d).includes('T')) {
+                                timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                              }
+                              return `${dateStr} ${timeStr}`;
+                            })()}
                           </div>
                         </td>
                         <td style={{ padding: '0.85rem 1rem' }}>
@@ -1227,30 +1245,37 @@ export const Projects = ({
                       <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                         สถานะโปรเจกต์ <span style={{ color: '#ef4444' }}>*</span>
                       </label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
-                        {[
-                          'บันทึกข้อมูลลูกค้า',
-                          'ประสานงาน/สำรวจ',
-                          'รออนุมัติ QC',
-                          'ออกแบบ',
-                          'ลูกค้ายืนยันดำเนินการ',
-                          'รอใบเสนอราคา',
-                          'ยืนยันราคา/ใบดำเนินการ',
-                          'ก่อสร้าง',
-                          'ส่งมอบงาน/เก็บเงิน',
-                          'Project Complete',
-                          'Survey Complete'
-                        ].map(st => (
-                          <label key={st} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
-                            <input 
-                              type="radio" 
-                              name="project_status_radio" 
-                              checked={status === st || (status === 'Planning' && st === 'บันทึกข้อมูลลูกค้า')} 
-                              onChange={() => setStatus(st as ProjectStatus)} 
-                            />
-                            {st}
-                          </label>
-                        ))}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.4rem' }}>
+                        {getWorkflowColumnsForType(projectType).map(st => {
+                          const conf = STAGE_CONFIG[st];
+                          const isSelected = status === st || (status === 'Planning' && st === 'To Do');
+                          return (
+                            <label 
+                              key={st} 
+                              style={{ 
+                                fontSize: '0.75rem', 
+                                color: isSelected ? conf?.color || 'var(--text-primary)' : 'var(--text-primary)', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.35rem', 
+                                cursor: 'pointer',
+                                padding: '0.35rem 0.5rem',
+                                borderRadius: '6px',
+                                background: isSelected ? conf?.bg || 'var(--bg-secondary)' : 'var(--bg-secondary)',
+                                border: isSelected ? `1px solid ${conf?.color || 'var(--accent-primary)'}` : '1px solid transparent',
+                                fontWeight: isSelected ? 700 : 400
+                              }}
+                            >
+                              <input 
+                                type="radio" 
+                                name="project_status_radio" 
+                                checked={isSelected} 
+                                onChange={() => setStatus(st as ProjectStatus)} 
+                              />
+                              {st}
+                            </label>
+                          );
+                        })}
                       </div>
                     </div>
 

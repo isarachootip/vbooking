@@ -472,6 +472,7 @@ const initDB = async () => {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS appointment_assignee VARCHAR(150);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_first_name VARCHAR(100);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_last_name VARCHAR(100);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS sales_contact_id VARCHAR(50);
 
       UPDATE leads SET 
         customer_first_name = CASE 
@@ -727,11 +728,11 @@ const initDB = async () => {
     if (parseInt(masterTypeCount.rows[0].count) === 0) {
       console.log('Seeding Master Project Types...');
       const defaultMasterTypes = [
-        { id: 'mpt_1', name: 'Quick Service', description: 'งานจัดส่งและติดตั้งที่จบไว', default_columns: '["To Do", "In Progress", "QA Check", "Done"]' },
-        { id: 'mpt_2', name: 'Installation', description: 'งานติดตั้งที่มีความซับซ้อนขึ้นมาอีกระดับ', default_columns: '["To Do", "Site Prep", "In Progress", "QA Check-in", "QA Check-out", "Done"]' },
-        { id: 'mpt_3', name: 'Renovate', description: 'งานปรับปรุงบ้านที่ใช้ระยะเวลายาวนาน มีหลายเฟส', default_columns: '["To Do", "Design", "Demolition", "Construction", "QA Check-in", "QA Check-out", "Done"]' },
-        { id: 'mpt_4', name: 'New Home', description: 'งานสร้างบ้านใหม่ตั้งแต่ต้นจนจบ', default_columns: '["To Do", "Permit", "Foundation", "Structure", "Architecture", "QA Check-in", "QA Check-out", "Done"]' },
-        { id: 'mpt_5', name: 'Maintenance', description: 'งานดูแลรักษาและซ่อมบำรุง', default_columns: '["To Do", "In Progress", "QA Check", "Done"]' }
+        { id: 'mpt_1', name: 'Quick Service', description: 'งานบริการด่วนและแก้ไขซ่อมแซมเร่งด่วน', default_columns: '["To Do", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
+        { id: 'mpt_2', name: 'Installation', description: 'งานติดตั้งอุปกรณ์และประกอบระบบ', default_columns: '["To Do", "Buy-Survey", "Survey", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
+        { id: 'mpt_3', name: 'Renovate', description: 'งานปรับปรุงบ้านและตกแต่งครบวงจร', default_columns: '["To Do", "Buy-Survey", "Survey", "Design", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
+        { id: 'mpt_4', name: 'New Home', description: 'งานก่อสร้างบ้านใหม่ตั้งแต่ต้นจนจบ', default_columns: '["To Do", "Buy-Survey", "Survey", "Design", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
+        { id: 'mpt_5', name: 'Maintenance', description: 'งานดูแลรักษาและซ่อมบำรุงตามสัญญา MA', default_columns: '["To Do", "Buy-Survey", "Survey", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' }
       ];
       for (const mt of defaultMasterTypes) {
         await client.query(
@@ -2285,14 +2286,39 @@ app.post('/api/projects', async (req, res) => {
     const checkExist = await pool.query('SELECT 1 FROM projects WHERE id = $1', [id]);
     const isNew = checkExist.rows.length === 0;
     
-    let cols = customColumns || ["To Do", "In Progress", "Review", "Done"];
+    let cols = customColumns;
     
-    // Auto-fetch default columns from master_project_types if it's a new project and cols was not explicitly provided
-    if (isNew && projectType && (!customColumns || customColumns.length === 0)) {
-      const typeRes = await pool.query('SELECT default_columns FROM master_project_types WHERE id = $1 OR name = $1', [projectType]);
-      if (typeRes.rows.length > 0 && typeRes.rows[0].default_columns) {
-         cols = typeof typeRes.rows[0].default_columns === 'string' ? JSON.parse(typeRes.rows[0].default_columns) : typeRes.rows[0].default_columns;
+    // Assign specific dynamic workflow stages based on project type if not explicitly provided
+    if (isNew && (!customColumns || customColumns.length === 0)) {
+      const type = (projectType || '').toLowerCase().trim();
+      
+      const commonStages = ["To Do"];
+      const buySurveyStages = ["Buy-Survey", "Survey"];
+      const designStages = ["Design"];
+      const executionStages = ["ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
+
+      if (type === 'quick' || type === 'quick_service' || type === 'quick service' || type === 'pq' || type.startsWith('quick')) {
+        cols = [...commonStages, ...executionStages];
+      } else if (
+        type === 'install' || 
+        type === 'installer' || 
+        type === 'installer service' || 
+        type === 'installation' || 
+        type === 'pi' || 
+        type === 'ma' || 
+        type === 'maintenance' || 
+        type === 'ma service' || 
+        type === 'support' ||
+        type === 'pm'
+      ) {
+        cols = [...commonStages, ...buySurveyStages, ...executionStages];
+      } else {
+        cols = [...commonStages, ...buySurveyStages, ...designStages, ...executionStages];
       }
+    }
+    
+    if (!cols || cols.length === 0) {
+      cols = ["To Do", "Buy-Survey", "Survey", "Design", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
     }
 
     await pool.query(
@@ -3762,24 +3788,50 @@ app.post('/api/leads/:id/convert', async (req, res) => {
     const endDateStr = end.toISOString();
 
     const membersJson = JSON.stringify(admin_id ? [{ id: admin_id, role: 'Manager' }] : []);
+
+    const jobType = (lead.job_type || '').toLowerCase().trim();
+    const commonStages = ["To Do"];
+    const buySurveyStages = ["Buy-Survey", "Survey"];
+    const designStages = ["Design"];
+    const executionStages = ["ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
+    let cols;
+    if (jobType === 'quick' || jobType === 'quick_service' || jobType === 'quick service' || jobType.startsWith('quick')) {
+      cols = [...commonStages, ...executionStages];
+    } else if (
+      jobType === 'install' || 
+      jobType === 'installer' || 
+      jobType === 'installer service' || 
+      jobType === 'installation' || 
+      jobType === 'pi' || 
+      jobType === 'ma' || 
+      jobType === 'maintenance' || 
+      jobType === 'ma service'
+    ) {
+      cols = [...commonStages, ...buySurveyStages, ...executionStages];
+    } else {
+      cols = [...commonStages, ...buySurveyStages, ...designStages, ...executionStages];
+    }
+
     const projResult = await pool.query(
-      `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address, project_type, custom_columns)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [
         projectId, 
         `[${lead.job_type}] ${lead.customer_name}`, 
         `Auto-generated from lead ${lead.id}\nNotes: ${lead.notes || ''}`, 
-        'Planning', 
+        'To Do', 
         now, 
         endDateStr, 
         membersJson, 
-        lead.customer_address
+        lead.customer_address,
+        lead.job_type,
+        JSON.stringify(cols)
       ]
     );
 
     await pool.query(
         `INSERT INTO project_workflows (project_id, statuses, transitions) VALUES ($1, $2, $3)`,
-        [projectId, JSON.stringify(["To Do", "In Progress", "Review", "Done"]), JSON.stringify([])]
+        [projectId, JSON.stringify(cols), JSON.stringify([])]
     );
 
     const templateResult = await pool.query(

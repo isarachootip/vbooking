@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import type { TaskTemplate, User, MasterProjectType, ServicePriceItem } from '../types';
-import { Layers, Plus, Trash2, Edit, Database, Layers3, Sparkles, BookOpen } from 'lucide-react';
+import { Layers, Plus, Trash2, Edit, Database, Layers3, Sparkles, BookOpen, ArrowRight, CheckCircle2, Zap, Wrench, ShieldCheck, Home } from 'lucide-react';
 import { PriceBookManager } from './PriceBookManager';
+import { getWorkflowStagesForType, getWorkflowColumnsForType } from '../config/workflows';
 
 interface MasterManagementProps {
   taskTemplates: TaskTemplate[];
@@ -496,37 +497,121 @@ export const MasterManagement = ({
 
       {/* ── TAB 3: WORKFLOW STAGES ── */}
       {activeTab === 'workflow_stages' && (
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-              🔄 ลำดับขั้นตอนการดำเนินงาน (Master Workflow Stages)
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              🔄 ลำดับขั้นตอนการดำเนินงานมาตรฐาน (Master Workflow Stages)
             </h3>
-            <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
-              ขั้นตอนมาตรฐานในการดำเนินโครงการแต่ละประเภท
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.35rem 0 0 0' }}>
+              ขั้นตอนมาตรฐาน (Standard Workflow Pipelines) สำหรับดำเนินงานแต่ละประเภทโครงการ จำแนกตาม 3 กลุ่มหลัก
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-            {masterTypes.map(mt => (
-              <div key={mt.id} style={{ background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', padding: '1.15rem', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: mt.color }}>
-                  {mt.name}
-                </div>
-                {mt.taskTypeStyle === 'single' ? (
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '0.65rem', borderRadius: 'var(--radius-sm)' }}>
-                    ⚡ <strong>Quick Service Flow:</strong> แจ้งงานด่วน ➔ ดำเนินการ ➔ ส่งมอบงาน (ไม่มีขั้นตอนซับซ้อน)
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.775rem' }}>
-                    <div style={{ padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', borderRadius: '4px' }}>1. ซื้อสำรวจ (Survey Request)</div>
-                    <div style={{ padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', borderRadius: '4px' }}>2. QC (สำรวจหน้างาน)</div>
-                    <div style={{ padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', borderRadius: '4px' }}>3. ออกแบบ &amp; ใบเสนอราคา</div>
-                    <div style={{ padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', borderRadius: '4px' }}>4. ลูกค้ายืนยัน / ชำระเงิน</div>
-                    <div style={{ padding: '0.35rem 0.5rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 700, borderRadius: '4px' }}>5. ส่งมอบงานเสร็จสมบูรณ์</div>
-                  </div>
-                )}
+          {/* Quick Summary Cards for 3 Standard Pipelines */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Zap size={16} /> Quick Service Flow
+                </span>
+                <span style={{ fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.2)', color: '#d97706', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>8 ขั้นตอน</span>
               </div>
-            ))}
+              <p style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', margin: 0 }}>
+                สำหรับงานบริการด่วนและแก้ไขซ่อมแซมเร่งด่วน โดยข้ามขั้นตอนสำรวจและออกแบบ
+              </p>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '6px', lineHeight: 1.6, wordBreak: 'break-word' }}>
+                To Do ➔ ชำระเงิน ➔ Assign ช่าง ➔ Check-in ➔ Check-out ➔ QC ➔ Aftersale ➔ Close
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(37, 99, 235, 0.08)', border: '1px solid rgba(37, 99, 235, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 700, color: '#2563eb', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Wrench size={16} /> Installer &amp; MA Flow
+                </span>
+                <span style={{ fontSize: '0.75rem', background: 'rgba(37, 99, 235, 0.2)', color: '#2563eb', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>10 ขั้นตอน</span>
+              </div>
+              <p style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', margin: 0 }}>
+                สำหรับงานติดตั้งอุปกรณ์และสัญญาซ่อมบำรุง MA มีขั้นตอนซื้อสำรวจและสำรวจหน้างาน
+              </p>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '6px', lineHeight: 1.6, wordBreak: 'break-word' }}>
+                To Do ➔ Buy-Survey ➔ Survey ➔ ชำระเงิน ➔ Assign ช่าง ➔ Check-in ➔ Check-out ➔ QC ➔ Aftersale ➔ Close
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 700, color: '#8b5cf6', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Home size={16} /> Renovate, Build-In &amp; New House
+                </span>
+                <span style={{ fontSize: '0.75rem', background: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>11 ขั้นตอน</span>
+              </div>
+              <p style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', margin: 0 }}>
+                สำหรับงานรีโนเวท บิวท์อิน และสร้างบ้านใหม่ มีกระบวนการสำรวจ ออกแบบ 3D และก่อสร้างครบวงจร
+              </p>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '6px', lineHeight: 1.6, wordBreak: 'break-word' }}>
+                To Do ➔ Buy-Survey ➔ Survey ➔ Design ➔ ชำระเงิน ➔ Assign ช่าง ➔ Check-in ➔ Check-out ➔ QC ➔ Aftersale ➔ Close
+              </div>
+            </div>
+          </div>
+
+          {/* Project Type Breakdown */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              📋 รายละเอียดขั้นตอนจำแนกตามประเภทโครงการ ({masterTypes.length} หมวดหมู่)
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.25rem' }}>
+              {masterTypes.map(mt => {
+                const stages = getWorkflowStagesForType(mt.id);
+                return (
+                  <div key={mt.id} style={{ background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', padding: '1.25rem', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: mt.color }} />
+                        <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{mt.name}</span>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'var(--bg-secondary)', color: mt.color, fontWeight: 700, border: `1px solid ${mt.color}40` }}>
+                        {stages.length} ขั้นตอน
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '0.775rem', color: 'var(--text-secondary)' }}>
+                      {mt.description}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
+                      {stages.map((stg, idx) => (
+                        <div 
+                          key={stg.key} 
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            padding: '0.45rem 0.65rem', 
+                            background: 'var(--bg-secondary)', 
+                            borderRadius: '6px',
+                            borderLeft: `3px solid ${stg.color}`
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', width: '18px' }}>
+                              {idx + 1}.
+                            </span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: stg.color }}>
+                              {stg.title}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', maxWidth: '50%', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {stg.description}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

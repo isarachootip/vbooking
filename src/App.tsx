@@ -1045,7 +1045,7 @@ function App() {
         <Routes>
           <Route path="/exec-dashboard" element={<ExecutiveDashboard currentUser={currentUser} />} />
           <Route path="/" element={<Dashboard projects={projects} tasks={tasks} timesheets={timesheets} currentUser={currentUser} />} />
-          <Route path="/leads" element={<LeadsPage currentUser={currentUser} branches={branches} />} />
+          <Route path="/leads" element={<LeadsPage currentUser={currentUser} branches={branches} users={users} />} />
           <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} masterProjectTypes={masterProjectTypes} branches={branches} />} />
           <Route path="/projects/:id" element={<ProjectDetail projects={projects} setProjects={handleSetProjects} users={users} currentUser={currentUser} tasks={tasks} setTasks={handleSetTasks} projectWorkflows={projectWorkflows} />} />
 

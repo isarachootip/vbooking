@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import type { Project, User, Task, ProjectWorkflow } from '../types';
 import { formatToDDMMYYYY } from '../utils';
+import { STAGE_CONFIG } from '../config/workflows';
 
 interface ProjectDetailProps {
   projects: Project[];
@@ -123,17 +124,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                 {project.id}
               </h1>
-              <span style={{ 
-                fontSize: '0.75rem', 
-                padding: '0.2rem 0.75rem', 
-                borderRadius: 'var(--radius-full)', 
-                background: project.status === 'Active' || project.status === 'กำลังดำเนินการ' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                color: project.status === 'Active' || project.status === 'กำลังดำเนินการ' ? '#10b981' : '#f59e0b',
-                fontWeight: 700,
-                border: '1px solid rgba(16, 185, 129, 0.3)'
-              }}>
-                {project.status === 'Planning' ? 'กำลังดำเนินการ' : project.status}
-              </span>
+              {(() => {
+                const conf = STAGE_CONFIG[project.status] || {
+                  color: '#3b82f6',
+                  bg: 'rgba(59, 130, 246, 0.15)'
+                };
+                return (
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    padding: '0.2rem 0.75rem', 
+                    borderRadius: 'var(--radius-full)', 
+                    background: conf.bg,
+                    color: conf.color,
+                    fontWeight: 700,
+                    border: `1px solid ${conf.color}40`,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: conf.color }} />
+                    {project.status || 'To Do'}
+                  </span>
+                );
+              })()}
             </div>
             <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
               {project.name}
@@ -225,9 +238,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem', fontSize: '0.725rem' }}>สถานะโปรเจกต์</span>
-                  <span style={{ background: '#fef3c7', color: '#d97706', padding: '0.1rem 0.5rem', borderRadius: '4px', fontWeight: 700, fontSize: '0.725rem' }}>
-                    {project.status === 'Planning' ? 'กำลังดำเนินการ' : project.status}
-                  </span>
+                  {(() => {
+                    const conf = STAGE_CONFIG[project.status] || {
+                      color: '#3b82f6',
+                      bg: 'rgba(59, 130, 246, 0.15)'
+                    };
+                    return (
+                      <span style={{ background: conf.bg, color: conf.color, border: `1px solid ${conf.color}40`, padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 700, fontSize: '0.725rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: conf.color }} />
+                        {project.status || 'To Do'}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem', fontSize: '0.725rem' }}>วันที่เริ่ม</span>

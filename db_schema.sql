@@ -417,7 +417,8 @@ CREATE TABLE IF NOT EXISTS leads (
     notes TEXT,
     created_at VARCHAR(50) NOT NULL,
     updated_at VARCHAR(50) NOT NULL,
-    project_id VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL
+    project_id VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL,
+    sales_contact_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- 12. Lead Followups Table

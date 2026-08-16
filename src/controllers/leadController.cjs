@@ -34,7 +34,7 @@ exports.getLeads = async (req, res) => {
 
 exports.createLead = async (req, res) => {
   try {
-    const { id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, notes } = req.body;
+    const { id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, notes, sales_contact_id } = req.body;
     const leadId = id || `lead_${Date.now()}`;
     const now = new Date().toISOString();
     
@@ -43,9 +43,9 @@ exports.createLead = async (req, res) => {
     const fullName = customer_name || `${fName} ${lName}`.trim();
 
     const result = await pool.query(
-      `INSERT INTO leads (id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, notes, created_at, updated_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-      [leadId, fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, 'New', notes, now, now]
+      `INSERT INTO leads (id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, notes, created_at, updated_at, sales_contact_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+      [leadId, fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, 'New', notes, now, now, sales_contact_id || null]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -57,7 +57,7 @@ exports.createLead = async (req, res) => {
 exports.updateLead = async (req, res) => {
   try {
     const { id } = req.params;
-    const { customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, appointment_date, appointment_type, appointment_assignee, notes, project_id, coordinator_name, coordinator_phone, coordinator_line_id, surveyor_id, survey_date } = req.body;
+    const { customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, appointment_date, appointment_type, appointment_assignee, notes, project_id, coordinator_name, coordinator_phone, coordinator_line_id, surveyor_id, survey_date, sales_contact_id } = req.body;
     const now = new Date().toISOString();
 
     const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
@@ -66,9 +66,9 @@ exports.updateLead = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE leads 
-       SET customer_name = $1, customer_first_name = $2, customer_last_name = $3, customer_phone = $4, customer_address = $5, customer_latitude = $6, customer_longitude = $7, map_url = $8, job_type = $9, status = $10, appointment_date = $11, appointment_type = $12, appointment_assignee = $13, notes = $14, updated_at = $15, project_id = COALESCE($16, project_id), coordinator_name = $17, coordinator_phone = $18, coordinator_line_id = $19, surveyor_id = $20, survey_date = $21
+       SET customer_name = $1, customer_first_name = $2, customer_last_name = $3, customer_phone = $4, customer_address = $5, customer_latitude = $6, customer_longitude = $7, map_url = $8, job_type = $9, status = $10, appointment_date = $11, appointment_type = $12, appointment_assignee = $13, notes = $14, updated_at = $15, project_id = COALESCE($16, project_id), coordinator_name = $17, coordinator_phone = $18, coordinator_line_id = $19, surveyor_id = $20, survey_date = $21, sales_contact_id = COALESCE($23, sales_contact_id)
        WHERE id = $22 RETURNING *`,
-      [fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, status, appointment_date || null, appointment_type || null, appointment_assignee || null, notes, now, project_id, coordinator_name || null, coordinator_phone || null, coordinator_line_id || null, surveyor_id || null, survey_date || null, id]
+      [fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, status, appointment_date || null, appointment_type || null, appointment_assignee || null, notes, now, project_id, coordinator_name || null, coordinator_phone || null, coordinator_line_id || null, surveyor_id || null, survey_date || null, id, sales_contact_id || null]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
     res.json(result.rows[0]);

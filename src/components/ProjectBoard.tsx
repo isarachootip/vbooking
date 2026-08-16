@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, MapPin, DollarSign, Users, Layers, ArrowRight } from 'lucide-react';
 import type { Project, User, Task, ProjectStatus, MasterProjectType } from '../types';
 import { formatToDDMMYYYY } from '../utils';
+import { getWorkflowColumnsForType, STAGE_CONFIG, mapStatusToColumn } from '../config/workflows';
 
 interface ProjectBoardProps {
   projects?: Project[];
@@ -18,27 +19,22 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
   const [filterType, setFilterType] = useState<string>('all');
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
 
-  // Workflow Columns matching original setup shown in reference screenshot
-  const columns = [
-    { id: 'To Do', title: 'To Do' },
-    { id: 'ซื้อสำรวจ', title: 'ซื้อสำรวจ' },
-    { id: 'QC (สำรวจ)', title: 'QC (สำรวจ)' },
-    { id: 'ออกแบบ', title: 'ออกแบบ' },
-    { id: 'สร้างใบเสนอราคา', title: 'สร้างใบเสนอราคา' },
-    { id: 'ลูกค้ายืนยัน', title: 'ลูกค้ายืนยัน' },
-    { id: 'ชำระเงิน', title: 'ชำระเงิน' },
-    { id: 'กำลังดำเนินการ', title: 'กำลังดำเนินการ' },
-    { id: 'เสร็จสิ้น', title: 'เสร็จสิ้น' }
-  ];
+  // Dynamic Workflow Columns based on selected filter type or full workflow for 'all'
+  const activeColumnKeys = filterType === 'all'
+    ? getWorkflowColumnsForType('renovate')
+    : getWorkflowColumnsForType(filterType);
 
-  // Map project status to columns cleanly
+  const columns = activeColumnKeys.map(colKey => ({
+    id: colKey,
+    title: colKey,
+    color: STAGE_CONFIG[colKey]?.color || '#3b82f6',
+    bg: STAGE_CONFIG[colKey]?.bg || 'rgba(59, 130, 246, 0.15)',
+    description: STAGE_CONFIG[colKey]?.description || ''
+  }));
+
+  // Map project status to active columns cleanly
   const getProjectColumn = (project: Project): string => {
-    const status = project.status;
-    if (columns.some(c => c.id === status)) return status;
-    if (status === 'Planning' || status === 'Draft') return 'To Do';
-    if (status === 'In Progress' || status === 'Active') return 'กำลังดำเนินการ';
-    if (status === 'Completed' || status === 'Done') return 'เสร็จสิ้น';
-    return 'To Do';
+    return mapStatusToColumn(project.status, activeColumnKeys);
   };
 
   const filteredProjects = projects.filter(p => {
@@ -51,7 +47,7 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
     
     // Normalize old construction to new_house/renovate to keep compatibility
     const normalizedType = p.projectType === 'construction' ? 'new_house' : p.projectType;
-    return (normalizedType || 'new_house') === filterType;
+    return (normalizedType || 'new_house').toLowerCase() === filterType.toLowerCase();
   });
 
   const handleDragStart = (projectId: string) => {
@@ -62,23 +58,28 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
     e.preventDefault();
   };
 
-  const handleDrop = (columnId: string) => {
+  const handleDrop = async (columnId: string) => {
     if (!draggedProjectId || !setProjects) return;
-    setProjects(prev => prev.map(p => {
-      if (p.id !== draggedProjectId) return p;
-      
-      let newStatus: ProjectStatus = columnId as ProjectStatus;
-      // Convert standard columns back to DB status if needed
-      if (columnId === 'To Do') newStatus = 'Planning';
-      else if (columnId === 'กำลังดำเนินการ') newStatus = 'Active';
-      else if (columnId === 'เสร็จสิ้น') newStatus = 'Completed';
+    const targetProject = projects.find(p => p.id === draggedProjectId);
+    if (!targetProject) return;
 
-      return {
-        ...p,
-        status: newStatus
-      };
-    }));
+    const updated = {
+      ...targetProject,
+      status: columnId as ProjectStatus
+    };
+
+    setProjects(prev => prev.map(p => p.id === draggedProjectId ? updated : p));
     setDraggedProjectId(null);
+
+    try {
+      await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+    } catch (e) {
+      console.error('Failed to update project status in DB', e);
+    }
   };
 
   const filterTabs = [
@@ -172,14 +173,18 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
                 alignItems: 'center',
                 paddingBottom: '0.75rem',
                 marginBottom: '0.75rem',
-                borderBottom: '2px solid var(--border-color)'
+                borderBottom: `2px solid ${col.color}30`
               }}>
-                <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  {col.title}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: col.color }} />
+                  <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                    {col.title}
+                  </span>
+                </div>
                 <span style={{
-                  background: colProjects.length > 0 ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
-                  color: colProjects.length > 0 ? 'white' : 'var(--text-muted)',
+                  background: colProjects.length > 0 ? col.bg : 'var(--bg-tertiary)',
+                  color: colProjects.length > 0 ? col.color : 'var(--text-muted)',
+                  border: colProjects.length > 0 ? `1px solid ${col.color}40` : '1px solid transparent',
                   fontSize: '0.725rem',
                   fontWeight: 800,
                   padding: '0.15rem 0.55rem',
