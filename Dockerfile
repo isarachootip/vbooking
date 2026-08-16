@@ -21,6 +21,8 @@ RUN npm install --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY server.js ./
 COPY mailService.js ./
+COPY src/ ./src/
+COPY user_manual.md ./
 
 # Ensure uploads directory exists
 RUN mkdir -p uploads
