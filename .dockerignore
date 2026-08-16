@@ -9,5 +9,6 @@ timesheet
 user_manual.html
 *.pdf
 *.md
+!user_manual.md
 vbooking_postman_collection.json
 nixpacks.toml
