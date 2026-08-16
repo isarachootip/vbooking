@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   Folder, Clock, CheckCircle2, TrendingUp, Calendar, Filter, 
   Users, FileText, AlertTriangle, Bell, FileCode, CheckSquare, MessageSquare, AlertCircle,
-  Zap, Wrench, Home, Box, ShieldCheck
+  Zap, Wrench, Home, Box, ShieldCheck, List, LayoutGrid, ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User, Project, Task, TimesheetEntry } from '../types';
@@ -25,6 +25,8 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
   const { lang } = useLanguage();
   const [dashboardView, setDashboardView] = useState<'my' | 'company'>('company');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [stageViewMode, setStageViewMode] = useState<'list' | 'grid'>('list');
+  const [activeStageFilter, setActiveStageFilter] = useState<number | 'all'>('all');
 
   // Filter datasets based on view mode (My Tasks vs Company Dashboard)
   const modeFilteredProjects = dashboardView === 'my'
@@ -458,88 +460,323 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
 
       </div>
 
-      {/* ── ROW 2: STAGE PROGRESSION GRID (REAL DATA) ── */}
+      {/* ── ROW 2: STAGE PROGRESSION GRID / LIST (REAL DATA) ── */}
       <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-          สถานะโครงการตามขั้นตอน (Stage Progression)
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>สถานะโครงการตามขั้นตอน (Stage Progression)</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-primary)', padding: '0.15rem 0.55rem', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                {totalProjectsCount} โครงการ
+              </span>
+            </h3>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+              ติดตามความคืบหน้ารายโครงการในแต่ละขั้นตอนการทำงานตาม Workflow
+            </div>
+          </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
-          {stageStats.map(stg => (
-            <div 
-              key={stg.id} 
-              style={{ 
-                background: 'var(--bg-tertiary)', 
-                padding: '0.85rem 0.65rem', 
-                borderRadius: 'var(--radius-md)', 
-                border: '1px solid var(--border-color)', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '0.75rem', 
-                minHeight: '260px'
+          {/* View Switcher: List View vs Column View */}
+          <div style={{ display: 'flex', background: 'var(--bg-tertiary)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)', gap: '3px' }}>
+            <button
+              onClick={() => setStageViewMode('list')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                background: stageViewMode === 'list' ? 'var(--accent-primary)' : 'transparent',
+                color: stageViewMode === 'list' ? '#fff' : 'var(--text-secondary)',
+                boxShadow: stageViewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.15s ease'
               }}
             >
-              <div style={{ textAlign: 'center', borderBottom: '1px dashed var(--border-color)', paddingBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block' }}>ขั้นตอนที่ {stg.id}</span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginTop: '0.15rem' }}>
-                  {stg.title}
-                </span>
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-primary)', marginTop: '0.35rem' }}>
-                  {stg.total} <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-secondary)' }}>โครงการ</span>
-                </div>
-              </div>
+              <List size={14} />
+              <span>มุมมองรายการ (List)</span>
+            </button>
+            <button
+              onClick={() => setStageViewMode('grid')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                background: stageViewMode === 'grid' ? 'var(--accent-primary)' : 'transparent',
+                color: stageViewMode === 'grid' ? '#fff' : 'var(--text-secondary)',
+                boxShadow: stageViewMode === 'grid' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <LayoutGrid size={14} />
+              <span>มุมมองคอลัมน์ (Columns)</span>
+            </button>
+          </div>
+        </div>
 
-              {/* List of projects under this stage */}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '0.4rem', 
-                  overflowY: 'auto', 
-                  flex: 1,
-                  maxHeight: '180px',
-                  paddingRight: '2px'
+        {/* ── MODE 1: LIST VIEW (Clean Table / Grouped List) ── */}
+        {stageViewMode === 'list' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {/* Stage Quick Filter Pills */}
+            <div style={{ display: 'flex', gap: '0.45rem', overflowX: 'auto', paddingBottom: '0.35rem' }} className="custom-scrollbar">
+              <button
+                onClick={() => setActiveStageFilter('all')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.35rem 0.7rem',
+                  borderRadius: '20px',
+                  fontSize: '0.725rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: activeStageFilter === 'all' ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                  background: activeStageFilter === 'all' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                  color: activeStageFilter === 'all' ? '#fff' : 'var(--text-secondary)',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s ease'
                 }}
-                className="custom-scrollbar"
               >
-                {stg.total === 0 ? (
-                  <div style={{ margin: 'auto', fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
-                    ไม่มีโครงการ
-                  </div>
-                ) : (
-                  stg.projectsList.map((proj: any) => (
-                    <div 
-                      key={proj.id} 
-                      className="hover-lift"
-                      onClick={() => navigate(`/projects/${proj.id}`)}
+                <span>ทุกขั้นตอนทั้งหมด</span>
+                <span style={{ fontSize: '0.675rem', background: activeStageFilter === 'all' ? 'rgba(255,255,255,0.25)' : 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '10px' }}>
+                  {totalProjectsCount}
+                </span>
+              </button>
+
+              {stageStats.map(stg => {
+                const isActive = activeStageFilter === stg.id;
+                return (
+                  <button
+                    key={stg.id}
+                    onClick={() => setActiveStageFilter(isActive ? 'all' : stg.id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.35rem 0.7rem',
+                      borderRadius: '20px',
+                      fontSize: '0.725rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border: isActive 
+                        ? '1px solid var(--accent-primary)' 
+                        : (stg.total > 0 ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)'),
+                      background: isActive 
+                        ? 'var(--accent-primary)' 
+                        : (stg.total > 0 ? 'rgba(239, 68, 68, 0.06)' : 'var(--bg-tertiary)'),
+                      color: isActive ? '#fff' : (stg.total > 0 ? 'var(--text-primary)' : 'var(--text-muted)'),
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>ขั้นที่ {stg.id}: {stg.title}</span>
+                    <span 
                       style={{ 
-                        background: 'var(--bg-secondary)', 
-                        padding: '0.5rem', 
-                        borderRadius: 'var(--radius-sm)', 
-                        border: '1px solid var(--border-color)', 
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
+                        fontSize: '0.675rem', 
+                        fontWeight: 700,
+                        background: isActive ? 'rgba(255,255,255,0.25)' : (stg.total > 0 ? 'var(--accent-primary)' : 'var(--border-color)'), 
+                        color: isActive ? '#fff' : (stg.total > 0 ? '#fff' : 'var(--text-muted)'),
+                        padding: '0.1rem 0.45rem', 
+                        borderRadius: '10px' 
                       }}
                     >
-                      <div style={{ fontWeight: 700, fontSize: '0.725rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {proj.name}
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.625rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                        <span>ID: {proj.id}</span>
-                        <span>{proj.startDate ? formatToDDMMYYYY(proj.startDate).substring(0, 10) : ''}</span>
-                      </div>
-                      {proj.projectValue ? (
-                        <div style={{ color: '#10b981', fontWeight: 700, fontSize: '0.675rem', marginTop: '0.2rem', textAlign: 'right' }}>
-                          ฿{(Number(proj.projectValue) || 0).toLocaleString('th-TH')}
-                        </div>
-                      ) : null}
-                    </div>
-                  ))
-                )}
-              </div>
+                      {stg.total}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          ))}
-        </div>
+
+            {/* List Table of Projects */}
+            {totalProjectsCount === 0 ? (
+              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-color)' }}>
+                ไม่มีโครงการในหมวดหมู่นี้
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600 }}>ขั้นตอนปัจจุบัน (Stage)</th>
+                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600 }}>รหัสโครงการ</th>
+                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600 }}>ชื่อโครงการ / ลูกค้า</th>
+                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600 }}>วันที่เริ่ม</th>
+                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600, textAlign: 'right' }}>มูลค่าโครงการ</th>
+                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600, textAlign: 'center' }}>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stageStats
+                      .filter(stg => activeStageFilter === 'all' || activeStageFilter === stg.id)
+                      .flatMap(stg => 
+                        stg.projectsList.map((proj: any) => (
+                          <tr 
+                            key={proj.id}
+                            onClick={() => navigate(`/projects/${proj.id}`)}
+                            className="hover-lift"
+                            style={{ 
+                              borderBottom: '1px solid var(--border-color)', 
+                              cursor: 'pointer',
+                              transition: 'background 0.15s ease'
+                            }}
+                          >
+                            <td style={{ padding: '0.7rem 0.9rem', whiteSpace: 'nowrap' }}>
+                              <span 
+                                style={{ 
+                                  display: 'inline-flex', 
+                                  alignItems: 'center', 
+                                  gap: '0.35rem', 
+                                  fontSize: '0.725rem', 
+                                  fontWeight: 700, 
+                                  color: 'var(--accent-primary)',
+                                  background: 'rgba(239, 68, 68, 0.08)',
+                                  padding: '0.2rem 0.55rem',
+                                  borderRadius: '6px',
+                                  border: '1px solid rgba(239, 68, 68, 0.2)'
+                                }}
+                              >
+                                <span>ขั้นที่ {stg.id}:</span>
+                                <span>{stg.title}</span>
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.7rem 0.9rem', fontWeight: 700, color: 'var(--accent-primary)', whiteSpace: 'nowrap' }}>
+                              {proj.id}
+                            </td>
+                            <td style={{ padding: '0.7rem 0.9rem' }}>
+                              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{proj.name}</div>
+                              {proj.client ? (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                                  ลูกค้า: {proj.client}
+                                </div>
+                              ) : null}
+                            </td>
+                            <td style={{ padding: '0.7rem 0.9rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                              {proj.startDate ? formatToDDMMYYYY(proj.startDate).substring(0, 10) : '-'}
+                            </td>
+                            <td style={{ padding: '0.7rem 0.9rem', textAlign: 'right', fontWeight: 700, color: '#10b981', whiteSpace: 'nowrap' }}>
+                              {proj.projectValue || proj.budget 
+                                ? `฿${(Number(proj.projectValue || proj.budget) || 0).toLocaleString('th-TH')}` 
+                                : '-'}
+                            </td>
+                            <td style={{ padding: '0.7rem 0.9rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/projects/${proj.id}`);
+                                }}
+                                style={{
+                                  padding: '0.35rem 0.75rem',
+                                  fontSize: '0.725rem',
+                                  fontWeight: 600,
+                                  background: 'var(--bg-tertiary)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '6px',
+                                  color: 'var(--text-primary)',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem'
+                                }}
+                              >
+                                <span>ดูโครงการ</span>
+                                <ChevronRight size={12} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ── MODE 2: COLUMN / BOARD VIEW (Refined Compact Cards) ── */
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
+            {stageStats.map(stg => (
+              <div 
+                key={stg.id} 
+                style={{ 
+                  background: 'var(--bg-tertiary)', 
+                  padding: '0.85rem 0.65rem', 
+                  borderRadius: 'var(--radius-md)', 
+                  border: '1px solid var(--border-color)', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '0.75rem', 
+                  minHeight: '260px'
+                }}
+              >
+                <div style={{ textAlign: 'center', borderBottom: '1px dashed var(--border-color)', paddingBottom: '0.4rem' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block' }}>ขั้นตอนที่ {stg.id}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginTop: '0.15rem' }}>
+                    {stg.title}
+                  </span>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-primary)', marginTop: '0.35rem' }}>
+                    {stg.total} <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-secondary)' }}>โครงการ</span>
+                  </div>
+                </div>
+
+                {/* List of projects under this stage */}
+                <div 
+                  style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '0.4rem', 
+                    overflowY: 'auto', 
+                    flex: 1,
+                    maxHeight: '180px',
+                    paddingRight: '2px'
+                  }}
+                  className="custom-scrollbar"
+                >
+                  {stg.total === 0 ? (
+                    <div style={{ margin: 'auto', fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
+                      ไม่มีโครงการ
+                    </div>
+                  ) : (
+                    stg.projectsList.map((proj: any) => (
+                      <div 
+                        key={proj.id} 
+                        className="hover-lift"
+                        onClick={() => navigate(`/projects/${proj.id}`)}
+                        style={{ 
+                          background: 'var(--bg-secondary)', 
+                          padding: '0.5rem', 
+                          borderRadius: 'var(--radius-sm)', 
+                          border: '1px solid var(--border-color)', 
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, fontSize: '0.725rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {proj.name}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.625rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                          <span>ID: {proj.id}</span>
+                          <span>{proj.startDate ? formatToDDMMYYYY(proj.startDate).substring(0, 10) : ''}</span>
+                        </div>
+                        {proj.projectValue || proj.budget ? (
+                          <div style={{ color: '#10b981', fontWeight: 700, fontSize: '0.675rem', marginTop: '0.2rem', textAlign: 'right' }}>
+                            ฿{(Number(proj.projectValue || proj.budget) || 0).toLocaleString('th-TH')}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem' }}>
           รวมทั้งหมด <span style={{ color: 'var(--accent-primary)', fontSize: '0.95rem' }}>{totalProjectsCount}</span> โครงการ
