@@ -69,6 +69,30 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
           )
         },
         {
+          id: 'q_survey',
+          question: 'How does Step 2 (Survey Booking & Smart QC Dispatch) work in the 12-Step Project Pipeline?',
+          icon: Clock,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}><strong>Step 2: Survey Booking</strong> manages the transition from customer requirements (Leads) to physical site inspection:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Site Visit & Logistics Details:</strong> Captures critical field info including site coordinator's name, phone, and LINE ID.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Smart GPS & DMS Coordinate Parsing:</strong> Accepts Google Maps URLs or coordinates in decimal degrees or DMS format (e.g. <code>13°51'08.1"N 100°38'36.5"E</code>), rendering an instant Live Google Maps Preview.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Smart QC Dispatch Engine:</strong> When an appointment datetime is selected, the system filters for personnel with <code>QC</code> skills and calculates real-time availability within a &plusmn;3-hour non-overlapping window.
+                </li>
+                <li>
+                  <strong>Project Pipeline Transition:</strong> Converting a qualified lead automatically generates a Smart Project ID and sets up initial workflow stages (<code>Buy-Survey</code> &rarr; <code>Survey</code>) ready for Step 3 (Survey QC Inspection).
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
           id: 'q1',
           question: 'How is the Milestone Progress calculated?',
           icon: BarChart3,
@@ -501,6 +525,30 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.25rem' }}><strong>Resource & Cost Tracking:</strong> กำหนดอัตราค่าแรงช่าง และคำนวณต้นทุน/กำไรโครงการอัตโนมัติ</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>AI Assistant:</strong> แชทบอทอัจฉริยะที่เชื่อมต่อกับ Google Gemini (หรือ OpenAI) ช่วยตอบคำถามและให้คำแนะนำ</li>
                 <li><strong>Role-Based Access Control (RBAC):</strong> ระบบกำหนดสิทธิ์การเข้าถึงข้อมูลที่ละเอียด ตั้งแต่ระดับ Admin, Manager, PM จนถึง Member</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_survey',
+          question: 'ขั้นตอนที่ 2: Survey Booking (การนัดหมายสำรวจหน้างานและ Smart QC Dispatch) ทำงานอย่างไร?',
+          icon: Clock,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}><strong>ขั้นตอนที่ 2: Survey Booking</strong> ใน 12 ขั้นตอนบริหารโครงการ ทำหน้าที่เป็นตัวกลางเชื่อมระหว่าง Lead กับการลงพื้นที่ตรวจหน้างานจริง ดังนี้ครับ:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ข้อมูลโลจิสติกส์หน้างาน (Site Visit & Logistics):</strong> บังคับกรอกชื่อผู้ประสานงานในพื้นที่ เบอร์โทรศัพท์ และ LINE ID
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ระบบแปลงพิกัดอัจฉริยะ (Smart GPS & DMS Parser):</strong> รองรับการวางลิงก์ Google Maps หรือพิกัดองศาลิปดา (เช่น <code>13°51'08.1"N 100°38'36.5"E</code>) โดยระบบจะแปลงเป็นพิกัดจริงและแสดงผลตัวอย่าง <strong>Live Google Maps Preview</strong> ทันที
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ระบบเลือกช่าง QC อัตโนมัติ (Smart QC Dispatch Engine):</strong> เมื่อเลือกวัน-เวลาเข้าสำรวจ ระบบจะค้นหาเฉพาะผู้ใช้ที่มีทักษะ <code>QC</code> และคำนวณคิวว่างจริงในรัศมี &plusmn;3 ชั่วโมงเพื่อป้องกันงานซ้อนทับ
+                </li>
+                <li>
+                  <strong>การส่งต่องานเข้าสู่โปรเจกต์ (Pipeline Transition):</strong> เมื่อกดแปลงเป็นโปรเจกต์ ระบบจะสร้าง Smart Project ID พร้อมเปิดคอลัมน์ขั้นตอน <code>Buy-Survey</code> &rarr; <code>Survey</code> เพื่อส่งต่อให้ช่าง QC เข้าทำขั้นตอนที่ 3 (Survey QC Inspection) ทันที
+                </li>
               </ul>
             </div>
           )
@@ -1065,6 +1113,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               </ul>
             </div>
           )
+        },
+        {
+          id: 'f9',
+          question: 'Step 2: Survey Booking & Smart QC Dispatch Engine Architecture',
+          icon: Layers,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>The Survey Booking module provides automated coordination between sales leads and on-site QC inspection:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Smart Dispatch Algorithm:</strong> Evaluates appointments using <code>/api/users/available-surveyors</code>, querying only users with <code>QC</code> skills and verifying that no overlapping survey appointments exist within a &plusmn;3-hour window.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Interactive DMS / GPS Mapping:</strong> Auto-parses coordinates in Degree Minute Seconds (DMS) or decimal degrees, generating direct navigation links and an embedded Google Maps preview for surveyor logistics.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Pipeline Workflow Injection:</strong> Converts qualified leads into projects with dynamic <code>Buy-Survey</code> and <code>Survey</code> Kanban stages, linking the assigned QC inspector directly to the project team.</li>
+              </ul>
+            </div>
+          )
         }
       ]
     },
@@ -1209,6 +1272,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.25rem' }}><strong>การตั้งราคา:</strong> เมื่อเพิ่มรายการใหม่ คุณสามารถกรอกรายละเอียด ต้นทุนวัสดุ ต้นทุนค่าแรง และ ราคาขายรวม ได้ทันที</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>การคำนวณกำไรอัตโนมัติ:</strong> ระบบจะคำนวณกำไรขั้นต้น (Gross Margin %) ให้อัตโนมัติด้วยสูตร <code>((ราคาขาย - ต้นทุนรวม) / ราคาขาย) * 100</code></li>
                 <li><strong>แถบสีแสดงผลกำไร:</strong> รายการที่ได้กำไรมากกว่าหรือเท่ากับ 30% ระบบจะแสดงป้ายกำไรเป็น <span style={{ color: '#10b981', fontWeight: 600 }}>สีเขียว</span> เพื่อให้ผู้บริหารหรือ Sales ทราบได้ทันทีว่ารายการนี้ทำกำไรได้ดี หากน้อยกว่า 30% จะเป็นสีส้ม</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f9',
+          question: 'สถาปัตยกรรมขั้นตอนที่ 2: Survey Booking และกลไก Smart QC Dispatch',
+          icon: Layers,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ขั้นตอนที่ 2 ของ 12-Step Pipeline คือการเปลี่ยนข้อมูลความต้องการลูกค้า (Lead) สู่การนัดหมายและลงพื้นที่ประเมินของช่าง QC:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>ตรรกะ Smart Dispatch:</strong> เมื่อเลือกวัน-เวลาเข้าสำรวจ ระบบจะค้นหาเฉพาะผู้ใช้งานที่มีทักษะ <code>QC</code> ผ่าน API <code>/api/users/available-surveyors</code> พร้อมตรวจเช็คว่าไม่มีคิวนัดหมายอื่นซ้อนทับในรัศมีเวลา &plusmn;3 ชั่วโมง</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>ระบบแปลงพิกัดและแสดงแผนที่ (DMS / Live Maps):</strong> แปลงพิกัดแผนที่ทั้งแบบทศนิยมและองศาลิปดา (DMS) พร้อมแสดง iframe แผนที่จริงแบบ Live Preview ป้องกันการเข้าพื้นที่ผิดจุด</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การเชื่อมโยงเข้าสู่ Kanban Pipeline:</strong> เมื่อกด Convert Lead ระบบจะสร้าง Smart Project ID (เช่น <code>PRBNA2608170001</code>) และเปิดคอลัมน์ขั้นตอน <code>Buy-Survey</code> และ <code>Survey</code> บนบอร์ด Kanban โดยอัตโนมัติ เพื่อให้ช่าง QC เข้าทำขั้นตอนที่ 3 (Survey QC Inspection)</li>
               </ul>
             </div>
           )

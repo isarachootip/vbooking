@@ -606,14 +606,17 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                           fontWeight: 600,
                           background: user.globalRole === 'Admin' ? 'rgba(239, 68, 68, 0.1)' : 
                                       user.globalRole === 'Manager' ? 'rgba(59, 130, 246, 0.1)' : 
+                                      user.globalRole === 'QC' ? 'rgba(6, 182, 212, 0.1)' : 
                                       user.globalRole === 'Employee' ? 'rgba(16, 185, 129, 0.1)' : 
                                       'rgba(245, 158, 11, 0.1)',
                           color: user.globalRole === 'Admin' ? '#EF4444' : 
                                  user.globalRole === 'Manager' ? '#3B82F6' : 
+                                 user.globalRole === 'QC' ? '#06B6D4' : 
                                  user.globalRole === 'Employee' ? '#10B981' : 
                                  '#F59E0B',
                           border: user.globalRole === 'Admin' ? '1px solid rgba(239, 68, 68, 0.2)' : 
                                   user.globalRole === 'Manager' ? '1px solid rgba(59, 130, 246, 0.2)' : 
+                                  user.globalRole === 'QC' ? '1px solid rgba(6, 182, 212, 0.2)' : 
                                   user.globalRole === 'Employee' ? '1px solid rgba(16, 185, 129, 0.2)' : 
                                   '1px solid rgba(245, 158, 11, 0.2)',
                         }}>
@@ -750,14 +753,17 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                           fontWeight: 600,
                           background: user.globalRole === 'Admin' ? 'rgba(239, 68, 68, 0.1)' : 
                                       user.globalRole === 'Manager' ? 'rgba(59, 130, 246, 0.1)' : 
+                                      user.globalRole === 'QC' ? 'rgba(6, 182, 212, 0.1)' : 
                                       user.globalRole === 'Employee' ? 'rgba(16, 185, 129, 0.1)' : 
                                       'rgba(245, 158, 11, 0.1)',
                           color: user.globalRole === 'Admin' ? '#EF4444' : 
                                  user.globalRole === 'Manager' ? '#3B82F6' : 
+                                 user.globalRole === 'QC' ? '#06B6D4' : 
                                  user.globalRole === 'Employee' ? '#10B981' : 
                                  '#F59E0B',
                           border: user.globalRole === 'Admin' ? '1px solid rgba(239, 68, 68, 0.2)' : 
                                   user.globalRole === 'Manager' ? '1px solid rgba(59, 130, 246, 0.2)' : 
+                                  user.globalRole === 'QC' ? '1px solid rgba(6, 182, 212, 0.2)' : 
                                   user.globalRole === 'Employee' ? '1px solid rgba(16, 185, 129, 0.2)' : 
                                   '1px solid rgba(245, 158, 11, 0.2)',
                         }}>

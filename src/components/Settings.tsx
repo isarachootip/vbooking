@@ -2271,8 +2271,8 @@ export const Settings = ({
                             borderRadius: '12px',
                             fontSize: '0.75rem',
                             fontWeight: 600,
-                            background: u.globalRole === 'Admin' ? 'rgba(239, 68, 68, 0.15)' : u.globalRole === 'Manager' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                            color: u.globalRole === 'Admin' ? '#f87171' : u.globalRole === 'Manager' ? '#fbbf24' : '#60a5fa'
+                            background: u.globalRole === 'Admin' ? 'rgba(239, 68, 68, 0.15)' : u.globalRole === 'Manager' ? 'rgba(245, 158, 11, 0.15)' : u.globalRole === 'QC' ? 'rgba(6, 182, 212, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                            color: u.globalRole === 'Admin' ? '#f87171' : u.globalRole === 'Manager' ? '#fbbf24' : u.globalRole === 'QC' ? '#22d3ee' : '#60a5fa'
                           }}>
                             {u.globalRole}
                           </span>

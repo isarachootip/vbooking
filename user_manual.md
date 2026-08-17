@@ -10,6 +10,7 @@
 2. [โครงสร้างสิทธิ์การใช้งาน (Roles & Permissions)](#-2-โครงสร้างสิทธิ์การใช้งาน-roles--permissions)
 3. [เริ่มต้นใช้งานอย่างรวดเร็ว (Quick Start Guide)](#-3-เริ่มต้นใช้งานอย่างรวดเร็ว-quick-start-guide) [NEW!]
 4. [หน้าภาพรวมระบบ (Dashboard)](#-4-หน้าภาพรวมระบบ-dashboard)
+   - [ระบบลูกค้าเป้าหมายและการนัดหมายสำรวจ (Leads & Smart Survey Booking)](#-41-ระบบลูกค้าเป้าหมายและการนัดหมายสำรวจ-leads--smart-survey-booking---ขั้นตอนที่-1--2-new) [NEW!]
 5. [การจัดการโครงการ (Project Management)](#-5-การจัดการโครงการ-project-management)
 6. [การบันทึกชั่วโมงทำงาน (Timesheet)](#-6-การบันทึกชั่วโมงทำงาน-timesheet)
 7. [บอร์ดจัดการงานทีม (Agile Kanban Board)](#-7-บอร์ดจัดการงานทีม-agile-kanban-board)
@@ -213,11 +214,45 @@
 | เมนู | สิทธิ์การเข้าถึง |
 | :--- | :--- |
 | **Dashboard** | ทุกคน |
+| **Leads (CRM)** | Sales / PM / Admin |
 | **Projects** | ทุกคน |
 | **Timesheet** | ทุกคน |
 | **Approvals** | PM / Admin |
 | **Reports** | Manager / Admin |
 | **Settings** | Admin |
+
+---
+
+## 🎯 4.1 ระบบลูกค้าเป้าหมายและการนัดหมายสำรวจ (Leads & Smart Survey Booking - ขั้นตอนที่ 1 & 2) [NEW!]
+
+ในกระบวนการ 12 ขั้นตอนบริหารโครงการอย่างมืออาชีพ (12-Step Project Pipeline) ขั้นตอนที่ 1 และ 2 เป็นหัวใจสำคัญในการเชื่อมโยงระหว่างทีมขายและการลงพื้นที่ตรวจจริงของช่าง QC:
+
+```mermaid
+flowchart TD
+    A["1. Lead & Requirement<br/>(บันทึกข้อมูลลูกค้า/ความต้องการ)"] --> B["2. นัดหมายสำรวจหน้างาน<br/>(Site Visit & Logistics)"]
+    
+    subgraph Step2 ["ขั้นตอนที่ 2: Survey Booking"]
+        B --> C["ระบุข้อมูลผู้ประสานงาน<br/>• ชื่อ, เบอร์โทร, LINE ID<br/>• พิกัด GPS / แผนที่ Google Maps"]
+        C --> D["เลือกวัน-เวลาเข้าสำรวจ<br/>(survey_date)"]
+        D --> E["⚡ Smart QC Dispatch Engine<br/>(ตรวจคิวว่างช่าง QC อัตโนมัติ)"]
+        E --> F["มอบหมายช่าง QC ประจำพื้นที่<br/>(surveyor_id)"]
+    end
+    
+    Step2 --> G["3. แปลงเป็นโครงการ (Convert to Project)<br/>• สร้าง Project Smart ID<br/>• เปิด Workflow: Buy-Survey / Survey"]
+    G --> H["4. ส่งต่องานเข้าขั้นตอนที่ 3<br/>Survey QC Inspection (ลงพื้นที่สำรวจจริง)"]
+```
+
+### การใช้งานขั้นตอนที่ 2 (Survey Booking):
+1. **การบันทึกข้อมูลผู้ประสานงานหน้างาน (Site Coordinator):**
+   * บังคับกรอกชื่อผู้ประสานงาน, เบอร์โทรศัพท์ และ LINE ID
+2. **ระบบแปลงพิกัดและแผนที่อัจฉริยะ (Smart GPS / DMS Coordinate Parsing):**
+   * รองรับการวางลิงก์ Google Maps หรือพิกัดทั้งแบบทศนิยม (`13.851979, 100.643406`) หรือองศาลิปดา DMS (`13°51'08.1"N 100°38'36.5"E`)
+   * แสดงกรอบแผนที่จำลอง **Live Google Maps Preview** ทันที เพื่อให้ช่างสำรวจเดินทางได้ถูกต้องแม่นยำ
+3. **ระบบคัดกรองช่าง QC อัตโนมัติ (Smart QC Dispatch Engine):**
+   * เมื่อเลือกวันและเวลานัดหมาย ระบบจะค้นหาเฉพาะผู้ใช้งานที่มีทักษะ **`QC`**
+   * ตรวจสอบคิวว่างในรัศมี **&plusmn;3 ชั่วโมง** เพื่อป้องกันไม่ให้มีงานนัดหมายสำรวจซ้อนทับกัน
+4. **การแปลงเป็นโครงการ (Convert Lead to Project):**
+   * เมื่อกดปุ่มแปลงเป็นโปรเจกต์ ระบบจะออกรหัส Smart Project ID และเปิดคอลัมน์ขั้นตอน **`Buy-Survey`** ➔ **`Survey`** บนบอร์ด Kanban โดยอัตโนมัติ เพื่อส่งมอบงานให้ช่าง QC เข้าสู่ขั้นตอนที่ 3 (Survey QC Inspection)
 
 ---
 

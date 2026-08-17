@@ -3,7 +3,7 @@ import type { User, GlobalRole, Project } from '../types';
 import { 
   Users, UserPlus, Search, Edit3, Trash2, Key, Eye, LayoutGrid, List, 
   Download, ShieldCheck, Building2, Calendar, Check, X, 
-  CheckCircle2, AlertTriangle, Shield, UserCheck, Briefcase
+  CheckCircle2, AlertTriangle, Shield, UserCheck, Briefcase, ClipboardCheck
 } from 'lucide-react';
 
 interface UserManagementProps {
@@ -79,6 +79,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [formGender, setFormGender] = useState<'Male' | 'Female' | 'Other' | ''>('');
   const [formBirthday, setFormBirthday] = useState('');
   const [formSkillsText, setFormSkillsText] = useState('');
+  const [formServiceZonesText, setFormServiceZonesText] = useState('');
   const [formAvatar, setFormAvatar] = useState(PRESET_AVATARS[0]);
   const [formWfhDays, setFormWfhDays] = useState<string[]>([]);
 
@@ -128,6 +129,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setFormGender('');
     setFormBirthday('');
     setFormSkillsText('');
+    setFormServiceZonesText('');
     setFormAvatar(PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)]);
     setFormWfhDays([]);
     setIsFormModalOpen(true);
@@ -151,12 +153,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setFormGender(user.gender || '');
     setFormBirthday(user.birthday || '');
     setFormSkillsText((user.skills || []).join(', '));
+    setFormServiceZonesText((user.serviceZones || user.assignedBranches || []).join(', '));
     setFormAvatar(user.avatar || PRESET_AVATARS[0]);
     setFormWfhDays(user.wfhDays || []);
     setIsFormModalOpen(true);
   };
 
-  // Toggle WFH Day
+  // Toggle Day Off Day
   const handleToggleWfhDay = (dayId: string) => {
     setFormWfhDays(prev => 
       prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId]
@@ -183,6 +186,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       .map(s => s.trim())
       .filter(Boolean);
 
+    const serviceZonesList = formServiceZonesText
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
     const payload = {
       id: userId,
       name: fullName,
@@ -193,6 +201,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       gender: formGender,
       birthday: formBirthday,
       skills: skillsList,
+      serviceZones: serviceZonesList,
+      assignedBranches: serviceZonesList,
       password: formPassword.trim() || undefined,
       wfhDays: formWfhDays
     };
@@ -220,6 +230,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         gender: payload.gender as any,
         birthday: payload.birthday,
         skills: payload.skills,
+        serviceZones: payload.serviceZones,
+        assignedBranches: payload.assignedBranches,
         wfhDays: payload.wfhDays
       };
 
@@ -324,6 +336,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(124, 58, 237, 0.15)', color: '#8b5cf6', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><ShieldCheck size={12} /> Admin</span>;
       case 'Manager':
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(37, 99, 235, 0.15)', color: '#3b82f6', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Shield size={12} /> Manager</span>;
+      case 'QC':
+        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><ClipboardCheck size={12} /> QC</span>;
       case 'Employee':
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><UserCheck size={12} /> Employee</span>;
       default:
@@ -446,7 +460,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
         <div className="glass-panel" style={{ padding: '1.25rem', borderRadius: '12px', background: 'var(--card-bg, #ffffff)', border: '1px solid var(--border-color, #e5e7eb)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-secondary)' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>มีกำหนด WFH</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>กำหนดวันหยุด</span>
             <Calendar size={20} color="#f59e0b" />
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 700, marginTop: '0.5rem', color: 'var(--text-primary)' }}>
@@ -496,6 +510,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             <option value="ALL">ทุกบทบาท (All Roles)</option>
             <option value="Admin">Admin</option>
             <option value="Manager">Manager</option>
+            <option value="QC">QC</option>
             <option value="Employee">Employee</option>
             <option value="User">User</option>
           </select>
@@ -574,7 +589,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   <th style={{ padding: '1rem 1.25rem', fontWeight: 600 }}>บทบาท (Global Role)</th>
                   <th style={{ padding: '1rem 1.25rem', fontWeight: 600 }}>แผนก</th>
                   <th style={{ padding: '1rem 1.25rem', fontWeight: 600 }}>ทักษะ (Skills)</th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600 }}>WFH Days</th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600 }}>วันหยุดประจำสัปดาห์</th>
                   <th style={{ padding: '1rem 1.25rem', fontWeight: 600, textAlign: 'right' }}>การดำเนินการ</th>
                 </tr>
               </thead>
@@ -898,6 +913,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   >
                     <option value="Admin">Admin (ผู้ดูแลระบบสูงสุด)</option>
                     <option value="Manager">Manager (ผู้จัดการโครงการ)</option>
+                    <option value="QC">QC (ฝ่ายตรวจสอบคุณภาพ)</option>
                     <option value="Employee">Employee (พนักงาน/ช่างทั่วไป)</option>
                     <option value="User">User (ผู้ใช้งานทั่วไป)</option>
                   </select>
@@ -951,9 +967,23 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 />
               </div>
 
-              {/* WFH Days Selection */}
+              {/* Responsible Branches & Service Zones */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                  🏢 สาขา / พื้นที่รับผิดชอบ (แยกด้วยเครื่องหมายจุลภาค ,)
+                </label>
+                <input
+                  type="text"
+                  value={formServiceZonesText}
+                  onChange={e => setFormServiceZonesText(e.target.value)}
+                  placeholder="เช่น สาขาบางนา (Bangna), สมุทรปราการ, สนง.ใหญ่"
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '0.875rem' }}
+                />
+              </div>
+
+              {/* Weekly Day Off Selection */}
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>วันปฏิบัติงานจากบ้าน (WFH Schedule)</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>วันหยุดประจำสัปดาห์ (Weekly Day Off)</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {DAYS_OF_WEEK.map(day => {
                     const isChecked = formWfhDays.includes(day.id);
@@ -1115,18 +1145,34 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 </div>
               </div>
 
-              {/* WFH Days */}
+              {/* Responsible Branches & Service Zones */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>🏢 สาขา / พื้นที่รับผิดชอบ:</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {(selectedUserDetail.serviceZones || selectedUserDetail.assignedBranches) && (selectedUserDetail.serviceZones || selectedUserDetail.assignedBranches)!.length > 0 ? (
+                    (selectedUserDetail.serviceZones || selectedUserDetail.assignedBranches)!.map((z, i) => (
+                      <span key={i} style={{ padding: '3px 8px', borderRadius: '6px', background: 'rgba(14, 165, 233, 0.12)', color: '#0284c7', fontSize: '0.8rem', fontWeight: 600, border: '1px solid rgba(14, 165, 233, 0.25)' }}>
+                        {z}
+                      </span>
+                    ))
+                  ) : (
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{selectedUserDetail.department || 'สำนักงานใหญ่'}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Day Off Days */}
               <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>กำหนดการ WFH:</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>วันหยุดประจำสัปดาห์:</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {selectedUserDetail.wfhDays && selectedUserDetail.wfhDays.length > 0 ? (
                     selectedUserDetail.wfhDays.map(d => (
-                      <span key={d} style={{ padding: '3px 8px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontSize: '0.8rem', fontWeight: 600 }}>
+                      <span key={d} style={{ padding: '3px 8px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>
                         {d}
                       </span>
                     ))
                   ) : (
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>ไม่มีกำหนด WFH (เข้าออฟฟิศปกติ)</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>วันอาทิตย์ (วันหยุดมาตรฐาน)</span>
                   )}
                 </div>
               </div>

@@ -1,4 +1,4 @@
-export type GlobalRole = 'Admin' | 'Manager' | 'Employee' | 'User';
+export type GlobalRole = 'Admin' | 'Manager' | 'Employee' | 'User' | 'QC';
 export type ProjectRole = string;
 export type TaskStatus = string; // Made generic to support custom workflow columns
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
@@ -26,6 +26,7 @@ export interface User {
   phones?: string[];
   jobTypes?: string[];
   serviceZones?: string[];
+  assignedBranches?: string[];
   workSlots?: string[];
   certificates?: Array<{ name: string; url?: string; type?: string; selected?: boolean }>;
   criminalRecord?: string;
@@ -99,6 +100,9 @@ export interface Project {
     refStartDate?: string;
     isAllDay?: boolean;
     surveyTicketNo?: string;
+    surveyDate?: string;
+    surveyTime?: string;
+    surveyInspectorId?: string;
     surveyQtNo?: string;
     renovateQtNo?: string;
     renovateTicketNo?: string;
