@@ -522,7 +522,7 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
                             }}
                             className="hover:underline"
                           >
-                            {proj.name}
+                            [{proj.id}] {((proj as any).customerName || proj.extraDetails?.customerStaffPic) ? `${(proj as any).customerName || proj.extraDetails?.customerStaffPic} - ` : ''}{proj.name}
                           </Link>
                           <Link 
                             to={`/projects/${proj.id}`}
