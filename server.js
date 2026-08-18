@@ -1995,11 +1995,21 @@ app.post('/api/users', async (req, res) => {
     id, name, email, avatar, globalRole, department, gender, birthday, skills, password, wfhDays,
     taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel
   } = req.body;
-  const cleanName = name ? name.replace(/\s+/g, ' ').trim() : '';
+  
+  const cleanName = (name || '').replace(/\s+/g, ' ').trim() || 'User';
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const safeRole = globalRole || 'Employee';
+  const safeDept = (department || '').trim() || 'General';
+  const safeAvatar = avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
+
+  if (!cleanEmail) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
   let pwHash = null;
   try {
     // Check if user already exists to preserve their password_hash, or set default ('password123' hashed)
-    const existingUser = await pool.query('SELECT password_hash FROM users WHERE id = $1 OR email = $2', [id, email]);
+    const existingUser = await pool.query('SELECT password_hash FROM users WHERE id = $1 OR LOWER(email) = $2', [id, cleanEmail]);
     if (password && password.trim() !== '') {
       pwHash = crypto.createHash('sha256').update(password).digest('hex');
     } else if (existingUser.rows.length > 0 && existingUser.rows[0].password_hash) {
@@ -2039,34 +2049,34 @@ app.post('/api/users', async (req, res) => {
          credit_term_days = EXCLUDED.credit_term_days,
          technician_level = EXCLUDED.technician_level`,
       [
-        id, cleanName, email, avatar, globalRole, department, gender, birthday, skills || [], pwHash, wfhDays || [],
+        id, cleanName, cleanEmail, safeAvatar, safeRole, safeDept, gender || '', birthday || '', skills || [], pwHash, wfhDays || [],
         taxId || '', idCardNumber || '', JSON.stringify(idCardFiles || []), companyName || '', lineId || '',
         phones || [], jobTypes || [], serviceZones || [], workSlots || [], JSON.stringify(certificates || []),
-        criminalRecord || 'ไม่มี', creditTermDays || 30, technicianLevel || 'Standard'
+        criminalRecord || 'ไม่มี', creditTermDays != null ? parseInt(creditTermDays) : 30, technicianLevel || 'Standard'
       ]
     );
     res.json({ success: true });
   } catch (err) {
-    // Handle duplicate email (same email, different ID — e.g. LINE re-login)
-    if (err.code === '23505' && err.constraint === 'users_email_key') {
+    // Handle duplicate email (same email, different ID — e.g. LINE re-login or existing user updated)
+    if (err.code === '23505' && (err.constraint === 'users_email_key' || (err.detail && err.detail.includes('email')))) {
       try {
         await pool.query(
           `UPDATE users SET
-             id = $1, name = $2, avatar = $3,
-             global_role = $4, department = $5,
-             gender = $6, birthday = $7, skills = $8,
-             password_hash = $9, wfh_days = $10,
-             tax_id = $11, id_card_number = $12, id_card_files = $13,
-             company_name = $14, line_id = $15, phones = $16,
-             job_types = $17, service_zones = $18, work_slots = $19,
-             certificates = $20, criminal_record = $21, credit_term_days = $22,
-             technician_level = $23
-           WHERE email = $24`,
+             name = $1, avatar = $2,
+             global_role = $3, department = $4,
+             gender = $5, birthday = $6, skills = $7,
+             password_hash = COALESCE($8, password_hash), wfh_days = $9,
+             tax_id = $10, id_card_number = $11, id_card_files = $12,
+             company_name = $13, line_id = $14, phones = $15,
+             job_types = $16, service_zones = $17, work_slots = $18,
+             certificates = $19, criminal_record = $20, credit_term_days = $21,
+             technician_level = $22
+           WHERE LOWER(email) = $23`,
           [
-            id, cleanName, avatar, globalRole, department, gender, birthday, skills || [], pwHash, wfhDays || [],
+            cleanName, safeAvatar, safeRole, safeDept, gender || '', birthday || '', skills || [], pwHash, wfhDays || [],
             taxId || '', idCardNumber || '', JSON.stringify(idCardFiles || []), companyName || '', lineId || '',
             phones || [], jobTypes || [], serviceZones || [], workSlots || [], JSON.stringify(certificates || []),
-            criminalRecord || 'ไม่มี', creditTermDays || 30, technicianLevel || 'Standard', email
+            criminalRecord || 'ไม่มี', creditTermDays != null ? parseInt(creditTermDays) : 30, technicianLevel || 'Standard', cleanEmail
           ]
         );
         res.json({ success: true, note: 'merged by email' });

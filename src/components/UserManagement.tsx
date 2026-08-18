@@ -69,6 +69,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Form Fields
   const [formFirstName, setFormFirstName] = useState('');
   const [formLastName, setFormLastName] = useState('');
@@ -170,7 +172,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     const fullName = `${formFirstName.trim()} ${formLastName.trim()}`.trim();
-    if (!formFirstName.trim() || !formEmail.trim()) {
+    const cleanEmail = formEmail.trim().toLowerCase();
+
+    if (!formFirstName.trim() || !cleanEmail) {
       showToast('กรุณากรอกชื่อและอีเมลให้ครบถ้วน', 'error');
       return;
     }
@@ -194,12 +198,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     const payload = {
       id: userId,
       name: fullName,
-      email: formEmail.trim(),
+      email: cleanEmail,
       avatar: formAvatar,
       globalRole: formRole,
       department: formDept.trim() || 'General',
-      gender: formGender,
-      birthday: formBirthday,
+      gender: formGender || '',
+      birthday: formBirthday || '',
       skills: skillsList,
       serviceZones: serviceZonesList,
       assignedBranches: serviceZonesList,
@@ -207,10 +211,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       wfhDays: formWfhDays
     };
 
+    setIsSubmitting(true);
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-Id': currentUser?.id || ''
+        },
         body: JSON.stringify(payload)
       });
 
@@ -236,9 +244,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       };
 
       setUsers(prev => {
-        const exists = prev.some(u => u.id === userId);
+        const exists = prev.some(u => u.id === userId || u.email.toLowerCase() === cleanEmail);
         if (exists) {
-          return prev.map(u => u.id === userId ? { ...u, ...newUserObj } : u);
+          return prev.map(u => (u.id === userId || u.email.toLowerCase() === cleanEmail) ? { ...u, ...newUserObj } : u);
         }
         return [...prev, newUserObj];
       });
@@ -249,6 +257,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     } catch (err: any) {
       console.error('Error saving user:', err);
       showToast(`เกิดข้อผิดพลาด: ${err.message}`, 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -262,7 +272,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     }
 
     try {
-      const res = await fetch(`/api/users/${userToDelete.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/users/${userToDelete.id}`, { 
+        method: 'DELETE',
+        headers: { 'X-User-Id': currentUser?.id || '' }
+      });
       if (!res.ok) throw new Error('Failed to delete user');
 
       setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
@@ -286,7 +299,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     try {
       const res = await fetch(`/api/users/${passwordUser.id}/password`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-Id': currentUser?.id || ''
+        },
         body: JSON.stringify({ password: newPassword.trim() })
       });
 
@@ -1029,9 +1045,19 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '0.6rem 1.5rem', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#ffffff', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}
+                  disabled={isSubmitting}
+                  style={{
+                    padding: '0.6rem 1.5rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: isSubmitting ? '#93c5fd' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                    color: '#ffffff',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: 600
+                  }}
                 >
-                  {editingUser ? 'บันทึกการแก้ไข' : 'สร้างผู้ใช้งาน'}
+                  {isSubmitting ? 'กำลังบันทึก...' : (editingUser ? 'บันทึกการแก้ไข' : 'สร้างผู้ใช้งาน')}
                 </button>
               </div>
             </form>
