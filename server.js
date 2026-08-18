@@ -1612,6 +1612,13 @@ async function fetchRemoteBranches() {
 
 async function fetchRemoteTechnicians() {
   try {
+    // Check if auto sync is disabled in system_settings
+    const settingRes = await pool.query("SELECT setting_value FROM system_settings WHERE setting_key = 'auto_sync_remote_technicians'");
+    if (settingRes.rows.length > 0 && settingRes.rows[0].setting_value === 'false') {
+      console.log('ℹ️ Auto-sync remote technicians is disabled in system_settings. Skipping.');
+      return;
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     const response = await fetch('https://vibepjm.online/api/technicians', { signal: controller.signal });

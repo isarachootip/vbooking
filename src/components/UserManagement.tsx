@@ -603,9 +603,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                           alt={user.name}
                           style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color, #e5e7eb)' }}
                         />
-                        <div>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                            {user.name}
+                        <div 
+                          onClick={() => openEditModal(user)} 
+                          style={{ cursor: 'pointer' }}
+                          title="คลิกเพื่อแก้ไขข้อมูลผู้ใช้"
+                        >
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center' }}>
+                            <span className="hover:underline">{user.name}</span>
                             {user.id === currentUser.id && (
                               <span style={{ marginLeft: '6px', fontSize: '0.7rem', padding: '1px 6px', background: '#dbeafe', color: '#1d4ed8', borderRadius: '8px' }}>คุณ</span>
                             )}

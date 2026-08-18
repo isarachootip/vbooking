@@ -72,6 +72,7 @@ export const Settings = ({
 
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [maxUploadMb, setMaxUploadMb] = useState('1');
+  const [autoSyncTechs, setAutoSyncTechs] = useState(true);
   const [isSavingSystemConfig, setIsSavingSystemConfig] = useState(false);
   const [systemConfigMessage, setSystemConfigMessage] = useState('');
 
@@ -187,6 +188,9 @@ export const Settings = ({
         if (data.max_upload_mb) {
           setMaxUploadMb(data.max_upload_mb);
         }
+        if (data.auto_sync_remote_technicians !== undefined) {
+          setAutoSyncTechs(data.auto_sync_remote_technicians !== 'false');
+        }
       })
       .catch(err => console.error('Failed to load system settings', err));
     }
@@ -200,12 +204,21 @@ export const Settings = ({
       const res = await fetch('/api/system-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
-        body: JSON.stringify({ gemini_api_key: geminiApiKey, max_upload_mb: maxUploadMb })
+        body: JSON.stringify({ 
+          gemini_api_key: geminiApiKey, 
+          max_upload_mb: maxUploadMb,
+          auto_sync_remote_technicians: String(autoSyncTechs)
+        })
       });
       if (res.ok) {
         setSystemConfigMessage('Settings saved successfully!');
         if (setSystemSettings) {
-          setSystemSettings(prev => ({ ...prev, gemini_api_key: geminiApiKey, max_upload_mb: maxUploadMb }));
+          setSystemSettings(prev => ({ 
+            ...prev, 
+            gemini_api_key: geminiApiKey, 
+            max_upload_mb: maxUploadMb,
+            auto_sync_remote_technicians: String(autoSyncTechs)
+          }));
         }
         setTimeout(() => setSystemConfigMessage(''), 3000);
       } else {
@@ -2467,6 +2480,37 @@ export const Settings = ({
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
                 Limit the maximum file size users can attach in the project chat. Recommended max: 50MB.
               </p>
+            </div>
+
+            {/* Remote Data Sync Toggle */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '1rem',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-color)'
+            }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                  🔄 การดึงข้อมูลช่างอัตโนมัติจากระบบหลัก (Auto-sync Remote Technicians)
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
+                  เปิด/ปิด การดึงข้อมูลรายชื่อช่างจากระบบภายนอก (vibepjm.online) ตอนเริ่มต้นระบบและทุกชั่วโมง
+                </p>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={autoSyncTechs}
+                  onChange={(e) => setAutoSyncTechs(e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+                />
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: autoSyncTechs ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
+                  {autoSyncTechs ? 'เปิดใช้งาน (Enabled)' : 'ปิดการทำงาน (Disabled)'}
+                </span>
+              </label>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
