@@ -850,9 +850,9 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       </div>
 
       {/* ── LEADS TABLE ── */}
-      <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+      <div className="glass-panel" style={{ padding: 0, overflow: 'hidden', width: '100%' }}>
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <table style={{ width: '100%', minWidth: '1200px', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 600 }}>
                 <th style={{ padding: '0.85rem 1rem' }}>วันเวลาที่เข้ามา</th>
