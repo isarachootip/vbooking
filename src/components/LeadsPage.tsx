@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles, Calendar, Clock, History, AlertCircle } from 'lucide-react';
+import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles, Calendar, Clock, History, AlertCircle, Home } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
@@ -723,6 +723,89 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         .pulse-new-badge {
           animation: pulse-dot 1.5s infinite ease-in-out;
         }
+        .leads-table th {
+          padding: 1rem 0.75rem;
+          font-weight: 700;
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          border-bottom: 2px solid var(--border-color);
+        }
+        .leads-table td {
+          padding: 1rem 0.75rem;
+          vertical-align: top;
+          border-bottom: 1px solid var(--border-color);
+        }
+        .customer-card-info {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+        }
+        .customer-name {
+          font-size: 0.925rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+        .customer-meta-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .customer-meta-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+          text-decoration: none;
+        }
+        .gps-tag {
+          background: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          color: #10b981;
+          padding: 0.15rem 0.45rem;
+          border-radius: 4px;
+          font-weight: 600;
+          font-family: monospace;
+          font-size: 0.72rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.2rem;
+          text-decoration: none;
+          transition: all 0.2s ease;
+        }
+        .gps-tag:hover {
+          background: rgba(16, 185, 129, 0.15);
+          transform: translateY(-1px);
+        }
+        .customer-address {
+          font-size: 0.78rem;
+          color: var(--text-muted);
+          line-height: 1.4;
+          margin-top: 0.15rem;
+          display: flex;
+          align-items: flex-start;
+          gap: 0.25rem;
+        }
+        .lead-action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.45rem 0.85rem;
+          border-radius: 6px;
+          font-weight: 700;
+          font-size: 0.78rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          border: 1px solid transparent;
+          text-decoration: none;
+        }
+        .lead-action-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
       `}</style>
       
       {/* ── TOP HEADER & ACTIONS ── */}
@@ -760,73 +843,73 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       </div>
 
       {/* ── SUMMARY KPI CARDS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+        <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid var(--accent-primary)', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Leads ทั้งหมด</span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users size={18} color="#2563eb" />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Leads ทั้งหมด</span>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(139, 0, 0, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users size={20} color="var(--accent-primary)" />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            {leads.length} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>ราย</span>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+            {leads.length} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
           </div>
         </div>
 
-        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid #3b82f6', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ลูกค้าใหม่ (New)</span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FileText size={18} color="#3b82f6" />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ลูกค้าใหม่ (New)</span>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileText size={20} color="#3b82f6" />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#3b82f6' }}>
-            {leads.filter(l => l.status === 'New').length} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>ราย</span>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#3b82f6', lineHeight: 1.1 }}>
+            {leads.filter(l => l.status === 'New').length} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
           </div>
         </div>
 
-        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid #9333ea', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>รอสำรวจ/ยืนยัน</span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(147, 51, 234, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Building size={18} color="#9333ea" />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>รอสำรวจ/ยืนยัน</span>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(147, 51, 234, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Building size={20} color="#9333ea" />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#9333ea' }}>
-            {leads.filter(l => l.status === 'Qualified' || l.status === 'Contacted').length} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>ราย</span>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#9333ea', lineHeight: 1.1 }}>
+            {leads.filter(l => l.status === 'Qualified' || l.status === 'Contacted').length} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
           </div>
         </div>
 
-        <div className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid #10b981', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>แปลงเป็นโปรเจกต์สำเร็จ</span>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle2 size={18} color="#10b981" />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>แปลงเป็นโครงการสำเร็จ</span>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={20} color="#10b981" />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>
-            {leads.filter(l => l.status === 'Converted').length} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>ราย</span>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#10b981', lineHeight: 1.1 }}>
+            {leads.filter(l => l.status === 'Converted').length} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
           </div>
         </div>
       </div>
 
       {/* ── FILTER & SEARCH BAR ── */}
-      <div className="glass-panel" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className="glass-panel" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input 
             type="text" 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="ค้นหาชื่อลูกค้า, เบอร์โทร, ที่อยู่, พิกัด..."
-            style={{ width: '100%', padding: '0.5rem 0.75rem 0.5rem 2.2rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+            style={{ width: '100%', padding: '0.55rem 0.75rem 0.55rem 2.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', transition: 'border-color 0.2s' }}
           />
         </div>
 
         <select 
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+          style={{ padding: '0.55rem 1rem 0.55rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
         >
           <option value="All">สถานะทั้งหมด</option>
           <option value="New">New (ใหม่)</option>
@@ -839,170 +922,203 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         <select 
           value={jobTypeFilter}
           onChange={e => setJobTypeFilter(e.target.value)}
-          style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+          style={{ padding: '0.55rem 1rem 0.55rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
         >
           <option value="All">ประเภทงานทั้งหมด</option>
           <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
-          <option value="Installer Service">Installer Service (งานติดตั้ง)</option>
           <option value="Renovate Service">Renovate Service (งานรีโนเวท)</option>
-          <option value="Build-In">Build-In (งานบิ้วอิน)</option>
-          <option value="New House">New House (สร้างบ้านใหม่)</option>
           <option value="MA Service">MA Service (งานซ่อมบำรุง)</option>
         </select>
       </div>
 
       {/* ── LEADS TABLE ── */}
-      <div className="glass-panel" style={{ padding: 0, overflow: 'hidden', width: '100%' }}>
+      <div className="glass-panel" style={{ padding: 0, overflow: 'hidden', width: '100%', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
         <div style={{ overflowX: 'auto', width: '100%' }}>
-          <table style={{ width: '100%', minWidth: '1200px', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+          <table className="leads-table" style={{ width: '100%', minWidth: '1100px', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
             <thead>
-              <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 600 }}>
-                <th style={{ padding: '0.85rem 1rem' }}>วันเวลาที่เข้ามา</th>
-                <th style={{ padding: '0.85rem 1rem' }}>วันที่นัดหมาย</th>
-                <th style={{ padding: '0.85rem 1rem' }}>เบอร์โทร</th>
-                <th style={{ padding: '0.85rem 1rem' }}>ชื่อลูกค้า / ที่อยู่</th>
-                <th style={{ padding: '0.85rem 1rem' }}>พิกัดหน้างาน (Map/GPS)</th>
-                <th style={{ padding: '0.85rem 1rem' }}>ผู้ดูแล (Owner)</th>
-                <th style={{ padding: '0.85rem 1rem' }}>ประเภทงาน</th>
-                <th style={{ padding: '0.85rem 1rem' }}>สถานะ</th>
-                <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>การดำเนินการ</th>
+              <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }}>
+                <th style={{ width: '140px' }}>วันเวลาที่เข้ามา</th>
+                <th>ข้อมูลลูกค้า / การติดต่อ / พิกัด</th>
+                <th style={{ width: '180px' }}>ประเภทงาน & ผู้ดูแล</th>
+                <th style={{ width: '220px' }}>กำหนดนัดหมาย / สำรวจ</th>
+                <th style={{ width: '160px' }}>สถานะติดตาม</th>
+                <th style={{ textAlign: 'right', width: '280px' }}>การดำเนินการ</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     กำลังโหลดข้อมูล...
                   </td>
                 </tr>
               ) : sortedLeads.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     ไม่พบข้อมูลลูกค้ามุ่งหวัง
                   </td>
                 </tr>
               ) : (
-                sortedLeads.map((lead, index) => (
-                  <tr key={lead.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background var(--transition-fast)' }} className="table-row-hover">
-                    <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span>{formatDateTime(lead.created_at)}</span>
-                        {(isRecent(lead.created_at) || index < 3) && (
-                          <span 
-                            className="pulse-new-badge"
-                            style={{ 
-                              display: 'inline-flex', 
-                              alignItems: 'center', 
-                              gap: '0.2rem',
-                              background: 'linear-gradient(135deg, #ef4444, #f87171)', 
-                              color: 'white', 
-                              fontSize: '0.65rem', 
-                              fontWeight: 800, 
-                              padding: '0.15rem 0.4rem', 
-                              borderRadius: '4px',
-                              boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em'
-                            }}
-                          >
-                            <Sparkles size={10} /> New
+                sortedLeads.map((lead, index) => {
+                  const leadOwner = users.find(u => u.id === lead.sales_contact_id);
+                  return (
+                    <tr key={lead.id} style={{ transition: 'background var(--transition-fast)' }} className="table-row-hover">
+                      {/* Column 1: Created Date */}
+                      <td>
+                        <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.35rem' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.825rem' }}>
+                            {formatDateTime(lead.created_at)}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      {lead.appointment_date ? (
-                        <div style={{ background: 'rgba(147, 51, 234, 0.1)', border: '1px solid rgba(147, 51, 234, 0.2)', padding: '0.3rem 0.6rem', borderRadius: '6px', display: 'inline-flex', flexDirection: 'column', gap: '0.1rem' }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}>
-                            <Calendar size={12} /> {lead.appointment_type || 'นัดหมาย'}: {lead.appointment_date}
-                          </span>
-                          {lead.appointment_assignee && (
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>👤 {lead.appointment_assignee}</span>
+                          {(isRecent(lead.created_at) || index < 3) && (
+                            <span 
+                              className="pulse-new-badge"
+                              style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '0.2rem',
+                                background: 'linear-gradient(135deg, #ef4444, #f87171)', 
+                                color: 'white', 
+                                fontSize: '0.625rem', 
+                                fontWeight: 800, 
+                                padding: '0.125rem 0.4rem', 
+                                borderRadius: '4px',
+                                boxShadow: '0 2px 6px rgba(239, 68, 68, 0.25)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                width: 'fit-content'
+                              }}
+                            >
+                              <Sparkles size={10} /> New
+                            </span>
                           )}
                         </div>
-                      ) : (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>- ยังไม่มีนัดหมาย -</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
-                      {lead.customer_phone ? (
-                        <a href={`tel:${lead.customer_phone}`} style={{ textDecoration: 'none', color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} className="hover-lift">
-                          <Phone size={13} color="var(--accent-primary)" /> {lead.customer_phone}
-                        </a>
-                      ) : (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>-</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{lead.customer_name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{lead.customer_address || 'ไม่ระบุที่อยู่'}</div>
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      {lead.customer_latitude && lead.customer_longitude ? (
-                        <a 
-                          href={lead.map_url || `https://www.google.com/maps?q=${lead.customer_latitude},${lead.customer_longitude}`} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}
-                        >
-                          <MapPin size={13} /> {lead.customer_latitude}, {lead.customer_longitude} <ExternalLink size={11} />
-                        </a>
-                      ) : lead.map_url ? (
-                        <a 
-                          href={lead.map_url} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#2563eb', background: 'rgba(37, 99, 235, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}
-                        >
-                          <MapPin size={13} /> ดูแผนที่ Google Maps <ExternalLink size={11} />
-                        </a>
-                      ) : (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>- ไม่ได้ปักพิกัด -</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <span style={{ padding: '0.2rem 0.6rem', borderRadius: '6px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', fontWeight: 600, fontSize: '0.78rem' }}>
-                        {lead.job_type}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      {getStatusBadge(lead.status)}
-                    </td>
-                    <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                      {lead.status !== 'Converted' ? (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
-                          <button
-                            onClick={() => openFollowupModal(lead)}
-                            style={{ padding: '0.35rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'rgba(147, 51, 234, 0.12)', border: '1px solid #9333ea', color: '#9333ea', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                          >
-                            <Calendar size={13} /> ติดตาม / นัดหมาย
-                          </button>
-                          <button
-                            onClick={() => openModal(lead)}
-                            style={{ padding: '0.35rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                          >
-                            <Edit2 size={13} /> แก้ไข
-                          </button>
-                          <button
-                            onClick={() => handleConvert(lead.id)}
-                            style={{ padding: '0.35rem 0.65rem', borderRadius: 'var(--radius-md)', background: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                          >
-                            <RefreshCw size={13} /> แปลงเป็นงาน
-                          </button>
+                      </td>
+
+                      {/* Column 2: Combined Customer Info */}
+                      <td>
+                        <div className="customer-card-info">
+                          <div className="customer-name">{lead.customer_name}</div>
+                          <div className="customer-meta-row">
+                            {lead.customer_phone && (
+                              <a href={`tel:${lead.customer_phone}`} className="customer-meta-item hover-lift" style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>
+                                <Phone size={12} /> {lead.customer_phone}
+                              </a>
+                            )}
+                            {lead.customer_latitude && lead.customer_longitude ? (
+                              <a 
+                                href={lead.map_url || `https://www.google.com/maps?q=${lead.customer_latitude},${lead.customer_longitude}`} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="gps-tag"
+                              >
+                                <MapPin size={11} /> พิกัดหน้างาน <ExternalLink size={9} />
+                              </a>
+                            ) : lead.map_url ? (
+                              <a 
+                                href={lead.map_url} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="gps-tag"
+                                style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', color: '#2563eb' }}
+                              >
+                                <MapPin size={11} /> แผนที่ Google Maps <ExternalLink size={9} />
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                <MapPin size={11} /> ไม่ระบุพิกัด
+                              </span>
+                            )}
+                          </div>
+                          <div className="customer-address">
+                            <Home size={12} style={{ marginTop: '0.1rem', flexShrink: 0 }} />
+                            <span>{lead.customer_address || 'ไม่ระบุที่อยู่'}</span>
+                          </div>
                         </div>
-                      ) : (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
-                          <a
-                            href="/projects"
-                            style={{ padding: '0.35rem 0.65rem', borderRadius: 'var(--radius-md)', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#059669', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                          >
-                            <CheckCircle2 size={14} /> 📁 ไปที่โครงการติดตั้ง
-                          </a>
+                      </td>
+
+                      {/* Column 3: Job Type & Owner */}
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                          <span style={{ 
+                            padding: '0.2rem 0.5rem', 
+                            borderRadius: '4px', 
+                            background: lead.job_type === 'Quick service' ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg-tertiary)', 
+                            border: lead.job_type === 'Quick service' ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid var(--border-color)', 
+                            fontWeight: 700, 
+                            fontSize: '0.72rem',
+                            color: lead.job_type === 'Quick service' ? '#d97706' : 'var(--text-secondary)',
+                            width: 'fit-content'
+                          }}>
+                            {lead.job_type}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
+                            👤 ผู้ดูแล: {leadOwner ? leadOwner.name : 'Quick service'}
+                          </span>
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                      </td>
+
+                      {/* Column 4: Appointment info */}
+                      <td>
+                        {lead.appointment_date ? (
+                          <div style={{ background: 'rgba(147, 51, 234, 0.06)', border: '1px solid rgba(147, 51, 234, 0.15)', padding: '0.4rem 0.65rem', borderRadius: '6px', display: 'inline-flex', flexDirection: 'column', gap: '0.15rem' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}>
+                              <Calendar size={12} /> {lead.appointment_type || 'นัดหมาย'}: {lead.appointment_date}
+                            </span>
+                            {lead.appointment_assignee && (
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>ผู้ลงพื้นที่: {lead.appointment_assignee}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>- ยังไม่มีนัดหมาย -</span>
+                        )}
+                      </td>
+
+                      {/* Column 5: Status */}
+                      <td>
+                        {getStatusBadge(lead.status)}
+                      </td>
+
+                      {/* Column 6: Actions */}
+                      <td style={{ textAlign: 'right' }}>
+                        {lead.status !== 'Converted' ? (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => openFollowupModal(lead)}
+                              className="lead-action-btn hover-lift"
+                              style={{ background: 'rgba(147, 51, 234, 0.08)', border: '1px solid rgba(147, 51, 234, 0.2)', color: '#9333ea' }}
+                            >
+                              <Calendar size={13} /> ติดตาม / นัดหมาย
+                            </button>
+                            <button
+                              onClick={() => openModal(lead)}
+                              className="lead-action-btn hover-lift"
+                              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                            >
+                              <Edit2 size={13} /> แก้ไข
+                            </button>
+                            <button
+                              onClick={() => handleConvert(lead.id)}
+                              className="lead-action-btn hover-lift"
+                              style={{ background: '#10b981', color: 'white', border: 'none', boxShadow: '0 2px 6px rgba(16, 185, 129, 0.2)' }}
+                            >
+                              <RefreshCw size={13} /> แปลงเป็นงาน
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                            <a
+                              href="/projects"
+                              className="lead-action-btn hover-lift"
+                              style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#059669' }}
+                            >
+                              <CheckCircle2 size={13} /> 📁 ไปที่โครงการติดตั้ง
+                            </a>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -1686,10 +1802,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 700 }}
                         >
                           <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
-                          <option value="Installer Service">Installer Service (งานติดตั้ง)</option>
                           <option value="Renovate Service">Renovate Service (งานรีโนเวท)</option>
-                          <option value="Build-In">Build-In (งานบิ้วอิน)</option>
-                          <option value="New House">New House (สร้างบ้านใหม่)</option>
                           <option value="MA Service">MA Service (งานซ่อมบำรุง)</option>
                         </select>
                       </div>
