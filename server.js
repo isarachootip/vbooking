@@ -473,6 +473,11 @@ const initDB = async () => {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_first_name VARCHAR(100);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_last_name VARCHAR(100);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS sales_contact_id VARCHAR(50);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS coordinator_name VARCHAR(150);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS coordinator_phone VARCHAR(50);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS coordinator_line_id VARCHAR(100);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS surveyor_id VARCHAR(50);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS survey_date VARCHAR(50);
 
       UPDATE leads SET 
         customer_first_name = CASE 
@@ -492,10 +497,18 @@ const initDB = async () => {
         appointment_date VARCHAR(50),
         appointment_time VARCHAR(50),
         assignee_name VARCHAR(150),
+        site_coordinator_name VARCHAR(150),
+        site_coordinator_phone VARCHAR(50),
+        site_coordinator_line_id VARCHAR(100),
+        site_map_url TEXT,
         notes TEXT,
         created_at VARCHAR(50) NOT NULL,
         created_by VARCHAR(150)
       );
+      ALTER TABLE lead_followups ADD COLUMN IF NOT EXISTS site_coordinator_name VARCHAR(150);
+      ALTER TABLE lead_followups ADD COLUMN IF NOT EXISTS site_coordinator_phone VARCHAR(50);
+      ALTER TABLE lead_followups ADD COLUMN IF NOT EXISTS site_coordinator_line_id VARCHAR(100);
+      ALTER TABLE lead_followups ADD COLUMN IF NOT EXISTS site_map_url TEXT;
 
       CREATE TABLE IF NOT EXISTS branches (
         id VARCHAR(255) PRIMARY KEY,
@@ -775,7 +788,9 @@ const initDB = async () => {
       console.log('Seeding Kitchen Renovation task templates...');
       const kitchenTemplates = [
         { id: 'tpl_k1', title: 'สำรวจหน้างานและวัดพื้นที่จริง (Kitchen Survey)', description: 'สำรวจโครงสร้างเดิม วัดขนาดพื้นที่ ผนัง ตำแหน่งท่อน้ำ ท่อระบายน้ำ และปลั๊กไฟเดิม', priority: 'High', start_percent: 0, end_percent: 5, estimated_hours: 8, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k2', title: 'ออกแบบแปลนและ 3D Perspective (Kitchen 3D Design)', description: 'วางแปลนจัดสรรพื้นที่ (Work Triangle: ตู้เย็น อ่างล้างจาน เตา) ออกแบบภาพ 3D และเลือกวัสดุ', priority: 'High', start_percent: 5, end_percent: 20, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k_checkin', title: 'Check-in bar', description: 'เช็คอินเข้าปฏิบัติงานสำรวจหน้างาน', priority: 'High', start_percent: 5, end_percent: 6, estimated_hours: 1, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k_checkout', title: 'Check-out bar', description: 'เช็คเอาท์และบันทึกผลงานสำรวจหน้างาน', priority: 'High', start_percent: 6, end_percent: 7, estimated_hours: 1, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k2', title: 'ออกแบบแปลนและ 3D Perspective (Kitchen 3D Design)', description: 'วางแปลนจัดสรรพื้นที่ (Work Triangle: ตู้เย็น อ่างล้างจาน เตา) ออกแบบภาพ 3D และเลือกวัสดุ', priority: 'High', start_percent: 7, end_percent: 20, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
         { id: 'tpl_k3', title: 'รื้อถอนเคาน์เตอร์และระบบเดิม (Demolition)', description: 'รื้อถอนตู้บิวท์อิน เคาน์เตอร์ปูน กระเบื้องผนังเดิม และขนย้ายเศษวัสดุไปทิ้ง', priority: 'High', start_percent: 20, end_percent: 35, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
         { id: 'tpl_k4', title: 'เดินระบบไฟฟ้าและประปาใหม่ (Electrical & Plumbing)', description: 'เดินท่อน้ำดี ท่อน้ำทิ้ง ท่อแก๊ส/เครื่องดูดควัน และเดินสายไฟปลั๊กไฟสำหรับเครื่องใช้ไฟฟ้า', priority: 'High', start_percent: 35, end_percent: 50, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
         { id: 'tpl_k5', title: 'หล่อเคาน์เตอร์ปูนและงานปูกระเบื้อง (Masonry & Tiling)', description: 'ก่อโครงสร้างเคาน์เตอร์ปูน ฉาบเรียบ ปูกระเบื้องพื้นและกระเบื้องผนังกันเปื้อน (Backsplash)', priority: 'High', start_percent: 50, end_percent: 70, estimated_hours: 24, project_template_name: 'Kitchen Renovation' },
@@ -798,8 +813,10 @@ const initDB = async () => {
       console.log('Seeding Quick Service task templates...');
       const quickTemplates = [
         { id: 'tpl_q1', title: 'สำรวจและประเมินงานหน้างาน (Survey)', description: 'ตรวจสอบปัญหาหน้างานและประเมินแนวทางแก้ไข', priority: 'High', start_percent: 0, end_percent: 20, estimated_hours: 1, project_template_name: 'Quick Service' },
-        { id: 'tpl_q2', title: 'ดำเนินการแก้ไข/ซ่อมแซม (Execution)', description: 'ดำเนินการแก้ไขปัญหาตามที่ประเมินไว้', priority: 'Urgent', start_percent: 20, end_percent: 80, estimated_hours: 3, project_template_name: 'Quick Service' },
-        { id: 'tpl_q3', title: 'ตรวจสอบและส่งมอบงาน (QA & Handover)', description: 'ตรวจสอบความเรียบร้อยและส่งมอบงานให้ลูกค้า', priority: 'High', start_percent: 80, end_percent: 100, estimated_hours: 1, project_template_name: 'Quick Service' }
+        { id: 'tpl_q_checkin', title: 'Check-in bar', description: 'เช็คอินเข้าปฏิบัติงานสำรวจและประเมินงาน', priority: 'High', start_percent: 20, end_percent: 21, estimated_hours: 1, project_template_name: 'Quick Service' },
+        { id: 'tpl_q_checkout', title: 'Check-out bar', description: 'เช็คเอาท์และบันทึกผลงานสำรวจและประเมินงาน', priority: 'High', start_percent: 21, end_percent: 22, estimated_hours: 1, project_template_name: 'Quick Service' },
+        { id: 'tpl_q2', title: 'ดำเนินการแก้ไข/ซ่อมแซม (Execution)', description: 'ดำเนินการแก้ไขปัญหาตามที่ประเมินไว้', priority: 'Urgent', start_percent: 22, end_percent: 80, estimated_hours: 3, project_template_name: 'Quick Service' },
+        { id: 'tpl_q3', title: 'ตรวจสอบและส่งมอบงาน (QA & Handover)', description: 'ตรวจสอบความเรียบร้อย and ส่งมอบงานให้ลูกค้า', priority: 'High', start_percent: 80, end_percent: 100, estimated_hours: 1, project_template_name: 'Quick Service' }
       ];
       for (const tpl of quickTemplates) {
         await client.query(
@@ -907,6 +924,160 @@ const initDB = async () => {
       await client.query("UPDATE project_messages SET text = regexp_replace(text, 'Isara[\\s]{2,8}chootip', 'Isara chootip', 'g')");
       await client.query('INSERT INTO migrations (id) VALUES ($1)', [migNormalizeSpaces]);
       console.log('✅ One-time migration: normalized spaces in usernames and messages.');
+    }
+
+    // ONE-TIME: Insert Check-in bar and Check-out bar tasks in all task templates that have a Survey task
+    const migCheckinCheckoutSurvey = 'add_checkin_checkout_after_survey_v3';
+    const migCheckinCheckoutSurveyDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migCheckinCheckoutSurvey]);
+    if (migCheckinCheckoutSurveyDone.rows.length === 0) {
+      console.log('Running migration: adding check-in and check-out tasks after survey in all templates...');
+      const resTpls = await client.query('SELECT * FROM task_templates ORDER BY project_template_name, start_percent ASC');
+      const grouped = {};
+      for (const row of resTpls.rows) {
+        const groupName = row.project_template_name || 'General';
+        if (!grouped[groupName]) {
+          grouped[groupName] = [];
+        }
+        grouped[groupName].push(row);
+      }
+
+      for (const groupName of Object.keys(grouped)) {
+        const tasks = grouped[groupName];
+        // Find if any task in this group contains "Survey" or "สำรวจ" in its title
+        const surveyTask = tasks.find(t => 
+          t.title.toLowerCase().includes('survey') || 
+          t.title.includes('สำรวจ') || 
+          (t.description && (t.description.toLowerCase().includes('survey') || t.description.includes('สำรวจ')))
+        );
+
+        if (surveyTask) {
+          console.log(`Template group "${groupName}" has a Survey task. Adjusting...`);
+          const surveyEnd = parseFloat(surveyTask.end_percent);
+
+          // 1. Delete any existing Check-in/out bar tasks for this template group
+          await client.query(
+            "DELETE FROM task_templates WHERE project_template_name = $1 AND (title = 'Check-in bar' OR title = 'Check-out bar')",
+            [groupName]
+          );
+
+          // 2. Insert the two new tasks
+          const sanitizedGroup = groupName.replace(/[^a-zA-Z0-9]/g, '_');
+          const checkinId = `tpl_ci_${sanitizedGroup}_${Math.random().toString(36).substr(2, 4)}`;
+          const checkoutId = `tpl_co_${sanitizedGroup}_${Math.random().toString(36).substr(2, 4)}`;
+
+          await client.query(
+            `INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours, project_template_name)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [checkinId, 'Check-in bar', 'เช็คอินเข้าปฏิบัติงานสำรวจหน้างาน', 'High', surveyEnd, surveyEnd + 1, 1, groupName]
+          );
+
+          await client.query(
+            `INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours, project_template_name)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [checkoutId, 'Check-out bar', 'เช็คเอาท์และบันทึกผลงานสำรวจหน้างาน', 'High', surveyEnd + 1, surveyEnd + 2, 1, groupName]
+          );
+
+          // 3. Shift the start_percent of subsequent tasks
+          for (const t of tasks) {
+            if (t.id === surveyTask.id || t.title === 'Check-in bar' || t.title === 'Check-out bar') {
+              continue;
+            }
+            const currentStart = parseFloat(t.start_percent);
+            if (currentStart >= surveyEnd && currentStart < surveyEnd + 2) {
+              const newStart = surveyEnd + 2;
+              const currentEnd = parseFloat(t.end_percent);
+              const newEnd = currentEnd < newStart ? newStart : currentEnd;
+              await client.query(
+                'UPDATE task_templates SET start_percent = $1, end_percent = $2 WHERE id = $3',
+                [newStart, newEnd, t.id]
+              );
+              console.log(`  Adjusted task "${t.title}" start_percent from ${currentStart} to ${newStart}`);
+            }
+          }
+        }
+      }
+
+      await client.query('INSERT INTO migrations (id) VALUES ($1)', [migCheckinCheckoutSurvey]);
+      console.log('✅ One-time migration: check-in and check-out tasks added after survey step in all templates.');
+    }
+
+    // ONE-TIME: Seed master project types to system_settings
+    const migSeedMasterTypes = 'seed_master_project_types_v2';
+    const migSeedMasterTypesDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migSeedMasterTypes]);
+    if (migSeedMasterTypesDone.rows.length === 0) {
+      console.log('Running migration: seeding master_project_types into system_settings...');
+      const defaultTypesList = [
+        {
+          id: 'quick_service',
+          name: 'Quick service',
+          badgeText: 'Quick service ⚡',
+          color: '#f59e0b',
+          iconName: 'Zap',
+          description: 'โครงการงานบริการด่วน งานแก้ไขและซ่อมแซมเร่งด่วน มีเฉพาะ Task เดี่ยว ดำเนินการเสร็จรวดเร็ว',
+          isActive: true,
+          taskTypeStyle: 'single'
+        },
+        {
+          id: 'installer',
+          name: 'Installer (งานติดตั้ง)',
+          badgeText: 'งานติดตั้ง 🛠️',
+          color: '#2563eb',
+          iconName: 'Wrench',
+          description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบคุณภาพประกอบระบบ และส่งมอบงานติดตั้งหน้างาน',
+          isActive: false,
+          taskTypeStyle: 'workflow'
+        },
+        {
+          id: 'renovate',
+          name: 'Renovate (งานรีโนเวท)',
+          badgeText: 'Renovate 🏡',
+          color: '#8B0000',
+          iconName: 'Home',
+          description: 'โครงการปรับปรุง รีโนเวทบ้าน และตกแต่งอาคารสถานที่ครบวงจร (สำรวจ -> ออกแบบ -> เสนอราคา -> ก่อสร้าง)',
+          isActive: true,
+          taskTypeStyle: 'workflow'
+        },
+        {
+          id: 'build_in',
+          name: 'Build-in (งานบิวท์อิน)',
+          badgeText: 'Build-in 🛋️',
+          color: '#8b5cf6',
+          iconName: 'Box',
+          description: 'โครงการออกแบบ ผลิต และติดตั้งงานเฟอร์นิเจอร์บิวท์อินเฉพาะทาง',
+          isActive: false,
+          taskTypeStyle: 'workflow'
+        },
+        {
+          id: 'new_house',
+          name: 'New house (สร้างบ้านใหม่)',
+          badgeText: 'New house 🏠',
+          color: '#059669',
+          iconName: 'Home',
+          description: 'โครงการงานก่อสร้างบ้านใหม่และอาคารสิ่งปลูกสร้าง',
+          isActive: false,
+          taskTypeStyle: 'workflow'
+        },
+        {
+          id: 'maintenance',
+          name: 'Maintenance (งานซ่อมบำรุง MA)',
+          badgeText: 'MA 🔧',
+          color: '#3b82f6',
+          iconName: 'ShieldCheck',
+          description: 'โครงการดูแลระบบ ซ่อมแซมบำรุงรักษาตามสัญญา MA',
+          isActive: true,
+          taskTypeStyle: 'sla'
+        }
+      ];
+
+      await client.query(`
+        INSERT INTO system_settings (setting_key, setting_value)
+        VALUES ('master_project_types', $1)
+        ON CONFLICT (setting_key) DO UPDATE
+        SET setting_value = EXCLUDED.setting_value
+      `, [JSON.stringify(defaultTypesList)]);
+
+      await client.query('INSERT INTO migrations (id) VALUES ($1)', [migSeedMasterTypes]);
+      console.log('✅ One-time migration: seeded master_project_types in system_settings.');
     }
 
     // Auto-create initial plan baseline for existing projects with tasks
@@ -3841,8 +4012,8 @@ app.post('/api/leads/:id/convert', async (req, res) => {
     }
 
     const projResult = await pool.query(
-      `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address, project_type, custom_columns)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address, project_type, custom_columns, lead_id, customer_name, customer_phone, converted_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
       [
         projectId, 
         `[${lead.job_type}] ${lead.customer_name}`, 
@@ -3853,7 +4024,11 @@ app.post('/api/leads/:id/convert', async (req, res) => {
         membersJson, 
         lead.customer_address,
         lead.job_type,
-        JSON.stringify(cols)
+        JSON.stringify(cols),
+        id,
+        lead.customer_name,
+        lead.customer_phone,
+        now
       ]
     );
 

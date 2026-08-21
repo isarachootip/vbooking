@@ -242,10 +242,12 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         setIsFollowupModalOpen(false);
         fetchLeads();
       } else {
-        alert('เกิดข้อผิดพลาดในการบันทึกการติดตาม');
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.error || 'เกิดข้อผิดพลาดในการบันทึกการติดตาม');
       }
     } catch (err) {
       console.error('Save followup error:', err);
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     }
   };
 

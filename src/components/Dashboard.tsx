@@ -131,10 +131,7 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
 
   const pieData = [
     { name: 'Renovate (งานรีโนเวท)', value: renovateCount, color: '#8B0000', percent: totalProjectsCount > 0 ? `${Math.round((renovateCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'New (สร้างบ้านใหม่)', value: newCount, color: '#059669', percent: totalProjectsCount > 0 ? `${Math.round((newCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'Installer (งานติดตั้ง)', value: installCount, color: '#2563eb', percent: totalProjectsCount > 0 ? `${Math.round((installCount / totalProjectsCount) * 100)}%` : '0%' },
     { name: 'Quick service (งานด่วน)', value: quickCount, color: '#f59e0b', percent: totalProjectsCount > 0 ? `${Math.round((quickCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'Build-in (งานบิวท์อิน)', value: buildCount, color: '#8b5cf6', percent: totalProjectsCount > 0 ? `${Math.round((buildCount / totalProjectsCount) * 100)}%` : '0%' },
     { name: 'Maintenance (ซ่อมบำรุง MA)', value: maCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((maCount / totalProjectsCount) * 100)}%` : '0%' }
   ];
 
@@ -349,10 +346,7 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
         {[
           { id: 'all', nameTh: 'โครงการทั้งหมด (All)', nameEn: 'All Projects', color: 'var(--accent-primary)', icon: Folder },
           { id: 'quick_service', nameTh: 'Quick service ⚡', nameEn: 'Quick service ⚡', color: '#f59e0b', icon: Zap },
-          { id: 'installer', nameTh: 'งานติดตั้ง 🛠️', nameEn: 'Installer Service 🛠️', color: '#2563eb', icon: Wrench },
           { id: 'renovate', nameTh: 'งานรีโนเวท 🏡', nameEn: 'Renovate Service 🏡', color: '#8B0000', icon: Home },
-          { id: 'build_in', nameTh: 'งานบิวท์อิน 🛋️', nameEn: 'Build-in 🛋️', color: '#8b5cf6', icon: Box },
-          { id: 'new_house', nameTh: 'สร้างบ้านใหม่ 🏠', nameEn: 'New House 🏠', color: '#059669', icon: Home },
           { id: 'maintenance', nameTh: 'ซ่อมบำรุง MA 🔧', nameEn: 'MA Service 🔧', color: '#3b82f6', icon: ShieldCheck }
         ].map(type => {
           const Icon = type.icon;

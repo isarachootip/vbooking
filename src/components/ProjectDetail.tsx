@@ -294,11 +294,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', fontSize: '0.8rem' }}>
                 <div>
                   <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem', fontSize: '0.725rem' }}>ชื่อลูกค้า</span>
-                  <strong style={{ color: 'var(--text-primary)' }}>{extra.customerStaffPic || 'คุณสมชาย ใจดี'}</strong>
+                  <strong style={{ color: 'var(--text-primary)' }}>{project.customerName || extra.customerStaffPic || 'คุณสมชาย ใจดี'}</strong>
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem', fontSize: '0.725rem' }}>เบอร์โทรศัพท์</span>
-                  <strong style={{ color: 'var(--text-primary)' }}>081-234-5678</strong>
+                  <strong style={{ color: 'var(--text-primary)' }}>{project.customerPhone || '081-234-5678'}</strong>
                 </div>
 
                 <div>

@@ -116,6 +116,10 @@ export interface Project {
     workAreas?: string[];
     workTypes?: string[];
   };
+  customerName?: string | null;
+  customerPhone?: string | null;
+  leadId?: string | null;
+  convertedAt?: string | null;
 }
 
 export interface Sprint {

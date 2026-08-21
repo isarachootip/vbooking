@@ -37,7 +37,7 @@ export const defaultMasterTypes: MasterProjectType[] = [
     color: '#2563eb',
     iconName: 'Wrench',
     description: 'โครงการติดตั้งอุปกรณ์ ตรวจสอบคุณภาพประกอบระบบ และส่งมอบงานติดตั้งหน้างาน',
-    isActive: true,
+    isActive: false,
     taskTypeStyle: 'workflow'
   },
   {
@@ -57,7 +57,7 @@ export const defaultMasterTypes: MasterProjectType[] = [
     color: '#8b5cf6',
     iconName: 'Box',
     description: 'โครงการออกแบบ ผลิต และติดตั้งงานเฟอร์นิเจอร์บิวท์อินเฉพาะทาง',
-    isActive: true,
+    isActive: false,
     taskTypeStyle: 'workflow'
   },
   {
@@ -67,7 +67,7 @@ export const defaultMasterTypes: MasterProjectType[] = [
     color: '#059669',
     iconName: 'Home',
     description: 'โครงการงานก่อสร้างบ้านใหม่และอาคารสิ่งปลูกสร้าง',
-    isActive: true,
+    isActive: false,
     taskTypeStyle: 'workflow'
   },
   {
