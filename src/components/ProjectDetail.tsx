@@ -85,8 +85,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   // Safe helper to read the project's current lifecycle flow state
   const flowState = project?.extraDetails?.lifecycle || {
-    phase: 'PHASE_01_LEAD_SURVEY',
-    step: 'customer_enquiry',
+    phase: isQuickService ? 'PHASE_03_PROJECT_EXECUTION' : 'PHASE_01_LEAD_SURVEY',
+    step: isQuickService ? 'project_plan_creation' : 'customer_enquiry',
     survey_appointment: isQuickService ? 'no' : 'yes',
     surveyor_id: '',
     survey_date: '',
@@ -99,13 +99,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     followup_scheduled: false,
     followup_date: '',
     followup_notes: '',
-    design_required: 'yes',
+    design_required: isQuickService ? 'no' : 'yes',
     design_files: [] as Array<{ name: string; url: string }>,
-    design_approved: 'pending', // 'pending', 'approved', 'rejected'
+    design_approved: isQuickService ? 'approved' : 'pending', // 'pending', 'approved', 'rejected'
     design_revise_count: 0,
-    quotation_approved: 'pending', // 'pending', 'approved', 'rejected'
-    payment_received: false,
-    payment_slip_url: '',
+    quotation_approved: isQuickService ? 'approved' : 'pending', // 'pending', 'approved', 'rejected'
+    payment_received: isQuickService ? true : false,
+    payment_slip_url: isQuickService ? 'SYSTEM_PAYMENT_TICKET' : '',
     project_plan_created: false,
     technicians: [] as string[],
     work_started: false,
@@ -135,6 +135,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     };
     setProjects(prev => prev.map(p => p.id === project.id ? updatedProject : p));
   };
+
+  const [viewingPhase, setViewingPhase] = useState<string>(flowState.phase);
+
+  React.useEffect(() => {
+    setViewingPhase(flowState.phase);
+  }, [flowState.phase]);
 
   const [surveyorId, setSurveyorId] = useState(flowState.surveyor_id || '');
   const [surveyDate, setSurveyDate] = useState(flowState.survey_date || '');
@@ -965,24 +971,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <div style={{ position: 'absolute', top: '24px', left: '12%', right: '12%', height: '3px', background: 'var(--border-color)', zIndex: 0 }} />
               
               {/* Phase 1 */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', zIndex: 1 }}>
+              <div 
+                onClick={() => setViewingPhase('PHASE_01_LEAD_SURVEY')}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', zIndex: 1, cursor: 'pointer' }}
+              >
                 <div style={{
                   width: '48px',
                   height: '48px',
                   borderRadius: '50%',
-                  background: flowState.phase === 'PHASE_01_LEAD_SURVEY' ? 'var(--accent-primary)' : (flowState.phase !== 'PHASE_01_LEAD_SURVEY' ? '#10b981' : 'var(--bg-tertiary)'),
+                  background: viewingPhase === 'PHASE_01_LEAD_SURVEY' ? 'var(--accent-primary)' : (flowState.phase !== 'PHASE_01_LEAD_SURVEY' ? '#10b981' : 'var(--bg-tertiary)'),
                   color: 'white',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontWeight: 800,
                   border: '4px solid var(--bg-secondary)',
-                  boxShadow: flowState.phase === 'PHASE_01_LEAD_SURVEY' ? '0 0 15px var(--accent-primary)' : 'none'
+                  boxShadow: viewingPhase === 'PHASE_01_LEAD_SURVEY' ? '0 0 15px var(--accent-primary)' : 'none',
+                  transform: viewingPhase === 'PHASE_01_LEAD_SURVEY' ? 'scale(1.1)' : 'scale(1)',
+                  transition: 'all 0.2s ease'
                 }}>
                   {flowState.phase !== 'PHASE_01_LEAD_SURVEY' ? '✓' : '1'}
                 </div>
                 <div>
-                  <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>Phase 01: Lead & Survey</strong>
+                  <strong style={{ fontSize: '0.85rem', color: viewingPhase === 'PHASE_01_LEAD_SURVEY' ? 'var(--accent-primary)' : 'var(--text-primary)' }}>Phase 01: Lead & Survey</strong>
                   <span style={{ display: 'block', fontSize: '0.7rem', color: flowState.phase === 'PHASE_01_LEAD_SURVEY' ? 'var(--accent-primary)' : (flowState.phase !== 'PHASE_01_LEAD_SURVEY' ? '#10b981' : 'var(--text-muted)') }}>
                     {flowState.phase === 'PHASE_01_LEAD_SURVEY' ? 'กำลังดำเนินการ' : 'เสร็จสมบูรณ์'}
                   </span>
@@ -990,24 +1001,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               {/* Phase 2 */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', zIndex: 1 }}>
+              <div 
+                onClick={() => setViewingPhase('PHASE_02_DESIGN_QUOTE_PAYMENT')}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', zIndex: 1, cursor: 'pointer' }}
+              >
                 <div style={{
                   width: '48px',
                   height: '48px',
                   borderRadius: '50%',
-                  background: flowState.phase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' ? 'var(--accent-primary)' : (['PHASE_03_PROJECT_EXECUTION', 'PHASE_04_QC_HANDOVER_AFTERSALES'].includes(flowState.phase) ? '#10b981' : 'var(--bg-tertiary)'),
-                  color: flowState.phase === 'PHASE_01_LEAD_SURVEY' ? 'var(--text-muted)' : 'white',
+                  background: viewingPhase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' ? 'var(--accent-primary)' : (['PHASE_03_PROJECT_EXECUTION', 'PHASE_04_QC_HANDOVER_AFTERSALES'].includes(flowState.phase) ? '#10b981' : 'var(--bg-tertiary)'),
+                  color: 'white',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontWeight: 800,
                   border: '4px solid var(--bg-secondary)',
-                  boxShadow: flowState.phase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' ? '0 0 15px var(--accent-primary)' : 'none'
+                  boxShadow: viewingPhase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' ? '0 0 15px var(--accent-primary)' : 'none',
+                  transform: viewingPhase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' ? 'scale(1.1)' : 'scale(1)',
+                  transition: 'all 0.2s ease'
                 }}>
                   {['PHASE_03_PROJECT_EXECUTION', 'PHASE_04_QC_HANDOVER_AFTERSALES'].includes(flowState.phase) ? '✓' : '2'}
                 </div>
                 <div>
-                  <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>Phase 02: Design & Quote</strong>
+                  <strong style={{ fontSize: '0.85rem', color: viewingPhase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' ? 'var(--accent-primary)' : 'var(--text-primary)' }}>Phase 02: Design & Quote</strong>
                   <span style={{ display: 'block', fontSize: '0.7rem', color: flowState.phase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' ? 'var(--accent-primary)' : (['PHASE_03_PROJECT_EXECUTION', 'PHASE_04_QC_HANDOVER_AFTERSALES'].includes(flowState.phase) ? '#10b981' : 'var(--text-muted)') }}>
                     {flowState.phase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' ? 'กำลังดำเนินการ' : (['PHASE_03_PROJECT_EXECUTION', 'PHASE_04_QC_HANDOVER_AFTERSALES'].includes(flowState.phase) ? 'เสร็จสมบูรณ์' : 'รอดำเนินการ')}
                   </span>
@@ -1015,24 +1031,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               {/* Phase 3 */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', zIndex: 1 }}>
+              <div 
+                onClick={() => setViewingPhase('PHASE_03_PROJECT_EXECUTION')}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', zIndex: 1, cursor: 'pointer' }}
+              >
                 <div style={{
                   width: '48px',
                   height: '48px',
                   borderRadius: '50%',
-                  background: flowState.phase === 'PHASE_03_PROJECT_EXECUTION' ? 'var(--accent-primary)' : (flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? '#10b981' : 'var(--bg-tertiary)'),
-                  color: ['PHASE_01_LEAD_SURVEY', 'PHASE_02_DESIGN_QUOTE_PAYMENT'].includes(flowState.phase) ? 'var(--text-muted)' : 'white',
+                  background: viewingPhase === 'PHASE_03_PROJECT_EXECUTION' ? 'var(--accent-primary)' : (flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? '#10b981' : 'var(--bg-tertiary)'),
+                  color: 'white',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontWeight: 800,
                   border: '4px solid var(--bg-secondary)',
-                  boxShadow: flowState.phase === 'PHASE_03_PROJECT_EXECUTION' ? '0 0 15px var(--accent-primary)' : 'none'
+                  boxShadow: viewingPhase === 'PHASE_03_PROJECT_EXECUTION' ? '0 0 15px var(--accent-primary)' : 'none',
+                  transform: viewingPhase === 'PHASE_03_PROJECT_EXECUTION' ? 'scale(1.1)' : 'scale(1)',
+                  transition: 'all 0.2s ease'
                 }}>
                   {flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? '✓' : '3'}
                 </div>
                 <div>
-                  <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>Phase 03: Execution</strong>
+                  <strong style={{ fontSize: '0.85rem', color: viewingPhase === 'PHASE_03_PROJECT_EXECUTION' ? 'var(--accent-primary)' : 'var(--text-primary)' }}>Phase 03: Execution</strong>
                   <span style={{ display: 'block', fontSize: '0.7rem', color: flowState.phase === 'PHASE_03_PROJECT_EXECUTION' ? 'var(--accent-primary)' : (flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? '#10b981' : 'var(--text-muted)') }}>
                     {flowState.phase === 'PHASE_03_PROJECT_EXECUTION' ? 'กำลังดำเนินการ' : (flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? 'เสร็จสมบูรณ์' : 'รอดำเนินการ')}
                   </span>
@@ -1040,24 +1061,29 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               </div>
 
               {/* Phase 4 */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', zIndex: 1 }}>
+              <div 
+                onClick={() => setViewingPhase('PHASE_04_QC_HANDOVER_AFTERSALES')}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', zIndex: 1, cursor: 'pointer' }}
+              >
                 <div style={{
                   width: '48px',
                   height: '48px',
                   borderRadius: '50%',
-                  background: flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? (flowState.settled_in_bmt ? '#10b981' : 'var(--accent-primary)') : 'var(--bg-tertiary)',
-                  color: flowState.phase !== 'PHASE_04_QC_HANDOVER_AFTERSALES' ? 'var(--text-muted)' : 'white',
+                  background: viewingPhase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? (flowState.settled_in_bmt ? '#10b981' : 'var(--accent-primary)') : (flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? 'var(--accent-primary)' : 'var(--bg-tertiary)'),
+                  color: 'white',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontWeight: 800,
                   border: '4px solid var(--bg-secondary)',
-                  boxShadow: flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' && !flowState.settled_in_bmt ? '0 0 15px var(--accent-primary)' : 'none'
+                  boxShadow: viewingPhase === 'PHASE_04_QC_HANDOVER_AFTERSALES' && !flowState.settled_in_bmt ? '0 0 15px var(--accent-primary)' : 'none',
+                  transform: viewingPhase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? 'scale(1.1)' : 'scale(1)',
+                  transition: 'all 0.2s ease'
                 }}>
                   {flowState.settled_in_bmt ? '✓' : '4'}
                 </div>
                 <div>
-                  <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>Phase 04: QC & After-Sales</strong>
+                  <strong style={{ fontSize: '0.85rem', color: viewingPhase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? 'var(--accent-primary)' : 'var(--text-primary)' }}>Phase 04: QC & Handover</strong>
                   <span style={{ display: 'block', fontSize: '0.7rem', color: flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
                     {flowState.settled_in_bmt ? 'ปิดโครงการเสร็จสิ้น (BMT settled)' : (flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' ? 'กำลังดำเนินการ' : 'รอดำเนินการ')}
                   </span>
@@ -1073,8 +1099,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
               {/* PHASE 1: LEAD & SURVEY VIEW */}
-              {flowState.phase === 'PHASE_01_LEAD_SURVEY' && (
+              {viewingPhase === 'PHASE_01_LEAD_SURVEY' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {isQuickService && (
+                    <div style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.825rem', fontWeight: 600 }}>
+                      <CheckCircle2 size={18} /> งาน Quick Service: ข้ามขั้นตอนการสำรวจหน้างานโดยระบบอัตโนมัติ (Automated Bypass)
+                    </div>
+                  )}
                   <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase' }}>ขั้นตอนการตรวจสอบและนัดสำรวจ</span>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.2rem 0 0 0', color: 'var(--text-primary)' }}>PHASE 01: Lead & Site Survey</h2>
@@ -1252,8 +1283,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               )}
 
               {/* PHASE 2: DESIGN, QUOTE & PAYMENT VIEW */}
-              {flowState.phase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' && (
+              {viewingPhase === 'PHASE_02_DESIGN_QUOTE_PAYMENT' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {isQuickService && (
+                    <div style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.825rem', fontWeight: 600 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <CheckCircle2 size={18} /> งาน Quick Service: ข้ามขั้นตอนออกแบบและเสนอราคาโดยระบบอัตโนมัติ
+                      </div>
+                      <div style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', marginLeft: '1.45rem', fontWeight: 500 }}>
+                        ได้รับข้อมูลการยืนยันชำระเงินล่วงหน้าแล้ว (Ticket: <strong>{project.extraDetails?.surveyTicketNo || project.extraDetails?.renovateTicketNo || project.extraDetails?.qtNo || ('TK-' + project.id)}</strong>)
+                      </div>
+                    </div>
+                  )}
                   <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase' }}>ขั้นตอนออกแบบ เสนอราคา และชำระเงิน</span>
@@ -1541,7 +1582,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               )}
 
               {/* PHASE 3: PROJECT EXECUTION VIEW */}
-              {flowState.phase === 'PHASE_03_PROJECT_EXECUTION' && (
+              {viewingPhase === 'PHASE_03_PROJECT_EXECUTION' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
@@ -1702,7 +1743,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               )}
 
               {/* PHASE 4: QC, HANDOVER & AFTER-SALES VIEW */}
-              {flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' && (
+              {viewingPhase === 'PHASE_04_QC_HANDOVER_AFTERSALES' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
