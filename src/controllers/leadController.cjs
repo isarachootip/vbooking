@@ -107,16 +107,147 @@ exports.addFollowup = async (req, res) => {
     );
 
     const fullAppointmentStr = appointment_date ? `${appointment_date} ${appointment_time || ''}`.trim() : null;
+    const isSiteVisit = activity_type && (activity_type.includes('site') || activity_type.includes('ลงพื้นที่'));
+    const initialApprovalStatus = isSiteVisit ? 'Pending' : 'None';
+
     await pool.query(
       `UPDATE leads 
-       SET status = COALESCE($1, status), appointment_date = $2, appointment_type = $3, appointment_assignee = $4, updated_at = $5, surveyor_id = COALESCE($6, surveyor_id), survey_date = COALESCE($7, survey_date)
-       WHERE id = $8`,
-      [new_status || null, fullAppointmentStr, activity_type, assignee_name, now, surveyor_id || null, survey_date || null, id]
+       SET status = COALESCE($1, status), 
+           appointment_date = $2, 
+           appointment_type = $3, 
+           appointment_assignee = $4, 
+           updated_at = $5, 
+           surveyor_id = COALESCE($6, surveyor_id), 
+           survey_date = COALESCE($7, survey_date),
+           site_visit_approval_status = CASE WHEN $8 = 'Pending' THEN 'Pending' ELSE site_visit_approval_status END
+       WHERE id = $9`,
+      [new_status || null, fullAppointmentStr, activity_type, assignee_name, now, surveyor_id || null, survey_date || null, initialApprovalStatus, id]
     );
 
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error adding followup:', err);
     res.status(500).json({ error: 'Failed to add followup' });
+  }
+};
+
+exports.getSiteVisitApprovals = async (req, res) => {
+  try {
+    const { status, branch } = req.query;
+    let query = `
+      SELECT l.*, 
+             u.name as sales_contact_name,
+             u.avatar as sales_contact_avatar
+      FROM leads l
+      LEFT JOIN users u ON l.sales_contact_id = u.id
+      WHERE (
+        l.site_visit_approval_status IN ('Pending', 'Approved', 'Rejected')
+        OR l.appointment_type LIKE '%site%'
+        OR l.appointment_type LIKE '%ลงพื้นที่%'
+        OR (l.appointment_date IS NOT NULL AND l.appointment_date != '')
+      )
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (status && status !== 'All') {
+      query += ` AND (l.site_visit_approval_status = $${paramIndex} OR ($${paramIndex} = 'Pending' AND (l.site_visit_approval_status = 'Pending' OR l.site_visit_approval_status = 'None' OR l.site_visit_approval_status IS NULL)))`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    if (branch && branch !== 'All') {
+      query += ` AND l.branch = $${paramIndex}`;
+      params.push(branch);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY l.updated_at DESC, l.created_at DESC`;
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching site visit approvals:', err);
+    res.status(500).json({ error: 'Failed to fetch site visit approvals' });
+  }
+};
+
+exports.approveSiteVisit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      approval_status, 
+      sales_contact_id, 
+      sales_contact_name, 
+      approved_by, 
+      approval_notes,
+      appointment_date,
+      appointment_time
+    } = req.body;
+
+    const now = new Date().toISOString();
+
+    let fullAppointmentStr = undefined;
+    if (appointment_date) {
+      fullAppointmentStr = `${appointment_date} ${appointment_time || ''}`.trim();
+    }
+
+    const updateResult = await pool.query(
+      `UPDATE leads
+       SET site_visit_approval_status = $1,
+           site_visit_approved_by = $2,
+           site_visit_approved_at = $3,
+           site_visit_approval_notes = $4,
+           sales_contact_id = COALESCE($5, sales_contact_id),
+           appointment_assignee = COALESCE($6, appointment_assignee),
+           appointment_date = COALESCE($7, appointment_date),
+           status = CASE WHEN $1 = 'Approved' THEN 'Qualified' WHEN $1 = 'Rejected' THEN status ELSE status END,
+           updated_at = $8
+       WHERE id = $9
+       RETURNING *`,
+      [
+        approval_status || 'Approved',
+        approved_by || 'GM สาขา',
+        now,
+        approval_notes || null,
+        sales_contact_id || null,
+        sales_contact_name || null,
+        fullAppointmentStr || null,
+        now,
+        id
+      ]
+    );
+
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    const followupId = `flw_gm_${Date.now()}`;
+    const activityTitle = approval_status === 'Approved' 
+      ? `✅ GM อนุมัตินัดหมายลงพื้นที่ & มอบหมาย Sales (${sales_contact_name || 'พนักงานขาย'})`
+      : approval_status === 'Rejected'
+      ? `❌ GM ปฏิเสธนัดหมายลงพื้นที่`
+      : `🔄 GM ปรับปรุงข้อมูลนัดหมาย`;
+
+    await pool.query(
+      `INSERT INTO lead_followups (id, lead_id, activity_type, appointment_date, appointment_time, assignee_name, notes, created_at, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        followupId,
+        id,
+        activityTitle,
+        appointment_date || null,
+        appointment_time || null,
+        sales_contact_name || null,
+        approval_notes ? `บันทึกจาก GM: ${approval_notes}` : 'อนุมัติการออกพบลูกค้าหน้างาน',
+        now,
+        approved_by || 'GM สาขา'
+      ]
+    );
+
+    res.json(updateResult.rows[0]);
+  } catch (err) {
+    console.error('Error approving site visit:', err);
+    res.status(500).json({ error: 'Failed to approve site visit' });
   }
 };

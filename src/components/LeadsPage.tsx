@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles, Calendar, Clock, History, AlertCircle, Home } from 'lucide-react';
+import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles, Calendar, Clock, History, AlertCircle, Home } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { GisMapPickerModal, formatToDMS } from './GisMapPickerModal';
+import { SiteVisitApprovalManager } from './SiteVisitApprovalManager';
 
 interface LeadFollowup {
   id: string;
@@ -32,6 +33,10 @@ interface Lead {
   appointment_date?: string | null;
   appointment_type?: string | null;
   appointment_assignee?: string | null;
+  site_visit_approval_status?: 'None' | 'Pending' | 'Approved' | 'Rejected' | string;
+  site_visit_approved_by?: string | null;
+  site_visit_approved_at?: string | null;
+  site_visit_approval_notes?: string | null;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -64,6 +69,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [isSiteVisitModalOpen, setIsSiteVisitModalOpen] = useState(false);
 
   // Follow-up Modal & History
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
@@ -832,26 +838,54 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           </p>
         </div>
         
-        <button 
-          onClick={() => openModal()} 
-          style={{ 
-            background: 'var(--accent-primary)', 
-            color: 'white', 
-            border: 'none', 
-            padding: '0.6rem 1.25rem', 
-            borderRadius: 'var(--radius-md)', 
-            fontWeight: 700, 
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            fontSize: '0.9rem',
-            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
-          }} 
-          className="hover-lift"
-        >
-          <Plus size={18} /> + เพิ่มลูกค้าใหม่
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => setIsSiteVisitModalOpen(true)} 
+            style={{ 
+              background: leads.some(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected') ? '#ea580c' : 'var(--bg-secondary)', 
+              color: leads.some(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected') ? 'white' : 'var(--text-primary)', 
+              border: leads.some(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected') ? 'none' : '1px solid var(--border-color)', 
+              padding: '0.6rem 1.15rem', 
+              borderRadius: 'var(--radius-md)', 
+              fontWeight: 700, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontSize: '0.85rem',
+              boxShadow: leads.some(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected') ? '0 4px 12px rgba(234, 88, 12, 0.3)' : 'none'
+            }} 
+            className="hover-lift"
+          >
+            <MapPin size={17} /> อนุมัตินัดหมายออก Site
+            {leads.filter(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected').length > 0 && (
+              <span style={{ background: '#ffffff', color: '#ea580c', fontSize: '0.72rem', padding: '0.1rem 0.45rem', borderRadius: '9999px', fontWeight: 800 }}>
+                {leads.filter(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected').length}
+              </span>
+            )}
+          </button>
+
+          <button 
+            onClick={() => openModal()} 
+            style={{ 
+              background: 'var(--accent-primary)', 
+              color: 'white', 
+              border: 'none', 
+              padding: '0.6rem 1.25rem', 
+              borderRadius: 'var(--radius-md)', 
+              fontWeight: 700, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontSize: '0.9rem',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
+            }} 
+            className="hover-lift"
+          >
+            <Plus size={18} /> + เพิ่มลูกค้าใหม่
+          </button>
+        </div>
       </div>
 
       {/* ── SUMMARY KPI CARDS ── */}
@@ -1072,13 +1106,27 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                       {/* Column 4: Appointment info */}
                       <td>
                         {lead.appointment_date ? (
-                          <div style={{ background: 'rgba(147, 51, 234, 0.06)', border: '1px solid rgba(147, 51, 234, 0.15)', padding: '0.4rem 0.65rem', borderRadius: '6px', display: 'inline-flex', flexDirection: 'column', gap: '0.15rem' }}>
+                          <div style={{ background: 'rgba(147, 51, 234, 0.06)', border: '1px solid rgba(147, 51, 234, 0.15)', padding: '0.4rem 0.65rem', borderRadius: '6px', display: 'inline-flex', flexDirection: 'column', gap: '0.2rem' }}>
                             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}>
                               <Calendar size={12} /> {lead.appointment_type || 'นัดหมาย'}: {lead.appointment_date}
                             </span>
                             {lead.appointment_assignee && (
                               <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>ผู้ลงพื้นที่: {lead.appointment_assignee}</span>
                             )}
+                            {/* Site Visit Approval Status */}
+                            {lead.site_visit_approval_status === 'Approved' ? (
+                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#059669', background: '#d1fae5', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', width: 'fit-content' }}>
+                                <Check size={10} /> 🟢 GM อนุมัติแล้ว
+                              </span>
+                            ) : lead.site_visit_approval_status === 'Rejected' ? (
+                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', width: 'fit-content' }}>
+                                <X size={10} /> 🔴 GM ไม่อนุมัติ
+                              </span>
+                            ) : (lead.appointment_type?.includes('site') || lead.appointment_type?.includes('ลงพื้นที่')) ? (
+                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#ca8a04', background: '#fef3c7', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', width: 'fit-content' }}>
+                                <Clock size={10} /> 🟡 รอ GM อนุมัติ & มอบหมาย
+                              </span>
+                            ) : null}
                           </div>
                         ) : (
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>- ยังไม่มีนัดหมาย -</span>
@@ -2029,6 +2077,78 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         initialAddress={customerAddress}
         onSelectLocation={handleLocationPickedFromGIS}
       />
+
+      {/* SITE VISIT APPROVALS & SALES ASSIGNMENT MODAL */}
+      {isSiteVisitModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1200,
+          padding: '1.25rem'
+        }}>
+          <div style={{
+            background: 'var(--bg-primary)',
+            borderRadius: '16px',
+            border: '1px solid var(--border-color)',
+            width: '1100px',
+            maxWidth: '96vw',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.4)'
+          }}>
+            {/* MODAL HEADER */}
+            <div style={{
+              padding: '1.15rem 1.5rem',
+              borderBottom: '1px solid var(--border-color)',
+              background: 'var(--bg-secondary)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div style={{ background: '#ea580c', color: 'white', padding: '0.45rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <MapPin size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    อนุมัตินัดหมายออกพบลูกค้าภายนอก & มอบหมาย Sales (Branch Site Visit Approvals)
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    GM สาขา ตรวจสอบรายการนัดพบที่หน้างาน มอบหมายพนักงานขาย และอนุมัติการออกปฏิบัติงาน
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => { setIsSiteVisitModalOpen(false); fetchLeads(currentPage); }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.35rem', borderRadius: '6px' }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* MODAL BODY */}
+            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1 }}>
+              <SiteVisitApprovalManager
+                currentUser={currentUser}
+                users={users}
+                branches={branches}
+                onRefreshParent={() => fetchLeads(currentPage)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

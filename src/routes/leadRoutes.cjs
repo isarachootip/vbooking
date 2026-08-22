@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const leadController = require('../controllers/leadController.cjs');
 
+router.get('/site-visits', leadController.getSiteVisitApprovals);
+router.put('/:id/site-visit-approval', leadController.approveSiteVisit);
 router.get('/', leadController.getLeads);
 router.post('/', leadController.createLead);
 router.put('/:id', leadController.updateLead);

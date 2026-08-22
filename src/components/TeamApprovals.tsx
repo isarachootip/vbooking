@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import type { TimesheetEntry, User, GlobalRole, Project, ProjectRole } from '../types';
-import { Check, X, Clock, Award, Users, Plus, Edit, Trash2, Calendar, Home, LayoutGrid, List } from 'lucide-react';
+import { Check, X, Clock, Award, Users, Plus, Edit, Trash2, Calendar, Home, LayoutGrid, List, MapPin } from 'lucide-react';
 import { formatToDDMMYYYY, sortTimesheetsByLastUpdate } from '../utils';
+import { SiteVisitApprovalManager } from './SiteVisitApprovalManager';
 
 interface TeamApprovalsProps {
   users: User[];
@@ -15,7 +16,8 @@ interface TeamApprovalsProps {
 }
 
 export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, projects, setProjects, tasks, currentUser }: TeamApprovalsProps) => {
-  const [activeTab, setActiveTab] = useState<'team' | 'approvals' | 'wfh'>('team');
+  const [activeTab, setActiveTab] = useState<'team' | 'approvals' | 'wfh' | 'site_visits'>('team');
+  const [pendingSiteVisitsCount, setPendingSiteVisitsCount] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
     return (localStorage.getItem('team_view_mode') as 'card' | 'list') || 'card';
   });
@@ -117,6 +119,24 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
       localStorage.removeItem('nt_employee_form_draft');
     }
   }, [isModalOpen, editingUser, name, email, globalRole, department, selectedProjectId, projectRole, customRole, gender, birthday, skills, avatar, taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel]);
+
+  const fetchPendingSiteVisitsCount = async () => {
+    try {
+      const res = await fetch('/api/leads/site-visits?status=Pending', {
+        headers: { 'X-User-Id': currentUser?.id || '' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPendingSiteVisitsCount(Array.isArray(data) ? data.length : 0);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingSiteVisitsCount();
+  }, []);
 
   // Restore form draft on mount / when users list is ready
   useEffect(() => {
@@ -554,6 +574,31 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
           </div>
         </button>
         )}
+        {isPMorAdmin && (
+        <button 
+          onClick={() => setActiveTab('site_visits')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: activeTab === 'site_visits' ? '#ea580c' : 'var(--text-muted)',
+            paddingBottom: '0.75rem',
+            borderBottom: activeTab === 'site_visits' ? '2px solid #ea580c' : '2px solid transparent',
+            fontWeight: 700,
+            cursor: 'pointer',
+            fontSize: '1rem',
+            transition: 'all var(--transition-fast)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <MapPin size={18} color="#ea580c" /> อนุมัตินัดหมายออก Site (GM Approval)
+            {pendingSiteVisitsCount > 0 && (
+              <span style={{ fontSize: '0.75rem', background: '#ea580c', color: 'white', padding: '0.1rem 0.45rem', borderRadius: 'var(--radius-full)', fontWeight: 800 }}>
+                {pendingSiteVisitsCount}
+              </span>
+            )}
+          </div>
+        </button>
+        )}
         <button 
           onClick={() => setActiveTab('wfh')}
           style={{
@@ -964,6 +1009,13 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
             </div>
           )}
         </div>
+      ) : activeTab === 'site_visits' ? (
+        /* Site Visit Approvals & Sales Assignment Manager */
+        <SiteVisitApprovalManager 
+          currentUser={currentUser}
+          users={users}
+          onRefreshParent={fetchPendingSiteVisitsCount}
+        />
       ) : (
         /* WFH Planner Schedule */
         <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
