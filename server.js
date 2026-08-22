@@ -1979,6 +1979,8 @@ app.get('/api/initial-data', async (req, res) => {
       phones: u.phones || [],
       jobTypes: u.job_types || [],
       serviceZones: u.service_zones || [],
+      assignedBranches: u.assigned_branches || [],
+      assignedZones: u.assigned_zones || [],
       workSlots: u.work_slots || [],
       certificates: u.certificates || [],
       criminalRecord: u.criminal_record || 'ไม่มี',
@@ -2106,6 +2108,8 @@ app.get('/api/initial-data', async (req, res) => {
       name: b.name,
       province: b.province,
       status: b.status,
+      zone: b.zone,
+      region: b.region,
       fullName: b.full_name,
       address: b.address,
       latitude: b.latitude ? parseFloat(b.latitude) : undefined,
@@ -2113,7 +2117,8 @@ app.get('/api/initial-data', async (req, res) => {
       openTime: b.open_time,
       closeTime: b.close_time,
       phone: b.phone,
-      storeGroup: b.store_group
+      storeGroup: b.store_group,
+      assignedQcIds: b.assigned_qc_ids || []
     }));
 
     if (branches.length === 0) {
@@ -2126,6 +2131,8 @@ app.get('/api/initial-data', async (req, res) => {
       name: b.name,
       province: b.province,
       status: b.status,
+      zone: b.zone,
+      region: b.region,
       createdAt: b.created_at,
       updatedAt: b.updated_at
     }));
@@ -2195,7 +2202,7 @@ app.get('/api/users/available-surveyors', async (req, res) => {
 
 app.get('/api/users', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, name, email, avatar, global_role, department, gender, birthday, skills, wfh_days, tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level FROM users ORDER BY name ASC');
+    const result = await pool.query('SELECT id, name, email, avatar, global_role, department, gender, birthday, skills, wfh_days, tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, assigned_branches, assigned_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level FROM users ORDER BY name ASC');
     const users = result.rows.map(u => ({
       id: u.id,
       name: u.name,
@@ -2215,6 +2222,8 @@ app.get('/api/users', async (req, res) => {
       phones: u.phones || [],
       jobTypes: u.job_types || [],
       serviceZones: u.service_zones || [],
+      assignedBranches: u.assigned_branches || [],
+      assignedZones: u.assigned_zones || [],
       workSlots: u.work_slots || [],
       certificates: u.certificates || [],
       criminalRecord: u.criminal_record || 'ไม่มี',
@@ -2231,7 +2240,7 @@ app.get('/api/users', async (req, res) => {
 app.post('/api/users', async (req, res) => {
   const { 
     id, name, email, avatar, globalRole, department, gender, birthday, skills, password, wfhDays,
-    taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel
+    taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, assignedBranches, assignedZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel
   } = req.body;
   
   const cleanName = (name || '').replace(/\s+/g, ' ').trim() || 'User';
@@ -2259,9 +2268,9 @@ app.post('/api/users', async (req, res) => {
     await pool.query(
       `INSERT INTO users (
          id, name, email, avatar, global_role, department, gender, birthday, skills, password_hash, wfh_days,
-         tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level
+         tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, assigned_branches, assigned_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          email = EXCLUDED.email,
@@ -2281,6 +2290,8 @@ app.post('/api/users', async (req, res) => {
          phones = EXCLUDED.phones,
          job_types = EXCLUDED.job_types,
          service_zones = EXCLUDED.service_zones,
+         assigned_branches = EXCLUDED.assigned_branches,
+         assigned_zones = EXCLUDED.assigned_zones,
          work_slots = EXCLUDED.work_slots,
          certificates = EXCLUDED.certificates,
          criminal_record = EXCLUDED.criminal_record,
@@ -2289,7 +2300,7 @@ app.post('/api/users', async (req, res) => {
       [
         id, cleanName, cleanEmail, safeAvatar, safeRole, safeDept, gender || '', birthday || '', skills || [], pwHash, wfhDays || [],
         taxId || '', idCardNumber || '', JSON.stringify(idCardFiles || []), companyName || '', lineId || '',
-        phones || [], jobTypes || [], serviceZones || [], workSlots || [], JSON.stringify(certificates || []),
+        phones || [], jobTypes || [], serviceZones || [], assignedBranches || [], assignedZones || [], workSlots || [], JSON.stringify(certificates || []),
         criminalRecord || 'ไม่มี', creditTermDays != null ? parseInt(creditTermDays) : 30, technicianLevel || 'Standard'
       ]
     );
@@ -2306,14 +2317,14 @@ app.post('/api/users', async (req, res) => {
              password_hash = COALESCE($8, password_hash), wfh_days = $9,
              tax_id = $10, id_card_number = $11, id_card_files = $12,
              company_name = $13, line_id = $14, phones = $15,
-             job_types = $16, service_zones = $17, work_slots = $18,
-             certificates = $19, criminal_record = $20, credit_term_days = $21,
-             technician_level = $22
-           WHERE LOWER(email) = $23`,
+             job_types = $16, service_zones = $17, assigned_branches = $18, assigned_zones = $19, work_slots = $20,
+             certificates = $21, criminal_record = $22, credit_term_days = $23,
+             technician_level = $24
+           WHERE LOWER(email) = $25`,
           [
             cleanName, safeAvatar, safeRole, safeDept, gender || '', birthday || '', skills || [], pwHash, wfhDays || [],
             taxId || '', idCardNumber || '', JSON.stringify(idCardFiles || []), companyName || '', lineId || '',
-            phones || [], jobTypes || [], serviceZones || [], workSlots || [], JSON.stringify(certificates || []),
+            phones || [], jobTypes || [], serviceZones || [], assignedBranches || [], assignedZones || [], workSlots || [], JSON.stringify(certificates || []),
             criminalRecord || 'ไม่มี', creditTermDays != null ? parseInt(creditTermDays) : 30, technicianLevel || 'Standard', cleanEmail
           ]
         );

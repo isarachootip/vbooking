@@ -13,9 +13,10 @@ interface TeamApprovalsProps {
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   tasks: any[];
   currentUser: User;
+  branches?: any[];
 }
 
-export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, projects, setProjects, tasks, currentUser }: TeamApprovalsProps) => {
+export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, projects, setProjects, tasks, currentUser, branches = [] }: TeamApprovalsProps) => {
   const [activeTab, setActiveTab] = useState<'team' | 'approvals' | 'wfh' | 'site_visits'>('team');
   const [pendingSiteVisitsCount, setPendingSiteVisitsCount] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
@@ -61,6 +62,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
   const [phones, setPhones] = useState<string[]>(['082-137-1123']);
   const [jobTypes, setJobTypes] = useState<string[]>(['ติดตั้ง', 'service MTN']);
   const [serviceZones, setServiceZones] = useState<string[]>(['นครปฐม', 'ราชบุรี']);
+  const [assignedBranches, setAssignedBranches] = useState<string[]>([]);
+  const [assignedZones, setAssignedZones] = useState<string[]>([]);
   const [workSlots, setWorkSlots] = useState<string[]>(['Slot 1: เช้า', 'Slot 2: บ่าย 1', 'Slot 3: บ่าย 2']);
   const [certificates, setCertificates] = useState<Array<{ name: string; url?: string; type?: string; selected?: boolean }>>([
     { name: 'cert_elec.jpg', selected: true },
@@ -108,6 +111,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
         phones,
         jobTypes,
         serviceZones,
+        assignedBranches,
+        assignedZones,
         workSlots,
         certificates,
         criminalRecord,
@@ -118,7 +123,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
     } else {
       localStorage.removeItem('nt_employee_form_draft');
     }
-  }, [isModalOpen, editingUser, name, email, globalRole, department, selectedProjectId, projectRole, customRole, gender, birthday, skills, avatar, taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel]);
+  }, [isModalOpen, editingUser, name, email, globalRole, department, selectedProjectId, projectRole, customRole, gender, birthday, skills, avatar, taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, assignedBranches, assignedZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel]);
 
   const fetchPendingSiteVisitsCount = async () => {
     try {
@@ -130,13 +135,13 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
         setPendingSiteVisitsCount(Array.isArray(data) ? data.length : 0);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to fetch pending site visits count:', e);
     }
   };
 
   useEffect(() => {
     fetchPendingSiteVisitsCount();
-  }, []);
+  }, [activeTab]);
 
   // Restore form draft on mount / when users list is ready
   useEffect(() => {
@@ -165,6 +170,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
         setPhones(draft.phones || ['082-137-1123']);
         setJobTypes(draft.jobTypes || ['ติดตั้ง', 'service MTN']);
         setServiceZones(draft.serviceZones || ['นครปฐม', 'ราชบุรี']);
+        setAssignedBranches(draft.assignedBranches || []);
+        setAssignedZones(draft.assignedZones || []);
         setWorkSlots(draft.workSlots || ['Slot 1: เช้า', 'Slot 2: บ่าย 1', 'Slot 3: บ่าย 2']);
         setCertificates(draft.certificates || [
           { name: 'cert_elec.jpg', selected: true },
@@ -251,6 +258,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
     setPhones(['082-137-1123']);
     setJobTypes(['ติดตั้ง', 'service MTN']);
     setServiceZones(['นครปฐม', 'ราชบุรี']);
+    setAssignedBranches([]);
+    setAssignedZones([]);
     setWorkSlots(['Slot 1: เช้า', 'Slot 2: บ่าย 1', 'Slot 3: บ่าย 2']);
     setCertificates([
       { name: 'cert_elec.jpg', selected: true },
@@ -283,6 +292,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
     setPhones(user.phones && user.phones.length > 0 ? user.phones : ['082-137-1123']);
     setJobTypes(user.jobTypes && user.jobTypes.length > 0 ? user.jobTypes : ['ติดตั้ง', 'service MTN']);
     setServiceZones(user.serviceZones && user.serviceZones.length > 0 ? user.serviceZones : ['นครปฐม', 'ราชบุรี']);
+    setAssignedBranches(user.assignedBranches && user.assignedBranches.length > 0 ? user.assignedBranches : []);
+    setAssignedZones(user.assignedZones && user.assignedZones.length > 0 ? user.assignedZones : []);
     setWorkSlots(user.workSlots && user.workSlots.length > 0 ? user.workSlots : ['Slot 1: เช้า', 'Slot 2: บ่าย 1', 'Slot 3: บ่าย 2']);
     setCertificates(user.certificates && user.certificates.length > 0 ? user.certificates : [
       { name: 'cert_elec.jpg', selected: true },
@@ -379,6 +390,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
       phones,
       jobTypes,
       serviceZones,
+      assignedBranches,
+      assignedZones,
       workSlots,
       certificates,
       criminalRecord,
@@ -697,13 +710,23 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                               fontSize: '0.65rem', 
                               padding: '0.1rem 0.4rem', 
                               background: 'rgba(255, 255, 255, 0.05)', 
-                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)', 
                               color: 'var(--text-secondary)', 
                               borderRadius: 'var(--radius-sm)' 
                             }}>
                               {skill}
                             </span>
                           ))}
+                        </div>
+                      )}
+
+                      {/* Assigned Branches for QC / Managers */}
+                      {user.assignedBranches && user.assignedBranches.length > 0 && (
+                        <div style={{ marginTop: '0.45rem', background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.25)', padding: '0.35rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', color: '#06b6d4', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <MapPin size={12} style={{ flexShrink: 0 }} />
+                          <span>
+                            <strong>ดูแล {user.assignedBranches.length} สาขา</strong> {user.assignedZones && user.assignedZones.length > 0 ? `(${user.assignedZones.join(', ')})` : ''}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -1492,6 +1515,132 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                           }}
                           style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}
                         />
+                      </div>
+
+                      {/* สาขา & โซนในความรับผิดชอบ (Assigned Branches & Regional Zones for QC / Supervisors) */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', background: '#0f172a', padding: '0.75rem', borderRadius: '10px', border: '1px solid #06b6d4' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#22d3ee', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            🏢 สาขาในความดูแล * (สำหรับ QC / ผู้จัดการ)
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#67e8f9', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 700 }}>
+                            เลือกแล้ว {assignedBranches.length} สาขา
+                          </span>
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '0.72rem', color: '#94a3b8' }}>
+                          กดเลือกทั้งโซน/ภาค หรือเลือกรายสาขาเพื่อมอบหมายให้ QC ดูแล
+                        </p>
+
+                        {/* Regional Zone Selector Tabs / Quick Toggles */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                          {[
+                            { name: 'กรุงเทพฯ & ปริมณฑล', emoji: '🏙️', count: 30 },
+                            { name: 'ภาคตะวันออกเฉียงเหนือ (อีสาน)', emoji: '🌾', count: 20 },
+                            { name: 'ภาคเหนือ', emoji: '⛰️', count: 13 },
+                            { name: 'ภาคตะวันออก', emoji: '🌊', count: 13 },
+                            { name: 'ภาคกลาง & ตะวันตก', emoji: '🏞️', count: 11 },
+                            { name: 'ภาคใต้', emoji: '🌴', count: 8 },
+                          ].map(z => {
+                            const zoneBranches = branches.filter(b => b.zone === z.name || (z.name === 'ภาคกลาง & ตะวันตก' && b.zone?.includes('ภาคกลาง')));
+                            const isAllSelected = zoneBranches.length > 0 && zoneBranches.every(b => assignedBranches.includes(b.id));
+                            const someSelected = zoneBranches.some(b => assignedBranches.includes(b.id));
+
+                            const toggleZone = () => {
+                              const zoneBranchIds = zoneBranches.map(b => b.id);
+                              if (isAllSelected) {
+                                setAssignedBranches(prev => prev.filter(id => !zoneBranchIds.includes(id)));
+                                setAssignedZones(prev => prev.filter(zn => zn !== z.name));
+                              } else {
+                                setAssignedBranches(prev => Array.from(new Set([...prev, ...zoneBranchIds])));
+                                setAssignedZones(prev => Array.from(new Set([...prev, z.name])));
+                              }
+                            };
+
+                            return (
+                              <button
+                                key={z.name}
+                                type="button"
+                                onClick={toggleZone}
+                                style={{
+                                  background: isAllSelected ? '#0891b2' : someSelected ? 'rgba(6, 182, 212, 0.2)' : '#1e293b',
+                                  color: isAllSelected ? 'white' : someSelected ? '#67e8f9' : '#94a3b8',
+                                  border: isAllSelected ? '1px solid #22d3ee' : someSelected ? '1px solid #0891b2' : '1px solid #334155',
+                                  padding: '0.2rem 0.5rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.72rem',
+                                  cursor: 'pointer',
+                                  fontWeight: isAllSelected ? 700 : 500,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem'
+                                }}
+                              >
+                                {z.emoji} {z.name} ({zoneBranches.length || z.count}) {isAllSelected ? '✓' : ''}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Selected Branches Chips */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', maxHeight: '110px', overflowY: 'auto', background: '#1e293b', padding: '0.45rem', borderRadius: '6px', border: '1px solid #334155' }}>
+                          {assignedBranches.length === 0 ? (
+                            <span style={{ fontSize: '0.73rem', color: '#64748b' }}>ยังไม่ได้เลือกสาขา (กดปุ่มโซนด้านบน หรือเลือกจากรายการด้านล่าง)</span>
+                          ) : (
+                            assignedBranches.map(bId => {
+                              const bObj = branches.find(b => b.id === bId);
+                              return (
+                                <span key={bId} style={{ background: 'rgba(6, 182, 212, 0.18)', color: '#67e8f9', border: '1px solid rgba(6, 182, 212, 0.35)', fontSize: '0.7rem', padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                  🏢 [{bObj?.code || bId}] {bObj?.name || bId}
+                                  <X size={11} style={{ cursor: 'pointer' }} onClick={() => setAssignedBranches(prev => prev.filter(id => id !== bId))} />
+                                </span>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Individual Branch Selector Dropdown */}
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                          <select
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val && !assignedBranches.includes(val)) {
+                                setAssignedBranches(prev => [...prev, val]);
+                                const bObj = branches.find(b => b.id === val);
+                                if (bObj?.zone && !assignedZones.includes(bObj.zone)) {
+                                  setAssignedZones(prev => [...prev, bObj.zone]);
+                                }
+                              }
+                              e.target.value = '';
+                            }}
+                            style={{
+                              flex: 1,
+                              background: '#1e293b',
+                              border: '1px solid #334155',
+                              borderRadius: '6px',
+                              padding: '0.4rem 0.6rem',
+                              color: 'white',
+                              fontSize: '0.78rem'
+                            }}
+                          >
+                            <option value="">+ เลือกเพิ่มทีละสาขา (คลิกเพื่อเลือก)...</option>
+                            {branches.map(b => (
+                              <option key={b.id} value={b.id} disabled={assignedBranches.includes(b.id)}>
+                                [{b.code}] {b.name} ({b.province}) - {b.zone || ''}
+                              </option>
+                            ))}
+                          </select>
+
+                          {assignedBranches.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => { setAssignedBranches([]); setAssignedZones([]); }}
+                              style={{ background: 'transparent', border: '1px solid #ef4444', color: '#f87171', fontSize: '0.72rem', padding: '0.35rem 0.55rem', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            >
+                              ล้างสาขาทั้งหมด
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* รอบเวลารับงานต่อวัน */}

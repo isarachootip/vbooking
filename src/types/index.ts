@@ -27,6 +27,7 @@ export interface User {
   jobTypes?: string[];
   serviceZones?: string[];
   assignedBranches?: string[];
+  assignedZones?: string[];
   workSlots?: string[];
   certificates?: Array<{ name: string; url?: string; type?: string; selected?: boolean }>;
   criminalRecord?: string;
@@ -40,6 +41,29 @@ export interface MasterBranch {
   name: string;
   province: string;
   status: string;
+  zone?: string;
+  region?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Branch {
+  id: string;
+  code: string;
+  name: string;
+  province: string;
+  status: string;
+  zone?: string;
+  region?: string;
+  fullName?: string;
+  address?: string;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  openTime?: string;
+  closeTime?: string;
+  phone?: string;
+  storeGroup?: string;
+  assignedQcIds?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -239,22 +263,6 @@ export interface MasterProjectType {
 }
 
 export type SystemSettings = Record<string, any>;
-
-export interface Branch {
-  id: string;
-  code?: string;
-  name: string;
-  province?: string;
-  status?: string;
-  address?: string;
-  latitude?: number;
-  longitude?: number;
-  openTime?: string;
-  closeTime?: string;
-  phone?: string;
-  storeGroup?: string;
-}
-
 
 export interface ServicePriceItem {
   id: string;
