@@ -77,11 +77,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const [quoteItems, setQuoteItems] = useState<any[]>([]);
   const [quoteNotes, setQuoteNotes] = useState('');
 
+  // Check if it is a Quick Service project
+  const isQuickService = project?.projectType === 'quick' || 
+                         project?.projectType === 'quick_service' || 
+                         project?.projectType === 'quick service' || 
+                         project?.id?.startsWith('PQ');
+
   // Safe helper to read the project's current lifecycle flow state
   const flowState = project?.extraDetails?.lifecycle || {
     phase: 'PHASE_01_LEAD_SURVEY',
     step: 'customer_enquiry',
-    survey_appointment: 'yes',
+    survey_appointment: isQuickService ? 'no' : 'yes',
     surveyor_id: '',
     survey_date: '',
     survey_checked_in: false,
