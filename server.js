@@ -1752,38 +1752,95 @@ let cachedBranches = [];
 async function fetchRemoteBranches() {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 seconds timeout
-    const response = await fetch('https://vibepjm.online/api/branches', { signal: controller.signal });
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const htmlRes = await fetch('https://vibepjm.online/', { signal: controller.signal });
     clearTimeout(timeoutId);
-    if (response.ok) {
-      const data = await response.json();
-      if (data && data.branches && Array.isArray(data.branches)) {
-        cachedBranches = data.branches;
-        
-        // UPSERT into DB
-        let count = 0;
-        for (const branch of data.branches) {
-          await pool.query(`
-            INSERT INTO master_branches (id, code, name, province, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $6)
-            ON CONFLICT (id) DO UPDATE SET
-              code = EXCLUDED.code,
-              name = EXCLUDED.name,
-              province = EXCLUDED.province,
-              status = EXCLUDED.status,
-              updated_at = EXCLUDED.updated_at
-          `, [
-            branch.id,
-            branch.code || '',
-            branch.name,
-            branch.province || '',
-            branch.status || 'Active',
-            new Date().toISOString()
-          ]);
-          count++;
+
+    if (htmlRes.ok) {
+      const html = await htmlRes.text();
+      const scriptMatch = html.match(/src="(\/assets\/index-[^"]+\.js)"/);
+      if (scriptMatch) {
+        const bundleUrl = 'https://vibepjm.online' + scriptMatch[1];
+        const jsRes = await fetch(bundleUrl);
+        if (jsRes.ok) {
+          const jsContent = await jsRes.text();
+          const startMarker = '[{id:`br-01`,code:`B01`,name:`สาขาพระราม 9`';
+          const startIdx = jsContent.indexOf(startMarker);
+          if (startIdx !== -1) {
+            let bracketCount = 0;
+            let endIdx = startIdx;
+            for (let i = startIdx; i < jsContent.length; i++) {
+              if (jsContent[i] === '[') bracketCount++;
+              else if (jsContent[i] === ']') {
+                bracketCount--;
+                if (bracketCount === 0) {
+                  endIdx = i + 1;
+                  break;
+                }
+              }
+            }
+            const arrayStr = jsContent.substring(startIdx, endIdx);
+            const cleanFn = new Function(`return ${arrayStr};`);
+            const branches = cleanFn();
+
+            if (Array.isArray(branches) && branches.length > 0) {
+              cachedBranches = branches;
+              let count = 0;
+              const now = new Date().toISOString();
+              for (const b of branches) {
+                const branchId = b.id || `br-${b.code || Date.now()}`;
+                const branchCode = b.code || branchId;
+                const branchName = b.name;
+                const province = b.province || 'กรุงเทพมหานคร';
+                const status = b.status || 'Active';
+                const fullName = b.fullName || b.name;
+                const address = b.address || `${b.name} ${province}`;
+                const lat = b.latitude ? parseFloat(b.latitude) : null;
+                const lng = b.longitude ? parseFloat(b.longitude) : null;
+                const openTime = b.openTime || '07:00';
+                const closeTime = b.closeTime || '21:00';
+                const phone = b.phone || '1308';
+                const storeGroup = b.storeGroup || (b.name.includes('ไทวัสดุ') ? 'TWD' : 'BNB');
+
+                await pool.query(`
+                  INSERT INTO master_branches (id, code, name, province, status, created_at, updated_at)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7)
+                  ON CONFLICT (id) DO UPDATE SET
+                    code = EXCLUDED.code,
+                    name = EXCLUDED.name,
+                    province = EXCLUDED.province,
+                    status = EXCLUDED.status,
+                    updated_at = EXCLUDED.updated_at
+                `, [branchId, branchCode, branchName, province, status, now, now]);
+
+                await pool.query(`
+                  INSERT INTO branches (id, code, name, province, status, full_name, address, latitude, longitude, open_time, close_time, phone, store_group, updated_at)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP)
+                  ON CONFLICT (id) DO UPDATE SET
+                    code = EXCLUDED.code,
+                    name = EXCLUDED.name,
+                    province = EXCLUDED.province,
+                    status = EXCLUDED.status,
+                    full_name = EXCLUDED.full_name,
+                    address = EXCLUDED.address,
+                    latitude = EXCLUDED.latitude,
+                    longitude = EXCLUDED.longitude,
+                    open_time = EXCLUDED.open_time,
+                    close_time = EXCLUDED.close_time,
+                    phone = EXCLUDED.phone,
+                    store_group = EXCLUDED.store_group,
+                    updated_at = CURRENT_TIMESTAMP
+                `, [
+                  branchId, branchCode, branchName, province, status,
+                  fullName, address, lat, lng, openTime, closeTime, phone, storeGroup
+                ]);
+                count++;
+              }
+              console.log(`ℹ️ Cached and UPSERTED ${count} remote branches from vibepjm.online into branches & master_branches`);
+              return;
+            }
+          }
         }
-        console.log(`ℹ️ Cached and UPSERTED ${count} remote branches from vibepjm.online into master_branches`);
-        return;
       }
     }
   } catch (err) {
