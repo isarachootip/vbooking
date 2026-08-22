@@ -91,7 +91,14 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
 
   // Initialize and update map
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        markerRef.current = null;
+      }
+      return;
+    }
 
     const lat = initialLat && !isNaN(Number(initialLat)) ? Number(initialLat) : defaultLat;
     const lng = initialLng && !isNaN(Number(initialLng)) ? Number(initialLng) : defaultLng;
@@ -107,59 +114,78 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
     const timer = setTimeout(() => {
       if (!mapContainerRef.current) return;
 
-      if (!mapInstanceRef.current) {
-        const map = L.map(mapContainerRef.current, {
-          center: [lat, lng],
-          zoom: hasInitialCoords ? 16 : 12,
-          zoomControl: false,
-        });
-
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-        }).addTo(map);
-
-        const marker = L.marker([lat, lng], {
-          icon: customPinIcon,
-          draggable: true,
-        }).addTo(map);
-
-        marker.on('dragend', () => {
-          const pos = marker.getLatLng();
-          setCurrentLat(pos.lat);
-          setCurrentLng(pos.lng);
-          reverseGeocode(pos.lat, pos.lng);
-        });
-
-        map.on('click', (e: L.LeafletMouseEvent) => {
-          const { lat: clickLat, lng: clickLng } = e.latlng;
-          marker.setLatLng([clickLat, clickLng]);
-          setCurrentLat(clickLat);
-          setCurrentLng(clickLng);
-          reverseGeocode(clickLat, clickLng);
-        });
-
-        mapInstanceRef.current = map;
-        markerRef.current = marker;
-      } else {
-        const map = mapInstanceRef.current;
-        const marker = markerRef.current;
-        map.invalidateSize();
-        map.setView([lat, lng], hasInitialCoords ? 16 : 13);
-        if (marker) {
-          marker.setLatLng([lat, lng]);
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.remove();
+        } catch (e) {
+          console.error(e);
         }
+        mapInstanceRef.current = null;
+        markerRef.current = null;
       }
+
+      const map = L.map(mapContainerRef.current, {
+        center: [lat, lng],
+        zoom: hasInitialCoords ? 16 : 13,
+        zoomControl: false,
+      });
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+        subdomains: ['a', 'b', 'c'],
+      }).addTo(map);
+
+      const marker = L.marker([lat, lng], {
+        icon: customPinIcon,
+        draggable: true,
+      }).addTo(map);
+
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        setCurrentLat(pos.lat);
+        setCurrentLng(pos.lng);
+        reverseGeocode(pos.lat, pos.lng);
+      });
+
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        const { lat: clickLat, lng: clickLng } = e.latlng;
+        marker.setLatLng([clickLat, clickLng]);
+        setCurrentLat(clickLat);
+        setCurrentLng(clickLng);
+        reverseGeocode(clickLat, clickLng);
+      });
+
+      mapInstanceRef.current = map;
+      markerRef.current = marker;
+
+      // Force recalculation of container size at multiple intervals
+      map.invalidateSize();
+      setTimeout(() => {
+        if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+      }, 150);
+      setTimeout(() => {
+        if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+      }, 400);
 
       if (hasInitialCoords && !initialAddress) {
         reverseGeocode(lat, lng);
       }
-    }, 150);
+    }, 100);
 
     return () => {
       clearTimeout(timer);
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.remove();
+        } catch (e) {
+          console.error(e);
+        }
+        mapInstanceRef.current = null;
+        markerRef.current = null;
+      }
     };
   }, [isOpen, initialLat, initialLng]);
 
@@ -167,7 +193,11 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
   useEffect(() => {
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.remove();
+        } catch (e) {
+          console.error(e);
+        }
         mapInstanceRef.current = null;
         markerRef.current = null;
       }
@@ -478,7 +508,13 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
         </div>
 
         {/* MAP CONTAINER */}
-        <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+        <div style={{ flex: 1, position: 'relative', minHeight: '350px', width: '100%', overflow: 'hidden' }}>
+          <style>{`
+            .leaflet-container img {
+              max-width: none !important;
+              max-height: none !important;
+            }
+          `}</style>
           {/* FLOATING MAP INSTRUCTION PILL */}
           <div
             style={{
@@ -503,7 +539,20 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
             <span>👉 ลากหมุดหมุดสีแดง 📍 หรือคลิกบนแผนที่ เพื่อระบุตำแหน่งบ้านลูกค้า</span>
           </div>
 
-          <div ref={mapContainerRef} style={{ width: '100%', height: '100%', zIndex: 1 }} />
+          <div
+            ref={mapContainerRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: 1,
+              background: '#f8fafc',
+            }}
+          />
         </div>
 
         {/* BOTTOM COORDINATES & ADDRESS INFO BAR */}
