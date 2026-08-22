@@ -1535,14 +1535,17 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                         {/* Regional Zone Selector Tabs / Quick Toggles */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                           {[
-                            { name: 'กรุงเทพฯ & ปริมณฑล', emoji: '🏙️', count: 30 },
-                            { name: 'ภาคตะวันออกเฉียงเหนือ (อีสาน)', emoji: '🌾', count: 20 },
-                            { name: 'ภาคเหนือ', emoji: '⛰️', count: 13 },
-                            { name: 'ภาคตะวันออก', emoji: '🌊', count: 13 },
-                            { name: 'ภาคกลาง & ตะวันตก', emoji: '🏞️', count: 11 },
-                            { name: 'ภาคใต้', emoji: '🌴', count: 8 },
+                            { name: '[BKK] กรุงเทพฯ & ปริมณฑล', emoji: '🏙️', count: 28 },
+                            { name: '[NE-U] ภาคอีสานตอนบน', emoji: '🌾', count: 9 },
+                            { name: '[NE-L] ภาคอีสานตอนล่าง', emoji: '🌾', count: 11 },
+                            { name: '[N] ภาคเหนือ', emoji: '⛰️', count: 13 },
+                            { name: '[C] ภาคกลาง', emoji: '🏞️', count: 9 },
+                            { name: '[W] ภาคตะวันตก', emoji: '🌄', count: 4 },
+                            { name: '[E] ภาคตะวันออก', emoji: '🌊', count: 13 },
+                            { name: '[S-U] ภาคใต้ตอนบน', emoji: '🌴', count: 5 },
+                            { name: '[S-L] ภาคใต้ตอนล่าง', emoji: '🌴', count: 3 },
                           ].map(z => {
-                            const zoneBranches = branches.filter(b => b.zone === z.name || (z.name === 'ภาคกลาง & ตะวันตก' && b.zone?.includes('ภาคกลาง')));
+                            const zoneBranches = branches.filter(b => b.zone === z.name || (b.zone && b.zone.includes(z.name)));
                             const isAllSelected = zoneBranches.length > 0 && zoneBranches.every(b => assignedBranches.includes(b.id));
                             const someSelected = zoneBranches.some(b => assignedBranches.includes(b.id));
 

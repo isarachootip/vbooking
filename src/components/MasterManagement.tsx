@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { TaskTemplate, User, MasterProjectType, ServicePriceItem } from '../types';
-import { Layers, Plus, Trash2, Edit, Database, Layers3, Sparkles, BookOpen, ArrowRight, CheckCircle2, Zap, Wrench, ShieldCheck, Home } from 'lucide-react';
+import { Layers, Plus, Trash2, Edit, Database, Layers3, Sparkles, BookOpen, ArrowRight, CheckCircle2, Zap, Wrench, ShieldCheck, Home, MapPin, Building2, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { PriceBookManager } from './PriceBookManager';
 import { getWorkflowStagesForType, getWorkflowColumnsForType } from '../config/workflows';
 
@@ -107,6 +107,8 @@ export const MasterManagement = ({
   const [typeBadge, setTypeBadge] = useState('');
   const [typeDesc, setTypeDesc] = useState('');
   const [typeStyle, setTypeStyle] = useState<'single' | 'workflow' | 'sla'>('workflow');
+  const [zoneSearch, setZoneSearch] = useState('');
+  const [expandedZoneId, setExpandedZoneId] = useState<string | null>(null);
 
   // Save Master Project Types
   const handleSaveTypes = (newTypes: MasterProjectType[]) => {
@@ -661,32 +663,192 @@ export const MasterManagement = ({
         </div>
       )}
 
-      {/* ── TAB 6: VQ ZONES (READ ONLY) ── */}
+      {/* ── TAB 6: VQ ZONES & CONNECTED BRANCHES ── */}
       {activeTab === 'vq_zones' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
+          {/* Header & Stats */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', flexWrap: 'wrap', gap: '1rem', border: '1px solid var(--border-color)' }}>
             <div>
-              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>ข้อมูลโซนพื้นที่ (เชื่อมต่อจากระบบ VQ)</h3>
-              <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>รวบรวมโซนพื้นที่ทั้งหมดที่ช่างในระบบ VQ รับผิดชอบ (ข้อมูลอ่านอย่างเดียว)</p>
+              <h3 style={{ margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <MapPin size={20} color="#06b6d4" />
+                ข้อมูลโซนพื้นที่ & การเชื่อมโยงสาขา (Regional Zones & Branches)
+              </h3>
+              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                จัดแบ่งกลุ่มโซนตามภาคครอบคลุมทั่วประเทศ พร้อมเชื่อมโยงสาขาในระบบ VQ เข้าสู่แต่ละโซน
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <div style={{ background: 'rgba(6, 182, 212, 0.12)', border: '1px solid rgba(6, 182, 212, 0.25)', padding: '0.4rem 0.85rem', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#22d3ee' }}>{masterZones.length}</div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>โซนภูมิภาค</div>
+              </div>
+              <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '0.4rem 0.85rem', borderRadius: '8px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399' }}>{masterBranches.length}</div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>สาขาที่เชื่อมโยง</div>
+              </div>
             </div>
           </div>
-          <div className="table-responsive">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>ชื่อโซนพื้นที่ (Zone Name)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {masterZones.length > 0 ? masterZones.map(z => (
-                  <tr key={z.id}>
-                    <td style={{ fontWeight: 600 }}>{z.name}</td>
-                  </tr>
-                )) : (
-                  <tr><td style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>ไม่มีข้อมูลโซนพื้นที่</td></tr>
-                )}
-              </tbody>
-            </table>
+
+          {/* Search Bar */}
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input
+                type="text"
+                value={zoneSearch}
+                onChange={e => setZoneSearch(e.target.value)}
+                placeholder="ค้นหาชื่อโซน, ภูมิภาค, จังหวัด หรือชื่อสาขา..."
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 0.75rem 0.6rem 2.25rem',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.85rem',
+                  outline: 'none'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Zone Cards with Connected Branches */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {masterZones
+              .filter(z => {
+                if (!zoneSearch) return true;
+                const query = zoneSearch.toLowerCase();
+                const matchedZone = (z.name || '').toLowerCase().includes(query) || (z.region || '').toLowerCase().includes(query) || (z.description || '').toLowerCase().includes(query);
+                const connected = masterBranches.filter(b => b.zone === z.name || (z.name && z.name.includes(b.province)));
+                const matchedBranch = connected.some(b => (b.name || '').toLowerCase().includes(query) || (b.code || '').toLowerCase().includes(query) || (b.province || '').toLowerCase().includes(query));
+                return matchedZone || matchedBranch;
+              })
+              .map(z => {
+                // Find all branches belonging to this zone
+                const connectedBranches = masterBranches.filter(b => b.zone === z.name || (b.zone && b.zone.includes(z.name)) || (z.name && z.name.includes(b.province)));
+                const isExpanded = expandedZoneId === z.id || !!zoneSearch;
+
+                // Emoji by code
+                const emoji = z.code === 'BKK' ? '🏙️' : z.code === 'N' ? '⛰️' : z.code === 'C' ? '🏞️' : z.code === 'W' ? '🌄' : z.code === 'E' ? '🌊' : z.code?.startsWith('NE') ? '🌾' : '🌴';
+
+                return (
+                  <div
+                    key={z.id}
+                    style={{
+                      background: 'var(--bg-secondary)',
+                      borderRadius: 'var(--radius-lg)',
+                      border: '1px solid var(--border-color)',
+                      overflow: 'hidden',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {/* Zone Header Row */}
+                    <div
+                      onClick={() => setExpandedZoneId(expandedZoneId === z.id ? null : z.id)}
+                      style={{
+                        padding: '1rem 1.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        borderBottom: isExpanded ? '1px solid var(--border-color)' : 'none',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                        <span style={{ fontSize: '1.4rem' }}>{emoji}</span>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{z.name}</span>
+                            {z.region && (
+                              <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', fontWeight: 600 }}>
+                                {z.region}
+                              </span>
+                            )}
+                          </div>
+                          {z.description && (
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                              📍 {z.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            padding: '0.25rem 0.65rem',
+                            borderRadius: '20px',
+                            background: connectedBranches.length > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                            color: connectedBranches.length > 0 ? '#34d399' : '#f87171',
+                            border: `1px solid ${connectedBranches.length > 0 ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                          }}
+                        >
+                          🏢 เชื่อมโยง {connectedBranches.length} สาขา
+                        </span>
+                        {isExpanded ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
+                      </div>
+                    </div>
+
+                    {/* Expanded Connected Branches View */}
+                    {isExpanded && (
+                      <div style={{ padding: '1rem 1.25rem', background: 'var(--bg-tertiary)' }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <Building2 size={14} color="#06b6d4" />
+                          รายชื่อสาขาที่อยู่ในโซนนี้ ({connectedBranches.length} สาขา):
+                        </div>
+
+                        {connectedBranches.length > 0 ? (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.5rem' }}>
+                            {connectedBranches.map(b => (
+                              <div
+                                key={b.id}
+                                style={{
+                                  background: 'var(--bg-secondary)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '8px',
+                                  padding: '0.5rem 0.75rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: '0.5rem'
+                                }}
+                              >
+                                <div>
+                                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                    <span style={{ color: '#06b6d4', marginRight: '0.35rem', fontFamily: 'monospace' }}>[{b.code}]</span>
+                                    {b.name}
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                                    📍 {b.province || '-'}
+                                  </div>
+                                </div>
+                                <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: b.status === 'Active' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: b.status === 'Active' ? '#34d399' : '#f87171', fontWeight: 600 }}>
+                                  {b.status || 'Active'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>
+                            ยังไม่มีสาขาที่ผูกกับโซนนี้
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+            {masterZones.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                ไม่มีข้อมูลโซนพื้นที่
+              </div>
+            )}
           </div>
         </div>
       )}
