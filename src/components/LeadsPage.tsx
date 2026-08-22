@@ -3,6 +3,7 @@ import { Users, Plus, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Build
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
+import { GisMapPickerModal, formatToDMS } from './GisMapPickerModal';
 
 interface LeadFollowup {
   id: string;
@@ -99,6 +100,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [smartInput, setSmartInput] = useState<string>('');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
+  const [isGisModalOpen, setIsGisModalOpen] = useState(false);
   const [requireVisit, setRequireVisit] = useState(false);
   const [surveyDate, setSurveyDate] = useState('');
   const [surveyorId, setSurveyorId] = useState('');
@@ -397,10 +399,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         setMapUrl(generatedMapUrl);
         setIsGettingLocation(false);
 
-        // Auto reverse geocode address if address is empty
-        if (!customerAddress) {
-          await handleReverseGeocode(lat, lng);
-        }
+        // Auto reverse geocode address into address textarea
+        await handleReverseGeocode(lat, lng);
       },
       (error) => {
         console.error('Geolocation error:', error);
@@ -409,6 +409,18 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  };
+
+  const handleLocationPickedFromGIS = async (lat: string, lng: string, address?: string) => {
+    setCustomerLatitude(lat);
+    setCustomerLongitude(lng);
+    setSmartInput(`${lat}, ${lng}`);
+    setMapUrl(`https://www.google.com/maps?q=${lat},${lng}`);
+    if (address && address.trim()) {
+      setCustomerAddress(address.trim());
+    } else {
+      await handleReverseGeocode(lat, lng);
+    }
   };
 
   const handleOpenGoogleMaps = () => {
@@ -1592,29 +1604,40 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                     </div>
 
                     {/* SECTION: SMART MAP & GPS LOCATION PICKER */}
-                    <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.85rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.85rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                       
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.825rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                          <MapPin size={16} /> บันทึกพิกัดแผนที่ (GPS Map Coordinates)
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
+                        <span style={{ fontSize: '0.825rem', fontWeight: 700, color: '#f97316', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '1rem' }}>🗺️</span> 1. เลือกพิกัดสถานที่ติดตั้ง (GPS Coordinates) & ปักหมุด GIS:
                         </span>
-                        <button
-                          type="button"
-                          onClick={handleGetCurrentLocation}
-                          disabled={isGettingLocation}
-                          style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid #10b981', borderRadius: '6px', padding: '0.25rem 0.65rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                        >
-                          <Compass size={13} /> {isGettingLocation ? 'กำลังดึงพิกัด...' : '📍 ดึงพิกัดปัจจุบัน (GPS)'}
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            onClick={handleGetCurrentLocation}
+                            disabled={isGettingLocation}
+                            style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669', border: '1px solid #10b981', borderRadius: '6px', padding: '0.3rem 0.65rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                          >
+                            <Compass size={13} /> {isGettingLocation ? 'กำลังดึงพิกัด...' : '🎯 ดึงพิกัดปัจจุบัน (GPS)'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsGisModalOpen(true)}
+                            style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '0.3rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', boxShadow: '0 2px 5px rgba(249, 115, 22, 0.35)' }}
+                          >
+                            <MapPin size={13} /> 📍 ปักหมุดเลือกพิกัดบนแผนที่ (ฟรี GIS)
+                          </button>
+                        </div>
                       </div>
 
                       {/* SMART AUTO-PASTE INPUT BOX */}
-                      <div style={{ background: 'var(--bg-secondary)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px dashed var(--accent-primary)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <div style={{ background: 'var(--bg-secondary)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px dashed #10b981', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             <Clipboard size={14} /> วางพิกัด หรือ ลิงก์จาก Google Maps อัจฉริยะ (Smart Auto-Fill)
                           </label>
-                          <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700 }}>รองรับ DMS (13°51'08.1"N) & URL</span>
+                          <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.12)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                            รองรับ DMS (13°51'08.1"N) & URL
+                          </span>
                         </div>
 
                         <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', background: 'rgba(16, 185, 129, 0.08)', padding: '0.4rem 0.6rem', borderRadius: '4px', borderLeft: '3px solid #10b981' }}>
@@ -1636,17 +1659,19 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                           <button
                             type="button"
                             onClick={() => parseAndApplySmartInput(smartInput)}
-                            style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '0.45rem 0.85rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                            style={{ background: '#059669', color: 'white', border: 'none', borderRadius: '4px', padding: '0.45rem 0.85rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
                           >
-                            <Sparkles size={13} /> ถอดค่าพิกัด
+                            <Sparkles size={13} /> ✨ ถอดค่าพิกัด
                           </button>
                         </div>
                       </div>
 
                       {/* LATITUDE / LONGITUDE MANUAL INPUTS */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ละติจูด (Latitude)</label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#ef4444', fontWeight: 700, marginBottom: '0.2rem' }}>
+                            <MapPin size={13} /> ละติจูด (Latitude):
+                          </label>
                           <input 
                             type="text" 
                             value={customerLatitude}
@@ -1658,38 +1683,67 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                               }
                             }}
                             placeholder="13.851979 หรือ 13°51'07.1&quot;N"
-                            style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                            style={{ width: '100%', padding: '0.45rem 0.6rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 700 }}
                           />
+                          {customerLatitude && (
+                            <div 
+                              onClick={() => setIsGisModalOpen(true)}
+                              style={{ fontSize: '0.7rem', color: '#059669', marginTop: '0.25rem', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
+                            >
+                              {customerLatitude} {formatToDMS(customerLatitude, true) ? `หรือ ${formatToDMS(customerLatitude, true)}` : ''}
+                            </div>
+                          )}
                         </div>
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ลองจิจูด (Longitude)</label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#ef4444', fontWeight: 700, marginBottom: '0.2rem' }}>
+                            <MapPin size={13} /> ลองจิจูด (Longitude):
+                          </label>
                           <input 
                             type="text" 
                             value={customerLongitude}
                             onChange={e => { setCustomerLongitude(e.target.value); setSmartInput(`${customerLatitude}, ${e.target.value}`); }}
                             placeholder="100.643406 หรือ 100°38'36.3&quot;E"
-                            style={{ width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }}
+                            style={{ width: '100%', padding: '0.45rem 0.6rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 700 }}
                           />
+                          {customerLongitude && (
+                            <div 
+                              onClick={() => setIsGisModalOpen(true)}
+                              style={{ fontSize: '0.7rem', color: '#059669', marginTop: '0.25rem', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
+                            >
+                              {customerLongitude} {formatToDMS(customerLongitude, false) ? `หรือ ${formatToDMS(customerLongitude, false)}` : ''}
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <button
                           type="button"
                           onClick={() => handleReverseGeocode(customerLatitude, customerLongitude)}
                           disabled={!customerLatitude || !customerLongitude || isGeocodingAddress}
-                          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0.25rem 0.5rem', color: 'var(--text-primary)', fontSize: '0.72rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.35rem 0.65rem', color: 'var(--text-primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                         >
-                          <Map size={12} color="#10b981" /> 🏠 แปลงพิกัดนี้เป็นที่อยู่ข้อความ
+                          <Home size={13} color="#10b981" /> 🏠 แปลงพิกัดนี้เป็นที่อยู่ข้อความ
                         </button>
                         <button
                           type="button"
                           onClick={handleOpenGoogleMaps}
-                          style={{ background: 'transparent', border: 'none', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'underline' }}
+                          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.35rem 0.65rem', color: '#2563eb', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', textDecoration: 'none' }}
                         >
-                          <Navigation size={12} /> 🗺️ เปิดค้นหาบน Google Maps
+                          <Navigation size={13} /> 🌐 เปิด Google Maps ตรวจสอบตำแหน่งพิกัดบ้านลูกค้า <ExternalLink size={12} />
                         </button>
                       </div>
+
+                      {/* RESOLVED ADDRESS PREVIEW BOX */}
+                      {customerAddress && (customerLatitude || customerLongitude) && (
+                        <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.75rem', color: '#065f46', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
+                          <span style={{ color: '#ef4444', fontSize: '0.9rem', flexShrink: 0 }}>📍</span>
+                          <div>
+                            <strong style={{ color: '#047857', display: 'block', marginBottom: '0.15rem' }}>ที่อยู่จากการแปลงพิกัด:</strong>
+                            <span style={{ wordBreak: 'break-word', color: 'var(--text-primary)' }}>{customerAddress}</span>
+                          </div>
+                        </div>
+                      )}
 
                       {/* COORDINATOR INFO (REQUIRED IF VISIT PLAN) */}
                       {requireVisit && (
@@ -1965,6 +2019,16 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           </div>
         </div>
       )}
+
+      {/* GIS MAP PICKER MODAL (FREE OPENSTREETMAP GIS) */}
+      <GisMapPickerModal
+        isOpen={isGisModalOpen}
+        onClose={() => setIsGisModalOpen(false)}
+        initialLat={customerLatitude}
+        initialLng={customerLongitude}
+        initialAddress={customerAddress}
+        onSelectLocation={handleLocationPickedFromGIS}
+      />
 
     </div>
   );
