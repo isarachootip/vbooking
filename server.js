@@ -1739,12 +1739,11 @@ app.get('/api/health', async (req, res) => {
 });
 
 // --- Remote Branches Cache (Fetched from VQ System) ---
+const EXCLUDED_BRANCH_IDS = ['br-01', 'br-02', 'br-03', 'br-04'];
 const FALLBACK_BRANCHES = [
-  { id: 'br-01', code: 'B01', name: 'สาขาพระราม 9', province: 'กรุงเทพมหานคร', status: 'Active' },
-  { id: 'br-02', code: 'B02', name: 'สาขาเอกมัย-รามอินทรา', province: 'กรุงเทพมหานคร', status: 'Active' },
-  { id: 'br-03', code: 'B03', name: 'สาขาราชพฤกษ์', province: 'นนทบุรี', status: 'Active' },
-  { id: 'br-04', code: 'B04', name: 'สาขาบางนา', province: 'สมุทรปราการ', status: 'Active' },
-  { id: 'br-st-60016', code: 'B16', name: 'สาขาภูเก็ต เฟสติวัล', province: 'ภูเก็ต', status: 'Active' }
+  { id: 'br-st-60016', code: 'B16', name: 'สาขาภูเก็ต เฟสติวัล', province: 'ภูเก็ต', status: 'Active' },
+  { id: 'br-st-60020', code: 'B20', name: 'สาขาศรีสมาน', province: 'นนทบุรี', status: 'Active' },
+  { id: 'br-st-60022', code: 'B22', name: 'สาขาบางแสน', province: 'ชลบุรี', status: 'Active' }
 ];
 
 let cachedBranches = [];
@@ -1784,10 +1783,11 @@ async function fetchRemoteBranches() {
             const branches = cleanFn();
 
             if (Array.isArray(branches) && branches.length > 0) {
-              cachedBranches = branches;
+              cachedBranches = branches.filter(b => !EXCLUDED_BRANCH_IDS.includes(b.id));
               let count = 0;
               const now = new Date().toISOString();
               for (const b of branches) {
+                if (EXCLUDED_BRANCH_IDS.includes(b.id)) continue;
                 const branchId = b.id || `br-${b.code || Date.now()}`;
                 const branchCode = b.code || branchId;
                 const branchName = b.name;

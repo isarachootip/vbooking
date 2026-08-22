@@ -553,11 +553,9 @@ function App() {
         setMasterProjectTypes([]);
         setCostRates([]);
         setBranches([
-          { id: 'br-01', code: 'B01', name: 'สาขาพระราม 9', province: 'กรุงเทพมหานคร', status: 'Active' },
-          { id: 'br-02', code: 'B02', name: 'สาขาเอกมัย-รามอินทรา', province: 'กรุงเทพมหานคร', status: 'Active' },
-          { id: 'br-03', code: 'B03', name: 'สาขาราชพฤกษ์', province: 'นนทบุรี', status: 'Active' },
-          { id: 'br-04', code: 'B04', name: 'สาขาบางนา', province: 'สมุทรปราการ', status: 'Active' },
-          { id: 'br-st-60016', code: 'B16', name: 'สาขาภูเก็ต เฟสติวัล', province: 'ภูเก็ต', status: 'Active' }
+          { id: 'br-st-60016', code: 'B16', name: 'สาขาภูเก็ต เฟสติวัล', province: 'ภูเก็ต', status: 'Active' },
+          { id: 'br-st-60020', code: 'B20', name: 'สาขาศรีสมาน', province: 'นนทบุรี', status: 'Active' },
+          { id: 'br-st-60022', code: 'B22', name: 'สาขาบางแสน', province: 'ชลบุรี', status: 'Active' }
         ]);
         setLoading(false);
       });
