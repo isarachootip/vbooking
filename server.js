@@ -1789,7 +1789,7 @@ async function fetchRemoteBranches() {
               for (const b of branches) {
                 if (EXCLUDED_BRANCH_IDS.includes(b.id)) continue;
                 const branchId = b.id || `br-${b.code || Date.now()}`;
-                const branchCode = b.code || branchId;
+                const branchCode = (b.id ? b.id.replace(/\D/g, '') : '') || (b.code ? b.code.replace(/\D/g, '') : '') || branchId;
                 const branchName = b.name;
                 const province = b.province || 'กรุงเทพมหานคร';
                 const status = b.status || 'Active';
