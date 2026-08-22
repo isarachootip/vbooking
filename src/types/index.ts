@@ -115,6 +115,7 @@ export interface Project {
     paymentMethod?: string;
     workAreas?: string[];
     workTypes?: string[];
+    lifecycle?: any;
   };
   customerName?: string | null;
   customerPhone?: string | null;
@@ -197,6 +198,8 @@ export interface TimesheetEntry {
   imageUrl?: string;
   workResults?: string;
   updatedAt?: string;
+  check_in_lat?: number;
+  check_in_lng?: number;
 }
 
 export interface PermissionScheme {
