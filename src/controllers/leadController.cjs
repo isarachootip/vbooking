@@ -187,10 +187,12 @@ exports.approveSiteVisit = async (req, res) => {
 
     const now = new Date().toISOString();
 
-    let fullAppointmentStr = undefined;
+    let fullAppointmentStr = null;
     if (appointment_date) {
       fullAppointmentStr = `${appointment_date} ${appointment_time || ''}`.trim();
     }
+
+    const newStatus = approval_status === 'Approved' ? 'Qualified' : null;
 
     const updateResult = await pool.query(
       `UPDATE leads
@@ -201,9 +203,9 @@ exports.approveSiteVisit = async (req, res) => {
            sales_contact_id = COALESCE($5, sales_contact_id),
            appointment_assignee = COALESCE($6, appointment_assignee),
            appointment_date = COALESCE($7, appointment_date),
-           status = CASE WHEN $1 = 'Approved' THEN 'Qualified' WHEN $1 = 'Rejected' THEN status ELSE status END,
-           updated_at = $8
-       WHERE id = $9
+           status = COALESCE($8, status),
+           updated_at = $9
+       WHERE id = $10
        RETURNING *`,
       [
         approval_status || 'Approved',
@@ -212,7 +214,8 @@ exports.approveSiteVisit = async (req, res) => {
         approval_notes || null,
         sales_contact_id || null,
         sales_contact_name || null,
-        fullAppointmentStr || null,
+        fullAppointmentStr,
+        newStatus,
         now,
         id
       ]
@@ -224,10 +227,15 @@ exports.approveSiteVisit = async (req, res) => {
 
     const followupId = `flw_gm_${Date.now()}`;
     const activityTitle = approval_status === 'Approved' 
-      ? `✅ GM อนุมัตินัดหมายลงพื้นที่ & มอบหมาย Sales (${sales_contact_name || 'พนักงานขาย'})`
+      ? `อนุมัตินัดหมายลงพื้นที่`
       : approval_status === 'Rejected'
-      ? `❌ GM ปฏิเสธนัดหมายลงพื้นที่`
-      : `🔄 GM ปรับปรุงข้อมูลนัดหมาย`;
+      ? `ปฏิเสธนัดหมายลงพื้นที่`
+      : `ปรับปรุงข้อมูลนัดหมาย`;
+
+    const noteContent = [
+      approval_status === 'Approved' ? `GM อนุมัติ & มอบหมาย Sales: ${sales_contact_name || 'พนักงานขาย'}` : `GM ปฏิเสธนัดหมาย`,
+      approval_notes ? `บันทึกคำสั่งการ: ${approval_notes}` : null
+    ].filter(Boolean).join(' | ');
 
     await pool.query(
       `INSERT INTO lead_followups (id, lead_id, activity_type, appointment_date, appointment_time, assignee_name, notes, created_at, created_by)
@@ -239,7 +247,7 @@ exports.approveSiteVisit = async (req, res) => {
         appointment_date || null,
         appointment_time || null,
         sales_contact_name || null,
-        approval_notes ? `บันทึกจาก GM: ${approval_notes}` : 'อนุมัติการออกพบลูกค้าหน้างาน',
+        noteContent || 'อนุมัติการออกพบลูกค้าหน้างาน',
         now,
         approved_by || 'GM สาขา'
       ]

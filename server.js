@@ -513,6 +513,12 @@ const initDB = async () => {
       ALTER TABLE lead_followups ADD COLUMN IF NOT EXISTS site_coordinator_phone VARCHAR(50);
       ALTER TABLE lead_followups ADD COLUMN IF NOT EXISTS site_coordinator_line_id VARCHAR(100);
       ALTER TABLE lead_followups ADD COLUMN IF NOT EXISTS site_map_url TEXT;
+      ALTER TABLE lead_followups ALTER COLUMN activity_type TYPE VARCHAR(255);
+      ALTER TABLE lead_followups ALTER COLUMN assignee_name TYPE VARCHAR(255);
+      ALTER TABLE lead_followups ALTER COLUMN created_by TYPE VARCHAR(255);
+      ALTER TABLE leads ALTER COLUMN appointment_type TYPE VARCHAR(255);
+      ALTER TABLE leads ALTER COLUMN appointment_assignee TYPE VARCHAR(255);
+      ALTER TABLE leads ALTER COLUMN site_visit_approved_by TYPE VARCHAR(255);
 
       CREATE TABLE IF NOT EXISTS branches (
         id VARCHAR(255) PRIMARY KEY,
