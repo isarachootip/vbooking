@@ -6,11 +6,12 @@ import {
   MapPin, Activity, TrendingUp, CheckCircle2, AlertTriangle, 
   RotateCcw, DollarSign, UserPlus, Plus, Search, 
   Trash2, Save, FileSignature, ThumbsUp, Check, X,
-  AlertCircle, MessageSquare
+  AlertCircle, MessageSquare, Award, ShieldCheck
 } from 'lucide-react';
 import type { Project, User, Task, ProjectWorkflow, TimesheetEntry } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { STAGE_CONFIG } from '../config/workflows';
+import { QCHandoverModal } from './QCHandoverModal';
 
 interface ProjectDetailProps {
   projects: Project[];
@@ -52,6 +53,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   // Quotations & Price Book State
   const [priceBook, setPriceBook] = useState<any[]>([]);
   const [projectQuotations, setProjectQuotations] = useState<any[]>([]);
+  const [isQCHandoverModalOpen, setIsQCHandoverModalOpen] = useState(false);
 
   // Load pricebook and quotations on mount
   React.useEffect(() => {
@@ -506,6 +508,27 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             className="hover-lift"
           >
             <Printer size={16} /> พิมพ์
+          </button>
+
+          <button 
+            onClick={() => setIsQCHandoverModalOpen(true)}
+            style={{ 
+              background: 'linear-gradient(135deg, #4338ca, #059669)', 
+              color: 'white', 
+              border: 'none', 
+              padding: '0.5rem 1rem', 
+              borderRadius: 'var(--radius-md)', 
+              fontSize: '0.85rem', 
+              fontWeight: 800, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              boxShadow: '0 2px 8px rgba(5, 150, 105, 0.35)'
+            }}
+            className="hover-lift"
+          >
+            <ShieldCheck size={16} /> 🏅 QC & ส่งมอบงาน (Phase 04)
           </button>
 
           <button 
@@ -2360,6 +2383,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       )}
 
 
+
+      {/* PHASE 04: QC INSPECTION, HANDOVER & SETTLEMENT MODAL */}
+      <QCHandoverModal
+        isOpen={isQCHandoverModalOpen}
+        onClose={() => setIsQCHandoverModalOpen(false)}
+        project={project}
+        currentUser={currentUser || null}
+        users={users}
+        onSaved={() => {
+          // Refresh project quotations or project details
+          if (project?.id) {
+            fetch(`/api/quotations?project_id=${project.id}`)
+              .then(r => r.json())
+              .then(data => setProjectQuotations(data || []))
+              .catch(err => console.error(err));
+          }
+        }}
+      />
 
     </div>
   );

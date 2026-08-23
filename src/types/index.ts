@@ -106,8 +106,14 @@ export interface Project {
   permissionSchemeId?: string;
   projectType?: 'construction' | 'quick_service' | 'installation' | 'dev' | 'support' | string;
   supportTaskStyle?: 'monthly' | 'categories';
-
   address?: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  site_latitude?: number | string | null;
+  site_longitude?: number | string | null;
+  execution_phase?: string;
   projectValue?: number;
   invoicedValue?: number;
   collectedValue?: number;
@@ -141,8 +147,6 @@ export interface Project {
     workTypes?: string[];
     lifecycle?: any;
   };
-  customerName?: string | null;
-  customerPhone?: string | null;
   leadId?: string | null;
   convertedAt?: string | null;
 }

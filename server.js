@@ -657,6 +657,45 @@ const initDB = async () => {
       ALTER TABLE tasks ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 0;
       ALTER TABLE tasks ADD COLUMN IF NOT EXISTS before_photos TEXT[] DEFAULT '{}';
       ALTER TABLE tasks ADD COLUMN IF NOT EXISTS after_photos TEXT[] DEFAULT '{}';
+
+      -- Phase 04: QC Inspections & Handover
+      CREATE TABLE IF NOT EXISTS project_qc_inspections (
+        id                  VARCHAR(50) PRIMARY KEY,
+        project_id          VARCHAR(50) REFERENCES projects(id) ON DELETE CASCADE,
+        inspector_id        VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+        inspector_name      VARCHAR(255),
+        inspection_date     VARCHAR(50) NOT NULL,
+        checklist_items     JSONB DEFAULT '[]',
+        overall_result      VARCHAR(50) NOT NULL DEFAULT 'Passed',
+        qc_notes            TEXT,
+        photos              TEXT[] DEFAULT '{}',
+        created_at          VARCHAR(50) NOT NULL,
+        created_by          VARCHAR(255)
+      );
+      CREATE INDEX IF NOT EXISTS idx_project_qc_inspections_project_id ON project_qc_inspections(project_id);
+
+      CREATE TABLE IF NOT EXISTS project_handovers (
+        id                  VARCHAR(50) PRIMARY KEY,
+        project_id          VARCHAR(50) REFERENCES projects(id) ON DELETE CASCADE,
+        qc_id               VARCHAR(50) REFERENCES project_qc_inspections(id) ON DELETE SET NULL,
+        customer_name       VARCHAR(255),
+        customer_phone      VARCHAR(50),
+        handover_date       VARCHAR(50) NOT NULL,
+        customer_satisfied  BOOLEAN DEFAULT true,
+        satisfaction_score  INT DEFAULT 5,
+        customer_signature  TEXT,
+        warranty_months     INT DEFAULT 12,
+        warranty_start_date VARCHAR(50),
+        warranty_end_date   VARCHAR(50),
+        final_payment_amount NUMERIC DEFAULT 0,
+        final_payment_status VARCHAR(50) DEFAULT 'Paid',
+        settlement_notes    TEXT,
+        technicians_summary JSONB DEFAULT '[]',
+        status              VARCHAR(50) NOT NULL DEFAULT 'Closed & Settled',
+        created_at          VARCHAR(50) NOT NULL,
+        created_by          VARCHAR(255)
+      );
+      CREATE INDEX IF NOT EXISTS idx_project_handovers_project_id ON project_handovers(project_id);
     `);
 
     // Seed/Upsert 9 Detailed Master Zones
@@ -2685,9 +2724,12 @@ async function generateFormattedProjectId(jobType, branch) {
 const serviceRoutes = require('./src/routes/serviceRoutes.cjs');
 const quotationRoutes = require('./src/routes/quotationRoutes.cjs');
 const dashboardRoutes = require('./src/routes/dashboardRoutes.cjs');
+const qcHandoverRoutes = require('./src/routes/qcHandoverRoutes.cjs');
+
 app.use('/api/pricebook', serviceRoutes);
 app.use('/api/quotations', quotationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/projects/:projectId/qc', qcHandoverRoutes);
 
 // Projects REST API
 // --- Master Project Types API ---
