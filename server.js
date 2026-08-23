@@ -571,6 +571,83 @@ const initDB = async () => {
         created_by          VARCHAR(255)
       );
       CREATE INDEX IF NOT EXISTS idx_lead_site_visit_results_lead_id ON lead_site_visit_results(lead_id);
+
+      -- Phase 14: Designs & 2D/3D Approvals
+      CREATE TABLE IF NOT EXISTS lead_designs (
+        id                  VARCHAR(50) PRIMARY KEY,
+        lead_id             VARCHAR(50) REFERENCES leads(id) ON DELETE CASCADE,
+        designer_id         VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+        designer_name       VARCHAR(255),
+        title               VARCHAR(255) NOT NULL,
+        description         TEXT,
+        version             VARCHAR(50) DEFAULT 'Rev A',
+        design_type         VARCHAR(50) DEFAULT '3D Perspective',
+        file_urls           TEXT[] DEFAULT '{}',
+        status              VARCHAR(50) NOT NULL DEFAULT 'Drafting',
+        customer_feedback   TEXT,
+        approved_at         VARCHAR(50),
+        approved_by         VARCHAR(255),
+        created_at          VARCHAR(50) NOT NULL,
+        created_by          VARCHAR(255),
+        updated_at          VARCHAR(50) NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_lead_designs_lead_id ON lead_designs(lead_id);
+
+      -- Phase 14: Quotations & Items
+      CREATE TABLE IF NOT EXISTS quotations (
+        id                  VARCHAR(50) PRIMARY KEY,
+        lead_id             VARCHAR(50),
+        design_id           VARCHAR(50),
+        project_id          VARCHAR(50),
+        quotation_number    VARCHAR(50) UNIQUE NOT NULL,
+        issue_date          VARCHAR(50) NOT NULL,
+        valid_until         VARCHAR(50),
+        status              VARCHAR(50) NOT NULL DEFAULT 'Draft',
+        subtotal            NUMERIC NOT NULL DEFAULT 0,
+        vat_type            VARCHAR(50) DEFAULT 'Exclude VAT',
+        vat_amount          NUMERIC NOT NULL DEFAULT 0,
+        grand_total         NUMERIC NOT NULL DEFAULT 0,
+        total_cost          NUMERIC DEFAULT 0,
+        notes               TEXT,
+        created_at          VARCHAR(50) NOT NULL,
+        created_by          VARCHAR(255),
+        updated_at          VARCHAR(50) NOT NULL
+      );
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS lead_id VARCHAR(50);
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS design_id VARCHAR(50);
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Draft';
+
+      CREATE TABLE IF NOT EXISTS quotation_items (
+        id                  VARCHAR(50) PRIMARY KEY,
+        quotation_id        VARCHAR(50) REFERENCES quotations(id) ON DELETE CASCADE,
+        price_book_id       VARCHAR(50),
+        service_name        VARCHAR(255) NOT NULL,
+        quantity            NUMERIC NOT NULL DEFAULT 1,
+        unit_type           VARCHAR(50) DEFAULT 'Unit',
+        unit_cost           NUMERIC NOT NULL DEFAULT 0,
+        unit_price          NUMERIC NOT NULL DEFAULT 0,
+        total_price         NUMERIC NOT NULL DEFAULT 0,
+        sort_order          INT DEFAULT 0
+      );
+
+      -- Phase 14: Lead Payments (Down Payment Gatekeeper)
+      CREATE TABLE IF NOT EXISTS lead_payments (
+        id                  VARCHAR(50) PRIMARY KEY,
+        lead_id             VARCHAR(50) REFERENCES leads(id) ON DELETE CASCADE,
+        quotation_id        VARCHAR(50),
+        amount              NUMERIC NOT NULL,
+        payment_method      VARCHAR(50) DEFAULT 'Bank Transfer',
+        payment_type        VARCHAR(50) DEFAULT 'Down Payment',
+        slip_url            TEXT,
+        payment_date        VARCHAR(50),
+        status              VARCHAR(50) NOT NULL DEFAULT 'Verified & Received',
+        verified_by         VARCHAR(255),
+        verified_at         VARCHAR(50),
+        notes               TEXT,
+        created_at          VARCHAR(50) NOT NULL,
+        created_by          VARCHAR(255)
+      );
+      CREATE INDEX IF NOT EXISTS idx_lead_payments_lead_id ON lead_payments(lead_id);
     `);
 
     // Seed/Upsert 9 Detailed Master Zones

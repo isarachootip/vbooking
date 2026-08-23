@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home } from 'lucide-react';
+import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { GisMapPickerModal, formatToDMS } from './GisMapPickerModal';
 import { SiteVisitApprovalManager } from './SiteVisitApprovalManager';
 import { SiteVisitResultModal } from './SiteVisitResultModal';
+import { DesignApprovalModal } from './DesignApprovalModal';
+import { PaymentModal } from './PaymentModal';
 
 interface LeadFollowup {
   id: string;
@@ -73,6 +75,12 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [isSiteVisitModalOpen, setIsSiteVisitModalOpen] = useState(false);
   const [isVisitResultModalOpen, setIsVisitResultModalOpen] = useState(false);
   const [selectedLeadForVisitResult, setSelectedLeadForVisitResult] = useState<Lead | null>(null);
+
+  // Phase 02: Design & Payment Modal states
+  const [isDesignModalOpen, setIsDesignModalOpen] = useState(false);
+  const [selectedLeadForDesign, setSelectedLeadForDesign] = useState<Lead | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedLeadForPayment, setSelectedLeadForPayment] = useState<Lead | null>(null);
 
   // Follow-up Modal & History
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
@@ -681,8 +689,16 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontSize: '0.75rem', fontWeight: 700 }}>Contacted (ติดตามแล้ว)</span>;
       case 'Qualified':
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(147, 51, 234, 0.15)', color: '#9333ea', fontSize: '0.75rem', fontWeight: 700 }}>Qualified (รอสำรวจ/ยืนยัน)</span>;
+      case 'Design Review':
+        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', fontSize: '0.75rem', fontWeight: 700 }}>Design Review (รอตรวจแบบ 3D)</span>;
+      case 'Design Revision':
+        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', fontSize: '0.75rem', fontWeight: 700 }}>Design Revision (ขอแก้ไขแบบ)</span>;
+      case 'Design Approved':
+        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', fontSize: '0.75rem', fontWeight: 700 }}>Design Approved (แบบอนุมัติแล้ว)</span>;
       case 'Pending Quote':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(14, 165, 233, 0.15)', color: '#0284c7', fontSize: '0.75rem', fontWeight: 700 }}>Pending Quote (รอใบเสนอราคา)</span>;
+        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontSize: '0.75rem', fontWeight: 700 }}>Pending Quote (รอใบเสนอราคา)</span>;
+      case 'Payment Verified':
+        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.2)', color: '#059669', fontSize: '0.75rem', fontWeight: 800 }}>💰 Payment Verified (มัดจำแล้ว)</span>;
       case 'Converted':
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', fontSize: '0.75rem', fontWeight: 700 }}>Converted (เป็นงานแล้ว)</span>;
       case 'Lost':
@@ -1159,11 +1175,33 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                               <ClipboardCheck size={13} /> บันทึกผล Visit
                             </button>
                             <button
+                              onClick={() => {
+                                setSelectedLeadForDesign(lead);
+                                setIsDesignModalOpen(true);
+                              }}
+                              className="lead-action-btn hover-lift"
+                              title="จัดการแบบแปลน 2D / ภาพจำลอง 3D Perspective และตรวจรับแบบ"
+                              style={{ background: 'rgba(2, 132, 199, 0.08)', border: '1px solid rgba(2, 132, 199, 0.25)', color: '#0284c7', fontWeight: 600 }}
+                            >
+                              <Palette size={13} /> แบบ 2D/3D
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedLeadForPayment(lead);
+                                setIsPaymentModalOpen(true);
+                              }}
+                              className="lead-action-btn hover-lift"
+                              title="บันทึกรับชำระเงินมัดจำ & แปลงเป็นโครงการติดตั้ง"
+                              style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#059669', fontWeight: 700 }}
+                            >
+                              <DollarSign size={13} /> รับมัดจำ & แปลงงาน
+                            </button>
+                            <button
                               onClick={() => openFollowupModal(lead)}
                               className="lead-action-btn hover-lift"
                               style={{ background: 'rgba(147, 51, 234, 0.08)', border: '1px solid rgba(147, 51, 234, 0.2)', color: '#9333ea' }}
                             >
-                              <Calendar size={13} /> ติดตาม / นัดหมาย
+                              <Calendar size={13} /> ติดตาม
                             </button>
                             <button
                               onClick={() => openModal(lead)}
@@ -1171,13 +1209,6 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                               style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
                             >
                               <Edit2 size={13} /> แก้ไข
-                            </button>
-                            <button
-                              onClick={() => handleConvert(lead.id)}
-                              className="lead-action-btn hover-lift"
-                              style={{ background: '#10b981', color: 'white', border: 'none', boxShadow: '0 2px 6px rgba(16, 185, 129, 0.2)' }}
-                            >
-                              <RefreshCw size={13} /> แปลงเป็นงาน
                             </button>
                           </div>
                         ) : (
@@ -2178,6 +2209,38 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         users={users}
         onSaved={() => {
           fetchLeads(currentPage);
+        }}
+      />
+
+      {/* PHASE 02: 2D/3D DESIGN APPROVAL MODAL */}
+      <DesignApprovalModal
+        isOpen={isDesignModalOpen}
+        onClose={() => {
+          setIsDesignModalOpen(false);
+          setSelectedLeadForDesign(null);
+        }}
+        lead={selectedLeadForDesign}
+        currentUser={currentUser}
+        users={users}
+        onSaved={() => {
+          fetchLeads(currentPage);
+        }}
+      />
+
+      {/* PHASE 02: DOWN PAYMENT & PROJECT CONVERT MODAL */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setSelectedLeadForPayment(null);
+        }}
+        lead={selectedLeadForPayment}
+        currentUser={currentUser}
+        onSaved={() => {
+          fetchLeads(currentPage);
+        }}
+        onConvertToProject={(leadId) => {
+          handleConvert(leadId);
         }}
       />
 
