@@ -120,7 +120,7 @@
 | **Phase 01: Lead & Survey** | รับข้อมูลลูกค้า, นัดหมายสำรวจ และสรุปผลหน้างาน | • `LeadsPage.tsx`<br/>• `SiteVisitResultModal.tsx` | ข้อมูลสภาพหน้างานจริง, ขอบเขตงาน และประมาณการงบเบื้องต้น |
 | **Phase 02: Design, Quote & Payment** | จัดการตรวจรับแบบ 3D, เสนอราคา BOQ และรับเงินมัดจำ | • `DesignApprovalModal.tsx`<br/>• `PaymentModal.tsx`<br/>• `QuotationBuilder` | แบบ 2D/3D ที่ลูกค้าอนุมัติ, ใบเสนอราคาอนุมัติ และสลิปมัดจำงวดแรก |
 | **Phase 03: Project Execution** | สร้างแผนงาน WBS, มอบหมายช่าง JMT และเช็คอิน GPS | • `SiteCheckInOut.tsx`<br/>• `ProjectBoard.tsx`<br/>• `ProjectPlan.tsx` | การเช็คอินพิกัดดาวเทียม (500 ม.), ภาพถ่ายก่อน/หลัง และความคืบหน้า 100% |
-| **Phase 04: QC, Handover & Settle** | ตรวจสอบคุณภาพงาน, เซ็นรับมอบงาน และปิดโครงการ | • `QCHandoverModal.tsx`<br/>• `ProjectDetail.tsx` | ผลตรวจ QC Pass, ลายเซ็นดิจิทัล E-Signature, 5 ดาว, ใบรับประกัน และปิด Job |
+| **Phase 04: QC, Handover & Settle** | ตรวจสอบคุณภาพงาน (Online QC สำหรับ Quick Job / On-site QC สำหรับ Renovate), เซ็นรับมอบงาน และปิดโครงการ | • `QCHandoverModal.tsx`<br/>• `ProjectDetail.tsx` | ผลตรวจ QC Pass (Online/On-site), ลายเซ็นดิจิทัล E-Signature, 5 ดาว, ใบรับประกัน และปิด Job |
 
 
 ---
