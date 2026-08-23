@@ -11,6 +11,7 @@ router.post('/', leadController.createLead);
 router.put('/:id', leadController.updateLead);
 router.get('/:id/followups', leadController.getFollowups);
 router.post('/:id/followups', leadController.addFollowup);
+router.get('/:id/timeline', leadController.getLeadTimeline);
 // Visit Results
 router.get('/:id/visit-results', leadController.getVisitResults);
 router.post('/:id/visit-results', leadController.addVisitResult);

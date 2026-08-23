@@ -422,3 +422,181 @@ exports.updateVisitResult = async (req, res) => {
     res.status(500).json({ error: 'Failed to update visit result' });
   }
 };
+
+exports.getLeadTimeline = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 1. Lead info
+    const leadRes = await pool.query('SELECT * FROM leads WHERE id = $1', [id]);
+    if (leadRes.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
+    const lead = leadRes.rows[0];
+
+    // 2. Followups
+    const followupsRes = await pool.query('SELECT * FROM lead_followups WHERE lead_id = $1 ORDER BY created_at ASC', [id]);
+    
+    // 3. Site visit results
+    const visitsRes = await pool.query('SELECT * FROM lead_site_visit_results WHERE lead_id = $1 ORDER BY created_at ASC', [id]);
+    
+    // 4. Designs
+    const designsRes = await pool.query('SELECT * FROM lead_designs WHERE lead_id = $1 ORDER BY created_at ASC', [id]);
+    
+    // 5. Payments
+    const paymentsRes = await pool.query('SELECT * FROM lead_payments WHERE lead_id = $1 ORDER BY created_at ASC', [id]);
+
+    // Build timeline events array
+    const events = [];
+
+    // Milestone 1: Lead Creation
+    if (lead.created_at) {
+      events.push({
+        id: `evt_create_${lead.id}`,
+        step: 1,
+        type: 'LEAD_CREATED',
+        title: 'สร้าง Lead / รับข้อมูลลูกค้าเข้าสู่ระบบ',
+        timestamp: lead.created_at,
+        actor: lead.created_by || 'ผู้บันทึกข้อมูล',
+        description: `ประเภทงาน: ${lead.job_type || 'ทั่วไป'} | ที่อยู่: ${lead.customer_address || 'ไม่ระบุ'}`,
+        status: 'completed',
+        color: '#2563eb'
+      });
+    }
+
+    // Milestone 2: Followups & Appointments
+    followupsRes.rows.forEach(f => {
+      events.push({
+        id: `evt_flw_${f.id}`,
+        step: 2,
+        type: 'FOLLOWUP_RECORDED',
+        title: `บันทึกติดตาม: ${f.activity_type}`,
+        timestamp: f.created_at,
+        actor: f.created_by || f.assignee_name || 'แอดมิน',
+        description: f.notes || (f.appointment_date ? `นัดหมายวันที่ ${f.appointment_date} ${f.appointment_time || ''}` : 'บันทึกการติดต่อ'),
+        appointment_date: f.appointment_date,
+        appointment_time: f.appointment_time,
+        status: 'completed',
+        color: '#9333ea'
+      });
+    });
+
+    // Milestone 3: GM Site Visit Approval
+    if (lead.site_visit_approved_at) {
+      events.push({
+        id: `evt_gm_${lead.id}`,
+        step: 3,
+        type: 'GM_APPROVAL',
+        title: lead.site_visit_approval_status === 'Approved' ? 'GM อนุมัตินัดหมายลงพื้นที่' : 'GM ไม่อนุมัตินัดหมายลงพื้นที่',
+        timestamp: lead.site_visit_approved_at,
+        actor: lead.site_visit_approved_by || 'GM สาขา',
+        description: lead.site_visit_approval_notes || (lead.site_visit_approval_status === 'Approved' ? 'อนุมัติการออกพบลูกค้าหน้างานและมอบหมายทีมงาน' : 'ปฏิเสธคำขอ'),
+        status: lead.site_visit_approval_status === 'Approved' ? 'completed' : 'rejected',
+        color: lead.site_visit_approval_status === 'Approved' ? '#059669' : '#dc2626'
+      });
+    }
+
+    // Milestone 4: Site Visit Results
+    visitsRes.rows.forEach(v => {
+      events.push({
+        id: `evt_svr_${v.id}`,
+        step: 4,
+        type: 'SITE_VISIT_RESULT',
+        title: `บันทึกผลการเข้า Visit Site: ${v.visit_result}`,
+        timestamp: v.created_at,
+        actual_visit_date: v.visit_date,
+        actor: v.visited_by_name || v.created_by || 'ช่างหน้างาน',
+        description: v.work_scope_summary || v.internal_notes || `สภาพหน้างาน: ${v.site_condition || '-'} | งบประมาณประเมิน: ${v.estimated_budget ? v.estimated_budget.toLocaleString() + ' บาท' : '-'}`,
+        status: 'completed',
+        color: '#1e40af'
+      });
+    });
+
+    // Milestone 5: Designs & Approvals
+    designsRes.rows.forEach(d => {
+      events.push({
+        id: `evt_des_create_${d.id}`,
+        step: 5,
+        type: 'DESIGN_CREATED',
+        title: `สร้างแบบแปลน / 3D (${d.version}): ${d.title}`,
+        timestamp: d.created_at,
+        actor: d.designer_name || d.created_by || 'Designer',
+        description: d.description || `ประเภท: ${d.design_type} (สถานะ: ${d.status})`,
+        status: 'completed',
+        color: '#0284c7'
+      });
+
+      if (d.approved_at) {
+        events.push({
+          id: `evt_des_appr_${d.id}`,
+          step: 5,
+          type: 'DESIGN_APPROVED',
+          title: `ตรวจรับและอนุมัติแบบ (${d.version})`,
+          timestamp: d.approved_at,
+          actor: d.approved_by || 'ลูกค้า / ผู้มีอำนาจอนุมัติ',
+          description: d.customer_feedback || 'แบบได้รับการยืนยันและอนุมัติเรียบร้อย',
+          status: 'completed',
+          color: '#059669'
+        });
+      }
+    });
+
+    // Milestone 6: Payments & Deposits
+    paymentsRes.rows.forEach(p => {
+      events.push({
+        id: `evt_pay_${p.id}`,
+        step: 6,
+        type: 'PAYMENT_RECEIVED',
+        title: `บันทึกการชำระเงินมัดจำ: ${Number(p.amount).toLocaleString()} บาท`,
+        timestamp: p.created_at,
+        payment_date: p.payment_date,
+        actor: p.created_by || 'ฝ่ายการเงิน',
+        description: `วิธีชำระ: ${p.payment_method} | สถานะ: ${p.status}`,
+        status: 'completed',
+        color: '#059669'
+      });
+
+      if (p.verified_at) {
+        events.push({
+          id: `evt_pay_ver_${p.id}`,
+          step: 6,
+          type: 'PAYMENT_VERIFIED',
+          title: `ตรวจสอบและยืนยันยอดเงินมัดจำสำเร็จ`,
+          timestamp: p.verified_at,
+          actor: p.verified_by || 'ฝ่ายการเงิน / ตรวจสอบสลิป',
+          description: `ยืนยันยอด ${Number(p.amount).toLocaleString()} บาท เรียบร้อย`,
+          status: 'completed',
+          color: '#059669'
+        });
+      }
+    });
+
+    // Milestone 7: Converted to Project
+    if (lead.status === 'Converted' || lead.project_id) {
+      events.push({
+        id: `evt_conv_${lead.id}`,
+        step: 7,
+        type: 'CONVERTED_TO_PROJECT',
+        title: 'แปลงเป็นโครงการติดตั้งสำเร็จ (Project Activated)',
+        timestamp: lead.updated_at || lead.created_at,
+        actor: 'ระบบ / ผู้จัดการโครงการ',
+        description: lead.project_id ? `รหัสโครงการ: ${lead.project_id}` : 'เปิดโครงการติดตั้งในระบบเรียบร้อย',
+        status: 'completed',
+        color: '#10b981'
+      });
+    }
+
+    // Sort chronologically by timestamp
+    events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    res.json({
+      lead_id: lead.id,
+      customer_name: lead.customer_name,
+      current_status: lead.status,
+      created_at: lead.created_at,
+      updated_at: lead.updated_at,
+      events: events
+    });
+  } catch (err) {
+    console.error('Error fetching lead timeline:', err);
+    res.status(500).json({ error: 'Failed to fetch lead timeline' });
+  }
+};

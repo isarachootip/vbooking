@@ -8,6 +8,7 @@ import { SiteVisitApprovalManager } from './SiteVisitApprovalManager';
 import { SiteVisitResultModal } from './SiteVisitResultModal';
 import { DesignApprovalModal } from './DesignApprovalModal';
 import { PaymentModal } from './PaymentModal';
+import { LeadTimelineModal } from './LeadTimelineModal';
 
 interface LeadFollowup {
   id: string;
@@ -81,6 +82,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [selectedLeadForDesign, setSelectedLeadForDesign] = useState<Lead | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedLeadForPayment, setSelectedLeadForPayment] = useState<Lead | null>(null);
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const [selectedLeadForTimeline, setSelectedLeadForTimeline] = useState<Lead | null>(null);
 
   // Follow-up Modal & History
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
@@ -1798,6 +1801,34 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                                   <DollarSign size={13} /> 4. รับมัดจำ & แปลงงาน
                                 </button>
 
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuLeadId(null);
+                                    setSelectedLeadForTimeline(lead);
+                                    setIsTimelineModalOpen(true);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.45rem 0.85rem',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 700,
+                                    color: '#2563eb',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.12s'
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(37, 99, 235, 0.08)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <History size={13} /> 🕒 ประวัติและเวลาแต่ละขั้นตอน
+                                </button>
+
                                 <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.3rem 0' }} />
 
                                 <button
@@ -2916,6 +2947,16 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         onConvertToProject={(leadId) => {
           handleConvert(leadId);
         }}
+      />
+
+      {/* LEAD LIFECYCLE TIMELINE & AUDIT TRAIL MODAL */}
+      <LeadTimelineModal
+        isOpen={isTimelineModalOpen}
+        onClose={() => {
+          setIsTimelineModalOpen(false);
+          setSelectedLeadForTimeline(null);
+        }}
+        lead={selectedLeadForTimeline}
       />
 
     </div>
