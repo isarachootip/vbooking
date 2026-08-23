@@ -9,10 +9,13 @@
 1. [การลงชื่อเข้าใช้งานระบบ (Authentication)](#-1-การลงชื่อเข้าใช้งานระบบ-authentication)
 2. [โครงสร้างสิทธิ์การใช้งาน (Roles & Permissions)](#-2-โครงสร้างสิทธิ์การใช้งาน-roles--permissions)
 3. [เริ่มต้นใช้งานอย่างรวดเร็ว (Quick Start Guide)](#-3-เริ่มต้นใช้งานอย่างรวดเร็ว-quick-start-guide) [NEW!]
-4. [หน้าภาพรวมระบบ (Dashboard)](#-4-หน้าภาพรวมระบบ-dashboard)
-   - [ระบบลูกค้าเป้าหมายและการนัดหมายสำรวจ (Leads & Smart Survey Booking)](#-41-ระบบลูกค้าเป้าหมายและการนัดหมายสำรวจ-leads--smart-survey-booking---ขั้นตอนที่-1--2-new) [NEW!]
-   - [ระบบบันทึกผลการเข้า Visit Site ลูกค้า (Site Visit Results)](#-42-ระบบบันทึกผลการเข้า-visit-site-ลูกค้า-site-visit-results--next-actions-new) [NEW!]
-5. [การจัดการโครงการ (Project Management)](#-5-การจัดการโครงการ-project-management)
+4. [หน้าภาพรวมระบบ (Dashboard) & CRM](#-4-หน้าภาพรวมระบบ-dashboard)
+   - [Phase 01: ระบบลูกค้าเป้าหมายและการนัดหมายสำรวจ (Leads & Survey Booking)](#-41-ระบบลูกค้าเป้าหมายและการนัดหมายสำรวจ-leads--smart-survey-booking---ขั้นตอนที่-1--2-new) [NEW!]
+   - [Phase 01: ระบบบันทึกผลการเข้า Visit Site ลูกค้า (Site Visit Results)](#-42-ระบบบันทึกผลการเข้า-visit-site-ลูกค้า-site-visit-results--next-actions-new) [NEW!]
+   - [Phase 02: ระบบจัดการตรวจรับแบบ 2D/3D และเงินมัดจำ (Design, Quote & Payment)](#-43-ระบบจัดการและตรวจรับแบบ-2d3d-และเงินมัดจำ-phase-02-design-quote--payment-new) [NEW!]
+5. [การจัดการโครงการและการดำเนินงานหน้างาน (Project Management & Execution)](#-5-การจัดการโครงการและการดำเนินงานหน้างาน-project-management--execution)
+   - [Phase 03: แผนงานอัจฉริยะ WBS และการเช็คอินหน้างานด้วยดาวเทียม GPS (Project Execution)](#a-การดูรายการโครงการ-project-list) [NEW!]
+   - [Phase 04: ระบบตรวจรับคุณภาพ QC, ส่งมอบงาน และปิดโครงการ (QC, Handover & Settle)](#-51-ระบบตรวจรับคุณภาพ-qc-ส่งมอบงาน-และปิดโครงการ-phase-04-qc-handover--settle-new) [NEW!]
 6. [การบันทึกชั่วโมงทำงาน (Timesheet)](#-6-การบันทึกชั่วโมงทำงาน-timesheet)
 7. [บอร์ดจัดการงานทีม (Agile Kanban Board)](#-7-บอร์ดจัดการงานทีม-agile-kanban-board)
    - [คอลัมน์และสถานะของงานย่อย](#คอลัมน์และสถานะของงานย่อย-workflow-columns)

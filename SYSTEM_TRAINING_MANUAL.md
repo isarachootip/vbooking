@@ -113,6 +113,16 @@
   - **ระบบจะข้ามขั้นตอน Phase 1 (สำรวจหน้างาน) และ Phase 2 (ออกแบบและเสนอราคา) ให้โดยอัตโนมัติ (Automated Bypass)**
   - ระบบจะบันทึกสถานะการอนุมัติแบบร่างและการชำระเงินมัดจำล่วงหน้าเป็น True ทันที พร้อมแนบหลักฐานอ้างอิงเป็นเลขตั๋วชำระเงิน (Payment Ticket) ที่ส่งมาจากระบบภายนอก เพื่อปลดล็อกให้ผู้จัดการงานเข้าสู่ **Phase 3 (Project Execution)** เพื่อส่งช่างติดตั้งเข้าปฏิบัติงานได้ทันที
 
+#### 🏛️ ตารางสรุปโมดูลระบบแยกตาม 4 Phases (4-Phase Architecture Matrix):
+
+| Phase | วัตถุประสงค์หลัก | โมดูล/หน้าจอที่ใช้งาน | สิ่งที่ได้รับ (Deliverables) |
+| :--- | :--- | :--- | :--- |
+| **Phase 01: Lead & Survey** | รับข้อมูลลูกค้า, นัดหมายสำรวจ และสรุปผลหน้างาน | • `LeadsPage.tsx`<br/>• `SiteVisitResultModal.tsx` | ข้อมูลสภาพหน้างานจริง, ขอบเขตงาน และประมาณการงบเบื้องต้น |
+| **Phase 02: Design, Quote & Payment** | จัดการตรวจรับแบบ 3D, เสนอราคา BOQ และรับเงินมัดจำ | • `DesignApprovalModal.tsx`<br/>• `PaymentModal.tsx`<br/>• `QuotationBuilder` | แบบ 2D/3D ที่ลูกค้าอนุมัติ, ใบเสนอราคาอนุมัติ และสลิปมัดจำงวดแรก |
+| **Phase 03: Project Execution** | สร้างแผนงาน WBS, มอบหมายช่าง JMT และเช็คอิน GPS | • `SiteCheckInOut.tsx`<br/>• `ProjectBoard.tsx`<br/>• `ProjectPlan.tsx` | การเช็คอินพิกัดดาวเทียม (500 ม.), ภาพถ่ายก่อน/หลัง และความคืบหน้า 100% |
+| **Phase 04: QC, Handover & Settle** | ตรวจสอบคุณภาพงาน, เซ็นรับมอบงาน และปิดโครงการ | • `QCHandoverModal.tsx`<br/>• `ProjectDetail.tsx` | ผลตรวจ QC Pass, ลายเซ็นดิจิทัล E-Signature, 5 ดาว, ใบรับประกัน และปิด Job |
+
+
 ---
 
 ## 4. คู่มือการใช้งานแยกตามบทบาท (Role-based Step-by-Step Guides)

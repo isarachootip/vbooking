@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Calendar, Users, Star, Shield, MessageSquare, Zap, Layers, ClipboardCheck } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Calendar, Users, Star, Shield, MessageSquare, Zap, Layers, ClipboardCheck, FileCheck, ShieldCheck } from 'lucide-react';
 
 import { marked } from 'marked';
 import type { User } from '../types';
@@ -114,6 +114,48 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 </li>
                 <li>
                   <strong>Project Pipeline Transition:</strong> Converting a qualified lead automatically generates a Smart Project ID and sets up initial workflow stages (<code>Buy-Survey</code> &rarr; <code>Survey</code>) ready for Step 3 (Survey QC Inspection).
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_phase02_design_payment',
+          question: 'How do 2D/3D Design Approval & Down Payment Gatekeeper work in Phase 02?',
+          icon: FileCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}><strong>Phase 02 (Design, Quote & Payment)</strong> ensures architectural and financial approval before project execution:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>2D/3D Design Management:</strong> Upload perspectives, floor plans, and mood boards via direct file upload or cloud links with revision tracking (<code>Rev A</code>, <code>Rev B</code>...). Customers can approve or request revisions.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>BOQ & Quotation:</strong> Generate accurate quotations using the Service Price Book and standard labor/material cost rates.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Down Payment Gatekeeper:</strong> Enforces down payment collection (suggests 30% or 50%) with bank transfer slip proof, unlocking the 1-click <strong>"Convert to Project"</strong> action.
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_phase04_qc_handover',
+          question: 'How do QC Inspection, Customer E-Signature & BMT Settlement work in Phase 04?',
+          icon: ShieldCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}><strong>Phase 04 (QC, Handover & After-Sales)</strong> handles project completion and settlement:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Digital QC Checklist:</strong> Inspectors verify 5 core areas with before/after photos and determine Pass/Fail status.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Customer Handover & Digital E-Signature:</strong> Customers rate satisfaction (1–5 stars) and sign directly on the HTML5 canvas signature pad, generating warranty coverage (6–36 months).
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>BMT Close & Settlement:</strong> Summarizes JMT technician labor, logs final payment, and transitions the project to <code>Completed</code> status.
                 </li>
               </ul>
             </div>
@@ -605,6 +647,48 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 </li>
                 <li>
                   <strong>การส่งต่องานเข้าสู่โปรเจกต์ (Pipeline Transition):</strong> เมื่อกดแปลงเป็นโปรเจกต์ ระบบจะสร้าง Smart Project ID พร้อมเปิดคอลัมน์ขั้นตอน <code>Buy-Survey</code> &rarr; <code>Survey</code> เพื่อส่งต่อให้ช่าง QC เข้าทำขั้นตอนที่ 3 (Survey QC Inspection) ทันที
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_phase02_design_payment',
+          question: 'ระบบตรวจรับแบบ 2D/3D และเงินมัดจำ (Phase 02: Design & Down Payment Gatekeeper) ทำงานอย่างไร?',
+          icon: FileCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}><strong>Phase 02 (Design, Quote & Payment Pipeline)</strong> ทำหน้าที่เป็นประตูกรองความถูกต้องของแบบแปลนและวินัยทางการเงินก่อนเปิดหน้างานติดตั้ง:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>การจัดการแบบแปลน 2D/3D (Design Modal):</strong> อัปโหลดภาพ 3D Perspective, แปลน 2D หรือ Mood Board จากเครื่อง (พร้อม Thumbnail) หรือผ่าน Google Drive รองรับการคุม Revision (<code>Rev A</code>, <code>Rev B</code>...) และให้ลูกค้าตรวจรับแบบ (Design Approved)
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>การออกใบเสนอราคา BOQ:</strong> ถอดราคาวัสดุและค่าแรงจากฐานข้อมูล Service Price Book
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Down Payment Gatekeeper:</strong> บันทึกรับเงินมัดจำงวดแรก (ระบบแนะนำ 30% หรือ 50% อัตโนมัติ) และแนบสลิปโอนเงิน เพื่อปลดล็อกปุ่ม <strong>"🚀 แปลงเป็นโครงการติดตั้ง (Convert to Project)"</strong>
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_phase04_qc_handover',
+          question: 'ระบบตรวจรับคุณภาพ QC, ส่งมอบงาน และปิดโครงการ (Phase 04: QC, Handover & Settle) ทำงานอย่างไร?',
+          icon: ShieldCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}><strong>Phase 04 (QC, Handover & After-Sales Pipeline)</strong> ทำหน้าที่ตรวจรับความเรียบร้อยและปิดโครงการสมบูรณ์:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Digital QC Checklist:</strong> ตรวจประเมิน 5 ด้านสำคัญ (โครงสร้าง, ระบบไฟ/น้ำ, ความสะอาด, อุปกรณ์, ตรงตามแบบ 3D) บันทึกรูปถ่ายจริง และสรุปผล Pass/Fail (หากไม่ผ่าน ส่งกลับไป Rework ใน Phase 03)
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Customer Handover & Digital E-Signature:</strong> ลูกค้าให้คะแนนความพึงพอใจ (1–5 ดาว ⭐) และลงนามตรวจรับมอบงานบนกระดานดิจิทัลสด (HTML5 Canvas) พร้อมออกใบรับประกัน 6–36 เดือน
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>BMT Settlement & Close Job:</strong> สรุปต้นทุนค่าแรงช่าง JMT, บันทึกการรับชำระเงินงวดสุดท้าย และเปลี่ยนสถานะโครงการเป็น <code>Completed</code> สมบูรณ์
                 </li>
               </ul>
             </div>
