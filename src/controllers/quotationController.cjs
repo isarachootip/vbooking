@@ -51,6 +51,8 @@ exports.createQuotation = async (req, res) => {
           [itemId, quoId, item.price_book_id || null, item.service_name, item.quantity, item.unit_type || '', item.unit_cost || 0, item.unit_price || 0, item.total_price || 0, i]
         );
       }
+    }
+    
     // Auto-update lead status if linked to a lead
     if (lead_id) {
       await pool.query(
