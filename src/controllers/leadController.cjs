@@ -110,6 +110,16 @@ exports.addFollowup = async (req, res) => {
     const isSiteVisit = activity_type && (activity_type.includes('site') || activity_type.includes('ลงพื้นที่'));
     const initialApprovalStatus = isSiteVisit ? 'Pending' : 'None';
 
+    let lat = null;
+    let lng = null;
+    if (site_map_url) {
+      const match = site_map_url.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+      if (match) {
+        lat = parseFloat(match[1]);
+        lng = parseFloat(match[2]);
+      }
+    }
+
     await pool.query(
       `UPDATE leads 
        SET status = COALESCE($1, status), 
@@ -119,9 +129,21 @@ exports.addFollowup = async (req, res) => {
            updated_at = $5, 
            surveyor_id = COALESCE($6, surveyor_id), 
            survey_date = COALESCE($7, survey_date),
-           site_visit_approval_status = CASE WHEN $8 = 'Pending' THEN 'Pending' ELSE site_visit_approval_status END
-       WHERE id = $9`,
-      [new_status || null, fullAppointmentStr, activity_type, assignee_name, now, surveyor_id || null, survey_date || null, initialApprovalStatus, id]
+           site_visit_approval_status = CASE WHEN $8 = 'Pending' THEN 'Pending' ELSE site_visit_approval_status END,
+           coordinator_name = COALESCE($9, coordinator_name),
+           coordinator_phone = COALESCE($10, coordinator_phone),
+           coordinator_line_id = COALESCE($11, coordinator_line_id),
+           map_url = COALESCE($12, map_url),
+           customer_latitude = COALESCE($13, customer_latitude),
+           customer_longitude = COALESCE($14, customer_longitude)
+       WHERE id = $15`,
+      [
+        new_status || null, fullAppointmentStr, activity_type, assignee_name, now, 
+        surveyor_id || null, survey_date || null, initialApprovalStatus,
+        site_coordinator_name || null, site_coordinator_phone || null, site_coordinator_line_id || null,
+        site_map_url || null, lat, lng,
+        id
+      ]
     );
 
     res.json(result.rows[0]);

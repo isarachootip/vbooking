@@ -118,6 +118,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
   const [isGisModalOpen, setIsGisModalOpen] = useState(false);
+  const [gisTarget, setGisTarget] = useState<'lead' | 'followup'>('lead');
   const [requireVisit, setRequireVisit] = useState(false);
   const [surveyDate, setSurveyDate] = useState('');
   const [surveyorId, setSurveyorId] = useState('');
@@ -206,35 +207,86 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
   const openFollowupModal = (lead: Lead) => {
     setSelectedLeadForFollowup(lead);
-    setActivityType('ให้โทรกลับ');
-    setAppointmentDate('');
-    setAppointmentTime('10:00');
-    setAssigneeName(currentUser?.name || 'แอดมิน');
+    setActivityType('1.2.2 นัดลงพื้นที่ site งาน');
+    setAppointmentDate(lead.appointment_date ? lead.appointment_date.split(' ')[0] : '');
+    setAppointmentTime(lead.appointment_date && lead.appointment_date.includes(' ') ? lead.appointment_date.split(' ')[1] : '10:00');
+    setAssigneeName(lead.appointment_assignee || currentUser?.name || 'แอดมิน');
     setFollowupNotes('');
     setFollowupNewStatus(lead.status === 'New' ? 'Contacted' : lead.status);
-    setSiteCoordinatorName('');
-    setSiteCoordinatorPhone('');
-    setSiteCoordinatorLineId('');
-    setSiteMapUrl('');
+
+    // Auto-prefill coordinator info from lead
+    setSiteCoordinatorName(lead.coordinator_name || lead.customer_name || '');
+    setSiteCoordinatorPhone(lead.coordinator_phone || lead.customer_phone || '');
+    setSiteCoordinatorLineId(lead.coordinator_line_id || '');
+
+    // Auto-prefill coordinates / map URL from lead
+    let defaultMapUrl = lead.map_url || '';
+    if (!defaultMapUrl && lead.customer_latitude && lead.customer_longitude) {
+      defaultMapUrl = `https://www.google.com/maps?q=${lead.customer_latitude},${lead.customer_longitude}`;
+    } else if (!defaultMapUrl && lead.customer_address) {
+      defaultMapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.customer_address)}`;
+    }
+    setSiteMapUrl(defaultMapUrl);
+
     setIsFollowupModalOpen(true);
     fetchFollowups(lead.id);
+  };
+
+  const handleResetFollowupLocationToLead = () => {
+    if (!selectedLeadForFollowup) return;
+    let defaultMapUrl = selectedLeadForFollowup.map_url || '';
+    if (!defaultMapUrl && selectedLeadForFollowup.customer_latitude && selectedLeadForFollowup.customer_longitude) {
+      defaultMapUrl = `https://www.google.com/maps?q=${selectedLeadForFollowup.customer_latitude},${selectedLeadForFollowup.customer_longitude}`;
+    } else if (!defaultMapUrl && selectedLeadForFollowup.customer_address) {
+      defaultMapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedLeadForFollowup.customer_address)}`;
+    }
+    setSiteMapUrl(defaultMapUrl);
+    setSiteCoordinatorName(selectedLeadForFollowup.coordinator_name || selectedLeadForFollowup.customer_name || '');
+    setSiteCoordinatorPhone(selectedLeadForFollowup.coordinator_phone || selectedLeadForFollowup.customer_phone || '');
+    setSiteCoordinatorLineId(selectedLeadForFollowup.coordinator_line_id || '');
+  };
+
+  const handleOpenFollowupGoogleMaps = () => {
+    if (!siteMapUrl || !siteMapUrl.trim()) {
+      if (selectedLeadForFollowup?.customer_latitude && selectedLeadForFollowup?.customer_longitude) {
+        window.open(`https://www.google.com/maps?q=${selectedLeadForFollowup.customer_latitude},${selectedLeadForFollowup.customer_longitude}`, '_blank');
+        return;
+      }
+      if (selectedLeadForFollowup?.customer_address) {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedLeadForFollowup.customer_address)}`, '_blank');
+        return;
+      }
+      alert('กรุณาระบุพิกัดหรือลิงก์แผนที่ก่อน');
+      return;
+    }
+    const trimmed = siteMapUrl.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      window.open(trimmed, '_blank');
+    } else {
+      window.open(`https://www.google.com/maps?q=${encodeURIComponent(trimmed)}`, '_blank');
+    }
+  };
+
+  const getFollowupMapEmbedUrl = (url: string) => {
+    if (!url || !url.trim()) return '';
+    const trimmed = url.trim();
+    const coordsMatch = trimmed.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+    if (coordsMatch) {
+      return `https://maps.google.com/maps?q=${coordsMatch[1]},${coordsMatch[2]}&z=16&output=embed`;
+    }
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      const qMatch = trimmed.match(/[?&]q=([^&]+)/);
+      if (qMatch) {
+        return `https://maps.google.com/maps?q=${qMatch[1]}&z=16&output=embed`;
+      }
+      return `https://maps.google.com/maps?q=${encodeURIComponent(trimmed)}&z=16&output=embed`;
+    }
+    return `https://maps.google.com/maps?q=${encodeURIComponent(trimmed)}&z=16&output=embed`;
   };
 
   const handleSaveFollowup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLeadForFollowup) return;
-
-    // Validation for Visit Plan
-    if (followupNewStatus === 'Qualified' || requireVisit) {
-      if (!siteCoordinatorName || !siteCoordinatorPhone || !siteCoordinatorLineId || !customerLatitude || !customerLongitude) {
-        alert('กรุณากรอกข้อมูลนัดหมายเข้าสำรวจ (Site Visit & Logistics): ชื่อผู้ประสานงาน, เบอร์โทร, LINE ID และพิกัดแผนที่ให้ครบถ้วนก่อนบันทึกสถานะนัดหมายเข้าพื้นที่');
-        return;
-      }
-      if (!surveyDate || !surveyorId) {
-        alert('กรุณาระบุวันเวลานัดหมาย และเลือกช่างประเมินหน้างาน (QC Surveyor) ก่อนบันทึกการเข้าสำรวจ');
-        return;
-      }
-    }
 
     try {
       const res = await fetch(`/api/leads/${selectedLeadForFollowup.id}/followups`, {
@@ -429,15 +481,47 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   };
 
   const handleLocationPickedFromGIS = async (lat: string, lng: string, address?: string) => {
-    setCustomerLatitude(lat);
-    setCustomerLongitude(lng);
-    setSmartInput(`${lat}, ${lng}`);
-    setMapUrl(`https://www.google.com/maps?q=${lat},${lng}`);
-    if (address && address.trim()) {
-      setCustomerAddress(address.trim());
+    if (gisTarget === 'followup') {
+      const generatedUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      setSiteMapUrl(generatedUrl);
     } else {
-      await handleReverseGeocode(lat, lng);
+      setCustomerLatitude(lat);
+      setCustomerLongitude(lng);
+      setSmartInput(`${lat}, ${lng}`);
+      setMapUrl(`https://www.google.com/maps?q=${lat},${lng}`);
+      if (address && address.trim()) {
+        setCustomerAddress(address.trim());
+      } else {
+        await handleReverseGeocode(lat, lng);
+      }
     }
+  };
+
+  const getGisInitialLat = () => {
+    if (gisTarget === 'followup') {
+      const match = siteMapUrl ? siteMapUrl.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/) : null;
+      if (match) return match[1];
+      if (selectedLeadForFollowup?.customer_latitude) return String(selectedLeadForFollowup.customer_latitude);
+      return '';
+    }
+    return customerLatitude;
+  };
+
+  const getGisInitialLng = () => {
+    if (gisTarget === 'followup') {
+      const match = siteMapUrl ? siteMapUrl.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/) : null;
+      if (match) return match[2];
+      if (selectedLeadForFollowup?.customer_longitude) return String(selectedLeadForFollowup.customer_longitude);
+      return '';
+    }
+    return customerLongitude;
+  };
+
+  const getGisInitialAddress = () => {
+    if (gisTarget === 'followup') {
+      return selectedLeadForFollowup?.customer_address || '';
+    }
+    return customerAddress;
   };
 
   const handleOpenGoogleMaps = () => {
@@ -1339,7 +1423,30 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                   </label>
                   <select
                     value={activityType}
-                    onChange={e => setActivityType(e.target.value)}
+                    onChange={e => {
+                      const newType = e.target.value;
+                      setActivityType(newType);
+                      if (newType.includes('site') || newType.includes('ลงพื้นที่')) {
+                        if (!siteMapUrl && selectedLeadForFollowup) {
+                          let defaultMapUrl = selectedLeadForFollowup.map_url || '';
+                          if (!defaultMapUrl && selectedLeadForFollowup.customer_latitude && selectedLeadForFollowup.customer_longitude) {
+                            defaultMapUrl = `https://www.google.com/maps?q=${selectedLeadForFollowup.customer_latitude},${selectedLeadForFollowup.customer_longitude}`;
+                          } else if (!defaultMapUrl && selectedLeadForFollowup.customer_address) {
+                            defaultMapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedLeadForFollowup.customer_address)}`;
+                          }
+                          setSiteMapUrl(defaultMapUrl);
+                        }
+                        if (!siteCoordinatorName && selectedLeadForFollowup) {
+                          setSiteCoordinatorName(selectedLeadForFollowup.coordinator_name || selectedLeadForFollowup.customer_name || '');
+                        }
+                        if (!siteCoordinatorPhone && selectedLeadForFollowup) {
+                          setSiteCoordinatorPhone(selectedLeadForFollowup.coordinator_phone || selectedLeadForFollowup.customer_phone || '');
+                        }
+                        if (!siteCoordinatorLineId && selectedLeadForFollowup) {
+                          setSiteCoordinatorLineId(selectedLeadForFollowup.coordinator_line_id || '');
+                        }
+                      }
+                    }}
                     style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 700 }}
                   >
                     <option value="1.2.1 ให้โทรกลับ">1.2.1 ให้โทรกลับ (Call Back)</option>
@@ -1404,22 +1511,65 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
               </div>
 
               {/* SITE COORDINATOR DETAILS (Conditional) */}
-              {activityType.includes('site') && (
+              {(activityType.includes('site') || activityType.includes('ลงพื้นที่')) && (
                 <div style={{ background: 'rgba(37, 99, 235, 0.05)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(37, 99, 235, 0.2)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2563eb', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <MapPin size={16} /> ข้อมูลผู้ประสานงานหน้างาน และ พิกัด (Site Coordinator & Location)
-                  </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.825rem', fontWeight: 700, color: '#2563eb', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <MapPin size={16} /> ข้อมูลผู้ประสานงานหน้างาน และ พิกัด (Site Coordinator & Location)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleResetFollowupLocationToLead}
+                      style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', border: '1px solid rgba(37, 99, 235, 0.3)', borderRadius: '4px', padding: '0.25rem 0.55rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                      title="ดึงพิกัดและข้อมูลผู้ติดต่อเดิมของลูกค้ามาใส่"
+                    >
+                      <RefreshCw size={12} /> 🔄 คืนค่าพิกัดเดิมของลูกค้า
+                    </button>
+                  </div>
                   
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ลิงก์ Google Maps / พิกัดสถานที่</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)' }}>ลิงก์ Google Maps / พิกัดสถานที่</label>
+                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => { setGisTarget('followup'); setIsGisModalOpen(true); }}
+                          style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#ffffff', border: 'none', borderRadius: '4px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', boxShadow: '0 2px 4px rgba(249, 115, 22, 0.25)' }}
+                        >
+                          <MapPin size={12} /> 📍 ปักหมุดบนแผนที่ (GIS)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleOpenFollowupGoogleMaps}
+                          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0.2rem 0.5rem', color: '#2563eb', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                        >
+                          <ExternalLink size={12} /> เปิด Google Maps
+                        </button>
+                      </div>
+                    </div>
                     <input 
                       type="text"
                       value={siteMapUrl}
                       onChange={e => setSiteMapUrl(e.target.value)}
                       placeholder="วางลิงก์ Google Maps หรือพิกัด เช่น 13.851979, 100.643406"
-                      style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
+                      style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem', fontWeight: 600 }}
                     />
                   </div>
+
+                  {/* LIVE EMBEDDED GOOGLE MAP PREVIEW FOR FOLLOWUP */}
+                  {siteMapUrl && getFollowupMapEmbedUrl(siteMapUrl) && (
+                    <div style={{ borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+                      <iframe
+                        title="Site Location Map Preview"
+                        width="100%"
+                        height="160"
+                        style={{ border: 0, display: 'block' }}
+                        loading="lazy"
+                        allowFullScreen
+                        src={getFollowupMapEmbedUrl(siteMapUrl)}
+                      />
+                    </div>
+                  )}
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                     <div>
@@ -1716,7 +1866,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                           </button>
                           <button
                             type="button"
-                            onClick={() => setIsGisModalOpen(true)}
+                            onClick={() => { setGisTarget('lead'); setIsGisModalOpen(true); }}
                             style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '0.3rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', boxShadow: '0 2px 5px rgba(249, 115, 22, 0.35)' }}
                           >
                             <MapPin size={13} /> 📍 ปักหมุดเลือกพิกัดบนแผนที่ (ฟรี GIS)
@@ -1782,7 +1932,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                           />
                           {customerLatitude && (
                             <div 
-                              onClick={() => setIsGisModalOpen(true)}
+                              onClick={() => { setGisTarget('lead'); setIsGisModalOpen(true); }}
                               style={{ fontSize: '0.7rem', color: '#059669', marginTop: '0.25rem', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
                             >
                               {customerLatitude} {formatToDMS(customerLatitude, true) ? `หรือ ${formatToDMS(customerLatitude, true)}` : ''}
@@ -1802,7 +1952,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                           />
                           {customerLongitude && (
                             <div 
-                              onClick={() => setIsGisModalOpen(true)}
+                              onClick={() => { setGisTarget('lead'); setIsGisModalOpen(true); }}
                               style={{ fontSize: '0.7rem', color: '#059669', marginTop: '0.25rem', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
                             >
                               {customerLongitude} {formatToDMS(customerLongitude, false) ? `หรือ ${formatToDMS(customerLongitude, false)}` : ''}
@@ -2119,9 +2269,9 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       <GisMapPickerModal
         isOpen={isGisModalOpen}
         onClose={() => setIsGisModalOpen(false)}
-        initialLat={customerLatitude}
-        initialLng={customerLongitude}
-        initialAddress={customerAddress}
+        initialLat={getGisInitialLat()}
+        initialLng={getGisInitialLng()}
+        initialAddress={getGisInitialAddress()}
         onSelectLocation={handleLocationPickedFromGIS}
       />
 
