@@ -779,30 +779,235 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     setIsModalOpen(true);
   };
 
+  const cleanAppointmentType = (type?: string | null): string => {
+    if (!type) return 'นัดหมาย';
+    return type.replace(/^\d+(\.\d+)*\s*/, '').replace(/\(.*\)/, '').trim();
+  };
+
+  const formatAppointmentDateTime = (dateStr?: string | null): string => {
+    if (!dateStr) return '';
+    const parts = dateStr.trim().split(' ');
+    const datePart = parts[0];
+    const timePart = parts[1] || '';
+    
+    const dateMatch = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateMatch) {
+      const formattedDate = `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`;
+      return timePart ? `${formattedDate} • ${timePart} น.` : formattedDate;
+    }
+    return dateStr;
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'New':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.15)', color: '#2563eb', fontSize: '0.75rem', fontWeight: 700 }}>New (ใหม่)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(59, 130, 246, 0.1)', 
+            color: '#2563eb', 
+            fontSize: '0.75rem', 
+            fontWeight: 700,
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2563eb' }} />
+            ลูกค้าใหม่
+          </span>
+        );
       case 'Contacted':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontSize: '0.75rem', fontWeight: 700 }}>Contacted (ติดตามแล้ว)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(245, 158, 11, 0.1)', 
+            color: '#d97706', 
+            fontSize: '0.75rem', 
+            fontWeight: 700,
+            border: '1px solid rgba(245, 158, 11, 0.2)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d97706' }} />
+            ติดตามแล้ว
+          </span>
+        );
       case 'Qualified':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(147, 51, 234, 0.15)', color: '#9333ea', fontSize: '0.75rem', fontWeight: 700 }}>Qualified (รอสำรวจ/ยืนยัน)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(147, 51, 234, 0.1)', 
+            color: '#9333ea', 
+            fontSize: '0.75rem', 
+            fontWeight: 700,
+            border: '1px solid rgba(147, 51, 234, 0.2)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#9333ea' }} />
+            นัดสำรวจ / ยืนยัน
+          </span>
+        );
       case 'Design Review':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', fontSize: '0.75rem', fontWeight: 700 }}>Design Review (รอตรวจแบบ 3D)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(2, 132, 199, 0.1)', 
+            color: '#0284c7', 
+            fontSize: '0.75rem', 
+            fontWeight: 700,
+            border: '1px solid rgba(2, 132, 199, 0.2)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0284c7' }} />
+            รอตรวจแบบ 3D
+          </span>
+        );
       case 'Design Revision':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', fontSize: '0.75rem', fontWeight: 700 }}>Design Revision (ขอแก้ไขแบบ)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(239, 68, 68, 0.1)', 
+            color: '#dc2626', 
+            fontSize: '0.75rem', 
+            fontWeight: 700,
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#dc2626' }} />
+            ขอแก้ไขแบบ
+          </span>
+        );
       case 'Design Approved':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', fontSize: '0.75rem', fontWeight: 700 }}>Design Approved (แบบอนุมัติแล้ว)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(16, 185, 129, 0.1)', 
+            color: '#059669', 
+            fontSize: '0.75rem', 
+            fontWeight: 700,
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#059669' }} />
+            แบบอนุมัติแล้ว
+          </span>
+        );
       case 'Pending Quote':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontSize: '0.75rem', fontWeight: 700 }}>Pending Quote (รอใบเสนอราคา)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(217, 119, 6, 0.1)', 
+            color: '#d97706', 
+            fontSize: '0.75rem', 
+            fontWeight: 700,
+            border: '1px solid rgba(217, 119, 6, 0.2)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d97706' }} />
+            รอเสนอราคา
+          </span>
+        );
       case 'Payment Verified':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.2)', color: '#059669', fontSize: '0.75rem', fontWeight: 800 }}>💰 Payment Verified (มัดจำแล้ว)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(16, 185, 129, 0.15)', 
+            color: '#059669', 
+            fontSize: '0.75rem', 
+            fontWeight: 800,
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#059669' }} />
+            💰 มัดจำแล้ว
+          </span>
+        );
       case 'Converted':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', fontSize: '0.75rem', fontWeight: 700 }}>Converted (เป็นงานแล้ว)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(16, 185, 129, 0.12)', 
+            color: '#059669', 
+            fontSize: '0.75rem', 
+            fontWeight: 700,
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#059669' }} />
+            เปิดโครงการแล้ว
+          </span>
+        );
       case 'Lost':
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', fontSize: '0.75rem', fontWeight: 700 }}>Lost (ยกเลิก)</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'rgba(239, 68, 68, 0.1)', 
+            color: '#dc2626', 
+            fontSize: '0.75rem', 
+            fontWeight: 700,
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#dc2626' }} />
+            ยกเลิก
+          </span>
+        );
       default:
-        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600 }}>{status}</span>;
+        return (
+          <span style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.35rem', 
+            padding: '0.2rem 0.6rem', 
+            borderRadius: '9999px', 
+            background: 'var(--bg-tertiary)', 
+            color: 'var(--text-secondary)', 
+            fontSize: '0.75rem', 
+            fontWeight: 600,
+            border: '1px solid var(--border-color)',
+            whiteSpace: 'nowrap'
+          }}>
+            {status}
+          </span>
+        );
     }
   };
 
@@ -1348,21 +1553,39 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
                       {/* Column 3: Job Type & Owner */}
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                           <span style={{ 
-                            padding: '0.2rem 0.5rem', 
-                            borderRadius: '4px', 
-                            background: lead.job_type === 'Quick service' ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg-tertiary)', 
-                            border: lead.job_type === 'Quick service' ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid var(--border-color)', 
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            padding: '0.2rem 0.55rem', 
+                            borderRadius: '6px', 
+                            background: lead.job_type === 'Quick service' 
+                              ? 'rgba(245, 158, 11, 0.08)' 
+                              : lead.job_type === 'Renovate Service'
+                              ? 'rgba(59, 130, 246, 0.08)'
+                              : 'var(--bg-tertiary)', 
+                            border: lead.job_type === 'Quick service' 
+                              ? '1px solid rgba(245, 158, 11, 0.25)' 
+                              : lead.job_type === 'Renovate Service'
+                              ? '1px solid rgba(59, 130, 246, 0.25)'
+                              : '1px solid var(--border-color)', 
                             fontWeight: 700, 
                             fontSize: '0.72rem',
-                            color: lead.job_type === 'Quick service' ? '#d97706' : 'var(--text-secondary)',
+                            color: lead.job_type === 'Quick service' 
+                              ? '#d97706' 
+                              : lead.job_type === 'Renovate Service'
+                              ? '#2563eb'
+                              : 'var(--text-secondary)',
                             width: 'fit-content'
                           }}>
+                            {lead.job_type === 'Quick service' && '⚡'}
+                            {lead.job_type === 'Renovate Service' && '🏢'}
+                            {lead.job_type === 'MA Service' && '🔧'}
                             {lead.job_type}
                           </span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
-                            👤 ผู้ดูแล: {leadOwner ? leadOwner.name : 'Quick service'}
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            👤 {leadOwner ? leadOwner.name : 'Quick service'}
                           </span>
                         </div>
                       </td>
@@ -1370,30 +1593,38 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                       {/* Column 4: Appointment info */}
                       <td>
                         {lead.appointment_date ? (
-                          <div style={{ background: 'rgba(147, 51, 234, 0.06)', border: '1px solid rgba(147, 51, 234, 0.15)', padding: '0.4rem 0.65rem', borderRadius: '6px', display: 'inline-flex', flexDirection: 'column', gap: '0.2rem' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}>
-                              <Calendar size={12} /> {lead.appointment_type || 'นัดหมาย'}: {lead.appointment_date}
-                            </span>
-                            {lead.appointment_assignee && (
-                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>ผู้ลงพื้นที่: {lead.appointment_assignee}</span>
-                            )}
-                            {/* Site Visit Approval Status */}
-                            {lead.site_visit_approval_status === 'Approved' ? (
-                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#059669', background: '#d1fae5', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', width: 'fit-content' }}>
-                                <Check size={10} /> 🟢 GM อนุมัติแล้ว
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                              <Calendar size={13} color="#9333ea" />
+                              <span>{formatAppointmentDateTime(lead.appointment_date)}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.72rem', color: '#9333ea', fontWeight: 600 }}>
+                                {cleanAppointmentType(lead.appointment_type)}
                               </span>
-                            ) : lead.site_visit_approval_status === 'Rejected' ? (
-                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', width: 'fit-content' }}>
-                                <X size={10} /> 🔴 GM ไม่อนุมัติ
-                              </span>
-                            ) : (lead.appointment_type?.includes('site') || lead.appointment_type?.includes('ลงพื้นที่')) ? (
-                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#ca8a04', background: '#fef3c7', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', width: 'fit-content' }}>
-                                <Clock size={10} /> 🟡 รอ GM อนุมัติ & มอบหมาย
-                              </span>
-                            ) : null}
+                              {lead.appointment_assignee && (
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                  ({lead.appointment_assignee})
+                                </span>
+                              )}
+                              {/* Micro Approval Tag */}
+                              {lead.site_visit_approval_status === 'Approved' ? (
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#059669', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '0.05rem 0.35rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }}>
+                                  <Check size={9} /> อนุมัติแล้ว
+                                </span>
+                              ) : lead.site_visit_approval_status === 'Rejected' ? (
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#dc2626', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '0.05rem 0.35rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }}>
+                                  <X size={9} /> ไม่อนุมัติ
+                                </span>
+                              ) : (lead.appointment_type?.includes('site') || lead.appointment_type?.includes('ลงพื้นที่')) ? (
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#d97706', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '0.05rem 0.35rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }}>
+                                  <Clock size={9} /> รออนุมัติ
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>- ยังไม่มีนัดหมาย -</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>- ไม่มีนัดหมาย -</span>
                         )}
                       </td>
 
