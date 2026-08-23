@@ -2731,6 +2731,13 @@ app.use('/api/quotations', quotationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/projects/:projectId/qc', qcHandoverRoutes);
 
+// Endpoint to download Test Scenarios CSV for Google Sheets / Excel
+app.get('/api/test-scenarios/csv', (req, res) => {
+  const filePath = path.join(__dirname, 'TEST_SCENARIOS_GOOGLE_SHEET.csv');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.download(filePath, 'NexTime_BuildFlow_Test_Scenarios.csv');
+});
+
 // Projects REST API
 // --- Master Project Types API ---
 app.get('/api/master-types', async (req, res) => {

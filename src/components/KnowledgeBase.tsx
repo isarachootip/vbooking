@@ -1637,6 +1637,48 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
 
       {activeTab === 'manual' && (
         <div className="glass-panel manual-content" style={{ padding: '2rem', borderRadius: '12px' }}>
+          {/* Quick Download Banner for Test Scenarios */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.12))',
+            border: '1px solid var(--accent-primary)',
+            borderRadius: '10px',
+            padding: '1rem 1.25rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                📊 เอกสารชุดทดสอบระบบ (Test Scenarios for Google Sheets & Excel)
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                ดาวน์โหลดไฟล์ CSV (UTF-8 BOM) เพื่อนำไปเปิดหรือ Import ลง Google Sheets ได้ทันที
+              </div>
+            </div>
+            <a
+              href="/api/test-scenarios/csv"
+              download="NexTime_BuildFlow_Test_Scenarios.csv"
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
+                padding: '0.55rem 1.25rem',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+              }}
+            >
+              <FileCheck size={16} /> 📥 ดาวน์โหลด Test Scenarios (CSV)
+            </a>
+          </div>
+
           {loadingManual ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '250px', color: 'var(--text-secondary)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
