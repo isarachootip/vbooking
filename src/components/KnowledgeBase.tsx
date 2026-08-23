@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Calendar, Users, Star, Shield, MessageSquare, Zap, Layers } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Calendar, Users, Star, Shield, MessageSquare, Zap, Layers, ClipboardCheck } from 'lucide-react';
 
 import { marked } from 'marked';
 import type { User } from '../types';
@@ -30,21 +30,18 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
             const html = await marked.parse(data.content);
             setManualHtml(html);
           }
-          setLoadingManual(false);
         })
-        .catch(err => {
-          console.error(err);
-          setLoadingManual(false);
-        });
+        .catch(err => console.error('Failed to load manual:', err))
+        .finally(() => setLoadingManual(false));
     }
   }, [activeTab, manualHtml]);
 
   const content = {
     en: {
       title: "Help & FAQ",
-      subtitle: "System documentation and frequently asked questions.",
+      subtitle: "Frequently asked questions and guides about the system",
       needHelpTitle: "Need more help?",
-      needHelpDesc: "If you have additional questions or need technical support, you can access the Chat Widget in the bottom right corner of your screen to communicate with the AI assistant.",
+      needHelpDesc: "If you have questions not covered here or need technical support, you can reach out via the chat icon in the bottom right corner to talk with our AI Assistant.",
       faqs: [
         {
           id: 'q0',
@@ -64,6 +61,36 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.25rem' }}><strong>Resource & Cost Tracking:</strong> Labor rates, Man-Days, and budget calculations.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>AI Assistant:</strong> Built-in Chatbot powered by Google Gemini (or OpenAI) to help answer system questions.</li>
                 <li><strong>Role-Based Access Control (RBAC):</strong> Granular permission schemes for Admins, Managers, PMs, and Members.</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_site_visit_result',
+          question: 'How do I record and view Site Visit Results & Next Actions?',
+          icon: ClipboardCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>The <strong>Site Visit Results</strong> module allows Sales, PMs, and QC Surveyors to log field observations immediately after returning from the customer site:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>How to Access:</strong> Click the blue <strong>"📋 Record Visit Result"</strong> button in the Leads table action column, or click <strong>"📝 Record Visit Result"</strong> in the Branch Site Visit Approvals modal.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Section 1 (Visit Info):</strong> Record actual visit date/time, surveyor/sales representative, and result status (Visited, Customer Absent, Cancelled, Rescheduled).
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Section 2 (Site Condition & Scope):</strong> Document building/space conditions, work scope summary, and estimated preliminary budget (THB).
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Section 3 (Customer Decision & Needs):</strong> Record customer remarks, concerns, and decision status (Interested, Need More Info, Pending Quote, Not Interested).
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Section 4 (Next Action):</strong> Select post-visit workflow (Send Quotation, Follow Up Call, Reschedule Visit, Close Lost) with auto-scheduling and private internal notes.
+                </li>
+                <li>
+                  <strong>History Timeline:</strong> Switch to the <strong>"History"</strong> tab in the modal to review past visit logs and notes chronologically.
+                </li>
               </ul>
             </div>
           )
@@ -525,6 +552,36 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.25rem' }}><strong>Resource & Cost Tracking:</strong> กำหนดอัตราค่าแรงช่าง และคำนวณต้นทุน/กำไรโครงการอัตโนมัติ</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>AI Assistant:</strong> แชทบอทอัจฉริยะที่เชื่อมต่อกับ Google Gemini (หรือ OpenAI) ช่วยตอบคำถามและให้คำแนะนำ</li>
                 <li><strong>Role-Based Access Control (RBAC):</strong> ระบบกำหนดสิทธิ์การเข้าถึงข้อมูลที่ละเอียด ตั้งแต่ระดับ Admin, Manager, PM จนถึง Member</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_site_visit_result',
+          question: 'การบันทึกผลการเข้า Visit Site ลูกค้า (Site Visit Results & Next Actions) ทำอย่างไร?',
+          icon: ClipboardCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ระบบ <strong>บันทึกผลการ Visit Site (Site Visit Results)</strong> ช่วยให้ Sales, PM และช่าง QC สามารถสรุปข้อมูลหน้างานหลังกลับจากการลงพื้นที่ได้ทันที:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>จุดเข้าใช้งาน:</strong> กดปุ่มสีน้ำเงิน <strong>"📋 บันทึกผล Visit"</strong> ในตารางหน้ารายชื่อลูกค้ามุ่งหวัง (Leads) หรือกดปุ่ม <strong>"📝 บันทึกผล Visit หน้างาน"</strong> ในหน้าจออนุมัตินัดหมายออก Site
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ส่วนที่ 1 (ข้อมูลการ Visit):</strong> บันทึกวัน-เวลาที่ไปจริง, ผู้ไป Visit, และผลการเข้าพบ (เข้า Visit สำเร็จ / ลูกค้าไม่อยู่ / ยกเลิกนัด / เลื่อนนัดใหม่)
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ส่วนที่ 2 (สภาพหน้างาน):</strong> ระบุสภาพบ้าน/พื้นที่, สรุปขอบเขตงานที่ประเมินได้, และงบประมาณเบื้องต้น (บาท)
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ส่วนที่ 3 (ความต้องการลูกค้า):</strong> บันทึกสิ่งที่ลูกค้าพูด/ข้อกังวล, และการตัดสินใจของลูกค้า (สนใจ / ขอข้อมูลเพิ่ม / รอใบเสนอราคา / ไม่สนใจ)
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ส่วนที่ 4 (การดำเนินการต่อ):</strong> เลือกลำดับถัดไป (เช่น ส่งใบเสนอราคา &rarr; อัปเดตเป็น <code>Pending Quote</code> อัตโนมัติ, โทรติดตาม, นัด Visit ใหม่) พร้อมบันทึกข้อสังเกตภายในเฉพาะทีม
+                </li>
+                <li>
+                  <strong>แท็บประวัติการ Visit:</strong> สลับไปที่แท็บ <strong>"ประวัติ"</strong> เพื่อดูรายการบันทึกผลย้อนหลังทั้งหมดของลูกค้ารายนั้นแบบ Timeline
+                </li>
               </ul>
             </div>
           )

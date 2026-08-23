@@ -251,5 +251,33 @@ flowchart TD
    * สร้าง Workflow Columns สำหรับประเภทงาน เช่น `Buy-Survey` ➔ `Survey` ➔ `Design` ➔ `ชำระเงิน` ➔ `Assign ช่าง` ➔ `Check-in` ➔ `QC` ➔ `Close`
    * ส่งมอบงานให้ช่าง QC เข้าสู่ **ขั้นตอนที่ 3: Survey QC Inspection** (เช็คอินหน้างานด้วย GPS และบันทึกรูปถ่ายผลการสำรวจ)
 
+---
 
+## 13. Site Visit Results & Post-Visit Action Management / การบันทึกผลการเข้า Visit Site ลูกค้าและการดำเนินการต่อ
 
+หลังจากที่ทีมงานฝ่ายขาย (Sales), ผู้จัดการโครงการ (PM) หรือช่างสำรวจ (QC Surveyor) เดินทางกลับจากการลงพื้นที่หน้างานจริง ระบบมีโมดูลเฉพาะสำหรับบันทึกและสรุปข้อมูลสนาม:
+
+```mermaid
+flowchart TD
+    A["ออกไป Visit Site ลูกค้าจริง"] --> B["กดปุ่ม '📋 บันทึกผล Visit' / '📝 บันทึกผล Visit หน้างาน'"]
+    B --> C["กรอกแบบฟอร์ม 4 ส่วน:<br/>1. ข้อมูลการ Visit<br/>2. สภาพหน้างาน & ขอบเขต<br/>3. ความต้องการลูกค้า & การตัดสินใจ<br/>4. Next Action & หมายเหตุภายใน"]
+    C --> D["บันทึกลงตาราง lead_site_visit_results"]
+    D --> E{"Next Action คืออะไร?"}
+    E -->|"ส่งใบเสนอราคา"| F["อัปเดตสถานะ Lead ➔ 'Pending Quote'"]
+    E -->|"โทรติดตาม / นัดหมายใหม่"| G["Auto-Create งานติดตามใน lead_followups"]
+    E -->|"ปิดงาน (ไม่สนใจ)"| H["อัปเดตสถานะ Lead ➔ 'Lost'"]
+    F & G & H --> I["แสดงผลในประวัติย้อนหลัง (History Timeline)"]
+```
+
+### 13.1 รายละเอียดฟิลด์ข้อมูลในตาราง `lead_site_visit_results`:
+* `visited_by_id` / `visited_by_name`: พนักงานหรือช่างที่ลงพื้นที่จริง
+* `visit_date`: วัน-เวลาที่ไปปฏิบัติงานจริง
+* `visit_result`: ผลการเข้าพบ (`Visited`, `Customer Absent`, `Cancelled`, `Rescheduled`)
+* `site_condition`: สภาพอาคาร/พื้นที่จริงที่พบ
+* `work_scope_summary`: สรุปขอบเขตงานที่ต้องดำเนินการ
+* `estimated_budget`: งบประมาณประเมินเบื้องต้น (บาท)
+* `customer_interest`: ความต้องการหรือข้อกังวลของลูกค้า
+* `customer_decision`: สถานะการตัดสินใจของลูกค้า (`Interested`, `Need More Info`, `Pending Quote`, `Not Interested`)
+* `next_action`: การดำเนินการขั้นถัดไป (`send_quotation`, `follow_up_call`, `reschedule_visit`, `close_lost`)
+* `next_action_date`: วันนัดหมายครั้งถัดไป
+* `internal_notes`: หมายเหตุลับภายในเฉพาะทีมงาน (PM/SA/Admin)
