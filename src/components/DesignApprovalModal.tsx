@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { User } from '../types';
 import {
   X, Palette, CheckCircle2, AlertCircle, Clock, Plus,
-  FileImage, ExternalLink, RefreshCw, Send, Check, MessageSquare, Layers
+  FileImage, ExternalLink, RefreshCw, Send, Check, MessageSquare,
+  Layers, Upload, FileText, Trash2, Eye
 } from 'lucide-react';
 
 interface LeadDesign {
@@ -59,6 +60,9 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
   const [designerId, setDesignerId] = useState(currentUser?.id || '');
   const [fileUrlInput, setFileUrlInput] = useState('');
   const [fileUrls, setFileUrls] = useState<string[]>([]);
+  const [fileNames, setFileNames] = useState<{ [url: string]: string }>({});
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Feedback / Approval form states
   const [feedbackInput, setFeedbackInput] = useState<{ [id: string]: string }>({});
@@ -97,18 +101,46 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
       setVersion('Rev A');
       setDesignType('3D Perspective');
       setFileUrls([]);
+      setFileNames({});
       setFileUrlInput('');
     }
   }, [isOpen, lead?.id]);
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (result) {
+          setFileUrls(prev => [...prev, result]);
+          setFileNames(prev => ({ ...prev, [result]: file.name }));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleAddFileUrl = () => {
     if (!fileUrlInput.trim()) return;
-    setFileUrls([...fileUrls, fileUrlInput.trim()]);
+    const url = fileUrlInput.trim();
+    setFileUrls([...fileUrls, url]);
+    setFileNames({ ...fileNames, [url]: url });
     setFileUrlInput('');
   };
 
   const handleRemoveFileUrl = (index: number) => {
+    const targetUrl = fileUrls[index];
     setFileUrls(fileUrls.filter((_, i) => i !== index));
+    const nextNames = { ...fileNames };
+    delete nextNames[targetUrl];
+    setFileNames(nextNames);
   };
 
   const handleSubmitNewDesign = async (e: React.FormEvent) => {
@@ -221,7 +253,7 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
 
       <div style={{
         background: 'var(--bg-primary)', borderRadius: '16px',
-        border: '1px solid var(--border-color)', width: '750px', maxWidth: '96vw',
+        border: '1px solid var(--border-color)', width: '780px', maxWidth: '96vw',
         boxShadow: '0 25px 60px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', margin: 'auto'
       }}>
         {/* Header */}
@@ -328,21 +360,50 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
                 <textarea
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  placeholder="เช่น สรุปการปรับผังทิศทางแสง, ปลั๊กไฟ, สีตู้ Built-in..."
+                  placeholder="เช่น สรุปการปรับผังทิศทางแสง, ปลั๊กไฟ, สีตู้ Built-in, รายการวัสดุผิวสัมผัส..."
                   rows={3}
                   style={{ ...inp, resize: 'vertical' } as React.CSSProperties}
                 />
               </div>
 
-              {/* File URLs / Cloud storage attachment */}
-              <div style={{ background: 'var(--bg-secondary)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <label style={lbl}>ลิงก์รูปภาพ 3D / แบบแปลน PDF / Drive</label>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              {/* TWO WAYS TO ATTACH FILES: 1) Browse from Computer, 2) Paste Cloud URL */}
+              <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <label style={{ ...lbl, fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                  📎 การแนบไฟล์แบบแปลน (เลือกไฟล์จากคอม หรือ แนบลิงก์)
+                </label>
+
+                {/* Option 1: File Browser */}
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    multiple
+                    accept="image/*,.pdf"
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      background: 'linear-gradient(135deg, #059669, #0284c7)', color: 'white', border: 'none',
+                      padding: '0.55rem 1.15rem', borderRadius: '8px', fontWeight: 700, fontSize: '0.82rem',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem',
+                      boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)'
+                    }}
+                  >
+                    <Upload size={15} /> 📂 เลือกไฟล์จากเครื่อง (รูปภาพ / PDF)
+                  </button>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>รองรับ JPG, PNG, WEBP, PDF</span>
+                </div>
+
+                {/* Option 2: Cloud / Drive URL */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
                   <input
                     type="url"
                     value={fileUrlInput}
                     onChange={e => setFileUrlInput(e.target.value)}
-                    placeholder="https://images... หรือ https://drive.google.com/..."
+                    placeholder="หรือวางลิงก์ Google Drive / Cloud URL (https://...)"
                     style={inp}
                   />
                   <button
@@ -350,26 +411,55 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
                     onClick={handleAddFileUrl}
                     style={{
                       background: 'var(--accent-primary)', color: 'white', border: 'none',
-                      borderRadius: '8px', padding: '0.5rem 1rem', fontWeight: 600, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap'
+                      borderRadius: '8px', padding: '0.55rem 1rem', fontWeight: 600, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', fontSize: '0.82rem'
                     }}
                   >
                     <Plus size={15} /> เพิ่มลิงก์
                   </button>
                 </div>
 
+                {/* Preview attached files */}
                 {fileUrls.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    {fileUrls.map((url, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-tertiary)', padding: '0.35rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem' }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '85%', color: '#0284c7' }}>
-                          🔗 {url}
-                        </span>
-                        <button type="button" onClick={() => handleRemoveFileUrl(idx)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginTop: '0.4rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      ไฟล์ที่แนบแล้ว ({fileUrls.length} รายการ):
+                    </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem' }}>
+                      {fileUrls.map((url, idx) => {
+                        const isBase64Image = url.startsWith('data:image');
+                        const displayName = fileNames[url] || `ไฟล์แบบ #${idx + 1}`;
+                        return (
+                          <div key={idx} style={{
+                            background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)',
+                            borderRadius: '8px', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem',
+                            position: 'relative'
+                          }}>
+                            {isBase64Image ? (
+                              <img src={url} alt={displayName} style={{ width: '100%', height: '90px', objectFit: 'cover', borderRadius: '4px' }} />
+                            ) : (
+                              <div style={{ height: '90px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-secondary)', borderRadius: '4px' }}>
+                                <FileText size={28} style={{ color: '#0284c7', opacity: 0.8 }} />
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.2rem' }}>เอกสาร/ลิงก์</span>
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px', fontWeight: 600 }}>
+                                {displayName}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFileUrl(idx)}
+                                style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', borderRadius: '4px', padding: '0.2rem', cursor: 'pointer' }}
+                                title="ลบไฟล์"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -451,24 +541,29 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
                       </div>
                     )}
 
-                    {/* Files Preview */}
+                    {/* Files Preview with thumbnails */}
                     {d.file_urls && d.file_urls.length > 0 && (
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        {d.file_urls.map((url, idx) => (
-                          <a
-                            key={idx}
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                              background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)',
-                              padding: '0.3rem 0.6rem', borderRadius: '6px', color: '#0284c7', fontSize: '0.75rem', textDecoration: 'none'
-                            }}
-                          >
-                            <ExternalLink size={12} /> ดูไฟล์/รูปภาพแบบ #{idx + 1}
-                          </a>
-                        ))}
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                        {d.file_urls.map((url, idx) => {
+                          const isImage = url.startsWith('data:image') || url.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
+                          return (
+                            <a
+                              key={idx}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                                background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)',
+                                padding: '0.35rem 0.65rem', borderRadius: '6px', color: '#0284c7', fontSize: '0.75rem', textDecoration: 'none'
+                              }}
+                            >
+                              {isImage ? <FileImage size={14} /> : <FileText size={14} />}
+                              <span>ดูไฟล์แบบ #{idx + 1}</span>
+                              <ExternalLink size={11} />
+                            </a>
+                          );
+                        })}
                       </div>
                     )}
 
