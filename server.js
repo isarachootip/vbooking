@@ -648,6 +648,15 @@ const initDB = async () => {
         created_by          VARCHAR(255)
       );
       CREATE INDEX IF NOT EXISTS idx_lead_payments_lead_id ON lead_payments(lead_id);
+
+      -- Phase 03: Projects & Tasks Execution Enhancements
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS site_latitude NUMERIC;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS site_longitude NUMERIC;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS site_radius_meters INT DEFAULT 500;
+      ALTER TABLE projects ADD COLUMN IF NOT EXISTS execution_phase VARCHAR(50) DEFAULT 'Active Execution';
+      ALTER TABLE tasks ADD COLUMN IF NOT EXISTS progress_percent INT DEFAULT 0;
+      ALTER TABLE tasks ADD COLUMN IF NOT EXISTS before_photos TEXT[] DEFAULT '{}';
+      ALTER TABLE tasks ADD COLUMN IF NOT EXISTS after_photos TEXT[] DEFAULT '{}';
     `);
 
     // Seed/Upsert 9 Detailed Master Zones
@@ -4309,8 +4318,8 @@ app.post('/api/leads/:id/convert', async (req, res) => {
     }
 
     const projResult = await pool.query(
-      `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address, project_type, custom_columns, lead_id, customer_name, customer_phone, converted_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+      `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address, project_type, custom_columns, lead_id, customer_name, customer_phone, converted_at, site_latitude, site_longitude, site_radius_meters, execution_phase)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
       [
         projectId, 
         `[${lead.job_type}] ${lead.customer_name}`, 
@@ -4325,7 +4334,11 @@ app.post('/api/leads/:id/convert', async (req, res) => {
         id,
         lead.customer_name,
         lead.customer_phone,
-        now
+        now,
+        lead.customer_latitude ? parseFloat(lead.customer_latitude) : null,
+        lead.customer_longitude ? parseFloat(lead.customer_longitude) : null,
+        500,
+        'Active Execution'
       ]
     );
 
@@ -4352,9 +4365,9 @@ app.post('/api/leads/:id/convert', async (req, res) => {
         const tpl = tpls[i];
         const taskId = `t_${Date.now()}_${i}`;
         await pool.query(
-            `INSERT INTO tasks (id, project_id, title, description, status, priority, estimated_hours, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [taskId, projectId, tpl.title, tpl.description, 'To Do', tpl.priority, tpl.estimated_hours, now]
+            `INSERT INTO tasks (id, project_id, title, description, status, priority, estimated_hours, progress_percent, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [taskId, projectId, tpl.title, tpl.description, 'To Do', tpl.priority, tpl.estimated_hours, 0, now]
         );
     }
 
