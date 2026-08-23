@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard } from 'lucide-react';
+import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
@@ -137,6 +137,20 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [requiredWorkTypes, setRequiredWorkTypes] = useState<string[]>([]);
   const [customRequiredWorkType, setCustomRequiredWorkType] = useState('');
   const [notes, setNotes] = useState('');
+  const [activeActionMenuLeadId, setActiveActionMenuLeadId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (activeActionMenuLeadId) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.action-menu-container')) {
+          setActiveActionMenuLeadId(null);
+        }
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeActionMenuLeadId]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -829,6 +843,151 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     return matchesSearch && matchesStatus && matchesJobType;
   });
 
+  const renderPrimaryActionButton = (lead: Lead) => {
+    if (lead.status === 'Converted') {
+      return (
+        <a
+          href="/projects"
+          className="lead-action-btn hover-lift"
+          style={{
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            color: '#059669',
+            fontWeight: 700,
+            padding: '0.35rem 0.75rem',
+            borderRadius: '6px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            textDecoration: 'none',
+            fontSize: '0.78rem'
+          }}
+        >
+          <CheckCircle2 size={13} /> 📁 ไปที่โครงการ
+        </a>
+      );
+    }
+
+    // Step 2: If site visit scheduled/approved or qualified -> Primary: บันทึกผล Visit
+    if (
+      lead.site_visit_approval_status === 'Approved' ||
+      (lead.appointment_date && (lead.appointment_type?.includes('site') || lead.appointment_type?.includes('ลงพื้นที่'))) ||
+      lead.status === 'Qualified'
+    ) {
+      return (
+        <button
+          onClick={() => {
+            setSelectedLeadForVisitResult(lead);
+            setIsVisitResultModalOpen(true);
+          }}
+          className="lead-action-btn hover-lift"
+          title="บันทึกผลการเข้า Visit Site ลูกค้า / สรุปความต้องการ"
+          style={{
+            background: 'linear-gradient(135deg, #1e40af, #2563eb)',
+            border: 'none',
+            color: '#ffffff',
+            fontWeight: 700,
+            padding: '0.35rem 0.75rem',
+            borderRadius: '6px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)',
+            cursor: 'pointer',
+            fontSize: '0.78rem'
+          }}
+        >
+          <ClipboardCheck size={13} /> บันทึกผล Visit
+        </button>
+      );
+    }
+
+    // Step 3: If Pending Quote or Interested -> Primary: แบบ 2D/3D
+    if (lead.status === 'Pending Quote' || lead.status === 'Interested') {
+      return (
+        <button
+          onClick={() => {
+            setSelectedLeadForDesign(lead);
+            setIsDesignModalOpen(true);
+          }}
+          className="lead-action-btn hover-lift"
+          title="จัดการแบบแปลน 2D / ภาพจำลอง 3D Perspective และตรวจรับแบบ"
+          style={{
+            background: 'linear-gradient(135deg, #0284c7, #0ea5e9)',
+            border: 'none',
+            color: '#ffffff',
+            fontWeight: 700,
+            padding: '0.35rem 0.75rem',
+            borderRadius: '6px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            boxShadow: '0 2px 4px rgba(14, 165, 233, 0.25)',
+            cursor: 'pointer',
+            fontSize: '0.78rem'
+          }}
+        >
+          <Palette size={13} /> จัดการแบบ 2D/3D
+        </button>
+      );
+    }
+
+    // Step 4: If Design Approved / Ready To Close -> Primary: รับมัดจำ & แปลงงาน
+    if (lead.status === 'Design Approved' || lead.status === 'Ready To Close') {
+      return (
+        <button
+          onClick={() => {
+            setSelectedLeadForPayment(lead);
+            setIsPaymentModalOpen(true);
+          }}
+          className="lead-action-btn hover-lift"
+          title="บันทึกรับชำระเงินมัดจำ & แปลงเป็นโครงการติดตั้ง"
+          style={{
+            background: 'linear-gradient(135deg, #059669, #10b981)',
+            border: 'none',
+            color: '#ffffff',
+            fontWeight: 700,
+            padding: '0.35rem 0.75rem',
+            borderRadius: '6px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.25)',
+            cursor: 'pointer',
+            fontSize: '0.78rem'
+          }}
+        >
+          <DollarSign size={13} /> รับมัดจำ & แปลงงาน
+        </button>
+      );
+    }
+
+    // Default (New / Contacted / Others) -> Primary: ติดตาม / นัดหมาย
+    return (
+      <button
+        onClick={() => openFollowupModal(lead)}
+        className="lead-action-btn hover-lift"
+        title="บันทึกการติดตาม & นัดหมายลงพื้นที่"
+        style={{
+          background: 'linear-gradient(135deg, #7e22ce, #9333ea)',
+          border: 'none',
+          color: '#ffffff',
+          fontWeight: 700,
+          padding: '0.35rem 0.75rem',
+          borderRadius: '6px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          boxShadow: '0 2px 4px rgba(147, 51, 234, 0.25)',
+          cursor: 'pointer',
+          fontSize: '0.78rem'
+        }}
+      >
+        <Calendar size={13} /> ติดตาม / นัดหมาย
+      </button>
+    );
+  };
+
   const sortedLeads = [...filteredLeads].sort((a, b) => {
     const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
     const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
@@ -1244,68 +1403,202 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                       </td>
 
                       {/* Column 6: Actions */}
-                      <td style={{ textAlign: 'right' }}>
-                        {lead.status !== 'Converted' ? (
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                          {/* 1. Smart Contextual Primary Action Button */}
+                          {renderPrimaryActionButton(lead)}
+
+                          {/* 2. More Actions Dropdown Menu Button */}
+                          <div className="action-menu-container" style={{ position: 'relative', display: 'inline-block' }}>
                             <button
-                              onClick={() => {
-                                setSelectedLeadForVisitResult(lead);
-                                setIsVisitResultModalOpen(true);
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveActionMenuLeadId(activeActionMenuLeadId === lead.id ? null : lead.id);
                               }}
-                              className="lead-action-btn hover-lift"
-                              title="บันทึกผลการเข้า Visit Site ลูกค้า / สรุปความต้องการ"
-                              style={{ background: 'rgba(30, 64, 175, 0.08)', border: '1px solid rgba(30, 64, 175, 0.25)', color: '#1e40af', fontWeight: 600 }}
-                            >
-                              <ClipboardCheck size={13} /> บันทึกผล Visit
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedLeadForDesign(lead);
-                                setIsDesignModalOpen(true);
+                              className="hover-lift"
+                              style={{
+                                padding: '0.35rem 0.5rem',
+                                borderRadius: '6px',
+                                border: '1px solid var(--border-color)',
+                                background: activeActionMenuLeadId === lead.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.15s ease'
                               }}
-                              className="lead-action-btn hover-lift"
-                              title="จัดการแบบแปลน 2D / ภาพจำลอง 3D Perspective และตรวจรับแบบ"
-                              style={{ background: 'rgba(2, 132, 199, 0.08)', border: '1px solid rgba(2, 132, 199, 0.25)', color: '#0284c7', fontWeight: 600 }}
+                              title="ตัวเลือกการดำเนินการทั้งหมด"
                             >
-                              <Palette size={13} /> แบบ 2D/3D
+                              <MoreVertical size={15} />
                             </button>
-                            <button
-                              onClick={() => {
-                                setSelectedLeadForPayment(lead);
-                                setIsPaymentModalOpen(true);
-                              }}
-                              className="lead-action-btn hover-lift"
-                              title="บันทึกรับชำระเงินมัดจำ & แปลงเป็นโครงการติดตั้ง"
-                              style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#059669', fontWeight: 700 }}
-                            >
-                              <DollarSign size={13} /> รับมัดจำ & แปลงงาน
-                            </button>
-                            <button
-                              onClick={() => openFollowupModal(lead)}
-                              className="lead-action-btn hover-lift"
-                              style={{ background: 'rgba(147, 51, 234, 0.08)', border: '1px solid rgba(147, 51, 234, 0.2)', color: '#9333ea' }}
-                            >
-                              <Calendar size={13} /> ติดตาม
-                            </button>
-                            <button
-                              onClick={() => openModal(lead)}
-                              className="lead-action-btn hover-lift"
-                              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                            >
-                              <Edit2 size={13} /> แก้ไข
-                            </button>
+
+                            {activeActionMenuLeadId === lead.id && (
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  top: 'calc(100% + 4px)',
+                                  right: 0,
+                                  width: '230px',
+                                  background: 'var(--bg-primary)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
+                                  zIndex: 100,
+                                  padding: '0.35rem 0',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  textAlign: 'left'
+                                }}
+                              >
+                                <div style={{ padding: '0.35rem 0.85rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', marginBottom: '0.2rem' }}>
+                                  ขั้นตอนการดำเนินงาน
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuLeadId(null);
+                                    openFollowupModal(lead);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.45rem 0.85rem',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    color: '#9333ea',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.12s'
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(147, 51, 234, 0.08)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <Calendar size={13} /> 1. บันทึกติดตาม & นัดหมาย
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuLeadId(null);
+                                    setSelectedLeadForVisitResult(lead);
+                                    setIsVisitResultModalOpen(true);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.45rem 0.85rem',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    color: '#1e40af',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.12s'
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(30, 64, 175, 0.08)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <ClipboardCheck size={13} /> 2. บันทึกผล Visit หน้างาน
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuLeadId(null);
+                                    setSelectedLeadForDesign(lead);
+                                    setIsDesignModalOpen(true);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.45rem 0.85rem',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    color: '#0284c7',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.12s'
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(2, 132, 199, 0.08)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <Palette size={13} /> 3. จัดการแบบแปลน 2D / 3D
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuLeadId(null);
+                                    setSelectedLeadForPayment(lead);
+                                    setIsPaymentModalOpen(true);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.45rem 0.85rem',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    color: '#059669',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.12s'
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.08)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <DollarSign size={13} /> 4. รับมัดจำ & แปลงงาน
+                                </button>
+
+                                <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.3rem 0' }} />
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuLeadId(null);
+                                    openModal(lead);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.45rem 0.85rem',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    color: 'var(--text-primary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.12s'
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <Edit2 size={13} /> แก้ไขข้อมูล Lead
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
-                            <a
-                              href="/projects"
-                              className="lead-action-btn hover-lift"
-                              style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#059669' }}
-                            >
-                              <CheckCircle2 size={13} /> 📁 ไปที่โครงการติดตั้ง
-                            </a>
-                          </div>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );
