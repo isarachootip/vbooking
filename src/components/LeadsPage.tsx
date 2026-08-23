@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, Sparkles, Calendar, Clock, History, AlertCircle, Home } from 'lucide-react';
+import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { GisMapPickerModal, formatToDMS } from './GisMapPickerModal';
 import { SiteVisitApprovalManager } from './SiteVisitApprovalManager';
+import { SiteVisitResultModal } from './SiteVisitResultModal';
 
 interface LeadFollowup {
   id: string;
@@ -70,6 +71,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [isSiteVisitModalOpen, setIsSiteVisitModalOpen] = useState(false);
+  const [isVisitResultModalOpen, setIsVisitResultModalOpen] = useState(false);
+  const [selectedLeadForVisitResult, setSelectedLeadForVisitResult] = useState<Lead | null>(null);
 
   // Follow-up Modal & History
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
@@ -678,6 +681,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontSize: '0.75rem', fontWeight: 700 }}>Contacted (ติดตามแล้ว)</span>;
       case 'Qualified':
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(147, 51, 234, 0.15)', color: '#9333ea', fontSize: '0.75rem', fontWeight: 700 }}>Qualified (รอสำรวจ/ยืนยัน)</span>;
+      case 'Pending Quote':
+        return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(14, 165, 233, 0.15)', color: '#0284c7', fontSize: '0.75rem', fontWeight: 700 }}>Pending Quote (รอใบเสนอราคา)</span>;
       case 'Converted':
         return <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', fontSize: '0.75rem', fontWeight: 700 }}>Converted (เป็นงานแล้ว)</span>;
       case 'Lost':
@@ -1142,6 +1147,17 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                       <td style={{ textAlign: 'right' }}>
                         {lead.status !== 'Converted' ? (
                           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => {
+                                setSelectedLeadForVisitResult(lead);
+                                setIsVisitResultModalOpen(true);
+                              }}
+                              className="lead-action-btn hover-lift"
+                              title="บันทึกผลการเข้า Visit Site ลูกค้า / สรุปความต้องการ"
+                              style={{ background: 'rgba(30, 64, 175, 0.08)', border: '1px solid rgba(30, 64, 175, 0.25)', color: '#1e40af', fontWeight: 600 }}
+                            >
+                              <ClipboardCheck size={13} /> บันทึกผล Visit
+                            </button>
                             <button
                               onClick={() => openFollowupModal(lead)}
                               className="lead-action-btn hover-lift"
@@ -2149,6 +2165,21 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           </div>
         </div>
       )}
+
+      {/* SITE VISIT RESULT RECORDING MODAL */}
+      <SiteVisitResultModal
+        isOpen={isVisitResultModalOpen}
+        onClose={() => {
+          setIsVisitResultModalOpen(false);
+          setSelectedLeadForVisitResult(null);
+        }}
+        lead={selectedLeadForVisitResult}
+        currentUser={currentUser}
+        users={users}
+        onSaved={() => {
+          fetchLeads(currentPage);
+        }}
+      />
 
     </div>
   );

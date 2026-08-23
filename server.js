@@ -548,6 +548,29 @@ const initDB = async () => {
       ALTER TABLE master_zones ADD COLUMN IF NOT EXISTS region VARCHAR(100);
       ALTER TABLE master_zones ADD COLUMN IF NOT EXISTS description TEXT;
       ALTER TABLE master_zones ADD COLUMN IF NOT EXISTS provinces TEXT[];
+
+      -- Phase 13: Site Visit Results
+      CREATE TABLE IF NOT EXISTS lead_site_visit_results (
+        id                  VARCHAR(50) PRIMARY KEY,
+        lead_id             VARCHAR(50) REFERENCES leads(id) ON DELETE CASCADE,
+        followup_id         VARCHAR(50) REFERENCES lead_followups(id) ON DELETE SET NULL,
+        visited_by_id       VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+        visited_by_name     VARCHAR(255),
+        visit_date          VARCHAR(50),
+        visit_result        VARCHAR(50) NOT NULL DEFAULT 'Visited',
+        site_condition      TEXT,
+        work_scope_summary  TEXT,
+        estimated_budget    NUMERIC,
+        customer_interest   TEXT,
+        customer_decision   VARCHAR(50),
+        next_action         VARCHAR(100),
+        next_action_date    VARCHAR(50),
+        internal_notes      TEXT,
+        photos              TEXT[] DEFAULT '{}',
+        created_at          VARCHAR(50) NOT NULL,
+        created_by          VARCHAR(255)
+      );
+      CREATE INDEX IF NOT EXISTS idx_lead_site_visit_results_lead_id ON lead_site_visit_results(lead_id);
     `);
 
     // Seed/Upsert 9 Detailed Master Zones

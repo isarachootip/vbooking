@@ -259,3 +259,144 @@ exports.approveSiteVisit = async (req, res) => {
     res.status(500).json({ error: 'Failed to approve site visit' });
   }
 };
+
+// =============================================
+// SITE VISIT RESULTS
+// =============================================
+
+exports.getVisitResults = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT r.*, u.name as visited_by_name_ref, u.avatar as visited_by_avatar
+       FROM lead_site_visit_results r
+       LEFT JOIN users u ON r.visited_by_id = u.id
+       WHERE r.lead_id = $1
+       ORDER BY r.created_at DESC`,
+      [id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching visit results:', err);
+    res.status(500).json({ error: 'Failed to fetch visit results' });
+  }
+};
+
+exports.addVisitResult = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      followup_id,
+      visited_by_id,
+      visited_by_name,
+      visit_date,
+      visit_result,
+      site_condition,
+      work_scope_summary,
+      estimated_budget,
+      customer_interest,
+      customer_decision,
+      next_action,
+      next_action_date,
+      internal_notes,
+      photos,
+      created_by
+    } = req.body;
+
+    const resultId = `svr_${Date.now()}`;
+    const now = new Date().toISOString();
+
+    const insertResult = await pool.query(
+      `INSERT INTO lead_site_visit_results
+         (id, lead_id, followup_id, visited_by_id, visited_by_name, visit_date, visit_result,
+          site_condition, work_scope_summary, estimated_budget, customer_interest, customer_decision,
+          next_action, next_action_date, internal_notes, photos, created_at, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+       RETURNING *`,
+      [
+        resultId, id, followup_id || null, visited_by_id || null,
+        visited_by_name || null, visit_date || now, visit_result || 'Visited',
+        site_condition || null, work_scope_summary || null,
+        estimated_budget ? parseFloat(estimated_budget) : null,
+        customer_interest || null, customer_decision || null,
+        next_action || null, next_action_date || null,
+        internal_notes || null, photos || [],
+        now, created_by || 'System'
+      ]
+    );
+
+    // Auto-update lead status based on next_action
+    let newLeadStatus = null;
+    if (next_action === 'send_quotation') newLeadStatus = 'Pending Quote';
+    else if (next_action === 'close_lost') newLeadStatus = 'Lost';
+
+    if (newLeadStatus) {
+      await pool.query(
+        `UPDATE leads SET status = $1, updated_at = $2 WHERE id = $3`,
+        [newLeadStatus, now, id]
+      );
+    } else {
+      // Just bump updated_at
+      await pool.query(`UPDATE leads SET updated_at = $1 WHERE id = $2`, [now, id]);
+    }
+
+    // Auto-create followup if next_action requires follow-up
+    if (next_action === 'follow_up_call' || next_action === 'reschedule_visit') {
+      const flwId = `flw_svr_${Date.now()}`;
+      const actType = next_action === 'reschedule_visit' ? 'นัด Visit ใหม่' : 'โทรติดตาม';
+      await pool.query(
+        `INSERT INTO lead_followups (id, lead_id, activity_type, appointment_date, notes, created_at, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [flwId, id, actType, next_action_date || null,
+         `Auto-created จากผลการ Visit: ${visit_result}`, now, created_by || 'System']
+      );
+    }
+
+    res.json(insertResult.rows[0]);
+  } catch (err) {
+    console.error('Error adding visit result:', err);
+    res.status(500).json({ error: 'Failed to add visit result' });
+  }
+};
+
+exports.updateVisitResult = async (req, res) => {
+  try {
+    const { id, resultId } = req.params;
+    const {
+      visit_result, site_condition, work_scope_summary, estimated_budget,
+      customer_interest, customer_decision, next_action, next_action_date,
+      internal_notes, photos
+    } = req.body;
+    const now = new Date().toISOString();
+
+    const result = await pool.query(
+      `UPDATE lead_site_visit_results
+       SET visit_result = COALESCE($1, visit_result),
+           site_condition = $2,
+           work_scope_summary = $3,
+           estimated_budget = $4,
+           customer_interest = $5,
+           customer_decision = COALESCE($6, customer_decision),
+           next_action = COALESCE($7, next_action),
+           next_action_date = $8,
+           internal_notes = $9,
+           photos = COALESCE($10, photos)
+       WHERE id = $11 AND lead_id = $12
+       RETURNING *`,
+      [
+        visit_result || null, site_condition || null, work_scope_summary || null,
+        estimated_budget ? parseFloat(estimated_budget) : null,
+        customer_interest || null, customer_decision || null,
+        next_action || null, next_action_date || null,
+        internal_notes || null, photos || null,
+        resultId, id
+      ]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Visit result not found' });
+    await pool.query(`UPDATE leads SET updated_at = $1 WHERE id = $2`, [now, id]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating visit result:', err);
+    res.status(500).json({ error: 'Failed to update visit result' });
+  }
+};

@@ -3,9 +3,10 @@ import type { User } from '../types';
 import { 
   Check, X, Clock, MapPin, Navigation, 
   ExternalLink, CheckCircle, AlertCircle, RefreshCw, Calendar, 
-  UserCheck, ShieldCheck
+  UserCheck, ShieldCheck, ClipboardCheck
 } from 'lucide-react';
 import { formatToDDMMYYYY } from '../utils';
+import { SiteVisitResultModal } from './SiteVisitResultModal';
 
 interface SiteVisitApprovalManagerProps {
   currentUser: User | null;
@@ -60,6 +61,10 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
   const [actionNotes, setActionNotes] = useState<{ [leadId: string]: string }>({});
   const [isProcessing, setIsProcessing] = useState<{ [leadId: string]: boolean }>({});
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  // Visit Result Modal State
+  const [isVisitResultModalOpen, setIsVisitResultModalOpen] = useState(false);
+  const [selectedLeadForVisitResult, setSelectedLeadForVisitResult] = useState<SiteVisitLead | null>(null);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -559,6 +564,30 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
                     >
                       <Check size={16} /> ✅ อนุมัตินัดหมาย & มอบหมาย Sales
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedLeadForVisitResult(lead);
+                        setIsVisitResultModalOpen(true);
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, #1e40af, #7c3aed)',
+                        border: 'none',
+                        color: 'white',
+                        padding: '0.45rem 1.15rem',
+                        borderRadius: '6px',
+                        fontSize: '0.825rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        boxShadow: '0 2px 6px rgba(99, 102, 241, 0.35)'
+                      }}
+                    >
+                      <ClipboardCheck size={16} /> 📝 บันทึกผล Visit หน้างาน
+                    </button>
                   </div>
                 </div>
 
@@ -567,6 +596,22 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
           })}
         </div>
       )}
+
+      {/* SITE VISIT RESULT MODAL */}
+      <SiteVisitResultModal
+        isOpen={isVisitResultModalOpen}
+        onClose={() => {
+          setIsVisitResultModalOpen(false);
+          setSelectedLeadForVisitResult(null);
+        }}
+        lead={selectedLeadForVisitResult}
+        currentUser={currentUser}
+        users={users}
+        onSaved={() => {
+          fetchSiteVisits();
+          if (onRefreshParent) onRefreshParent();
+        }}
+      />
 
     </div>
   );
