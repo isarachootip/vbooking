@@ -35,8 +35,11 @@ exports.getLeads = async (req, res) => {
 exports.createLead = async (req, res) => {
   try {
     const { id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, notes, sales_contact_id } = req.body;
-    const leadId = id || `lead_${Date.now()}`;
     const now = new Date().toISOString();
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    const randSuffix = String(Date.now()).slice(-6);
+    const leadId = id || `LD-${dateStr}-${randSuffix}`;
     
     const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
     const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');

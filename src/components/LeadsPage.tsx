@@ -70,14 +70,34 @@ interface LeadsPageProps {
 }
 
 export const formatLeadCode = (lead: { id: string; created_at?: string } | null | undefined): string => {
-  if (!lead || !lead.id) return 'LD-2026-0000';
-  const digits = lead.id.replace(/\D/g, '');
-  const year = lead.created_at ? new Date(lead.created_at).getFullYear() : 2026;
-  if (digits.length >= 4) {
-    const shortDigits = digits.slice(-4);
-    return `LD-${year}-${shortDigits}`;
+  if (!lead || !lead.id) return 'LD-20260824-000001';
+  
+  // Format Date: YYYYMMDD
+  let datePart = '20260824';
+  if (lead.created_at) {
+    try {
+      const d = new Date(lead.created_at);
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        datePart = `${yyyy}${mm}${dd}`;
+      }
+    } catch {
+      // fallback
+    }
   }
-  return `LD-${year}-${lead.id.slice(-4).toUpperCase()}`;
+
+  // Format 6-digit Running Number: XXXXXX
+  const digits = lead.id.replace(/\D/g, '');
+  let runningPart = '000001';
+  if (digits.length >= 6) {
+    runningPart = digits.slice(-6);
+  } else if (digits.length > 0) {
+    runningPart = digits.padStart(6, '0');
+  }
+
+  return `LD-${datePart}-${runningPart}`;
 };
 
 export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageProps) => {
