@@ -84,6 +84,7 @@ const SidebarItem = ({ icon: Icon, label, path, badgeCount }: { icon: any, label
 const NotificationBell = ({ tasks, currentUser }: { tasks: Task[], currentUser: User }) => {
   const [open, setOpen] = useState(false);
   const [chatNotifications, setChatNotifications] = useState<any[]>([]);
+  const [qcPlanStops, setQcPlanStops] = useState<any[]>([]);
   const ref = useRef<HTMLDivElement>(null);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -107,14 +108,39 @@ const NotificationBell = ({ tasks, currentUser }: { tasks: Task[], currentUser: 
     }
   };
 
+  const fetchQCNotifications = async () => {
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const res = await fetch(`/api/qc-plans/daily?qcId=${currentUser.id}&date=${todayStr}`, {
+        headers: { 'X-User-Id': currentUser.id }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const plan = data[0];
+          const pending = (plan.items || []).filter((it: any) => it.status !== 'Completed' && it.status !== 'Skipped');
+          setQcPlanStops(pending);
+        } else {
+          setQcPlanStops([]);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000);
+    fetchQCNotifications();
+    const interval = setInterval(() => {
+      fetchNotifications();
+      fetchQCNotifications();
+    }, 10000);
     return () => clearInterval(interval);
   }, [currentUser.id]);
 
   const unreadChatNotifs = chatNotifications.filter(n => !n.isRead);
-  const total = overdue.length + dueSoon.length + dueThisWeek.length + unreadChatNotifs.length;
+  const total = overdue.length + dueSoon.length + dueThisWeek.length + unreadChatNotifs.length + qcPlanStops.length;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
@@ -165,6 +191,37 @@ const NotificationBell = ({ tasks, currentUser }: { tasks: Task[], currentUser: 
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>✅ All caught up! No notifications.</div>
           ) : (
             <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
+              {/* QC Daily Visits Notification */}
+              {qcPlanStops.length > 0 && (
+                <>
+                  <div style={{ padding: '0.6rem 1.25rem', fontSize: '0.72rem', fontWeight: 700, color: '#0284c7', background: 'rgba(2, 132, 199, 0.1)', letterSpacing: '0.05em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Navigation size={12} /> แผนตรวจ QC วันนี้ ({qcPlanStops.length} จุดตรวจ)
+                  </div>
+                  {qcPlanStops.map(stop => (
+                    <div
+                      key={stop.id}
+                      className="notif-item"
+                      onClick={() => {
+                        setOpen(false);
+                        window.location.href = '/qc-daily-plan';
+                      }}
+                      style={{ cursor: 'pointer', transition: 'background 0.2s', padding: '0.75rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.03)', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}
+                    >
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, marginTop: '0.1rem', flexShrink: 0 }}>
+                        {stop.sequenceOrder || '📍'}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          {stop.siteName}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                          ⏰ {stop.timeSlot || 'ช่วงเวลานัดหมาย'} • {stop.siteAddress || 'ไม่มีที่อยู่'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
               {/* Chat Mentions Row */}
               {unreadChatNotifs.length > 0 && (
                 <>
@@ -212,15 +269,95 @@ const NotificationBell = ({ tasks, currentUser }: { tasks: Task[], currentUser: 
   );
 };
 
+// ─── QC Plan Quick Button & Notification Badge ───
+const QCPlanQuickButton = ({ currentUser }: { currentUser: User }) => {
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const location = useLocation();
+  const isActive = location.pathname === '/qc-daily-plan';
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const fetchQCPlanSummary = async () => {
+    try {
+      const res = await fetch(`/api/qc-plans/daily?qcId=${currentUser.id}&date=${todayStr}`, {
+        headers: { 'X-User-Id': currentUser.id }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const plan = data[0];
+          const pending = (plan.items || []).filter((it: any) => it.status !== 'Completed' && it.status !== 'Skipped').length;
+          setPendingCount(pending);
+        } else {
+          setPendingCount(0);
+        }
+      }
+    } catch {
+      // silent fallback
+    }
+  };
+
+  useEffect(() => {
+    fetchQCPlanSummary();
+    const interval = setInterval(fetchQCPlanSummary, 15000);
+    return () => clearInterval(interval);
+  }, [currentUser.id]);
+
+  return (
+    <Link 
+      to="/qc-daily-plan" 
+      className="glass-panel hover-lift"
+      title="แผนงานและเส้นทางตรวจ QC ประจำวัน (Daily QC Plan)"
+      style={{ 
+        padding: '0.45rem 0.85rem', 
+        color: isActive ? '#ffffff' : '#0284c7',
+        background: isActive ? 'linear-gradient(135deg, #0284c7, #2563eb)' : 'rgba(2, 132, 199, 0.09)',
+        border: isActive ? '1px solid #0284c7' : '1px solid rgba(2, 132, 199, 0.35)',
+        borderRadius: 'var(--radius-md)',
+        cursor: 'pointer', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '0.45rem', 
+        textDecoration: 'none',
+        fontSize: '0.85rem',
+        fontWeight: 700,
+        position: 'relative'
+      }}
+    >
+      <Navigation size={17} color={isActive ? '#ffffff' : '#0284c7'} />
+      <span className="hide-mobile">
+        แผนตรวจ QC
+      </span>
+      {pendingCount > 0 && (
+        <span 
+          style={{
+            background: '#ef4444',
+            color: 'white',
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            padding: '0.1rem 0.4rem',
+            borderRadius: '10px',
+            minWidth: '18px',
+            textAlign: 'center',
+            lineHeight: '1.2',
+            boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+          }}
+        >
+          {pendingCount}
+        </span>
+      )}
+    </Link>
+  );
+};
+
 // ─── Mobile Bottom Nav ───
 const MobileBottomNav = () => {
   const location = useLocation();
   const links = [
     { path: '/', icon: LayoutDashboard, label: 'แดชบอร์ด' },
-    { path: '/tasks', icon: CheckSquare, label: 'ขั้นตอนงาน' },
-    { path: '/project-plan', icon: CalendarRange, label: 'แผนงาน' },
+    { path: '/qc-daily-plan', icon: Navigation, label: 'แผนตรวจ QC' },
+    { path: '/leads', icon: Users, label: 'ลูกค้า Leads' },
     { path: '/timesheet', icon: Clock, label: 'บันทึกงาน' },
-    { path: '/team', icon: Users, label: 'ช่างติดตั้ง' },
+    { path: '/tasks', icon: CheckSquare, label: 'ขั้นตอนงาน' },
   ];
   return (
     <nav className="mobile-bottom-nav">
@@ -361,6 +498,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
               {theme === 'light' ? <Sun size={18} color="#f59e0b" /> : <Moon size={18} color="#00F5FF" />}
               <span className="hide-mobile" style={{ fontSize: '0.875rem' }}>{theme === 'light' ? t.themeLight : t.themeDark}</span>
             </button>
+            <QCPlanQuickButton currentUser={currentUser} />
             <NotificationBell tasks={tasks} currentUser={currentUser} />
             <Link to="/settings" className="glass-panel hover-lift" style={{ padding: '0.5rem 1rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', outline: 'none', textDecoration: 'none' }}>
               <SettingsIcon size={18} />
