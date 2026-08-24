@@ -463,21 +463,37 @@ exports.getLeadTimeline = async (req, res) => {
     }
 
     // Milestone 2: Followups & Appointments
-    followupsRes.rows.forEach(f => {
+    if (followupsRes.rows.length > 0) {
+      followupsRes.rows.forEach(f => {
+        events.push({
+          id: `evt_flw_${f.id}`,
+          step: 2,
+          type: 'FOLLOWUP_RECORDED',
+          title: `บันทึกติดตาม: ${f.activity_type || 'นัดหมาย'}`,
+          timestamp: f.created_at,
+          actor: f.created_by || f.assignee_name || 'แอดมิน',
+          description: f.notes || (f.appointment_date ? `นัดหมายวันที่ ${f.appointment_date} ${f.appointment_time || ''}` : 'บันทึกการติดต่อ'),
+          appointment_date: f.appointment_date,
+          appointment_time: f.appointment_time,
+          status: 'completed',
+          color: '#9333ea'
+        });
+      });
+    } else if (lead.appointment_date || lead.survey_date) {
+      const apptDate = lead.appointment_date || lead.survey_date;
       events.push({
-        id: `evt_flw_${f.id}`,
+        id: `evt_flw_direct_${lead.id}`,
         step: 2,
-        type: 'FOLLOWUP_RECORDED',
-        title: `บันทึกติดตาม: ${f.activity_type}`,
-        timestamp: f.created_at,
-        actor: f.created_by || f.assignee_name || 'แอดมิน',
-        description: f.notes || (f.appointment_date ? `นัดหมายวันที่ ${f.appointment_date} ${f.appointment_time || ''}` : 'บันทึกการติดต่อ'),
-        appointment_date: f.appointment_date,
-        appointment_time: f.appointment_time,
+        type: 'APPOINTMENT_SCHEDULED',
+        title: 'นัดหมายสำรวจหน้างาน (Smart QC Dispatch)',
+        timestamp: lead.updated_at || lead.created_at || new Date().toISOString(),
+        actor: lead.appointment_assignee || 'ผู้จัดการโครงการ',
+        description: `กำหนดวันนัดหมายเข้าพื้นที่: ${apptDate}`,
+        appointment_date: apptDate,
         status: 'completed',
         color: '#9333ea'
       });
-    });
+    }
 
     // Milestone 3: GM Site Visit Approval
     if (lead.site_visit_approved_at) {
