@@ -12,7 +12,36 @@ interface UserManagementProps {
   projects?: Project[];
   currentUser: User;
   fetchInitialData?: () => void;
+  branches?: any[];
 }
+
+export interface BranchOption {
+  id: string;
+  code: string;
+  name: string;
+  province?: string;
+  zone?: string;
+}
+
+export const DEFAULT_BRANCH_LIST: BranchOption[] = [
+  { id: 'b_bangna', code: 'BKK-01', name: 'สาขาบางนา', province: 'กรุงเทพมหานคร', zone: 'กทม. ตะวันออก' },
+  { id: 'b_ramintra', code: 'BKK-02', name: 'สาขารามอินทรา', province: 'กรุงเทพมหานคร', zone: 'กทม. เหนือ' },
+  { id: 'b_rangsit', code: 'BKK-03', name: 'สาขารังสิต', province: 'ปทุมธานี', zone: 'กทม. เหนือ' },
+  { id: 'b_rama2', code: 'BKK-04', name: 'สาขาพระราม 2', province: 'กรุงเทพมหานคร', zone: 'กทม. ใต้' },
+  { id: 'b_bangyai', code: 'BKK-05', name: 'สาขาบางใหญ่', province: 'นนทบุรี', zone: 'กทม. ตะวันตก' },
+  { id: 'b_samutprakan', code: 'BKK-06', name: 'สาขาสมุทรปราการ', province: 'สมุทรปราการ', zone: 'กทม. ตะวันออก' },
+  { id: 'b_hq', code: 'HQ', name: 'สำนักงานใหญ่ (HQ)', province: 'กรุงเทพมหานคร', zone: 'สำนักงานใหญ่' },
+  { id: 'b_chonburi', code: 'E-01', name: 'สาขาชลบุรี', province: 'ชลบุรี', zone: 'ภาคตะวันออก' },
+  { id: 'b_pattaya', code: 'E-02', name: 'สาขาพัทยา', province: 'ชลบุรี', zone: 'ภาคตะวันออก' },
+  { id: 'b_rayong', code: 'E-03', name: 'สาขาระยอง', province: 'ระยอง', zone: 'ภาคตะวันออก' },
+  { id: 'b_chiangmai', code: 'N-01', name: 'สาขาเชียงใหม่', province: 'เชียงใหม่', zone: 'ภาคเหนือ' },
+  { id: 'b_phitsanulok', code: 'N-02', name: 'สาขาพิษณุโลก', province: 'พิษณุโลก', zone: 'ภาคเหนือ' },
+  { id: 'b_korat', code: 'NE-01', name: 'สาขานครราชสีมา (โคราช)', province: 'นครราชสีมา', zone: 'ภาคตะวันออกเฉียงเหนือ' },
+  { id: 'b_khonkaen', code: 'NE-02', name: 'สาขาขอนแก่น', province: 'ขอนแก่น', zone: 'ภาคตะวันออกเฉียงเหนือ' },
+  { id: 'b_phuket', code: 'S-01', name: 'สาขาภูเก็ต', province: 'ภูเก็ต', zone: 'ภาคใต้' },
+  { id: 'b_surat', code: 'S-02', name: 'สาขาสุราษฎร์ธานี', province: 'สุราษฎร์ธานี', zone: 'ภาคใต้' },
+  { id: 'b_hatyai', code: 'S-03', name: 'สาขาหาดใหญ่', province: 'สงขลา', zone: 'ภาคใต้' }
+];
 
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -40,7 +69,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   setUsers,
   projects = [],
   currentUser,
-  fetchInitialData
+  fetchInitialData,
+  branches = []
 }) => {
   // State variables
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,6 +115,111 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [formAvatar, setFormAvatar] = useState(PRESET_AVATARS[0]);
   const [formWfhDays, setFormWfhDays] = useState<string[]>([]);
 
+  // Branches & Service Zones Selection State
+  const [formAssignedBranches, setFormAssignedBranches] = useState<string[]>([]);
+  const [branchSearch, setBranchSearch] = useState<string>('');
+  const [branchZoneFilter, setBranchZoneFilter] = useState<string>('ALL');
+
+  // Master Branches (Merged from props + defaults)
+  const allMasterBranches = useMemo<BranchOption[]>(() => {
+    const list: BranchOption[] = [];
+    const seenNames = new Set<string>();
+
+    if (branches && branches.length > 0) {
+      branches.forEach((b: any) => {
+        const cleanName = b.name || b.fullName || b.code || '';
+        if (cleanName && !seenNames.has(cleanName.toLowerCase())) {
+          seenNames.add(cleanName.toLowerCase());
+          list.push({
+            id: b.id || `br_${cleanName}`,
+            code: b.code || '',
+            name: cleanName,
+            province: b.province || '',
+            zone: b.zone || b.region || 'ทั่วไป'
+          });
+        }
+      });
+    }
+
+    DEFAULT_BRANCH_LIST.forEach(b => {
+      const match = list.find(item => item.name.toLowerCase() === b.name.toLowerCase() || (b.code && item.code === b.code));
+      if (!match) {
+        list.push(b);
+      }
+    });
+
+    return list;
+  }, [branches]);
+
+  // Filtered branches for picker
+  const filteredBranchOptions = useMemo(() => {
+    return allMasterBranches.filter(b => {
+      const q = branchSearch.toLowerCase();
+      const matchSearch = !branchSearch || 
+        b.name.toLowerCase().includes(q) || 
+        b.code.toLowerCase().includes(q) || 
+        (b.province && b.province.toLowerCase().includes(q)) ||
+        (b.zone && b.zone.toLowerCase().includes(q));
+
+      let matchZone = true;
+      if (branchZoneFilter === 'BKK') {
+        matchZone = Boolean((b.zone && (b.zone.includes('กทม') || b.zone.includes('สมุทรปราการ') || b.zone.includes('สำนักงานใหญ่'))) || (b.province && ['กรุงเทพมหานคร', 'ปทุมธานี', 'นนทบุรี', 'สมุทรปราการ'].includes(b.province)));
+      } else if (branchZoneFilter === 'EAST') {
+        matchZone = Boolean((b.zone && b.zone.includes('ตะวันออก')) || (b.province && ['ชลบุรี', 'ระยอง', 'ฉะเชิงเทรา', 'จันทบุรี'].includes(b.province)));
+      } else if (branchZoneFilter === 'NORTH') {
+        matchZone = Boolean((b.zone && b.zone.includes('เหนือ')) || (b.province && ['เชียงใหม่', 'เชียงราย', 'พิษณุโลก', 'ลำปาง'].includes(b.province)));
+      } else if (branchZoneFilter === 'NE') {
+        matchZone = Boolean((b.zone && (b.zone.includes('อีสาน') || b.zone.includes('ตะวันออกเฉียงเหนือ'))) || (b.province && ['นครราชสีมา', 'ขอนแก่น', 'อุบลราชธานี', 'อุดรธานี'].includes(b.province)));
+      } else if (branchZoneFilter === 'SOUTH') {
+        matchZone = Boolean((b.zone && b.zone.includes('ใต้')) || (b.province && ['ภูเก็ต', 'สุราษฎร์ธานี', 'สงขลา', 'กระบี่'].includes(b.province)));
+      }
+
+      return matchSearch && matchZone;
+    });
+  }, [allMasterBranches, branchSearch, branchZoneFilter]);
+
+  // Check if branch is selected
+  const isBranchSelected = (b: BranchOption) => {
+    return formAssignedBranches.some(name => {
+      const n = name.trim().toLowerCase();
+      const bName = b.name.trim().toLowerCase();
+      const bCode = (b.code || '').trim().toLowerCase();
+      return n === bName || n.includes(bName) || bName.includes(n) || (bCode && n.includes(bCode));
+    });
+  };
+
+  // Toggle Branch selection
+  const handleToggleBranch = (branchName: string) => {
+    setFormAssignedBranches(prev => {
+      const exists = prev.some(name => {
+        const n = name.trim().toLowerCase();
+        const bName = branchName.trim().toLowerCase();
+        return n === bName || n.includes(bName) || bName.includes(n);
+      });
+      const next = exists 
+        ? prev.filter(name => {
+            const n = name.trim().toLowerCase();
+            const bName = branchName.trim().toLowerCase();
+            return !(n === bName || n.includes(bName) || bName.includes(n));
+          })
+        : [...prev, branchName];
+      setFormServiceZonesText(next.join(', '));
+      return next;
+    });
+  };
+
+  const handleSelectAllBranches = () => {
+    const toAdd = filteredBranchOptions.map(b => b.name);
+    const next = Array.from(new Set([...formAssignedBranches, ...toAdd]));
+    setFormAssignedBranches(next);
+    setFormServiceZonesText(next.join(', '));
+  };
+
+  const handleClearAllBranches = () => {
+    setFormAssignedBranches([]);
+    setFormServiceZonesText('');
+  };
+
   // Unique departments for filtering
   const departments = useMemo(() => {
     const set = new Set<string>();
@@ -101,7 +236,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (user.department && user.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.skills && user.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase())));
+        (user.skills && user.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+        (user.assignedBranches && user.assignedBranches.some(b => b.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+        (user.serviceZones && user.serviceZones.some(z => z.toLowerCase().includes(searchTerm.toLowerCase())));
 
       const matchRole = roleFilter === 'ALL' || user.globalRole === roleFilter;
       const matchDept = deptFilter === 'ALL' || user.department === deptFilter;
@@ -114,7 +251,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const stats = useMemo(() => {
     const total = users.length;
     const adminCount = users.filter(u => u.globalRole === 'Admin' || u.globalRole === 'Manager').length;
-    const employeeCount = users.filter(u => u.globalRole === 'Employee' || u.globalRole === 'User').length;
+    const employeeCount = users.filter(u => u.globalRole === 'Employee' || u.globalRole === 'User' || u.globalRole === 'QC').length;
     const wfhCount = users.filter(u => u.wfhDays && u.wfhDays.length > 0).length;
     return { total, adminCount, employeeCount, wfhCount, deptsCount: departments.length };
   }, [users, departments]);
@@ -132,6 +269,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setFormBirthday('');
     setFormSkillsText('');
     setFormServiceZonesText('');
+    setFormAssignedBranches([]);
+    setBranchSearch('');
+    setBranchZoneFilter('ALL');
     setFormAvatar(PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)]);
     setFormWfhDays([]);
     setIsFormModalOpen(true);
@@ -155,7 +295,19 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setFormGender(user.gender || '');
     setFormBirthday(user.birthday || '');
     setFormSkillsText((user.skills || []).join(', '));
-    setFormServiceZonesText((user.serviceZones || user.assignedBranches || []).join(', '));
+    
+    // Initial branches from assignedBranches or serviceZones
+    let initialBranches: string[] = [];
+    if (Array.isArray(user.assignedBranches) && user.assignedBranches.length > 0) {
+      initialBranches = [...user.assignedBranches];
+    } else if (Array.isArray(user.serviceZones) && user.serviceZones.length > 0) {
+      initialBranches = [...user.serviceZones];
+    }
+    setFormAssignedBranches(initialBranches);
+    setFormServiceZonesText(initialBranches.join(', '));
+    setBranchSearch('');
+    setBranchZoneFilter('ALL');
+
     setFormAvatar(user.avatar || PRESET_AVATARS[0]);
     setFormWfhDays(user.wfhDays || []);
     setIsFormModalOpen(true);
@@ -195,6 +347,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       .map(s => s.trim())
       .filter(Boolean);
 
+    const finalBranches = formAssignedBranches.length > 0 ? formAssignedBranches : serviceZonesList;
+
     const payload = {
       id: userId,
       name: fullName,
@@ -205,8 +359,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       gender: formGender || '',
       birthday: formBirthday || '',
       skills: skillsList,
-      serviceZones: serviceZonesList,
-      assignedBranches: serviceZonesList,
+      serviceZones: finalBranches,
+      assignedBranches: finalBranches,
       password: formPassword.trim() || undefined,
       wfhDays: formWfhDays
     };
@@ -987,19 +1141,170 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 />
               </div>
 
-              {/* Responsible Branches & Service Zones */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
-                  🏢 สาขา / พื้นที่รับผิดชอบ (แยกด้วยเครื่องหมายจุลภาค ,)
-                </label>
-                <input
-                  type="text"
-                  value={formServiceZonesText}
-                  onChange={e => setFormServiceZonesText(e.target.value)}
-                  placeholder="เช่น สาขาบางนา (Bangna), สมุทรปราการ, สนง.ใหญ่"
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '0.875rem' }}
-                />
-              </div>
+              {/* Responsible Branches & Service Zones Selection Panel */}
+              {(() => {
+                const isTechOrQC = 
+                  formRole === 'QC' || 
+                  formDept.toLowerCase().includes('qc') || 
+                  formDept.toLowerCase().includes('ช่าง') || 
+                  formDept.toLowerCase().includes('install') || 
+                  formDept.toLowerCase().includes('technician') ||
+                  formDept.toLowerCase().includes('survey') ||
+                  formDept.toLowerCase().includes('inspector');
+
+                return (
+                  <div style={{
+                    marginBottom: '1.25rem',
+                    padding: '1rem',
+                    borderRadius: '12px',
+                    background: isTechOrQC ? 'rgba(37, 99, 235, 0.04)' : 'var(--bg-secondary, #f8fafc)',
+                    border: isTechOrQC ? '1.5px solid rgba(37, 99, 235, 0.35)' : '1px solid var(--border-color, #e5e7eb)',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <label style={{ fontSize: '0.875rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-primary)' }}>
+                        <Building2 size={16} color="#2563eb" /> 
+                        🏢 สาขา / พื้นที่รับผิดชอบ (ติ๊กเลือกสาขา)
+                        {isTechOrQC && (
+                          <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '12px', background: '#dbeafe', color: '#1d4ed8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <ClipboardCheck size={12} /> สำหรับ QC / ช่าง
+                          </span>
+                        )}
+                      </label>
+                      
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: formAssignedBranches.length > 0 ? '#2563eb' : 'var(--text-secondary)', fontWeight: 700, marginRight: '0.2rem' }}>
+                          เลือกแล้ว {formAssignedBranches.length} สาขา
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleSelectAllBranches}
+                          style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', background: 'var(--card-bg, #ffffff)', color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          เลือกทั้งหมด
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleClearAllBranches}
+                          style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', background: 'var(--card-bg, #ffffff)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                        >
+                          ล้างค่า
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Quick Search & Region Tabs */}
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: '160px', position: 'relative' }}>
+                        <Search size={14} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                        <input
+                          type="text"
+                          placeholder="ค้นหาชื่อสาขา, รหัส หรือจังหวัด..."
+                          value={branchSearch}
+                          onChange={e => setBranchSearch(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.35rem 0.5rem 0.35rem 1.8rem',
+                            borderRadius: '6px',
+                            border: '1px solid var(--border-color, #d1d5db)',
+                            fontSize: '0.78rem',
+                            background: 'var(--input-bg, #ffffff)',
+                            color: 'var(--text-primary)'
+                          }}
+                        />
+                      </div>
+                      
+                      <select
+                        value={branchZoneFilter}
+                        onChange={e => setBranchZoneFilter(e.target.value)}
+                        style={{
+                          padding: '0.35rem 0.6rem',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color, #d1d5db)',
+                          fontSize: '0.78rem',
+                          background: 'var(--input-bg, #ffffff)',
+                          color: 'var(--text-primary)'
+                        }}
+                      >
+                        <option value="ALL">ทุกภูมิภาค ({allMasterBranches.length})</option>
+                        <option value="BKK">กทม. และปริมณฑล</option>
+                        <option value="EAST">ภาคตะวันออก</option>
+                        <option value="NORTH">ภาคเหนือ</option>
+                        <option value="NE">ภาคตะวันออกเฉียงเหนือ</option>
+                        <option value="SOUTH">ภาคใต้</option>
+                      </select>
+                    </div>
+
+                    {/* Checkbox Chips Grid */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                      gap: '0.45rem',
+                      maxHeight: '180px',
+                      overflowY: 'auto',
+                      padding: '0.5rem',
+                      background: 'var(--bg-tertiary, #f1f5f9)',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color, #e2e8f0)'
+                    }}>
+                      {filteredBranchOptions.map(b => {
+                        const isChecked = isBranchSelected(b);
+                        return (
+                          <div
+                            key={b.id || b.code || b.name}
+                            onClick={() => handleToggleBranch(b.name)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.45rem',
+                              padding: '0.4rem 0.6rem',
+                              borderRadius: '6px',
+                              border: isChecked ? '1.5px solid #2563eb' : '1px solid var(--border-color, #cbd5e1)',
+                              background: isChecked ? 'rgba(37, 99, 235, 0.12)' : 'var(--card-bg, #ffffff)',
+                              color: isChecked ? '#1d4ed8' : 'var(--text-primary)',
+                              fontSize: '0.78rem',
+                              fontWeight: isChecked ? 700 : 500,
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              transition: 'all 0.12s ease'
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}} // handled by parent div onClick
+                              style={{ width: '15px', height: '15px', accentColor: '#2563eb', cursor: 'pointer', flexShrink: 0 }}
+                            />
+                            <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {b.name}
+                            </span>
+                            {b.code && (
+                              <span style={{ fontSize: '0.68rem', color: isChecked ? '#2563eb' : 'var(--text-secondary)', fontWeight: 600 }}>
+                                {b.code}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Custom / Notes text input */}
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <input
+                        type="text"
+                        value={formServiceZonesText}
+                        onChange={e => {
+                          setFormServiceZonesText(e.target.value);
+                          const parts = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                          setFormAssignedBranches(parts);
+                        }}
+                        placeholder="หรือพิมพ์ชื่อพื้นที่/สาขาเพิ่มเติม คั่นด้วยจุลภาค (,)"
+                        style={{ width: '100%', padding: '0.35rem 0.55rem', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '0.75rem', background: 'var(--input-bg, #ffffff)' }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Weekly Day Off Selection */}
               <div style={{ marginBottom: '1.5rem' }}>
