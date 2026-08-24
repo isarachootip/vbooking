@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical } from 'lucide-react';
+import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck } from 'lucide-react';
 import type { User } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
@@ -68,6 +68,17 @@ interface LeadsPageProps {
   branches?: any[];
   users?: User[];
 }
+
+export const formatLeadCode = (lead: { id: string; created_at?: string } | null | undefined): string => {
+  if (!lead || !lead.id) return 'LD-2026-0000';
+  const digits = lead.id.replace(/\D/g, '');
+  const year = lead.created_at ? new Date(lead.created_at).getFullYear() : 2026;
+  if (digits.length >= 4) {
+    const shortDigits = digits.slice(-4);
+    return `LD-${year}-${shortDigits}`;
+  }
+  return `LD-${year}-${lead.id.slice(-4).toUpperCase()}`;
+};
 
 export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageProps) => {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -1329,62 +1340,46 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
             จัดการข้อมูลลูกค้า บันทึกพิกัดแผนที่ (GPS) บันทึกการติดตาม/นัดหมายลงพื้นที่ และแปลงเป็นโครงการติดตั้ง
           </p>
         </div>
-        
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <button 
-            onClick={() => setIsSiteVisitModalOpen(true)} 
-            style={{ 
-              background: leads.some(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected') ? '#ea580c' : 'var(--bg-secondary)', 
-              color: leads.some(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected') ? 'white' : 'var(--text-primary)', 
-              border: leads.some(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected') ? 'none' : '1px solid var(--border-color)', 
-              padding: '0.6rem 1.15rem', 
-              borderRadius: 'var(--radius-md)', 
-              fontWeight: 700, 
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
+            type="button"
+            onClick={() => setIsSiteVisitModalOpen(true)}
+            className="hover-lift"
+            style={{
+              padding: '0.65rem 1.1rem',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              fontWeight: 700,
               fontSize: '0.85rem',
-              boxShadow: leads.some(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected') ? '0 4px 12px rgba(234, 88, 12, 0.3)' : 'none'
-            }} 
-            className="hover-lift"
-          >
-            <MapPin size={17} /> อนุมัตินัดหมายออก Site
-            {leads.filter(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected').length > 0 && (
-              <span style={{ background: '#ffffff', color: '#ea580c', fontSize: '0.72rem', padding: '0.1rem 0.45rem', borderRadius: '9999px', fontWeight: 800 }}>
-                {leads.filter(l => (l.appointment_type?.includes('site') || l.appointment_type?.includes('ลงพื้นที่') || l.site_visit_approval_status === 'Pending') && l.site_visit_approval_status !== 'Approved' && l.site_visit_approval_status !== 'Rejected').length}
-              </span>
-            )}
-          </button>
-
-          <button 
-            onClick={() => openModal()} 
-            style={{ 
-              background: 'var(--accent-primary)', 
-              color: 'white', 
-              border: 'none', 
-              padding: '0.6rem 1.25rem', 
-              borderRadius: 'var(--radius-md)', 
-              fontWeight: 700, 
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.9rem',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
-            }} 
-            className="hover-lift"
+              gap: '0.5rem',
+              cursor: 'pointer',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+          >
+            <ShieldCheck size={16} color="#059669" />
+            อนุมัตินัดหมายออก Site
+          </button>
+          
+          <button 
+            type="button" 
+            onClick={() => openModal()} 
+            className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', fontWeight: 700 }}
           >
             <Plus size={18} /> + เพิ่มลูกค้าใหม่
           </button>
         </div>
       </div>
 
-      {/* ── SUMMARY KPI CARDS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+      {/* ── SUMMARY STATS BAR ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
         <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid var(--accent-primary)', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Leads ทั้งหมด</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>LEADS ทั้งหมด</span>
             <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(139, 0, 0, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Users size={20} color="var(--accent-primary)" />
             </div>
@@ -1396,7 +1391,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
         <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid #3b82f6', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ลูกค้าใหม่ (New)</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ลูกค้าใหม่ (NEW)</span>
             <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FileText size={20} color="#3b82f6" />
             </div>
@@ -1439,7 +1434,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
             type="text" 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            placeholder="ค้นหาชื่อลูกค้า, เบอร์โทร, ที่อยู่, พิกัด..."
+            placeholder="ค้นหาชื่อลูกค้า, รหัส Lead (LD-...), เบอร์โทร, ที่อยู่, พิกัด..."
             style={{ width: '100%', padding: '0.55rem 0.75rem 0.55rem 2.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', transition: 'border-color 0.2s' }}
           />
         </div>
@@ -1475,7 +1470,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           <table className="leads-table" style={{ width: '100%', minWidth: '1100px', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }}>
-                <th style={{ width: '140px' }}>วันเวลาที่เข้ามา</th>
+                <th style={{ width: '155px' }}>รหัส Lead / วันที่</th>
                 <th>ข้อมูลลูกค้า / การติดต่อ / พิกัด</th>
                 <th style={{ width: '180px' }}>ประเภทงาน & ผู้ดูแล</th>
                 <th style={{ width: '220px' }}>กำหนดนัดหมาย / สำรวจ</th>
@@ -1501,10 +1496,30 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                   const leadOwner = users.find(u => u.id === lead.sales_contact_id);
                   return (
                     <tr key={lead.id} style={{ transition: 'background var(--transition-fast)' }} className="table-row-hover">
-                      {/* Column 1: Created Date */}
+                      {/* Column 1: Lead Ref Code & Created Date */}
                       <td>
                         <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.35rem' }}>
-                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.825rem' }}>
+                          <span 
+                            style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: '0.25rem',
+                              background: 'rgba(37, 99, 235, 0.08)',
+                              color: '#2563eb',
+                              border: '1px solid rgba(37, 99, 235, 0.25)',
+                              padding: '0.15rem 0.45rem',
+                              borderRadius: '6px',
+                              fontSize: '0.78rem',
+                              fontWeight: 800,
+                              fontFamily: 'monospace',
+                              width: 'fit-content',
+                              letterSpacing: '0.03em'
+                            }}
+                            title={`Lead Reference ID: ${lead.id}`}
+                          >
+                            🏷️ {formatLeadCode(lead)}
+                          </span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.75rem' }}>
                             {formatDateTime(lead.created_at)}
                           </span>
                           {(isRecent(lead.created_at) || index < 3) && (
@@ -2303,10 +2318,17 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
             
             {/* Modal Header */}
             <div className="flex-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Users size={24} color="var(--accent-primary)" />
-                {editingLead ? 'แก้ไขข้อมูลลูกค้ามุ่งหวัง' : 'บันทึกข้อมูลลูกค้าใหม่ (Lead Entry)'}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Users size={22} color="var(--accent-primary)" />
+                  {editingLead ? 'แก้ไขข้อมูลลูกค้ามุ่งหวัง' : 'บันทึกข้อมูลลูกค้าใหม่ (Lead Entry)'}
+                </h2>
+                {editingLead && (
+                  <span style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', border: '1px solid rgba(37, 99, 235, 0.3)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800, fontFamily: 'monospace' }}>
+                    🏷️ {formatLeadCode(editingLead)}
+                  </span>
+                )}
+              </div>
               <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem' }}>
                 <X size={24} />
               </button>
