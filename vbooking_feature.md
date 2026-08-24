@@ -113,6 +113,21 @@
   * แนบลิงก์สลิปหลักฐานการโอน และบันทึกวันที่รับเงิน
   * **Financial Gatekeeper:** ปลดล็อกปุ่ม **"🚀 แปลงเป็นโครงการติดตั้ง (Convert to Project)"** เฉพาะเมื่อยืนยันเงินมัดจำเข้าเรียบร้อยแล้วเท่านั้น
 
+### 11.1 หัวข้อ: การแปลงลูกค้าเป็นโครงการ (Convert to Project & Macro Pipelines)
+* **กลไกการเปลี่ยนผ่านสถานะ (Pipeline Transition):** แปลงข้อมูล Lead และใบเสนอราคาสู่โครงการจริงใน 1 คลิก พร้อมออกรหัส **Smart Project ID** (เช่น `PRBNA2608170001`)
+* **สืบทอดพิกัดดาวเทียม & ที่อยู่:** ถ่ายโอนพิกัด GPS Geofencing 500 เมตร, ข้อมูลติดต่อ และเบอร์โทรเข้าสู่โครงการทันที เพื่อให้ช่างพร้อมเช็คอินเข้าพื้นที่
+* **3 กลุ่มกระบวนการหลักที่เปิดใช้งาน (Active Macro Stages):**
+  * ⚡ **Quick service (8 ขั้นตอน):** `To Do` ➔ `ชำระเงิน` ➔ `Assign ช่าง` ➔ `Check-in` ➔ `Check-out` ➔ `QC` ➔ `Aftersale` ➔ `Close`
+  * 🔧 **MA Service (10 ขั้นตอน):** `To Do` ➔ `Buy-Survey` ➔ `Survey` ➔ `ชำระเงิน` ➔ `Assign ช่าง` ➔ `Check-in` ➔ `Check-out` ➔ `QC` ➔ `Aftersale` ➔ `Close`
+  * 🏡 **Renovate Service (11 ขั้นตอน):** `To Do` ➔ `Buy-Survey` ➔ `Survey` ➔ `Design` ➔ `ชำระเงิน` ➔ `Assign ช่าง` ➔ `Check-in` ➔ `Check-out` ➔ `QC` ➔ `Aftersale` ➔ `Close`
+* **รองรับการตั้งค่าอนาคต (Dynamic Configuration):** กลุ่มงานอื่นๆ (Installer, Build-in, New house) สามารถเปิด-ปิดใช้งาน (Toggle Active) หรือเพิ่มประเภทใหม่ได้ทันทีใน Maintain Master
+
+### 11.2 หัวข้อ: สถาปัตยกรรมงานหลายหมวดช่าง (Multi-Trade Modular WBS for Renovate & MA)
+* **โครงสร้าง WBS 3 ระดับ (Hierarchy):** พื้นที่/ห้อง (Space / Area เช่น ห้องรับแขก) ➔ หมวดช่าง (Trade Modules เช่น ระบบไฟ, แอร์, ฝ้า, ปูกระเบื้อง) ➔ Tasks ย่อย
+* **แม่แบบสำเร็จรูปแยกตามหมวดช่าง (Modular Template Bundles):** กำหนดคลังชุดงานมาตรฐานใน Master Task Templates
+* **การนำเข้าแบบหลายหมวดพร้อมกัน (Multi-Select Import):** PM สามารถติ๊กเลือกหลายหมวดช่างร่วมกันในห้องเดียว ระบบจะรวม Tasks เข้าโครงการพร้อมเติมแท็ก เช่น `[ห้องรับแขก - แอร์] เดินท่อน้ำยาและท่อน้ำทิ้ง`
+* **ตัวกรองเฉพาะหมวดช่าง (Trade Filter & Timesheet):** ช่างเฉพาะทางกรองดูเฉพาะการ์ดงานของตนเอง และบันทึกเวลาแยกหมวดเพื่อคำนวณต้นทุนค่าแรงแม่นยำ
+
 ### 12. ระบบขับเคลื่อนการดำเนินงานโครงการภาคสนาม (Phase 03: Project Execution Pipeline)
 * **การสร้างแผนงานอัจฉริยะอัตโนมัติ (Smart WBS Project Plan):**
   * เมื่อแปลงจาก Lead หลังรับมัดจำ ระบบจะสืบทอดพิกัดดาวเทียมจริง (`site_latitude`, `site_longitude`), ที่อยู่ และขอบเขตงานเข้าสู่โครงการทันที

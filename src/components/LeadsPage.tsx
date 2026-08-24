@@ -9,6 +9,7 @@ import { SiteVisitResultModal } from './SiteVisitResultModal';
 import { DesignApprovalModal } from './DesignApprovalModal';
 import { PaymentModal } from './PaymentModal';
 import { LeadTimelineModal } from './LeadTimelineModal';
+import { SearchableBranchSelect } from './SearchableBranchSelect';
 
 interface LeadFollowup {
   id: string;
@@ -130,7 +131,14 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
   const [jobType, setJobType] = useState('Quick service');
   const [status, setStatus] = useState('New');
-  const [branch, setBranch] = useState(() => (branches && branches.length > 0) ? branches[0].name : 'สาขาบางนา');
+  const [selectedZone, setSelectedZone] = useState<string>('[BKK] กรุงเทพฯ & ปริมณฑล');
+  const [branch, setBranch] = useState(() => {
+    if (branches && branches.length > 0) {
+      const bkkBranch = branches.find(b => b.zone === '[BKK] กรุงเทพฯ & ปริมณฑล');
+      return bkkBranch ? bkkBranch.name : branches[0].name;
+    }
+    return 'สาขาบางนา';
+  });
   const [buildingType, setBuildingType] = useState('บ้านเดี่ยว');
   const [customBuildingType, setCustomBuildingType] = useState('');
   const [areaSize, setAreaSize] = useState('');
@@ -642,7 +650,9 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   };
 
   const handleConvert = async (leadId: string) => {
-    if (!confirm('ยืนยันแปลงลูกค้ารายนี้เป็นโปรเจกต์ใหม่? ระบบจะสร้าง Tasks ให้อัตโนมัติตามประเภทงาน')) return;
+    const targetLead = leads.find(l => l.id === leadId);
+    const targetName = targetLead ? `${targetLead.customer_name} (${targetLead.job_type})` : leadId;
+    if (!confirm(`🚀 ยืนยันแปลง Lead "${targetName}" เป็นโครงการติดตั้ง (Active Project)?\n\nระบบจะดำเนินการอัตโนมัติ:\n• สร้าง Smart Project ID\n• สืบทอดพิกัด GPS Geofencing 500 เมตร & ข้อมูลติดต่อ\n• สร้างขั้นตอน Kanban และดึง Tasks แม่แบบเริ่มต้นตามประเภทงาน`)) return;
     
     try {
       const response = await fetch(`/api/leads/${leadId}/convert`, {
@@ -652,11 +662,12 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       });
       
       if (response.ok) {
-        alert('แปลงเป็นโปรเจกต์สำเร็จ!');
+        const data = await response.json();
+        alert(`✅ แปลงเป็นโครงการติดตั้งสำเร็จ!\nรหัสโครงการ: ${data.project?.id || ''}\nสถานะ: Active Execution`);
         fetchLeads();
       } else {
         const data = await response.json();
-        alert('เกิดข้อผิดพลาด: ' + data.error);
+        alert('เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถแปลงโครงการได้'));
       }
     } catch (err) {
       console.error('Error converting lead', err);
@@ -741,7 +752,14 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
             setCustomRequiredWorkType(details.customRequiredWorkType || '');
           }
 
-          setBranch(details.branch || (branches.length > 0 ? branches[0].name : 'สาขาบางนา'));
+          const leadBranch = details.branch || lead.branch || (branches.length > 0 ? branches[0].name : 'สาขาบางนา');
+          setBranch(leadBranch);
+          const matchedBranch = branches.find(b => b.name === leadBranch || b.code === leadBranch);
+          if (matchedBranch && matchedBranch.zone) {
+            setSelectedZone(matchedBranch.zone);
+          } else {
+            setSelectedZone('[BKK] กรุงเทพฯ & ปริมณฑล');
+          }
         } else {
           setNotes(lead.notes || '');
         }
@@ -761,7 +779,9 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       setSmartInput('');
       setJobType('Quick service');
       setStatus('New');
-      setBranch(branches.length > 0 ? branches[0].name : 'สาขาบางนา');
+      setSelectedZone('[BKK] กรุงเทพฯ & ปริมณฑล');
+      const bkkBranches = branches.filter(b => b.zone === '[BKK] กรุงเทพฯ & ปริมณฑล');
+      setBranch(bkkBranches.length > 0 ? bkkBranches[0].name : (branches.length > 0 ? branches[0].name : 'สาขาบางนา'));
       setBuildingType('บ้านเดี่ยว');
       setCustomBuildingType('');
       setAreaSize('');
@@ -1801,6 +1821,35 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                                   <DollarSign size={13} /> 4. รับมัดจำ & แปลงงาน
                                 </button>
 
+                                {lead.status !== 'Converted' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuLeadId(null);
+                                      handleConvert(lead.id);
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.45rem 0.85rem',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      textAlign: 'left',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 700,
+                                      color: '#059669',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      cursor: 'pointer',
+                                      transition: 'background 0.12s'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                  >
+                                    <Sparkles size={13} /> 🚀 5. แปลงเป็นโครงการ (Convert)
+                                  </button>
+                                )}
+
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -2304,7 +2353,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                           เบอร์โทรติดต่อ *
@@ -2318,33 +2367,6 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                         />
                       </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                          สาขาที่ดูแล *
-                        </label>
-                        <select
-                          value={branch}
-                          onChange={e => setBranch(e.target.value)}
-                          style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
-                        >
-                          {branches && branches.length > 0 ? (
-                            branches.map(b => (
-                              <option key={b.id || b.code} value={b.name}>
-                                {b.name}
-                              </option>
-                            ))
-                          ) : (
-                            <>
-                              <option value="สาขาบางนา">สาขาบางนา</option>
-                              <option value="สาขารัชดา">สาขารัชดา</option>
-                              <option value="สาขาบางพลี">สาขาบางพลี</option>
-                              <option value="สาขาพระราม 3">สาขาพระราม 3</option>
-                              <option value="สาขาธนบุรี">สาขาธนบุรี</option>
-                            </>
-                          )}
-                        </select>
-                      </div>
-                    </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
                           สถานะ Lead
@@ -2362,6 +2384,17 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                           {status === 'Converted' && <option value="Converted">Converted (แปลงเป็นงานแล้ว)</option>}
                         </select>
                       </div>
+                    </div>
+
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <SearchableBranchSelect 
+                        branches={branches}
+                        value={branch}
+                        onChange={(bName) => setBranch(bName)}
+                        selectedZone={selectedZone}
+                        onZoneChange={setSelectedZone}
+                        showZoneSelector={true}
+                      />
                     </div>
                     
                     <div style={{ marginTop: '0.75rem' }}>
@@ -2619,6 +2652,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                         </div>
                       )}
                     </div>
+                  </div>
 
                   {/* SECTION 2: หมายเหตุ & บันทึกเพิ่มเติม */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

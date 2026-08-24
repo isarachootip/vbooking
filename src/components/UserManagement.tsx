@@ -3,8 +3,10 @@ import type { User, GlobalRole, Project } from '../types';
 import { 
   Users, UserPlus, Search, Edit3, Trash2, Key, Eye, LayoutGrid, List, 
   Download, ShieldCheck, Building2, Calendar, Check, X, 
-  CheckCircle2, AlertTriangle, Shield, UserCheck, Briefcase, ClipboardCheck
+  CheckCircle2, AlertTriangle, Shield, UserCheck, Briefcase, ClipboardCheck,
+  Home, MapPin, Navigation
 } from 'lucide-react';
+import { GisMapPickerModal } from './GisMapPickerModal';
 
 interface UserManagementProps {
   users: User[];
@@ -114,6 +116,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [formServiceZonesText, setFormServiceZonesText] = useState('');
   const [formAvatar, setFormAvatar] = useState(PRESET_AVATARS[0]);
   const [formWfhDays, setFormWfhDays] = useState<string[]>([]);
+
+  // Home Origin Location for Route Optimization
+  const [formHomeLat, setFormHomeLat] = useState<number | string>('');
+  const [formHomeLng, setFormHomeLng] = useState<number | string>('');
+  const [formHomeAddress, setFormHomeAddress] = useState<string>('');
+  const [isHomeGisPickerOpen, setIsHomeGisPickerOpen] = useState<boolean>(false);
 
   // Branches & Service Zones Selection State
   const [formAssignedBranches, setFormAssignedBranches] = useState<string[]>([]);
@@ -274,6 +282,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setBranchZoneFilter('ALL');
     setFormAvatar(PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)]);
     setFormWfhDays([]);
+    setFormHomeLat('');
+    setFormHomeLng('');
+    setFormHomeAddress('');
     setIsFormModalOpen(true);
   };
 
@@ -310,6 +321,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
     setFormAvatar(user.avatar || PRESET_AVATARS[0]);
     setFormWfhDays(user.wfhDays || []);
+    setFormHomeLat(user.homeLatitude != null ? String(user.homeLatitude) : '');
+    setFormHomeLng(user.homeLongitude != null ? String(user.homeLongitude) : '');
+    setFormHomeAddress(user.homeAddress || '');
     setIsFormModalOpen(true);
   };
 
@@ -362,7 +376,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       serviceZones: finalBranches,
       assignedBranches: finalBranches,
       password: formPassword.trim() || undefined,
-      wfhDays: formWfhDays
+      wfhDays: formWfhDays,
+      homeLatitude: formHomeLat !== '' && !isNaN(Number(formHomeLat)) ? parseFloat(String(formHomeLat)) : null,
+      homeLongitude: formHomeLng !== '' && !isNaN(Number(formHomeLng)) ? parseFloat(String(formHomeLng)) : null,
+      homeAddress: formHomeAddress.trim() || undefined
     };
 
     setIsSubmitting(true);
@@ -1306,6 +1323,88 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 );
               })()}
 
+              {/* 🏠 Home Origin Location (สำหรับ QC & ช่างภาคสนาม คำนวณ Route ประจำวัน) */}
+              <div style={{ marginBottom: '1.5rem', background: 'var(--bg-tertiary, #f8fafc)', border: '1px solid var(--border-color, #e2e8f0)', borderRadius: '12px', padding: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Home size={16} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        พิกัดบ้าน / จุดเริ่มต้นปฏิบัติงาน (Home Origin)
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        ใช้เป็นจุด Start ในการคำนวณและเรียงลำดับเส้นทางประจำวันของ QC/ทีมช่าง
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsHomeGisPickerOpen(true)}
+                    style={{
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      color: 'white',
+                      border: 'none',
+                      fontSize: '0.775rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                    }}
+                  >
+                    <MapPin size={14} /> ปักหมุดแผนที่ (GIS)
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Latitude (ละติจูด)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={formHomeLat}
+                      onChange={e => setFormHomeLat(e.target.value)}
+                      placeholder="เช่น 13.75633"
+                      style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '0.85rem', background: 'var(--input-bg, #ffffff)' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Longitude (ลองจิจูด)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={formHomeLng}
+                      onChange={e => setFormHomeLng(e.target.value)}
+                      placeholder="เช่น 100.50176"
+                      style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '0.85rem', background: 'var(--input-bg, #ffffff)' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>ที่อยู่บ้าน / จุดนัดพบเริ่มต้น</label>
+                  <input
+                    type="text"
+                    value={formHomeAddress}
+                    onChange={e => setFormHomeAddress(e.target.value)}
+                    placeholder="เช่น 123/45 ซ.สุขุมวิท 101/1 แขวงบางจาก เขตพระโขนง กทม."
+                    style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '0.85rem', background: 'var(--input-bg, #ffffff)' }}
+                  />
+                </div>
+
+                {formHomeLat && formHomeLng && (
+                  <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#059669', background: 'rgba(16, 185, 129, 0.08)', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
+                    <Navigation size={13} />
+                    <span>พิกัด Origin ถูกบันทึกแล้ว: ({Number(formHomeLat).toFixed(5)}, {Number(formHomeLng).toFixed(5)})</span>
+                  </div>
+                )}
+              </div>
+
               {/* Weekly Day Off Selection */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>วันหยุดประจำสัปดาห์ (Weekly Day Off)</label>
@@ -1555,6 +1654,25 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           </div>
         </div>
       )}
+
+      {/* GIS MAP PICKER MODAL FOR HOME ORIGIN */}
+      <GisMapPickerModal
+        isOpen={isHomeGisPickerOpen}
+        onClose={() => setIsHomeGisPickerOpen(false)}
+        initialLat={formHomeLat || 13.7563}
+        initialLng={formHomeLng || 100.5018}
+        initialAddress={formHomeAddress}
+        onSelectLocation={(lat, lng, address) => {
+          setFormHomeLat(lat);
+          setFormHomeLng(lng);
+          if (address) {
+            setFormHomeAddress(address);
+          }
+          setIsHomeGisPickerOpen(false);
+          showToast(`📍 ปักหมุดบ้านสำเร็จ (${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)})`, 'success');
+        }}
+      />
     </div>
   );
 };
+

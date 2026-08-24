@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Calendar, Users, Star, Shield, MessageSquare, Zap, Layers, ClipboardCheck, FileCheck, ShieldCheck } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Calendar, Users, Star, Shield, MessageSquare, Zap, Layers, ClipboardCheck, FileCheck, ShieldCheck, FolderPlus, Boxes, Wrench } from 'lucide-react';
 
 import { marked } from 'marked';
 import type { User } from '../types';
@@ -135,6 +135,65 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 </li>
                 <li style={{ marginBottom: '0.35rem' }}>
                   <strong>Down Payment Gatekeeper:</strong> Enforces down payment collection (suggests 30% or 50%) with bank transfer slip proof, unlocking the 1-click <strong>"Convert to Project"</strong> action.
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_phase03_convert_to_project',
+          question: 'How does the "Convert to Project" workflow and Smart Project Pipeline work?',
+          icon: FolderPlus,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>The <strong>Convert to Project</strong> mechanism transforms a qualified Lead or signed Quotation into an Active Project Instance:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Prerequisites & Down Payment Gatekeeper:</strong> Unlocked automatically when receiving initial down payment (30% or 50%) with slip verification or upon Quotation approval.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Smart Project ID Auto-Generation:</strong> Formats project codes systematically (e.g. <code>PRBNA2608170001</code> based on branch code, year, month, day, and running sequence).
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>GPS Geofence & Logistics Inheritance:</strong> Automatically passes latitude, longitude, 500m geofence radius, customer phone, and site coordinator details directly to the project for technician Check-In/Out.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Dynamic Kanban Workflow Stages (3 Core Active Types):</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><em>⚡ Quick service (8 stages):</em> <code>To Do</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>🔧 MA Service (10 stages):</em> <code>To Do</code> &rarr; <code>Buy-Survey</code> &rarr; <code>Survey</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>🏡 Renovate Service (11 stages):</em> <code>To Do</code> &rarr; <code>Buy-Survey</code> &rarr; <code>Survey</code> &rarr; <code>Design</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>Status Update & Linkage:</strong> Updates lead status to <code>Converted</code> and establishes a 1-to-1 relationship with the project.
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_modular_task_templates',
+          question: 'How are multi-trade tasks (Electrical, HVAC, Ceiling, Tiling) bundled in Renovate & MA projects?',
+          icon: Boxes,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>Renovation and Maintenance projects typically involve multiple specialized trades working concurrently across rooms/spaces:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Work Breakdown Structure (Area &rarr; Trade &rarr; Task):</strong> Tasks are organized by area (e.g. <em>Living Room</em>, <em>Kitchen</em>) and sub-trade (e.g. <em>#Electrical</em>, <em>#HVAC</em>, <em>#Ceiling</em>, <em>#Tiling</em>).
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Modular Template Bundles:</strong> In <code>Maintain Master &gt; Master Task Templates</code>, standard trade packages can be maintained (e.g., Electrical Package, Aircon Installation Package, Gypsum Ceiling Package, Tile Laying Package).
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Multi-Select Bundle Import:</strong> In the Project Plan (Gantt), PMs can select a target area and check multiple trade bundles (e.g., [✓] Electrical + [✓] Aircon + [✓] Ceiling). The system merges all sub-tasks into a single project with clear tags like <code>[Living Room - Aircon] Install Copper Pipes</code>.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Assignee & Trade Tag Filtering:</strong> Electricians and AC technicians can filter Kanban cards and log timesheets specifically against their trade tags without visual clutter.
+                </li>
+                <li>
+                  <strong>Dependency Mapping on Gantt:</strong> Sequence prerequisite trade dependencies (e.g. Electrical conduit & AC piping must be inspected before closing ceiling boards).
                 </li>
               </ul>
             </div>
@@ -668,6 +727,65 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 </li>
                 <li style={{ marginBottom: '0.35rem' }}>
                   <strong>Down Payment Gatekeeper:</strong> บันทึกรับเงินมัดจำงวดแรก (ระบบแนะนำ 30% หรือ 50% อัตโนมัติ) และแนบสลิปโอนเงิน เพื่อปลดล็อกปุ่ม <strong>"🚀 แปลงเป็นโครงการติดตั้ง (Convert to Project)"</strong>
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_phase03_convert_to_project',
+          question: 'ขั้นตอนการแปลงเป็นโครงการ (Convert to Project) และกลไก Smart Project Pipeline ทำงานอย่างไร?',
+          icon: FolderPlus,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>กระบวนการ <strong>Convert to Project</strong> ทำหน้าที่เปลี่ยน Lead หรือใบเสนอราคาที่ผ่านการอนุมัติ ให้กลายเป็นโครงการติดตั้งจริง (Active Project Instance) ในระบบทันที:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>เงื่อนไขปลดล็อก (Financial Gatekeeper):</strong> ปลดล็อกปุ่มแปลงโครงการอัตโนมัติเมื่อบันทึกรับเงินมัดจำงวดแรก (Down Payment 30% หรือ 50%) พร้อมสลิปโอนเงิน หรือเมื่อลูกค้าอนุมัติใบเสนอราคา
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>การสร้างรหัสโครงการอัจฉริยะ (Smart Project ID):</strong> สร้างรหัสตามมาตรฐาน <code>PR&lt;BRANCH&gt;&lt;YYMMDD&gt;&lt;SEQ&gt;</code> เช่น <code>PRBNA2608170001</code> (สาขาบางนา วันที่ 17 ส.ค. 2026 ลำดับที่ 0001)
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>การสืบทอดพิกัดดาวเทียม &amp; โลจิสติกส์:</strong> ถ่ายโอนพิกัดละติจูด-ลองจิจูด, รัศมี Geofence 500 เมตร, ที่อยู่หน้างาน, เบอร์โทร และผู้ประสานงานเข้าสู่โครงการ เพื่อให้ทีมช่างใช้ Check-In หน้างานได้ทันที
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>การสร้างคอลัมน์ขั้นตอน Kanban อัตโนมัติ (3 กลุ่มหลักที่ Active):</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><em>⚡ Quick service (8 ขั้นตอน):</em> <code>To Do</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>🔧 MA Service (10 ขั้นตอน):</em> <code>To Do</code> &rarr; <code>Buy-Survey</code> &rarr; <code>Survey</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>🏡 Renovate Service (11 ขั้นตอน):</em> <code>To Do</code> &rarr; <code>Buy-Survey</code> &rarr; <code>Survey</code> &rarr; <code>Design</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>การเชื่อมโยงสถานะ:</strong> ปรับสถานะ Lead เป็น <code>Converted</code> และสร้างลิงก์เชื่อมโยงไปยังหน้า Projects ทันที
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_modular_task_templates',
+          question: 'การจัดการโครงการ Renovate และ MA ที่มีหลายหมวดช่าง (ระบบไฟ, แอร์, ฝ้า, ปูกระเบื้อง) และการรวม Task Templates ทำงานอย่างไร?',
+          icon: Boxes,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>สำหรับโครงการขนาดใหญ่หรือโครงการ Renovate/MA ที่มีขอบเขตหลายห้องและมีหลายหมวดช่างเข้าทำพร้อมกัน ระบบใช้สถาปัตยกรรม <strong>Multi-Trade Modular WBS</strong>:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>โครงสร้าง 3 ระดับ (พื้นที่ &rarr; หมวดช่าง &rarr; งานย่อย):</strong> เช่น <em>ห้องรับแขก</em> &rarr; <em>หมวดไฟฟ้า / หมวดแอร์ / หมวดฝ้า</em> &rarr; <em>Tasks ย่อยของช่าง</em>
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>คลังแม่แบบสำเร็จรูปแยกตามหมวดช่าง (Modular Template Bundles):</strong> กำหนดชุดงานมาตรฐานใน <code>Maintain Master &gt; Master Task Templates</code> เช่น ชุดงานระบบไฟฟ้า (4 Tasks), ชุดงานระบบแอร์ (3 Tasks), ชุดงานฝ้าเพดาน (4 Tasks), ชุดงานปูกระเบื้อง (4 Tasks)
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>การเลือกนำเข้าพร้อมกันหลายหมวด (Multi-Select Import):</strong> ในหน้า Project Plan (Gantt) สามารถระบุพื้นที่ (เช่น ห้องรับแขก) และติ๊กเลือกหลายหมวดร่วมกันได้ ระบบจะรวม Tasks ทั้งหมดเข้าสู่โครงการเดียว พร้อมเติมแท็กระบุพื้นที่ เช่น <code>[ห้องรับแขก - แอร์] เดินท่อน้ำยาและท่อน้ำทิ้ง</code>
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>การกรองงานและการลงเวลาของช่าง (Trade Tag Filter):</strong> ช่างแต่ละทีมสามารถกรองดูเฉพาะงานของตนเอง เช่น กรอง <code>#แอร์</code> เพื่อลงเวลา Timesheet เฉพาะงานแอร์ได้โดยไม่งานปะปนกับช่างอื่น
+                </li>
+                <li>
+                  <strong>การจัดลำดับงานพึ่งพากัน (Task Dependencies บน Gantt):</strong> ลากเชื่อมโยงเงื่อนไข เช่น <em>งานเดินท่อไฟและท่อแอร์ ต้องเสร็จก่อน ➔ จึงจะเริ่มปิดแผ่นฝ้าเพดานได้</em> ป้องกันการทำงานสลับขั้นตอนหน้างานจริง
                 </li>
               </ul>
             </div>
@@ -1269,6 +1387,38 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               </ul>
             </div>
           )
+        },
+        {
+          id: 'f10',
+          question: 'Convert to Project Engine: Smart ID Generation, Geofence Inheritance & Macro Pipelines',
+          icon: FolderPlus,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>The backend conversion pipeline seamlessly handles complex business transitions from CRM to field execution:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Smart Project ID Numbering:</strong> Standardized ID format (<code>PR&lt;BRANCH&gt;&lt;YYMMDD&gt;&lt;SEQ&gt;</code>) created atomically in PostgreSQL transactions.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Geofence Coordinates:</strong> Inherits site latitude, longitude, and 500m radius into the <code>projects</code> table for GPS-verified Check-in/Out.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>3 Active Macro Pipelines:</strong> Dynamically provisions Kanban stages for <code>Quick Service (8 stages)</code>, <code>MA Service (10 stages)</code>, and <code>Renovate Service (11 stages)</code>.</li>
+                <li><strong>Dynamic Reactivation:</strong> Other types (Installer, Build-in, New house) can be toggled Active in Maintain Master without schema changes.</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f11',
+          question: 'Multi-Trade Modular WBS Architecture for Renovate & MA Projects',
+          icon: Boxes,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>Handles multi-system complexity in large renovations and maintenance contracts:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Hierarchical Organization (Space &rarr; Trade &rarr; Task):</strong> Groups activities by physical zone (e.g. Living Room, Kitchen) and engineering trade (#Electrical, #HVAC, #Ceiling, #Tiling).</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Multi-Select Bundle Injection:</strong> Allows PMs to combine multiple trade packages simultaneously, creating named and tagged tasks in a single action.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Trade-Level Timesheet & Labor Costing:</strong> Accurate timesheet attribution per specialist trade, feeding into actual labor cost accumulation and Gross Margin tracking.</li>
+                <li><strong>Cross-Trade Dependency Links:</strong> Establish precedence links across trades on Gantt (e.g. In-wall piping before wall tiling and ceiling closure).</li>
+              </ul>
+            </div>
+          )
         }
       ]
     },
@@ -1428,6 +1578,38 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.25rem' }}><strong>ตรรกะ Smart Dispatch:</strong> เมื่อเลือกวัน-เวลาเข้าสำรวจ ระบบจะค้นหาเฉพาะผู้ใช้งานที่มีทักษะ <code>QC</code> ผ่าน API <code>/api/users/available-surveyors</code> พร้อมตรวจเช็คว่าไม่มีคิวนัดหมายอื่นซ้อนทับในรัศมีเวลา &plusmn;3 ชั่วโมง</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>ระบบแปลงพิกัดและแสดงแผนที่ (DMS / Live Maps):</strong> แปลงพิกัดแผนที่ทั้งแบบทศนิยมและองศาลิปดา (DMS) พร้อมแสดง iframe แผนที่จริงแบบ Live Preview ป้องกันการเข้าพื้นที่ผิดจุด</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>การเชื่อมโยงเข้าสู่ Kanban Pipeline:</strong> เมื่อกด Convert Lead ระบบจะสร้าง Smart Project ID (เช่น <code>PRBNA2608170001</code>) และเปิดคอลัมน์ขั้นตอน <code>Buy-Survey</code> และ <code>Survey</code> บนบอร์ด Kanban โดยอัตโนมัติ เพื่อให้ช่าง QC เข้าทำขั้นตอนที่ 3 (Survey QC Inspection)</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f10',
+          question: 'สถาปัตยกรรมระบบแปลงโครงการ (Convert to Project Engine) และกลไก Macro Pipelines',
+          icon: FolderPlus,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>กลไกเบื้องหลังการแปลง Lead / Quotation สู่ Active Project รองรับการดำเนินงานภาคสนามแบบอัตโนมัติ:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การออกรหัส Smart Project ID:</strong> รันรหัสมาตรฐาน <code>PR&lt;BRANCH&gt;&lt;YYMMDD&gt;&lt;SEQ&gt;</code> แบบ Atomic Transaction ป้องกันรหัสซ้ำ</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การสืบทอดพิกัด Geofence:</strong> ถ่ายโอนค่า Latitude, Longitude และรัศมีตรวจจับ 500 เมตร สู่ Entity <code>projects</code> สำหรับระบบ GPS Check-in/Out</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>3 กลุ่มกระบวนการหลักที่ Active:</strong> กำหนดสเตจคอลัมน์ให้อัตโนมัติ: <code>Quick service (8 สเตจ)</code>, <code>MA Service (10 สเตจ)</code> และ <code>Renovate Service (11 สเตจ)</code></li>
+                <li><strong>ความยืดหยุ่นในการเปิดใช้งานอนาคต (Configuration):</strong> กลุ่มงานอื่นๆ (Installer, Build-in, New house) ถูกบันทึกไว้ในระบบ สามารถกดเปิดใช้งานหรือเพิ่มประเภทใหม่ได้ทันทีผ่าน Maintain Master โดยไม่ต้องแก้โค้ด</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f11',
+          question: 'สถาปัตยกรรมโครงสร้างงานหลายหมวดช่าง (Multi-Trade Modular WBS) สำหรับ Renovate และ MA',
+          icon: Boxes,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>รองรับความซับซ้อนของโครงการ Renovate/MA ที่มีช่างหลายสาขาวิชาชีพเข้าปฏิบัติงานพร้อมกันในแต่ละพื้นที่:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การจัดโครงสร้าง WBS 3 ระดับ:</strong> พื้นที่ (Space / Area เช่น ห้องรับแขก) &rarr; หมวดช่าง (Trade Modules เช่น #ไฟฟ้า, #แอร์, #ฝ้า, #กระเบื้อง) &rarr; Tasks ย่อย</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การรวมแม่แบบพร้อมกันหลายชุด (Multi-Trade Bundle Injection):</strong> PM สามารถติ๊กเลือกหลายหมวดช่างพร้อมกัน ระบบจะรวม Tasks เข้าสู่โครงการเดียว พร้อมติดแท็ก <code>[พื้นที่ - หมวดช่าง] ชื่องาน</code></li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การแยกต้นทุนค่าแรงและ Timesheet รายหมวด:</strong> ช่างแต่ละทีมสามารถกรองดูเฉพาะงานของตนเอง และบันทึกเวลาตรงหมวด ทำให้คำนวณต้นทุนค่าแรงจริงและกำไร (Margin) ได้แม่นยำ</li>
+                <li><strong>การเชื่อมโยงความสัมพันธ์ของงาน (Gantt Precedence):</strong> กำหนดลำดับงานข้ามหมวดช่างได้ เช่น งานท่อร้อยสายไฟและท่อน้ำยาแอร์ต้องเสร็จสิ้นก่อนปิดแผ่นฝ้าเพดาน</li>
               </ul>
             </div>
           )

@@ -5,6 +5,8 @@ const quotationController = require('../controllers/quotationController.cjs');
 router.post('/', quotationController.createQuotation);
 router.get('/', quotationController.getQuotations);
 router.get('/:id', quotationController.getQuotationById);
+router.patch('/:id/status', quotationController.updateQuotationStatus);
+router.delete('/:id', quotationController.deleteQuotation);
 router.post('/:id/convert', quotationController.convertToProject);
 
 module.exports = router;

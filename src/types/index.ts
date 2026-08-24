@@ -33,6 +33,10 @@ export interface User {
   criminalRecord?: string;
   creditTermDays?: number;
   technicianLevel?: string;
+  // Home Origin Location for Daily Route Planning
+  homeLatitude?: number | string | null;
+  homeLongitude?: number | string | null;
+  homeAddress?: string;
 }
 
 export interface MasterBranch {
@@ -277,5 +281,52 @@ export interface ServicePriceItem {
   labor_cost: number;
   selling_price: number;
   is_active: boolean;
+}
+
+export type QCPlanItemStatus = 'Pending' | 'Travelling' | 'Checked In' | 'Inspecting' | 'Completed' | 'Skipped';
+
+export interface QCPlanItem {
+  id: string;
+  planId: string;
+  leadId?: string | null;
+  projectId?: string | null;
+  sequenceOrder: number;
+  timeSlot?: string;
+  siteName: string;
+  customerName?: string;
+  customerPhone?: string;
+  siteAddress?: string;
+  siteLatitude: number;
+  siteLongitude: number;
+  estimatedDistanceFromPrevKm?: number;
+  estimatedDurationMin?: number;
+  status: QCPlanItemStatus;
+  checkInTime?: string;
+  checkOutTime?: string;
+  actualCheckInLat?: number;
+  actualCheckInLng?: number;
+  qcInspectionId?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+export interface QCDailyPlan {
+  id: string;
+  qcId: string;
+  qcName?: string;
+  qcAvatar?: string;
+  qcPhone?: string;
+  planDate: string; // YYYY-MM-DD
+  originLatitude: number;
+  originLongitude: number;
+  originAddress?: string;
+  totalEstimatedKm: number;
+  totalEstimatedDurationMin: number;
+  status: 'Draft' | 'Confirmed' | 'In Progress' | 'Completed';
+  notes?: string;
+  items: QCPlanItem[];
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
 }
 

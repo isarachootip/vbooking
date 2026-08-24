@@ -71,6 +71,7 @@ export const Settings = ({
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
 
   const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
   const [maxUploadMb, setMaxUploadMb] = useState('1');
   const [autoSyncTechs, setAutoSyncTechs] = useState(true);
   const [isSavingSystemConfig, setIsSavingSystemConfig] = useState(false);
@@ -185,6 +186,9 @@ export const Settings = ({
         if (data.gemini_api_key) {
           setGeminiApiKey(data.gemini_api_key);
         }
+        if (data.google_maps_api_key) {
+          setGoogleMapsApiKey(data.google_maps_api_key);
+        }
         if (data.max_upload_mb) {
           setMaxUploadMb(data.max_upload_mb);
         }
@@ -206,6 +210,7 @@ export const Settings = ({
         headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
         body: JSON.stringify({ 
           gemini_api_key: geminiApiKey, 
+          google_maps_api_key: googleMapsApiKey,
           max_upload_mb: maxUploadMb,
           auto_sync_remote_technicians: String(autoSyncTechs)
         })
@@ -216,6 +221,7 @@ export const Settings = ({
           setSystemSettings(prev => ({ 
             ...prev, 
             gemini_api_key: geminiApiKey, 
+            google_maps_api_key: googleMapsApiKey,
             max_upload_mb: maxUploadMb,
             auto_sync_remote_technicians: String(autoSyncTechs)
           }));
@@ -2459,6 +2465,33 @@ export const Settings = ({
               />
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
                 This key is used by the system's chatbot to answer user queries. Keep it secure.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Google Maps API Key (Routes & Distance Matrix)</label>
+                <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: googleMapsApiKey ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: googleMapsApiKey ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
+                  {googleMapsApiKey ? '🟢 Live Traffic Active' : '🟡 Free Fallback Mode'}
+                </span>
+              </div>
+              <input
+                type="password"
+                value={googleMapsApiKey}
+                onChange={(e) => setGoogleMapsApiKey(e.target.value)}
+                placeholder="AIzaSy..."
+                style={{
+                  padding: '0.75rem 1rem',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.95rem',
+                  outline: 'none'
+                }}
+              />
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                ใช้สำหรับการคำนวณระยะทางตามแนวถนนจริงและประเมินเวลารถติด Real-time (มีเครดิตฟรี $200/เดือน จาก Google Cloud) หากไม่ใส่ระบบจะใช้สูตรเรขาคณิตฟรี
               </p>
             </div>
 

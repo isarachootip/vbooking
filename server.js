@@ -146,6 +146,9 @@ const initDB = async () => {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS criminal_record VARCHAR(100) DEFAULT 'ไม่มี';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS credit_term_days INTEGER DEFAULT 30;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS technician_level VARCHAR(50) DEFAULT 'Standard';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS home_latitude NUMERIC;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS home_longitude NUMERIC;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS home_address TEXT;
     `);
 
     // Create Permission Schemes Table
@@ -616,6 +619,9 @@ const initDB = async () => {
       ALTER TABLE quotations ADD COLUMN IF NOT EXISTS lead_id VARCHAR(50);
       ALTER TABLE quotations ADD COLUMN IF NOT EXISTS design_id VARCHAR(50);
       ALTER TABLE quotations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Draft';
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(50);
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_address TEXT;
 
       CREATE TABLE IF NOT EXISTS quotation_items (
         id                  VARCHAR(50) PRIMARY KEY,
@@ -696,6 +702,49 @@ const initDB = async () => {
         created_by          VARCHAR(255)
       );
       CREATE INDEX IF NOT EXISTS idx_project_handovers_project_id ON project_handovers(project_id);
+
+      -- Phase: QC Daily Planning & Origin Route Optimization
+      CREATE TABLE IF NOT EXISTS qc_daily_plans (
+        id                  VARCHAR(50) PRIMARY KEY,
+        qc_id               VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        plan_date           VARCHAR(50) NOT NULL,
+        origin_latitude     NUMERIC NOT NULL,
+        origin_longitude    NUMERIC NOT NULL,
+        origin_address      TEXT,
+        total_estimated_km  NUMERIC DEFAULT 0,
+        total_estimated_duration_min INTEGER DEFAULT 0,
+        status              VARCHAR(50) DEFAULT 'Confirmed',
+        notes               TEXT,
+        created_at          VARCHAR(50) NOT NULL,
+        updated_at          VARCHAR(50) NOT NULL,
+        created_by          VARCHAR(50)
+      );
+      CREATE INDEX IF NOT EXISTS idx_qc_daily_plans_qc_date ON qc_daily_plans(qc_id, plan_date);
+
+      CREATE TABLE IF NOT EXISTS qc_plan_items (
+        id                  VARCHAR(50) PRIMARY KEY,
+        plan_id             VARCHAR(50) NOT NULL REFERENCES qc_daily_plans(id) ON DELETE CASCADE,
+        lead_id             VARCHAR(50) REFERENCES leads(id) ON DELETE SET NULL,
+        project_id          VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL,
+        sequence_order      INTEGER NOT NULL DEFAULT 1,
+        time_slot           VARCHAR(50),
+        site_name           VARCHAR(200) NOT NULL,
+        customer_name       VARCHAR(150),
+        customer_phone      VARCHAR(50),
+        site_address        TEXT,
+        site_latitude       NUMERIC NOT NULL,
+        site_longitude      NUMERIC NOT NULL,
+        estimated_distance_from_prev_km NUMERIC DEFAULT 0,
+        status              VARCHAR(50) DEFAULT 'Pending',
+        check_in_time       VARCHAR(50),
+        check_out_time      VARCHAR(50),
+        actual_check_in_lat NUMERIC,
+        actual_check_in_lng NUMERIC,
+        qc_inspection_id    VARCHAR(50) REFERENCES project_qc_inspections(id) ON DELETE SET NULL,
+        notes               TEXT,
+        created_at          VARCHAR(50) NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_qc_plan_items_plan_id ON qc_plan_items(plan_id);
     `);
 
     // Seed/Upsert 9 Detailed Master Zones
@@ -2469,7 +2518,7 @@ app.get('/api/users/available-surveyors', async (req, res) => {
 
 app.get('/api/users', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, name, email, avatar, global_role, department, gender, birthday, skills, wfh_days, tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, assigned_branches, assigned_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level FROM users ORDER BY name ASC');
+    const result = await pool.query('SELECT id, name, email, avatar, global_role, department, gender, birthday, skills, wfh_days, tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, assigned_branches, assigned_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level, home_latitude, home_longitude, home_address FROM users ORDER BY name ASC');
     const users = result.rows.map(u => ({
       id: u.id,
       name: u.name,
@@ -2495,7 +2544,10 @@ app.get('/api/users', async (req, res) => {
       certificates: u.certificates || [],
       criminalRecord: u.criminal_record || 'ไม่มี',
       creditTermDays: u.credit_term_days != null ? parseInt(u.credit_term_days) : 30,
-      technicianLevel: u.technician_level || 'Standard'
+      technicianLevel: u.technician_level || 'Standard',
+      homeLatitude: u.home_latitude != null ? parseFloat(u.home_latitude) : null,
+      homeLongitude: u.home_longitude != null ? parseFloat(u.home_longitude) : null,
+      homeAddress: u.home_address || ''
     }));
     res.json(users);
   } catch (err) {
@@ -2507,7 +2559,8 @@ app.get('/api/users', async (req, res) => {
 app.post('/api/users', async (req, res) => {
   const { 
     id, name, email, avatar, globalRole, department, gender, birthday, skills, password, wfhDays,
-    taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, assignedBranches, assignedZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel
+    taxId, idCardNumber, idCardFiles, companyName, lineId, phones, jobTypes, serviceZones, assignedBranches, assignedZones, workSlots, certificates, criminalRecord, creditTermDays, technicianLevel,
+    homeLatitude, homeLongitude, homeAddress, home_latitude, home_longitude, home_address
   } = req.body;
   
   const cleanName = (name || '').replace(/\s+/g, ' ').trim() || 'User';
@@ -2515,6 +2568,9 @@ app.post('/api/users', async (req, res) => {
   const safeRole = globalRole || 'Employee';
   const safeDept = (department || '').trim() || 'General';
   const safeAvatar = avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80';
+  const safeHomeLat = (homeLatitude != null && homeLatitude !== '') ? parseFloat(homeLatitude) : ((home_latitude != null && home_latitude !== '') ? parseFloat(home_latitude) : null);
+  const safeHomeLng = (homeLongitude != null && homeLongitude !== '') ? parseFloat(homeLongitude) : ((home_longitude != null && home_longitude !== '') ? parseFloat(home_longitude) : null);
+  const safeHomeAddr = homeAddress || home_address || '';
 
   if (!cleanEmail) {
     return res.status(400).json({ error: 'Email is required' });
@@ -2535,9 +2591,10 @@ app.post('/api/users', async (req, res) => {
     await pool.query(
       `INSERT INTO users (
          id, name, email, avatar, global_role, department, gender, birthday, skills, password_hash, wfh_days,
-         tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, assigned_branches, assigned_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level
+         tax_id, id_card_number, id_card_files, company_name, line_id, phones, job_types, service_zones, assigned_branches, assigned_zones, work_slots, certificates, criminal_record, credit_term_days, technician_level,
+         home_latitude, home_longitude, home_address
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          email = EXCLUDED.email,
@@ -2563,12 +2620,16 @@ app.post('/api/users', async (req, res) => {
          certificates = EXCLUDED.certificates,
          criminal_record = EXCLUDED.criminal_record,
          credit_term_days = EXCLUDED.credit_term_days,
-         technician_level = EXCLUDED.technician_level`,
+         technician_level = EXCLUDED.technician_level,
+         home_latitude = EXCLUDED.home_latitude,
+         home_longitude = EXCLUDED.home_longitude,
+         home_address = EXCLUDED.home_address`,
       [
         id, cleanName, cleanEmail, safeAvatar, safeRole, safeDept, gender || '', birthday || '', skills || [], pwHash, wfhDays || [],
         taxId || '', idCardNumber || '', JSON.stringify(idCardFiles || []), companyName || '', lineId || '',
         phones || [], jobTypes || [], serviceZones || [], assignedBranches || [], assignedZones || [], workSlots || [], JSON.stringify(certificates || []),
-        criminalRecord || 'ไม่มี', creditTermDays != null ? parseInt(creditTermDays) : 30, technicianLevel || 'Standard'
+        criminalRecord || 'ไม่มี', creditTermDays != null ? parseInt(creditTermDays) : 30, technicianLevel || 'Standard',
+        safeHomeLat, safeHomeLng, safeHomeAddr
       ]
     );
     res.json({ success: true });
@@ -2586,13 +2647,17 @@ app.post('/api/users', async (req, res) => {
              company_name = $13, line_id = $14, phones = $15,
              job_types = $16, service_zones = $17, assigned_branches = $18, assigned_zones = $19, work_slots = $20,
              certificates = $21, criminal_record = $22, credit_term_days = $23,
-             technician_level = $24
-           WHERE LOWER(email) = $25`,
+             technician_level = $24,
+             home_latitude = COALESCE($25, home_latitude),
+             home_longitude = COALESCE($26, home_longitude),
+             home_address = COALESCE($27, home_address)
+           WHERE LOWER(email) = $28`,
           [
             cleanName, safeAvatar, safeRole, safeDept, gender || '', birthday || '', skills || [], pwHash, wfhDays || [],
             taxId || '', idCardNumber || '', JSON.stringify(idCardFiles || []), companyName || '', lineId || '',
             phones || [], jobTypes || [], serviceZones || [], assignedBranches || [], assignedZones || [], workSlots || [], JSON.stringify(certificates || []),
-            criminalRecord || 'ไม่มี', creditTermDays != null ? parseInt(creditTermDays) : 30, technicianLevel || 'Standard', cleanEmail
+            criminalRecord || 'ไม่มี', creditTermDays != null ? parseInt(creditTermDays) : 30, technicianLevel || 'Standard',
+            safeHomeLat, safeHomeLng, safeHomeAddr, cleanEmail
           ]
         );
         res.json({ success: true, note: 'merged by email' });
@@ -4314,10 +4379,13 @@ app.post('/api/clean-tasks', async (req, res) => {
   }
 });
 // ==========================================
-// LEADS API
+// LEADS API & QC DAILY PLAN API
 // ==========================================
 const leadRoutes = require('./src/routes/leadRoutes.cjs');
 app.use('/api/leads', leadRoutes);
+
+const qcPlanRoutes = require('./src/routes/qcPlanRoutes.cjs');
+app.use('/api/qc-plans', qcPlanRoutes);
 
 
 

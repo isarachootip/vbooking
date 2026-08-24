@@ -2,7 +2,19 @@ const pool = require('../config/db.cjs');
 
 exports.createQuotation = async (req, res) => {
   try {
-    const { lead_id, project_id, issue_date, valid_until, vat_type, items, notes, created_by } = req.body;
+    const { 
+      lead_id, 
+      project_id, 
+      issue_date, 
+      valid_until, 
+      vat_type, 
+      items, 
+      notes, 
+      customer_name, 
+      customer_phone, 
+      customer_address, 
+      created_by 
+    } = req.body;
     
     // Generate a quotation number (e.g., QUO-YYYYMM-001)
     const dateStr = new Date().toISOString().slice(0, 7).replace('-', '');
@@ -17,9 +29,11 @@ exports.createQuotation = async (req, res) => {
     let subtotal = 0;
     let total_cost = 0;
     
-    for (const item of items) {
-      subtotal += Number(item.total_price);
-      total_cost += (Number(item.unit_cost) * Number(item.quantity));
+    if (items && Array.isArray(items)) {
+      for (const item of items) {
+        subtotal += Number(item.total_price || 0);
+        total_cost += (Number(item.unit_cost || 0) * Number(item.quantity || 1));
+      }
     }
     
     let vat_amount = 0;
@@ -35,9 +49,34 @@ exports.createQuotation = async (req, res) => {
     
     // Insert quotation header
     const quoResult = await pool.query(
-      `INSERT INTO quotations (id, lead_id, project_id, quotation_number, issue_date, valid_until, status, subtotal, vat_type, vat_amount, grand_total, total_cost, notes, created_at, created_by, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
-      [quoId, lead_id || null, project_id || null, quotation_number, issue_date, valid_until || null, 'Draft', subtotal, vat_type, vat_amount, grand_total, total_cost, notes || null, now, created_by || 'Admin', now]
+      `INSERT INTO quotations (
+        id, lead_id, project_id, quotation_number, issue_date, valid_until, status, 
+        subtotal, vat_type, vat_amount, grand_total, total_cost, notes, 
+        customer_name, customer_phone, customer_address, 
+        created_at, created_by, updated_at
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
+      [
+        quoId, 
+        lead_id || null, 
+        project_id || null, 
+        quotation_number, 
+        issue_date || now.split('T')[0], 
+        valid_until || null, 
+        'Draft', 
+        subtotal, 
+        vat_type || 'Exclude VAT', 
+        vat_amount, 
+        grand_total, 
+        total_cost, 
+        notes || null, 
+        customer_name || null, 
+        customer_phone || null, 
+        customer_address || null, 
+        now, 
+        created_by || 'Admin', 
+        now
+      ]
     );
     
     // Insert quotation items
@@ -48,7 +87,7 @@ exports.createQuotation = async (req, res) => {
         await pool.query(
           `INSERT INTO quotation_items (id, quotation_id, price_book_id, service_name, quantity, unit_type, unit_cost, unit_price, total_price, sort_order)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-          [itemId, quoId, item.price_book_id || null, item.service_name, item.quantity, item.unit_type || '', item.unit_cost || 0, item.unit_price || 0, item.total_price || 0, i]
+          [itemId, quoId, item.price_book_id || null, item.service_name, item.quantity || 1, item.unit_type || 'งาน', item.unit_cost || 0, item.unit_price || 0, item.total_price || 0, i]
         );
       }
     }
@@ -70,19 +109,39 @@ exports.createQuotation = async (req, res) => {
 
 exports.getQuotations = async (req, res) => {
   try {
-    const { lead_id, project_id } = req.query;
-    let query = 'SELECT * FROM quotations';
+    const { lead_id, project_id, status } = req.query;
+    let query = `
+      SELECT q.*, 
+             COALESCE(q.customer_name, l.customer_name, p.customer_name, 'ลูกค้าทั่วไป') AS customer_name,
+             COALESCE(q.customer_phone, l.customer_phone, p.customer_phone, '') AS customer_phone,
+             COALESCE(q.customer_address, l.customer_address, '') AS customer_address,
+             l.job_type AS lead_job_type,
+             p.name AS project_name
+      FROM quotations q
+      LEFT JOIN leads l ON q.lead_id = l.id
+      LEFT JOIN projects p ON q.project_id = p.id
+    `;
+    const conditions = [];
     const params = [];
     
     if (lead_id) {
-      query += ' WHERE lead_id = $1';
       params.push(lead_id);
-    } else if (project_id) {
-      query += ' WHERE project_id = $1';
+      conditions.push(`q.lead_id = $${params.length}`);
+    }
+    if (project_id) {
       params.push(project_id);
+      conditions.push(`q.project_id = $${params.length}`);
+    }
+    if (status) {
+      params.push(status);
+      conditions.push(`q.status = $${params.length}`);
     }
     
-    query += ' ORDER BY created_at DESC';
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+    
+    query += ' ORDER BY q.created_at DESC';
     
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -95,7 +154,18 @@ exports.getQuotations = async (req, res) => {
 exports.getQuotationById = async (req, res) => {
   try {
     const { id } = req.params;
-    const quoResult = await pool.query('SELECT * FROM quotations WHERE id = $1', [id]);
+    const quoResult = await pool.query(`
+      SELECT q.*, 
+             COALESCE(q.customer_name, l.customer_name, p.customer_name, 'ลูกค้าทั่วไป') AS customer_name,
+             COALESCE(q.customer_phone, l.customer_phone, p.customer_phone, '') AS customer_phone,
+             COALESCE(q.customer_address, l.customer_address, '') AS customer_address,
+             l.job_type AS lead_job_type,
+             p.name AS project_name
+      FROM quotations q
+      LEFT JOIN leads l ON q.lead_id = l.id
+      LEFT JOIN projects p ON q.project_id = p.id
+      WHERE q.id = $1
+    `, [id]);
     
     if (quoResult.rows.length === 0) {
       return res.status(404).json({ error: 'Quotation not found' });
@@ -110,6 +180,55 @@ exports.getQuotationById = async (req, res) => {
   } catch (err) {
     console.error('Error fetching quotation:', err);
     res.status(500).json({ error: 'Failed to fetch quotation' });
+  }
+};
+
+exports.updateQuotationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, notes, valid_until } = req.body;
+    const now = new Date().toISOString();
+
+    const updates = ['updated_at = $1'];
+    const params = [now, id];
+
+    if (status) {
+      params.push(status);
+      updates.push(`status = $${params.length}`);
+    }
+    if (notes !== undefined) {
+      params.push(notes);
+      updates.push(`notes = $${params.length}`);
+    }
+    if (valid_until !== undefined) {
+      params.push(valid_until);
+      updates.push(`valid_until = $${params.length}`);
+    }
+
+    const result = await pool.query(
+      `UPDATE quotations SET ${updates.join(', ')} WHERE id = $2 RETURNING *`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Quotation not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating quotation status:', err);
+    res.status(500).json({ error: 'Failed to update quotation status' });
+  }
+};
+
+exports.deleteQuotation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM quotations WHERE id = $1', [id]);
+    res.json({ success: true, message: 'Quotation deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting quotation:', err);
+    res.status(500).json({ error: 'Failed to delete quotation' });
   }
 };
 
@@ -129,23 +248,27 @@ exports.convertToProject = async (req, res) => {
     const itemsResult = await pool.query('SELECT * FROM quotation_items WHERE quotation_id = $1 ORDER BY sort_order ASC', [id]);
     const items = itemsResult.rows;
 
-    // 2. Get Lead for context (job type, name)
+    // 2. Get Lead for context (job type, name, phone, branch)
     let jobType = 'Renovation';
-    let customerName = 'Unknown Customer';
-    let customerPhone = '';
+    let customerName = quotation.customer_name || 'Customer';
+    let customerPhone = quotation.customer_phone || '';
+    let customerAddress = quotation.customer_address || '';
     let branch = 'HQ0';
     let leadId = null;
     if (quotation.lead_id) {
       leadId = quotation.lead_id;
       const leadResult = await pool.query('SELECT * FROM leads WHERE id = $1', [quotation.lead_id]);
       if (leadResult.rows.length > 0) {
-        jobType = leadResult.rows[0].job_type || 'Renovation';
-        customerName = leadResult.rows[0].customer_name || 'Customer';
-        customerPhone = leadResult.rows[0].customer_phone || '';
+        const lead = leadResult.rows[0];
+        jobType = lead.job_type || 'Renovation';
+        customerName = lead.customer_name || customerName;
+        customerPhone = lead.customer_phone || customerPhone;
+        customerAddress = lead.customer_address || customerAddress;
+        branch = lead.branch || 'HQ0';
       }
     }
 
-    // 3. Generate Smart Project ID (Logic copied for isolation)
+    // 3. Generate Smart Project ID (Logic: P + JobPrefix + Branch + DDMMYYYY + 0001)
     let jobPrefix = 'O';
     const jt = jobType.toLowerCase();
     if (jt.includes('quick')) jobPrefix = 'Q';
@@ -155,7 +278,7 @@ exports.convertToProject = async (req, res) => {
     else if (jt.includes('new')) jobPrefix = 'N';
     else if (jt.includes('ma service')) jobPrefix = 'M';
 
-    const branchPrefix = 'HQ0'; // Default branch for quotes
+    const branchPrefix = branch.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || 'HQ0';
     const d = new Date();
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -195,8 +318,8 @@ exports.convertToProject = async (req, res) => {
       );
     }
 
-    // 6. Update Quotation
-    await pool.query("UPDATE quotations SET status = 'Converted', project_id = $1 WHERE id = $2", [projectId, id]);
+    // 6. Update Quotation status
+    await pool.query("UPDATE quotations SET status = 'Converted', project_id = $1, updated_at = $2 WHERE id = $3", [projectId, now, id]);
 
     res.json({ success: true, project_id: projectId });
   } catch (err) {
