@@ -4451,17 +4451,55 @@ app.post('/api/leads/:id/convert', async (req, res) => {
       cols = [...commonStages, ...buySurveyStages, ...designStages, ...executionStages];
     }
 
+    // Build initial lifecycle state — starts at Phase 3 (Execution) since
+    // Phase 1 (Lead & Survey) and Phase 2 (Design & Quote) were completed in the Lead flow.
+    const initialLifecycle = {
+      phase: 'PHASE_03_PROJECT_EXECUTION',
+      step: 'project_plan_creation',
+      survey_appointment: 'no',
+      surveyor_id: '',
+      survey_date: '',
+      survey_checked_in: false,
+      survey_checked_out: false,
+      survey_check_in_time: '',
+      survey_check_out_time: '',
+      survey_photo_before: '',
+      survey_photo_after: '',
+      followup_scheduled: false,
+      followup_date: '',
+      followup_notes: '',
+      design_required: 'yes',
+      design_files: [],
+      design_approved: 'approved',
+      design_revise_count: 0,
+      quotation_approved: 'approved',
+      payment_received: true,
+      payment_slip_url: lead.payment_slip_url || 'CONVERTED_FROM_LEAD',
+      project_plan_created: false,
+      technicians: [],
+      work_started: false,
+      work_finished: false,
+      qc_passed: 'pending',
+      online_qc_review_notes: '',
+      customer_satisfied: 'pending',
+      rework_count: 0,
+      settled_in_bmt: false,
+      bmt_payment_recorded: false,
+      bmt_aftersales_result: '',
+    };
+    const initialExtraDetails = { lifecycle: initialLifecycle };
+
     const projResult = await pool.query(
-      `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address, project_type, custom_columns, lead_id, customer_name, customer_phone, converted_at, site_latitude, site_longitude, site_radius_meters, execution_phase)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
+      `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address, project_type, custom_columns, lead_id, customer_name, customer_phone, converted_at, site_latitude, site_longitude, site_radius_meters, execution_phase, extra_details)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
       [
-        projectId, 
-        `[${lead.job_type}] ${lead.customer_name}`, 
-        `Auto-generated from lead ${lead.id}\nNotes: ${lead.notes || ''}`, 
-        'To Do', 
-        now, 
-        endDateStr, 
-        membersJson, 
+        projectId,
+        `[${lead.job_type}] ${lead.customer_name}`,
+        `Auto-generated from lead ${lead.id}\nNotes: ${lead.notes || ''}`,
+        'To Do',
+        now,
+        endDateStr,
+        membersJson,
         lead.customer_address,
         lead.job_type,
         JSON.stringify(cols),
@@ -4472,7 +4510,8 @@ app.post('/api/leads/:id/convert', async (req, res) => {
         lead.customer_latitude ? parseFloat(lead.customer_latitude) : null,
         lead.customer_longitude ? parseFloat(lead.customer_longitude) : null,
         500,
-        'Active Execution'
+        'Active Execution',
+        JSON.stringify(initialExtraDetails)
       ]
     );
 
