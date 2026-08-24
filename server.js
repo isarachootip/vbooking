@@ -2484,26 +2484,43 @@ app.get('/api/initial-data', async (req, res) => {
 
 // Users REST API
 app.get('/api/users/available-surveyors', async (req, res) => {
-  const { date } = req.query;
+  const { date, leadId } = req.query;
   try {
-    // 1. Get users with 'QC' skill
-    const result = await pool.query("SELECT id, name, global_role FROM users WHERE 'QC' = ANY(skills)");
-    const qcUsers = result.rows;
+    // 1. Get users with 'QC' skill, role, department, or matching name
+    let result = await pool.query(`
+      SELECT id, name, global_role 
+      FROM users 
+      WHERE 'QC' = ANY(skills) 
+         OR 'Survey' = ANY(skills) 
+         OR 'Technician' = ANY(skills)
+         OR 'ช่าง' = ANY(skills)
+         OR global_role ILIKE '%QC%' 
+         OR department ILIKE '%QC%' 
+         OR name ILIKE '%QC%'
+      ORDER BY name ASC
+    `);
+    let qcUsers = result.rows;
+
+    // Fallback: If no dedicated QC users found, list all active users/technicians
+    if (qcUsers.length === 0) {
+      const fallbackRes = await pool.query("SELECT id, name, global_role FROM users ORDER BY name ASC");
+      qcUsers = fallbackRes.rows;
+    }
 
     if (!date) {
       return res.json(qcUsers);
     }
 
-    // 2. Check availability
+    // 2. Check availability (+/- 3 hours overlap check)
     const availableUsers = [];
     for (const u of qcUsers) {
-      // Find any lead assigned to this surveyor within +/- 3 hours (10800 seconds)
       const busyRes = await pool.query(
         `SELECT id FROM leads 
          WHERE surveyor_id = $1 
          AND survey_date IS NOT NULL 
+         AND id != COALESCE($3, '')
          AND ABS(EXTRACT(EPOCH FROM (CAST(survey_date AS TIMESTAMP) - CAST($2 AS TIMESTAMP)))) < 10800`, 
-        [u.id, date]
+        [u.id, date, leadId || '']
       );
       if (busyRes.rows.length === 0) {
         availableUsers.push(u);
