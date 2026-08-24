@@ -70,7 +70,15 @@ interface LeadsPageProps {
 }
 
 export const formatLeadCode = (lead: { id: string; created_at?: string } | null | undefined): string => {
-  if (!lead || !lead.id) return 'LD-20260824-000001';
+  if (!lead || !lead.id) return 'LD-20260824-00001';
+
+  // If already formatted like LD-YYYYMMDD-XXXXX
+  const match = lead.id.match(/^LD-(\d{8})-(\d+)$/);
+  if (match) {
+    const datePart = match[1];
+    const numPart = String(parseInt(match[2], 10)).padStart(5, '0');
+    return `LD-${datePart}-${numPart}`;
+  }
   
   // Format Date: YYYYMMDD
   let datePart = '20260824';
@@ -88,13 +96,13 @@ export const formatLeadCode = (lead: { id: string; created_at?: string } | null 
     }
   }
 
-  // Format 6-digit Running Number: XXXXXX
+  // Format 5-digit Running Number: XXXXX
   const digits = lead.id.replace(/\D/g, '');
-  let runningPart = '000001';
-  if (digits.length >= 6) {
-    runningPart = digits.slice(-6);
+  let runningPart = '00001';
+  if (digits.length >= 5) {
+    runningPart = digits.slice(-5);
   } else if (digits.length > 0) {
-    runningPart = digits.padStart(6, '0');
+    runningPart = digits.padStart(5, '0');
   }
 
   return `LD-${datePart}-${runningPart}`;

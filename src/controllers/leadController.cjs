@@ -37,9 +37,29 @@ exports.createLead = async (req, res) => {
     const { id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, notes, sales_contact_id } = req.body;
     const now = new Date().toISOString();
     const d = new Date();
-    const dateStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-    const randSuffix = String(Date.now()).slice(-6);
-    const leadId = id || `LD-${dateStr}-${randSuffix}`;
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}${mm}${dd}`;
+    const prefix = `LD-${dateStr}-`;
+
+    let leadId = id;
+    if (!leadId) {
+      const countRes = await pool.query(
+        `SELECT id FROM leads WHERE id LIKE $1 ORDER BY id DESC LIMIT 1`,
+        [`${prefix}%`]
+      );
+      let nextSeq = 1;
+      if (countRes.rows.length > 0) {
+        const lastId = countRes.rows[0].id;
+        const lastNum = parseInt(lastId.replace(prefix, ''), 10);
+        if (!isNaN(lastNum)) {
+          nextSeq = lastNum + 1;
+        }
+      }
+      const runningPart = String(nextSeq).padStart(5, '0');
+      leadId = `LD-${dateStr}-${runningPart}`;
+    }
     
     const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
     const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');
