@@ -85,11 +85,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                          project?.projectType === 'quick service' || 
                          project?.id?.startsWith('PQ');
 
+  // Projects converted from a Lead have already completed Phase 1 & 2 inside the Lead flow.
+  // If extra_details.lifecycle is not yet set (e.g. older converted projects), default to Phase 3.
+  const isConvertedFromLead = !!(project?.leadId);
+
   // Safe helper to read the project's current lifecycle flow state
   const flowState = project?.extraDetails?.lifecycle || {
-    phase: isQuickService ? 'PHASE_03_PROJECT_EXECUTION' : 'PHASE_01_LEAD_SURVEY',
-    step: isQuickService ? 'project_plan_creation' : 'customer_enquiry',
-    survey_appointment: isQuickService ? 'no' : 'yes',
+    phase: isQuickService || isConvertedFromLead ? 'PHASE_03_PROJECT_EXECUTION' : 'PHASE_01_LEAD_SURVEY',
+    step: isQuickService || isConvertedFromLead ? 'project_plan_creation' : 'customer_enquiry',
+    survey_appointment: isQuickService || isConvertedFromLead ? 'no' : 'yes',
     surveyor_id: '',
     survey_date: '',
     survey_checked_in: false,
@@ -101,13 +105,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     followup_scheduled: false,
     followup_date: '',
     followup_notes: '',
-    design_required: isQuickService ? 'no' : 'yes',
+    design_required: isQuickService || isConvertedFromLead ? 'no' : 'yes',
     design_files: [] as Array<{ name: string; url: string }>,
-    design_approved: isQuickService ? 'approved' : 'pending', // 'pending', 'approved', 'rejected'
+    design_approved: isQuickService || isConvertedFromLead ? 'approved' : 'pending', // 'pending', 'approved', 'rejected'
     design_revise_count: 0,
-    quotation_approved: isQuickService ? 'approved' : 'pending', // 'pending', 'approved', 'rejected'
-    payment_received: isQuickService ? true : false,
-    payment_slip_url: isQuickService ? 'SYSTEM_PAYMENT_TICKET' : '',
+    quotation_approved: isQuickService || isConvertedFromLead ? 'approved' : 'pending', // 'pending', 'approved', 'rejected'
+    payment_received: isQuickService || isConvertedFromLead ? true : false,
+    payment_slip_url: isQuickService ? 'SYSTEM_PAYMENT_TICKET' : (isConvertedFromLead ? 'CONVERTED_FROM_LEAD' : ''),
     project_plan_created: false,
     technicians: [] as string[],
     work_started: false,
