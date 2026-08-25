@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, Building2, User } from 'lucide-react';
+import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, ShieldAlert, Lock, Building2, User } from 'lucide-react';
 import type { User as UserType, Customer, CustomerSite } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
@@ -97,6 +97,18 @@ export const formatLeadCode = (lead: { id: string; created_at?: string } | null 
 };
 
 export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageProps) => {
+  const isPrivilegedUser = Boolean(
+    currentUser && (
+      currentUser.globalRole === 'Admin' ||
+      currentUser.globalRole === 'Manager' ||
+      (currentUser as any).role === 'admin' ||
+      (currentUser as any).role === 'manager' ||
+      (currentUser as any).role === 'gm' ||
+      (currentUser.department && currentUser.department.toLowerCase().includes('management')) ||
+      (currentUser.name && currentUser.name.toLowerCase().includes('admin'))
+    )
+  );
+
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1850,6 +1862,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                                   ขั้นตอนการดำเนินงาน
                                 </div>
 
+                                {/* 1. Followup / Appointment */}
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1867,6 +1880,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                                     color: '#9333ea',
                                     display: 'flex',
                                     alignItems: 'center',
+                                    justifyContent: 'space-between',
                                     gap: '0.5rem',
                                     cursor: 'pointer',
                                     transition: 'background 0.12s'
@@ -1874,37 +1888,71 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                                   onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(147, 51, 234, 0.08)')}
                                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                                 >
-                                  <Calendar size={13} /> 1. บันทึกติดตาม & นัดหมาย
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Calendar size={13} /> 1. บันทึกติดตาม & นัดหมาย
+                                  </div>
+                                  {lead.site_visit_approval_status === 'Approved' && !isPrivilegedUser && (
+                                    <span style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.12)', color: '#059669', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 700 }}>
+                                      🔒 GM Approve
+                                    </span>
+                                  )}
                                 </button>
 
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveActionMenuLeadId(null);
-                                    setSelectedLeadForVisitResult(lead);
-                                    setIsVisitResultModalOpen(true);
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    padding: '0.45rem 0.85rem',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    textAlign: 'left',
-                                    fontSize: '0.78rem',
-                                    fontWeight: 600,
-                                    color: '#1e40af',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    cursor: 'pointer',
-                                    transition: 'background 0.12s'
-                                  }}
-                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(30, 64, 175, 0.08)')}
-                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                                >
-                                  <ClipboardCheck size={13} /> 2. บันทึกผล Visit หน้างาน
-                                </button>
+                                {/* 2. Site Visit Result */}
+                                {lead.status === 'Converted' && !isPrivilegedUser ? (
+                                  <button
+                                    type="button"
+                                    disabled
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.45rem 0.85rem',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      textAlign: 'left',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 600,
+                                      color: 'var(--text-muted)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      cursor: 'not-allowed',
+                                      opacity: 0.6
+                                    }}
+                                    title="โครงการนี้เปิดเป็นงานติดตั้งแล้ว ผลสำรวจถูกล็อก (สิทธิ์แก้ไขเฉพาะ Admin หรือ GM)"
+                                  >
+                                    <ClipboardCheck size={13} /> 🔒 2. บันทึกผล Visit (แปลงงานแล้ว)
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuLeadId(null);
+                                      setSelectedLeadForVisitResult(lead);
+                                      setIsVisitResultModalOpen(true);
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.45rem 0.85rem',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      textAlign: 'left',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 600,
+                                      color: '#1e40af',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      cursor: 'pointer',
+                                      transition: 'background 0.12s'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(30, 64, 175, 0.08)')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                  >
+                                    <ClipboardCheck size={13} /> 2. บันทึกผล Visit หน้างาน
+                                  </button>
+                                )}
 
+                                {/* 3. Designs 2D / 3D */}
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1933,34 +1981,61 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                                   <Palette size={13} /> 3. จัดการแบบแปลน 2D / 3D
                                 </button>
 
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveActionMenuLeadId(null);
-                                    setSelectedLeadForPayment(lead);
-                                    setIsPaymentModalOpen(true);
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    padding: '0.45rem 0.85rem',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    textAlign: 'left',
-                                    fontSize: '0.78rem',
-                                    fontWeight: 600,
-                                    color: '#059669',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    cursor: 'pointer',
-                                    transition: 'background 0.12s'
-                                  }}
-                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.08)')}
-                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                                >
-                                  <DollarSign size={13} /> 4. รับมัดจำ & แปลงงาน
-                                </button>
+                                {/* 4. Down Payment & Convert */}
+                                {lead.status === 'Converted' && !isPrivilegedUser ? (
+                                  <button
+                                    type="button"
+                                    disabled
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.45rem 0.85rem',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      textAlign: 'left',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 600,
+                                      color: 'var(--text-muted)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      cursor: 'not-allowed',
+                                      opacity: 0.6
+                                    }}
+                                    title="โครงการนี้แปลงสำเร็จแล้ว (สิทธิ์แก้ไขข้อมูลการเงินเฉพาะ Admin/GM)"
+                                  >
+                                    <DollarSign size={13} /> 🔒 4. รับมัดจำ (เปิดโครงการแล้ว)
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuLeadId(null);
+                                      setSelectedLeadForPayment(lead);
+                                      setIsPaymentModalOpen(true);
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.45rem 0.85rem',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      textAlign: 'left',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 600,
+                                      color: '#059669',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      cursor: 'pointer',
+                                      transition: 'background 0.12s'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.08)')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                  >
+                                    <DollarSign size={13} /> 4. รับมัดจำ & แปลงงาน
+                                  </button>
+                                )}
 
+                                {/* 5. Convert to Project */}
                                 {lead.status !== 'Converted' && (
                                   <button
                                     type="button"
@@ -2456,11 +2531,22 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                     🏷️ {formatLeadCode(editingLead)}
                   </span>
                 )}
+                {editingLead?.status === 'Converted' && (
+                  <span style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 800 }}>
+                    🚀 แปลงเป็นโครงการติดตั้งแล้ว
+                  </span>
+                )}
               </div>
               <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem' }}>
                 <X size={24} />
               </button>
             </div>
+
+            {editingLead && editingLead.status === 'Converted' && !isPrivilegedUser && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '0.65rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#dc2626', fontSize: '0.82rem', fontWeight: 700 }}>
+                <ShieldAlert size={18} /> โครงการนี้ถูกแปลงเป็นงานติดตั้งจริงแล้ว ข้อมูลหลักถูกล็อกเพื่อความถูกต้องทางบัญชี (สิทธิ์แก้ไขเฉพาะ Admin หรือ GM)
+              </div>
+            )}
 
             {/* Modal Form */}
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -3187,15 +3273,17 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                   onClick={() => setIsModalOpen(false)}
                   style={{ padding: '0.55rem 1.25rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
                 >
-                  ยกเลิก
+                  {editingLead?.status === 'Converted' && !isPrivilegedUser ? 'ปิดหน้าต่าง' : 'ยกเลิก'}
                 </button>
-                <button
-                  type="submit"
-                  style={{ padding: '0.55rem 1.5rem', borderRadius: 'var(--radius-md)', background: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
-                  className="hover-lift"
-                >
-                  บันทึกข้อมูลลูกค้า
-                </button>
+                {(!editingLead || editingLead.status !== 'Converted' || isPrivilegedUser) && (
+                  <button
+                    type="submit"
+                    style={{ padding: '0.55rem 1.5rem', borderRadius: 'var(--radius-md)', background: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
+                    className="hover-lift"
+                  >
+                    บันทึกข้อมูลลูกค้า
+                  </button>
+                )}
               </div>
             </form>
           </div>
