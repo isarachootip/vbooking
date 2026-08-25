@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>คู่มือทดสอบระบบ NexTime (vbooking) - QA Test Manual</title>
+<style>
+  body {
+    font-family: 'Sarabun', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.65;
+    color: #1e293b;
+    max-width: 960px;
+    margin: 40px auto;
+    padding: 0 25px;
+    background-color: #ffffff;
+  }
+  h1 {
+    color: #1e3a8a;
+    font-size: 26px;
+    border-bottom: 3px solid #3b82f6;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  h2 {
+    color: #1e40af;
+    font-size: 20px;
+    border-bottom: 1.5px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-top: 36px;
+  }
+  h3 {
+    color: #2563eb;
+    font-size: 16px;
+    margin-top: 24px;
+  }
+  h4 {
+    color: #0f766e;
+    font-size: 14px;
+    margin-top: 18px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 22px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 10px 14px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-weight: bold;
+  }
+  tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  code {
+    background-color: #f1f5f9;
+    color: #b45309;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+  }
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+  }
+  blockquote {
+    border-left: 4px solid #3b82f6;
+    padding: 12px 20px;
+    background-color: #eff6ff;
+    margin: 18px 0;
+    color: #1e40af;
+    border-radius: 0 8px 8px 0;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 32px 0;
+  }
+  ul, ol {
+    padding-left: 26px;
+  }
+  li {
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+<h1>📘 คู่มือทดสอบระบบฉบับสมบูรณ์สำหรับ Tester (QA &amp; UAT Test Manual)</h1>
+<h2>ระบบบริหารโครงการและติดตามงานติดตั้ง NexTime (vbooking)</h2>
+<h3>🎯 เริ่มต้นตั้งแต่: บันทึกข้อมูลลูกค้าผู้คาดหวัง (Add New Lead) ➔ ปิดโครงการสมบูรณ์ (Project Closure)</h3>
+<hr>
+<h2>📑 สารบัญ (Table of Contents)</h2>
+<ol>
+<li><a href="#1-%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%B9%E0%B8%A5%E0%B8%97%E0%B8%B1%E0%B9%88%E0%B8%A7%E0%B9%84%E0%B8%9B%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%80%E0%B8%95%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%A1%E0%B8%AA%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B9%81%E0%B8%A7%E0%B8%94%E0%B8%A5%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%97%E0%B8%94%E0%B8%AA%E0%B8%AD%E0%B8%9A">ข้อมูลทั่วไปและการเตรียมสภาพแวดล้อมทดสอบ (Test Setup &amp; Personas)</a></li>
+<li><a href="#2-%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%A3%E0%B8%A7%E0%B8%A1%E0%B8%A7%E0%B8%87%E0%B8%88%E0%B8%A3%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%97%E0%B8%B3%E0%B8%87%E0%B8%B2%E0%B8%99">ภาพรวมวงจรการทำงาน (End-to-End Workflow Diagram)</a></li>
+<li><a href="#3-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-1-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%B9%E0%B8%A5%E0%B8%A5%E0%B8%B9%E0%B8%81%E0%B8%84%E0%B9%89%E0%B8%B2%E0%B8%9C%E0%B8%B9%E0%B9%89%E0%B8%84%E0%B8%B2%E0%B8%94%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%87-add-lead--prospect-entry">ขั้นตอนที่ 1: การบันทึกข้อมูลลูกค้าผู้คาดหวัง (Add Lead / Prospect Entry)</a></li>
+<li><a href="#4-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-2-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%99%E0%B8%B1%E0%B8%94%E0%B8%AB%E0%B8%A1%E0%B8%B2%E0%B8%A2%E0%B8%AA%E0%B8%B3%E0%B8%A3%E0%B8%A7%E0%B8%88%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%B2%E0%B8%99--%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B8%84%E0%B8%B4%E0%B8%A7%E0%B8%8A%E0%B9%88%E0%B8%B2%E0%B8%87">ขั้นตอนที่ 2: การนัดหมายสำรวจหน้างาน &amp; จัดคิวช่าง (Survey Booking &amp; Smart QC Dispatch)</a></li>
+<li><a href="#5-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-3-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%AD%E0%B8%99%E0%B8%B8%E0%B8%A1%E0%B8%B1%E0%B8%95%E0%B8%B4%E0%B8%AD%E0%B8%AD%E0%B8%81-site--%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%9C%E0%B8%A5%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%95%E0%B8%A3%E0%B8%A7%E0%B8%88%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%B2%E0%B8%99">ขั้นตอนที่ 3: การอนุมัติออก Site &amp; บันทึกผลการตรวจหน้างาน (Site Visit Approval &amp; Inspection)</a></li>
+<li><a href="#6-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-4-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B8%97%E0%B8%B3%E0%B9%81%E0%B8%9A%E0%B8%9A-2d3d-%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%AD%E0%B8%99%E0%B8%B8%E0%B8%A1%E0%B8%B1%E0%B8%95%E0%B8%B4%E0%B9%81%E0%B8%9A%E0%B8%9A">ขั้นตอนที่ 4: การจัดทำแบบ 2D/3D และการอนุมัติแบบ (Design &amp; Customer Approval)</a></li>
+<li><a href="#7-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-5-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%AD%E0%B8%AD%E0%B8%81%E0%B9%83%E0%B8%9A%E0%B9%80%E0%B8%AA%E0%B8%99%E0%B8%AD%E0%B8%A3%E0%B8%B2%E0%B8%84%E0%B8%B2-boq-%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%A3%E0%B8%B2%E0%B8%84%E0%B8%B2%E0%B8%81%E0%B8%A5%E0%B8%B2%E0%B8%87">ขั้นตอนที่ 5: การออกใบเสนอราคา BOQ และราคากลาง (Quotation &amp; Price Book)</a></li>
+<li><a href="#8-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-6-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B9%80%E0%B8%87%E0%B8%B4%E0%B8%99%E0%B8%A1%E0%B8%B1%E0%B8%94%E0%B8%88%E0%B8%B3">ขั้นตอนที่ 6: การบันทึกรับเงินมัดจำ (Down Payment &amp; Financial Gatekeeper)</a></li>
+<li><a href="#9-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-7-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%81%E0%B8%9B%E0%B8%A5%E0%B8%87%E0%B9%80%E0%B8%9B%E0%B9%87%E0%B8%99%E0%B9%82%E0%B8%84%E0%B8%A3%E0%B8%87%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%95%E0%B8%B4%E0%B8%94%E0%B8%95%E0%B8%B1%E0%B9%89%E0%B8%87%E0%B8%88%E0%B8%A3%E0%B8%B4%E0%B8%87">ขั้นตอนที่ 7: การแปลงเป็นโครงการติดตั้งจริง (Convert to Active Project Engine)</a></li>
+<li><a href="#10-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-8-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%81%E0%B8%9C%E0%B8%99%E0%B8%87%E0%B8%B2%E0%B8%99%E0%B8%AB%E0%B8%A5%E0%B8%B2%E0%B8%A2%E0%B8%AB%E0%B8%A1%E0%B8%A7%E0%B8%94%E0%B8%8A%E0%B9%88%E0%B8%B2%E0%B8%87">ขั้นตอนที่ 8: การจัดการแผนงานหลายหมวดช่าง (Multi-Trade WBS &amp; Timesheet)</a></li>
+<li><a href="#11-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-9-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%80%E0%B8%8A%E0%B9%87%E0%B8%84%E0%B8%AD%E0%B8%B4%E0%B8%99%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%B2%E0%B8%99%E0%B8%94%E0%B9%89%E0%B8%A7%E0%B8%A2-gps-%E0%B8%94%E0%B8%B2%E0%B8%A7%E0%B9%80%E0%B8%97%E0%B8%B5%E0%B8%A2%E0%B8%A1%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%81%E0%B8%A5%E0%B9%89%E0%B8%AD%E0%B8%87%E0%B8%AA%E0%B8%94">ขั้นตอนที่ 9: การเช็คอินหน้างานด้วย GPS ดาวเทียมและกล้องสด (Site Check-In Geofence)</a></li>
+<li><a href="#12-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-10-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%95%E0%B8%A3%E0%B8%A7%E0%B8%88%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%84%E0%B8%B8%E0%B8%93%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%87%E0%B8%B2%E0%B8%99">ขั้นตอนที่ 10: การตรวจรับคุณภาพงาน (Quality Control: On-site QC &amp; Online QC)</a></li>
+<li><a href="#13-%E0%B8%82%E0%B8%B1%E0%B9%89%E0%B8%99%E0%B8%95%E0%B8%AD%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88-11-%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%AA%E0%B9%88%E0%B8%87%E0%B8%A1%E0%B8%AD%E0%B8%9A%E0%B8%87%E0%B8%B2%E0%B8%99-%E0%B8%A5%E0%B8%B2%E0%B8%A2%E0%B9%80%E0%B8%8B%E0%B9%87%E0%B8%99-e-signature--%E0%B8%9B%E0%B8%B4%E0%B8%94%E0%B9%82%E0%B8%84%E0%B8%A3%E0%B8%87%E0%B8%81%E0%B8%B2%E0%B8%A3">ขั้นตอนที่ 11: การส่งมอบงาน, ลายเซ็น E-Signature &amp; ปิดโครงการ (Digital Handover &amp; Settlement)</a></li>
+<li><a href="#14-%E0%B8%95%E0%B8%B2%E0%B8%A3%E0%B8%B2%E0%B8%87%E0%B8%9A%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%B6%E0%B8%81%E0%B8%9C%E0%B8%A5%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%97%E0%B8%94%E0%B8%AA%E0%B8%AD%E0%B8%9A-uat-checklist">ตารางบันทึกผลการทดสอบ UAT Checklist (Test Matrix Sheet)</a></li>
+</ol>
+<hr>
+<h2>1. ข้อมูลทั่วไปและการเตรียมสภาพแวดล้อมทดสอบ</h2>
+<h3>🌐 ที่อยู่ระบบสำหรับทดสอบ (Target URL)</h3>
+<ul>
+<li><strong>Local Development:</strong> <code>http://localhost:5173</code> (Frontend) / <code>http://localhost:5000</code> (Backend API)</li>
+<li><strong>Staging / Production:</strong> <code>https://vibepmt.online</code></li>
+</ul>
+<h3>👥 บัญชีผู้ใช้งานที่ใช้ในการทดสอบ (Test Roles &amp; Personas)</h3>
+<table>
+<thead>
+<tr>
+<th align="left">บทบาท (Role)</th>
+<th align="left">สิทธิ์ในระบบ</th>
+<th align="left">หน้าที่และความรับผิดชอบในการทดสอบ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Sales / CRM</strong></td>
+<td align="left"><code>ROLE_SALES</code> / Admin</td>
+<td align="left">บันทึกผู้คาดหวัง (Lead), บันทึกการติดตาม (Follow-up), นัดหมายวันสำรวจ</td>
+</tr>
+<tr>
+<td align="left"><strong>PM / Manager</strong></td>
+<td align="left"><code>ROLE_PM</code> / Admin</td>
+<td align="left">อนุมัตินัดหมายออก Site, จัดทำแบบแปลน, ออกใบเสนอราคา BOQ, จัดการ Multi-Trade WBS</td>
+</tr>
+<tr>
+<td align="left"><strong>QC Inspector</strong></td>
+<td align="left"><code>ROLE_TECH</code> (QC)</td>
+<td align="left">ออกตรวจพื้นที่หน้างานเดิม (Pre-work), ตรวจประเมินผลงาน (On-site / Online QC)</td>
+</tr>
+<tr>
+<td align="left"><strong>Technician (ช่าง)</strong></td>
+<td align="left"><code>ROLE_TECH</code></td>
+<td align="left">เช็คอินพิกัด GPS หน้างาน, ถ่ายภาพสด, บันทึกชั่วโมงการทำงาน (Timesheet) แยกหมวดช่าง</td>
+</tr>
+<tr>
+<td align="left"><strong>Finance / Admin</strong></td>
+<td align="left"><code>ROLE_ADMIN</code></td>
+<td align="left">ตรวจสอบยอดเงินมัดจำ (Down Payment), อนุมัติการแปลงงาน, ปิดงวดเงินและตัดจ่าย (Settlement)</td>
+</tr>
+<tr>
+<td align="left"><strong>Customer (ลูกค้า)</strong></td>
+<td align="left">- (End User)</td>
+<td align="left">ตรวจแบบ 3D, ตรวจรับมอบงาน, ให้คะแนนความพึงพอใจ 5 ดาว และเซ็นชื่อ E-Signature</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. ภาพรวมวงจรการทำงาน</h2>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;1. Add New Lead (ผู้คาดหวังใหม่/ดึงจาก Master)&quot;] --&gt; B[&quot;2. Survey Booking &amp; Smart QC Dispatch&quot;]
+    B --&gt; C[&quot;3. Site Visit &amp; สภาพเดิม (Pre-work Evidence)&quot;]
+    C --&gt; D[&quot;4. 2D/3D Design &amp; Approval&quot;]
+    D --&gt; E[&quot;5. BOQ Quotation (Service Price Book)&quot;]
+    E --&gt; F[&quot;6. Down Payment (มัดจำงวดแรก &amp; ล็อก Gatekeeper)&quot;]
+    F --&gt; G[&quot;7. Convert to Project (8, 10, หรือ 11 สเตจ)&quot;]
+    G --&gt; H[&quot;8. Multi-Trade WBS &amp; Site Check-in (GPS 500m)&quot;]
+    H --&gt; I[&quot;9. Timesheet &amp; Execution&quot;]
+    I --&gt; J[&quot;10. QC Inspection (On-site / Online Review)&quot;]
+    J --&gt; K[&quot;11. Customer 5-Star &amp; Canvas E-Signature&quot;]
+    K --&gt; L[&quot;12. Final Settlement &amp; Complete Project 🏁&quot;]
+</code></pre>
+<hr>
+<h2>3. ขั้นตอนที่ 1: การบันทึกข้อมูลลูกค้าผู้คาดหวัง (Add Lead / Prospect Entry)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบการป้อนข้อมูลลูกค้ารายใหม่เข้าสู่ระบบ ตรวจสอบความถูกต้องของการดึงข้อมูลจาก Master Directory, การคำนวณรหัส Lead อัตโนมัติ (<code>LD-YYYYMMDD-XXXXX</code>), การแปลงพิกัด GPS/GIS และการเลือกประเภทงาน</p>
+<h3>🧭 ขั้นตอนการดำเนินการ (Step-by-step Execution)</h3>
+<ol>
+<li>เข้าสู่ระบบด้วยสิทธิ์ <strong>Sales</strong>, <strong>PM</strong> หรือ <strong>Admin</strong></li>
+<li>ไปที่แถบเมนูด้านซ้าย เลือก <strong>&quot;ลูกค้ามุ่งหวัง (Leads)&quot;</strong> หรือเปิด URL <code>/leads</code></li>
+<li>คลิกปุ่มสีเขียว <strong>&quot;+ เพิ่มลูกค้าใหม่&quot;</strong> ที่มุมขวาบน</li>
+<li>หน้าต่าง <strong>&quot;บันทึกข้อมูลลูกค้าใหม่ (Lead Entry)&quot;</strong> จะเปิดขึ้นมา</li>
+</ol>
+<hr>
+<h3>📝 รายละเอียดฟิลด์ข้อมูลและการทดสอบ (Field Validation Guide)</h3>
+<h4>3.1 วิธีเลือกข้อมูลลูกค้า (เลือกวิธีใดวิธีหนึ่ง):</h4>
+<ul>
+<li><strong>วิธี ก: ดึงข้อมูลจากทำเนียบลูกค้าเดิม (Customer Master Auto-fill)</strong><ul>
+<li>ในช่อง <em>&quot;ค้นหาลูกค้าเดิมจาก Master (Auto-fill)&quot;</em> ให้พิมพ์ชื่อหรือเบอร์โทร เช่น <code>สมชาย</code> หรือ <code>081</code></li>
+<li>รายการค้นหาจะแสดง Dropdown ขึ้นมา ให้คลิกเลือกลูกค้า</li>
+<li><strong>ผลลัพธ์:</strong> ชื่อ, นามสกุล, เบอร์โทร และที่อยู่จะถูกเติมให้อัตโนมัติ พร้อมแสดงป้าย <code>✓ เชื่อมต่อ Customer Master แล้ว</code></li>
+<li>หากลูกค้ามีหลายไซต์งาน จะมีเมนู Dropdown <code>🏢 เลือกสถานที่ติดตั้ง / ไซต์งานของลูกค้ารายนี้</code> ให้เลือกไซต์ที่ต้องการ</li>
+</ul>
+</li>
+<li><strong>วิธี ข: ป้อนข้อมูลลูกค้าใหม่ทั้งหมด (Manual Entry)</strong><ul>
+<li>*<em>ชื่อ (First Name) <em>:</em></em> ระบุชื่อ เช่น <code>คุณสมชาย</code> <em>(ห้ามเว้นว่าง)</em></li>
+<li><strong>นามสกุล (Last Name):</strong> ระบุ เช่น <code>ใจดี</code></li>
+<li>*<em>เบอร์โทรติดต่อ (Phone) <em>:</em></em> ระบุหมายเลข 10 หลัก เช่น <code>0812345678</code> <em>(ระบบจะล็อกรับเฉพาะตัวเลข 10 หลักเท่านั้น)</em></li>
+<li><strong>สถานะ Lead:</strong> ค่าเริ่มต้นคือ <code>New (ใหม่)</code></li>
+<li><strong>โซนพื้นที่ &amp; สาขา (Zone &amp; Branch):</strong> เช่น <code>[BKK] กรุงเทพฯ &amp; ปริมณฑล</code> ➔ <code>สาขาบางนา</code></li>
+<li><strong>พนักงานขาย (Deal Owner):</strong> เลือกผู้ดูแล เช่น <code>แอดมิน</code> หรือ <code>Sales Person</code></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4>3.2 การระบุพิกัดสถานที่ติดตั้ง &amp; ระบบแผนที่อัจฉริยะ (GPS &amp; Smart GIS Engine)</h4>
+<p>ให้ทดสอบฟังก์ชันระบุพิกัดอย่างน้อย 1 วิธีจากตัวเลือกต่อไปนี้:</p>
+<ul>
+<li><strong>วิธีที่ 1 (Smart Auto-Fill - แนะนำ):</strong> ก๊อปปี้พิกัดจาก Google Maps มาวางในช่อง <em>&quot;วางพิกัด หรือ ลิงก์จาก Google Maps อัจฉริยะ&quot;</em><ul>
+<li>รองรับทั้งพิกัดทศนิยม: <code>13.851979, 100.643406</code></li>
+<li>รองรับพิกัด DMS: <code>13°51&#39;07.1&quot;N 100°38&#39;36.3&quot;E</code></li>
+<li>รองรับลิงก์ URL: <code>https://maps.app.goo.gl/...</code></li>
+<li>คลิกปุ่ม <strong>&quot;✨ ถอดค่าพิกัด&quot;</strong> ➔ ระบบจะแยกค่าลงในช่องละติจูดและลองจิจูดให้อัตโนมัติ</li>
+</ul>
+</li>
+<li><strong>วิธีที่ 2 (GPS ปัจจุบัน):</strong> คลิกปุ่ม <strong>&quot;🎯 ดึงพิกัดปัจจุบัน (GPS)&quot;</strong> เพื่อใช้พิกัดจากเครื่องอุปกรณ์</li>
+<li><strong>วิธีที่ 3 (Interactive GIS Picker):</strong> คลิกปุ่ม <strong>&quot;📍 ปักหมุดเลือกพิกัดบนแผนที่ (ฟรี GIS)&quot;</strong> เพื่อเปิดแผนที่ GIS แล้วเลื่อนหมุดไปยังตำแหน่งที่ต้องการ จากนั้นกดบันทึก</li>
+<li><strong>วิธีที่ 4 (Geocoding):</strong> กรอกที่อยู่ข้อความ เช่น <code>206 ซอย รามอินทรา 57 แขวงท่าแร้ง เขตบางเขน กรุงเทพฯ</code> แล้วคลิก <strong>&quot;🔍 ค้นหาพิกัดจากข้อความที่อยู่&quot;</strong></li>
+<li><strong>การตรวจสอบ Preview:</strong> ตรวจดูว่ากรอบแผนที่ Google Maps ด้านล่างแสดงหมุดตรงกับพิกัดที่ระบุหรือไม่</li>
+</ul>
+<hr>
+<h4>3.3 ข้อมูลความต้องการของลูกค้า (Customer Requirements - ฝั่งขวา)</h4>
+<ul>
+<li>*<em>ประเภทงาน (Job Type) <em>:</em></em> ให้เลือกทดสอบตาม Scenario:<ul>
+<li><code>Quick service (งานซ่อมด่วน)</code> ➔ สำหรับงานแก้ปัญหาด่วน (8 ขั้นตอน)</li>
+<li><code>Renovate Service (งานรีโนเวท)</code> ➔ สำหรับงานปรับปรุงพื้นที่เต็มรูปแบบ (11 ขั้นตอน)</li>
+<li><code>MA Service (งานซ่อมบำรุง)</code> ➔ สำหรับงานสัญญาตรวจเช็ครายงวด (10 ขั้นตอน)</li>
+</ul>
+</li>
+<li>*<em>ประเภทสิ่งก่อสร้าง (Building Type) <em>:</em></em> เลือก <code>บ้านเดี่ยว</code>, <code>คอนโด</code>, <code>อาคารพาณิชย์</code> หรือ <code>อื่นๆ</code></li>
+<li><strong>ขนาดพื้นที่ (ตร.ม.):</strong> ระบุ เช่น <code>65</code></li>
+<li><strong>งบประมาณเบื้องต้น (บาท):</strong> ระบุ เช่น <code>150,000</code></li>
+<li><strong>วิธีการชำระเงิน:</strong> เลือก <code>โอนเข้าบัญชีธนาคาร</code></li>
+<li><strong>พื้นที่งาน (Work Areas):</strong> ติ๊กเลือก เช่น <code>[✓] ห้องรับแขก</code>, <code>[✓] ห้องนอน</code></li>
+<li><strong>ประเภทงานที่ต้องการ (Required Work Types):</strong> ติ๊กเลือก เช่น <code>[✓] งานไฟฟ้า</code>, <code>[✓] งานออกแบบ</code>, <code>[✓] งานติดตั้ง</code></li>
+<li><strong>หมายเหตุ / บันทึกเพิ่มเติม:</strong> ระบุรายละเอียดเพิ่มเติมจากเซลล์</li>
+</ul>
+<ol start="5">
+<li>คลิกปุ่ม <strong>&quot;💾 บันทึกข้อมูลลูกค้า (Save Lead)&quot;</strong></li>
+</ol>
+<hr>
+<h3>✅ ผลลัพธ์ที่คาดหวัง (Expected Result)</h3>
+<ol>
+<li>หน้าต่าง Modal ปิดลงอย่างสมบูรณ์</li>
+<li>รายการ Lead ใหม่แสดงในตารางรายการแรกสุด พร้อมแสดงป้ายกระพริบสีแดง <code>⚡ NEW</code></li>
+<li>รหัสอ้างอิงสร้างขึ้นถูกต้องตามรูปแบบ <code>🏷️ LD-YYYYMMDD-XXXXX</code></li>
+<li>ข้อมูลชื่อลูกค้า, เบอร์โทร, พิกัด GPS, ประเภทงาน และสาขา แสดงผลถูกต้องครบถ้วน</li>
+<li>ตัวเลขสรุปใน Dashboard Bar ด้านบน (Total Leads และ New Leads) เพิ่มขึ้น +1 ทันที</li>
+</ol>
+<hr>
+<h2>4. ขั้นตอนที่ 2: การนัดหมายสำรวจหน้างาน &amp; จัดคิวช่าง (Survey Booking &amp; Smart QC Dispatch)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบการลงตารางนัดหมายลงพื้นที่สำรวจ, ตรวจสอบการชนกันของคิวงานช่าง (Conflict Detection +-3 ชั่วโมง) และการบันทึกข้อมูลผู้ประสานงานหน้างาน</p>
+<h3>🧭 ขั้นตอนการดำเนินการ</h3>
+<ol>
+<li>ในตาราง Leads ค้นหารายการที่เพิ่งสร้าง</li>
+<li>คลิกปุ่ม <strong>&quot;📅 นัดหมายช่างประเมิน&quot;</strong> หรือคลิกเมนูดำเนินการ <code>[ ︙ ]</code> ➔ เลือก <strong>&quot;📅 1. นัดหมายช่างประเมิน&quot;</strong></li>
+<li>หน้าต่างติดตามและการนัดหมายจะเปิดขึ้น:<ul>
+<li><strong>ประเภทกิจกรรม:</strong> เลือก <code>1.2.2 นัดลงพื้นที่ site งาน</code></li>
+<li><strong>ข้อมูลผู้ประสานงานหน้างาน:</strong><ul>
+<li>ชื่อผู้ประสานงาน: <code>คุณสมชาย</code></li>
+<li>เบอร์โทรศัพท์: <code>0812345678</code></li>
+<li>LINE ID: <code>somchai_line</code></li>
+</ul>
+</li>
+<li><strong>กำหนดวันและเวลานัดหมาย:</strong> เลือกวันพรุ่งนี้ เวลา <code>10:00</code></li>
+<li><strong>เลือกช่างประเมิน (Smart QC Dispatch):</strong><ul>
+<li>ระบบจะคำนวณและแสดงเฉพาะช่างที่มีสถานะว่าง ไม่มีคิวงานซ้อนทับในช่วง +-3 ชั่วโมง</li>
+<li>เลือกช่าง QC ที่ต้องการ เช่น <code>สมศักดิ์ ช่างประเมิน</code></li>
+</ul>
+</li>
+<li><strong>ตรวจสอบแผนที่เส้นทาง:</strong> คลิกปุ่ม <code>🌐 เปิด Google Maps เพื่อนำทาง</code> เพื่อทดสอบลิงก์พิกัด</li>
+<li><strong>บันทึกโน้ตการนัดหมาย:</strong> เช่น <code>ลูกค้านัดเข้าดูสภาพฝ้าเพดานและจุดติดตั้งแอร์</code></li>
+</ul>
+</li>
+<li>คลิกปุ่ม <strong>&quot;💾 บันทึกการนัดหมาย&quot;</strong></li>
+</ol>
+<h3>✅ ผลลัพธ์ที่คาดหวัง</h3>
+<ul>
+<li>สถานะการนัดหมายในตารางอัปเดตเป็นวัน-เวลาที่กำหนด</li>
+<li>สถานะการอนุมัติแสดงเป็น <code>⏳ รออนุมัตินัดหมาย (Pending Approval)</code> หรือ <code>Approved</code></li>
+</ul>
+<hr>
+<h2>5. ขั้นตอนที่ 3: การอนุมัติออก Site &amp; บันทึกผลการตรวจหน้างาน (Site Visit Approval &amp; Inspection)</h2>
+<h3>5.1 การอนุมัตินัดหมายออก Site (โดย Manager / PM)</h3>
+<ol>
+<li>คลิกปุ่ม <strong>&quot;🛡️ อนุมัตินัดหมายออก Site&quot;</strong> ที่ด้านบนของหน้ารายการ Leads</li>
+<li>ในหน้าต่าง <code>Site Visit Approval Manager</code>:<ul>
+<li>ตรวจสอบรายการนัดหมายของช่างและข้อมูลลูกค้า</li>
+<li>คลิกปุ่ม <strong>&quot;✅ อนุมัติ (Approve)&quot;</strong></li>
+<li>ระบบจะส่งสัญญาณยืนยันให้ช่างเตรียมออกพื้นที่ได้ทันที</li>
+</ul>
+</li>
+</ol>
+<h3>5.2 การบันทึกผลการตรวจหน้างานจริง (Site Visit Result)</h3>
+<ol>
+<li>เมื่อช่างเดินทางไปตรวจสภาพพื้นที่จริงเสร็จสิ้น ให้คลิกปุ่ม <strong>&quot;📋 บันทึกผล Visit&quot;</strong> ที่แถวรายการ Lead</li>
+<li>ในหน้าต่าง <code>Site Visit Result Modal</code>:<ul>
+<li><strong>ผลการลงพื้นที่:</strong> เลือก <code>เข้า Visit สำเร็จ</code></li>
+<li><strong>สภาพหน้างานเดิม (Pre-work Evidence):</strong> กรอก เช่น <code>โครงสร้างฝ้าเดิมมีความชื้น ต้องเปลี่ยนแผ่นยิปซัมและเดินสายไฟใหม่</code></li>
+<li><strong>แนบรูปภาพสภาพเดิม:</strong> อัปโหลดรูปภาพถ่ายสภาพหน้างานจริง</li>
+<li><strong>ขั้นตอนถัดไป:</strong> เลือก <code>ส่งใบเสนอราคา (Pending Quote)</code> หรือ <code>จัดทำแบบแปลน (Pending Design)</code></li>
+</ul>
+</li>
+<li>คลิกปุ่ม <strong>&quot;💾 บันทึกผลการสำรวจ&quot;</strong></li>
+</ol>
+<h3>✅ ผลลัพธ์ที่คาดหวัง</h3>
+<ul>
+<li>สถานะของ Lead ปรับเปลี่ยนเป็น <code>Pending Quote</code> หรือ <code>Pending Design</code> อัตโนมัติ</li>
+<li>ประวัติการลงพื้นที่ถูกบันทึกใน Timeline สามารถคลิกดูได้ที่ปุ่ม <code>📜 ประวัติ / ไทม์ไลน์</code></li>
+</ul>
+<hr>
+<h2>6. ขั้นตอนที่ 4: การจัดทำแบบ 2D/3D และการอนุมัติแบบ (Design &amp; Customer Approval)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบการควบคุมเวอร์ชันแบบแปลน (Revision Control) และการบันทึกประวัติการอนุมัติของลูกค้า</p>
+<h3>🧭 ขั้นตอนการดำเนินการ</h3>
+<ol>
+<li>ในแถวรายการ Lead คลิกปุ่ม <strong>&quot;🎨 แบบ 2D/3D&quot;</strong> หรือเลือกเมนูลัด <code>🎨 2. แบบ 2D/3D &amp; อนุมัติ</code></li>
+<li>หน้าต่าง <code>Design Approval Modal</code> จะปรากฏขึ้น:<ul>
+<li><strong>ประเภทแบบ:</strong> เลือก <code>3D Perspective</code> หรือ <code>2D Layout / Floor Plan</code></li>
+<li><strong>เวอร์ชัน (Revision):</strong> เลือก <code>Rev A</code></li>
+<li><strong>อัปโหลดไฟล์/รูปภาพแบบ:</strong> อัปโหลดรูปภาพ 3D Perspective ที่ออกแบบไว้</li>
+<li><strong>บันทึกข้อมูลแบบ:</strong> กดบันทึกรายการแบบ</li>
+</ul>
+</li>
+<li><strong>การทดสอบการอนุมัติของลูกค้า (Design Approval):</strong><ul>
+<li>คลิกปุ่ม <strong>&quot;✅ ลูกค้าอนุมัติแบบแปลนนี้ (Design Approved)&quot;</strong></li>
+<li>ระบุข้อคิดเห็นของลูกค้า: <code>ลูกค้าพึงพอใจโทนสีและตำแหน่งเฟอร์นิเจอร์ สรุปตามแบบ Rev A</code></li>
+<li>คลิกยืนยันการอนุมัติ</li>
+</ul>
+</li>
+</ol>
+<h3>✅ ผลลัพธ์ที่คาดหวัง</h3>
+<ul>
+<li>สถานะของ Lead ปรับเป็น <code>Design Approved</code> แสดง Badge สีเขียวชัดเจน</li>
+<li>แบบที่อนุมัติถูกล็อกเป็น Final Approved Design</li>
+</ul>
+<hr>
+<h2>7. ขั้นตอนที่ 5: การออกใบเสนอราคา BOQ และราคากลาง (Quotation &amp; Price Book)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบการคำนวณราคาจาก Service Price Book, การตรวจสอบ Margin % และการออกเลขใบเสนอราคา</p>
+<h3>🧭 ขั้นตอนการดำเนินการ</h3>
+<ol>
+<li>ไปที่เมนู <strong>&quot;ใบเสนอราคา (Quotations)&quot;</strong> หรือคลิกที่ลิงก์ใบเสนอราคาในหน้า Lead</li>
+<li>คลิก <strong>&quot;+ สร้างใบเสนอราคาใหม่&quot;</strong> และเลือกลูกค้า <code>คุณสมชาย ใจดี</code></li>
+<li>เพิ่มรายการงานจาก <strong>Service Price Book</strong>:<ul>
+<li>รายการ 1: <code>งานรื้อถอนและทำฝ้าเพดานฉาบเรียบ</code> (ระบุพื้นที่ 65 ตร.ม.)</li>
+<li>รายการ 2: <code>งานเดินระบบไฟฟ้าและโคมไฟ LED</code> (ระบุ 1 ชุด)</li>
+<li>รายการ 3: <code>งานปูพื้นกระเบื้องยาง SPC ลายไม้</code> (ระบุ 65 ตร.ม.)</li>
+</ul>
+</li>
+<li>ตรวจสอบการคำนวณ:<ul>
+<li>ต้นทุนรวม (Material + Labor Cost)</li>
+<li>Gross Margin % (ระบบแสดงป้ายสีเขียวเมื่อ Margin ≥ 30%)</li>
+<li>ยอดรวมสุทธิ: เช่น <code>120,000 บาท</code></li>
+</ul>
+</li>
+<li>เปลี่ยนสถานะใบเสนอราคาเป็น <strong>&quot;Approved&quot;</strong></li>
+</ol>
+<h3>✅ ผลลัพธ์ที่คาดหวัง</h3>
+<ul>
+<li>ระบบสร้างเลขที่ใบเสนอราคาทางการ เช่น <code>QT-2026-0015</code> ยอดรวม 120,000 บาท พร้อมบันทึกประวัติ</li>
+</ul>
+<hr>
+<h2>8. ขั้นตอนที่ 6: การบันทึกรับเงินมัดจำ (Down Payment &amp; Financial Gatekeeper)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบระบบควบคุมความปลอดภัยทางการเงิน (Financial Gatekeeper) ซึ่งจะ <strong>ไม่อนุญาต</strong> ให้เริ่มงานหรือแปลงเป็นโครงการจนกว่าจะมีการยืนยันชำระเงินมัดจำ</p>
+<h3>🧭 ขั้นตอนการดำเนินการ</h3>
+<ol>
+<li>กลับมาที่หน้า <strong>Leads</strong> (<code>/leads</code>)</li>
+<li><em>[ทดสอบเงื่อนไขข้อผิดพลาด / Negative Test]:</em> พยายามคลิกปุ่มแปลงโครงการ ➔ <strong>ระบบต้องไม่อนุญาตหรือปุ่มถูกล็อก</strong></li>
+<li>คลิกปุ่ม <strong>&quot;💰 รับมัดจำ &amp; แปลงงาน&quot;</strong> หรือเลือกเมนูลัด <code>💰 4. รับชำระเงินมัดจำ</code></li>
+<li>ในหน้าต่าง <code>Payment Modal</code>:<ul>
+<li>ยอดเงินใบเสนอราคา: <code>120,000</code> บาท</li>
+<li>ยอดมัดจำงวดที่ 1 (แนะนำ 50%): <code>60,000</code> บาท</li>
+<li>วิธีการชำระเงิน: <code>โอนเข้าบัญชีธนาคาร</code></li>
+<li>วันที่ชำระเงิน: วันที่ปัจจุบัน</li>
+<li>แนบไฟล์/สลิปโอนเงินธนาคาร</li>
+</ul>
+</li>
+<li>คลิกปุ่ม <strong>&quot;💾 บันทึกการรับชำระเงินมัดจำ&quot;</strong></li>
+</ol>
+<h3>✅ ผลลัพธ์ที่คาดหวัง</h3>
+<ul>
+<li>ระบบบันทึกรายการเงินมัดจำ 60,000 บาท สถานะ <code>Paid</code></li>
+<li>ปลดล็อกปุ่ม <strong>&quot;🚀 แปลงเป็นโครงการติดตั้ง (Convert to Project)&quot;</strong> ทันที</li>
+</ul>
+<hr>
+<h2>9. ขั้นตอนที่ 7: การแปลงเป็นโครงการติดตั้งจริง (Convert to Active Project Engine)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบการเปลี่ยนผ่านจาก Sales Pipeline เข้าสู่ Execution Engine, การออก Smart Project ID และการจัดสรร Stage ตามประเภทงาน</p>
+<h3>🧭 ขั้นตอนการดำเนินการ</h3>
+<ol>
+<li>ที่หน้า Leads คลิกปุ่มสีส้ม <strong>&quot;🚀 แปลงเป็นโครงการติดตั้ง&quot;</strong> หรือคลิกเมนู <code>[ ︙ ]</code> ➔ <strong>&quot;🚀 5. แปลงเป็นโครงการ&quot;</strong></li>
+<li>หน้าต่างยืนยันจะแสดงสรุปข้อมูล:<ul>
+<li>รหัส Lead: <code>LD-20260824-xxxxx</code></li>
+<li>ชื่อลูกค้า: <code>คุณสมชาย ใจดี</code></li>
+<li>ประเภทงาน: <code>Renovate Service</code></li>
+<li>พิกัด GPS Geofencing: <code>13.851979, 100.643406</code> (รัศมี 500 เมตร)</li>
+</ul>
+</li>
+<li>คลิกปุ่ม <strong>&quot;ยืนยันการแปลงเป็นโครงการ&quot;</strong></li>
+</ol>
+<h3>✅ ผลลัพธ์ที่คาดหวัง</h3>
+<ul>
+<li>สถานะของ Lead เปลี่ยนเป็น <code>Converted (แปลงเป็นโปรเจกต์แล้ว)</code> สีเขียว</li>
+<li>ระบบสร้างโครงการใหม่ในหน้า Projects พร้อม <strong>Smart Project ID</strong> (เช่น <code>PRBNA-2026-00042</code>)</li>
+<li>จัดสรรกระดาน Kanban ตามประเภทงานอัตโนมัติ:<ul>
+<li><code>Renovate Service</code> ➔ <strong>11 ขั้นตอน</strong> (รวม Survey, Design, Check-in, Execution, QC, Handover)</li>
+<li><code>Quick service</code> ➔ <strong>8 ขั้นตอน</strong></li>
+<li><code>MA Service</code> ➔ <strong>10 ขั้นตอน</strong></li>
+</ul>
+</li>
+<li>พิกัด GPS และข้อมูลลูกค้าถูกถ่ายทอด (Inherit) เข้าสู่โครงการโดยตรง</li>
+</ul>
+<hr>
+<h2>10. ขั้นตอนที่ 8: การจัดการแผนงานหลายหมวดช่าง (Multi-Trade WBS &amp; Timesheet)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบการรวมชุดงานจากหลายหมวดช่าง (Multi-Trade) เข้าในโครงการเดียว และการลงเวลาแยกหมวดงาน</p>
+<h3>🧭 ขั้นตอนการดำเนินการ</h3>
+<ol>
+<li>เปิดเข้าไปในโครงการที่สร้างขึ้น ➔ ไปที่แท็บ <strong>&quot;Project Plan&quot;</strong> หรือ <strong>&quot;Tasks&quot;</strong></li>
+<li>คลิกปุ่ม <strong>&quot;+ นำเข้าแม่แบบชุดงานหลายหมวดช่าง&quot;</strong></li>
+<li>ระบุพื้นที่งาน: <code>ห้องรับแขก</code></li>
+<li>ติ๊กเลือกหมวดงานที่ต้องการ:<ul>
+<li><code>[✓] งานไฟฟ้า</code></li>
+<li><code>[✓] งานแอร์</code></li>
+<li><code>[✓] งานฝ้าเพดาน</code></li>
+<li><code>[✓] งานปูพื้นกระเบื้องยาง</code></li>
+</ul>
+</li>
+<li>คลิก <strong>&quot;ยืนยันการนำเข้า Tasks&quot;</strong></li>
+<li>ไปที่แท็บ <strong>Kanban Board</strong> ➔ ทดสอบฟิลเตอร์กรองงาน:<ul>
+<li>เลือกตัวกรอง <code>#ไฟฟ้า</code> ➔ แสดงเฉพาะการ์ดงานช่างไฟ</li>
+<li>เลือกตัวกรอง <code>#แอร์</code> ➔ แสดงเฉพาะการ์ดงานช่างแอร์</li>
+</ul>
+</li>
+</ol>
+<h3>✅ ผลลัพธ์ที่คาดหวัง</h3>
+<ul>
+<li>Tasks ย่อยทั้ง 4 หมวดถูกสร้างขึ้นพร้อมติดแท็ก เช่น <code>[ห้องรับแขก - ไฟฟ้า] เดินสายไฟเมน</code></li>
+<li>ช่างแต่ละทีมสามารถกรองดูเฉพาะงานของตนเอง และบันทึกเวลาทำงานลง Timesheet ได้อย่างถูกต้อง</li>
+</ul>
+<hr>
+<h2>11. ขั้นตอนที่ 9: การเช็คอินหน้างานด้วย GPS ดาวเทียมและกล้องสด (Site Check-In Geofence)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบระบบ Geofencing รัศมี 500 เมตร และการบังคับถ่ายภาพผ่านกล้องสด (Proof of Presence)</p>
+<h3>🧭 ขั้นตอนการดำเนินการ</h3>
+<ol>
+<li>เข้าสู่ระบบด้วยบทบาท <strong>Technician (ช่าง)</strong></li>
+<li>ไปที่เมนู <strong>&quot;Site Check-In/Out&quot;</strong> (<code>/site-checkin</code>)</li>
+<li>เลือกโครงการ <code>คุณสมชาย ใจดี</code></li>
+<li><strong>ทดสอบระบบ Geofencing:</strong><ul>
+<li>กดปุ่ม <strong>&quot;📍 ตรวจสอบพิกัด GPS&quot;</strong></li>
+<li><em>กรณีอยู่ในรัศมี (≤ 500 ม.):</em> ระบบขึ้นสถานะ <code>✓ อยู่ในพื้นที่โครงการ (ระยะห่าง XX เมตร)</code></li>
+<li><em>กรณีอยู่นอกรัศมี (&gt; 500 ม.):</em> ระบบแสดงข้อความเตือนระยะห่างเกินเกณฑ์</li>
+</ul>
+</li>
+<li><strong>ทดสอบการถ่ายภาพสด:</strong><ul>
+<li>คลิกปุ่ม <strong>&quot;📸 เปิดกล้องถ่ายภาพหน้างาน&quot;</strong></li>
+<li>ถ่ายภาพบรรยากาศหน้างานสด</li>
+</ul>
+</li>
+<li>คลิกปุ่ม <strong>&quot;✅ ยืนยันการ Check-In&quot;</strong></li>
+</ol>
+<h3>✅ ผลลัพธ์ที่คาดหวัง</h3>
+<ul>
+<li>บันทึกเวลาเริ่มต้นทำงาน, พิกัด GPS และรูปถ่ายหน้างาน เข้าสู่ระบบ Timesheet และ Project Activity Log ทันที</li>
+</ul>
+<hr>
+<h2>12. ขั้นตอนที่ 10: การตรวจรับคุณภาพงาน (Quality Control: On-site QC &amp; Online QC)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบการตรวจประเมินคุณภาพงานทั้ง 2 รูปแบบ และการทำงานของ Rework Loop เมื่อพบข้อบกพร่อง</p>
+<hr>
+<h3>12.1 โหมดที่ 1: งาน Renovate ➔ ตรวจ On-site QC Inspection (ภาคสนาม)</h3>
+<ol>
+<li>ในหน้า Project Detail คลิกปุ่ม <strong>&quot;🏅 QC &amp; ส่งมอบงาน (Phase 04)&quot;</strong></li>
+<li>เลือกระบบตรวจ: <strong>&quot;📍 On-site QC Inspection&quot;</strong></li>
+<li>ตรวจสอบ Digital Checklist 5 ด้านหลัก:<ul>
+<li><ol>
+<li>ความเรียบร้อยของพื้นผิวและรอยต่อ (Surface &amp; Joint Finish)</li>
+</ol>
+</li>
+<li><ol start="2">
+<li>ระบบความปลอดภัยทางไฟฟ้าและแสงสว่าง (Electrical &amp; Lighting Safety)</li>
+</ol>
+</li>
+<li><ol start="3">
+<li>ความสะอาดและการเก็บเศษวัสดุ (Site Cleanliness &amp; Waste Removal)</li>
+</ol>
+</li>
+<li><ol start="4">
+<li>ความถูกต้องตรงตามแบบแปลน 3D (Design &amp; Dimension Accuracy)</li>
+</ol>
+</li>
+<li><ol start="5">
+<li>การทดสอบการใช้งานจริง (Functional &amp; Load Test)</li>
+</ol>
+</li>
+</ul>
+</li>
+</ol>
+<h4>🧪 การทดสอบกรณีงานมีข้อบกพร่อง (Defect &amp; Rework Test):</h4>
+<ul>
+<li>ติ๊กข้อ 1 เป็น <code>❌ ไม่ผ่าน (Defect)</code></li>
+<li>ระบุข้อบกพร่อง: <code>แนวฝ้าเพดานบริเวณมุมห้องมีรอยต่อไม่เรียบ ช่างต้องเก็บสีใหม่</code></li>
+<li>เลือกผลการประเมิน: <code>🛠️ สั่งช่างแก้งาน (Rework Required)</code> แล้วกดบันทึก</li>
+<li><strong>ผลลัพธ์:</strong> โครงการปรับสถานะเป็น <code>Reworking</code> การ์ดงานถูกส่งกลับไปให้ช่างแก้ไข และล็อกไม่ให้ข้ามไปขั้นตอนส่งมอบ</li>
+</ul>
+<h4>🧪 การทดสอบกรณีงานผ่านสมบูรณ์ (QC Passed Test):</h4>
+<ul>
+<li>หลังช่างแก้ไขเสร็จ ให้เปิด QC Modal อีกครั้ง</li>
+<li>ติ๊กเลือก <code>✅ ผ่าน (Pass)</code> ครบทั้ง 5 ข้อ</li>
+<li>อัปโหลดภาพถ่ายผลงานที่เสร็จสมบูรณ์</li>
+<li>เลือกผลการประเมิน: <code>🏆 ผ่านเกณฑ์ QC (Passed On-site)</code> แล้วกดบันทึก</li>
+<li><strong>ผลลัพธ์:</strong> ระบบปลดล็อกและสลับไปยัง <strong>Tab 2: ส่งมอบงาน &amp; E-Sign</strong> อัตโนมัติ</li>
+</ul>
+<hr>
+<h3>12.2 โหมดที่ 2: งานบริการด่วน ➔ ตรวจ Online QC Review (ผ่านรูปถ่าย)</h3>
+<ol>
+<li>สำหรับโครงการประเภท <code>Quick service</code> ระบบจะ Auto-select โหมด <strong>&quot;📱 Online QC Review&quot;</strong></li>
+<li>ผู้ตรวจตรวจสอบรูปถ่ายผลงานที่ช่าง Check-out ส่งเข้ามา</li>
+<li>ตรวจสอบเกณฑ์ 4 ข้อ:<ul>
+<li><ol>
+<li>รูปถ่ายชัดเจนครบทุกมุมมอง</li>
+</ol>
+</li>
+<li><ol start="2">
+<li>ติดตั้งอุปกรณ์ถูกต้องตามมาตรฐาน</li>
+</ol>
+</li>
+<li><ol start="3">
+<li>ทำความสะอาดพื้นที่เรียบร้อย</li>
+</ol>
+</li>
+<li><ol start="4">
+<li>ทดสอบระบบใช้งานได้ปกติ</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>ติ๊ก <code>✅ ผ่าน (Pass)</code> ทั้ง 4 ข้อ ➔ คลิก <strong>&quot;บันทึกผล Online QC&quot;</strong> ➔ ผ่านได้ทันทีโดยไม่ต้องลงพื้นที่</li>
+</ol>
+<hr>
+<h2>13. ขั้นตอนที่ 11: การส่งมอบงาน, ลายเซ็น E-Signature &amp; ปิดโครงการ (Digital Handover &amp; Settlement)</h2>
+<h3>📌 วัตถุประสงค์</h3>
+<p>ทดสอบการให้คะแนนความพึงพอใจ, การลงลายมือชื่อสดบนหน้าจอ (HTML5 Canvas), การกำหนดระยะเวลารับประกัน และการตัดจ่ายงวดสุดท้าย</p>
+<h3>🧭 ขั้นตอนการดำเนินการ</h3>
+<h4>13.1 แท็บที่ 2: การส่งมอบงาน &amp; ลายเซ็นลูกค้า (Handover &amp; E-Signature)</h4>
+<ol>
+<li>ในหน้าต่าง Phase 04 ให้ไปที่ <strong>&quot;Tab 2: ส่งมอบงาน &amp; E-Sign&quot;</strong></li>
+<li>ให้ลูกค้ากดประเมินความพึงพอใจ: ติ๊กเลือก <strong>5 ดาว ⭐⭐⭐⭐⭐</strong></li>
+<li>กำหนดเงื่อนไขการรับประกันผลงาน: เลือก <code>12 เดือน (1 ปี)</code></li>
+<li><strong>ทดสอบกระดานเซ็นชื่อดิจิทัล (Canvas):</strong><ul>
+<li>ใช้เมาส์หรือนิ้วมือวาดลายเซ็นสดลงในกรอบลายเซ็น</li>
+<li><em>[ทดสอบปุ่มล้างลายเซ็น]:</em> คลิกปุ่ม <code>🗑️ ล้างลายเซ็น</code> ➔ กระดานต้องกลับมาว่างเปล่า</li>
+<li>เซ็นลายชื่อลูกค้า <code>สมชาย ใจดี</code> ลงบนกระดาน</li>
+</ul>
+</li>
+<li>คลิกปุ่ม <strong>&quot;ต่อไป: ตัดจ่าย &amp; ปิด Job ➔&quot;</strong></li>
+</ol>
+<hr>
+<h4>13.2 แท็บที่ 3: การตัดจ่าย &amp; ปิดโครงการสมบูรณ์ (BMT Settlement &amp; Completion)</h4>
+<ol>
+<li>ใน <strong>&quot;Tab 3: ตัดจ่าย &amp; ปิดโครงการ (Settlement)&quot;</strong>:<ul>
+<li>ตรวจสอบสรุปข้อมูลโครงการและทีมช่างปฏิบัติการ</li>
+<li>ยอดเงินโครงการทั้งหมด: <code>120,000</code> บาท</li>
+<li>ยอดมัดจำงวดที่ 1 (จ่ายแล้ว): <code>60,000</code> บาท</li>
+<li>ยอดชำระงวดสุดท้ายคงเหลือ: <code>60,000</code> บาท</li>
+</ul>
+</li>
+<li>ติ๊กสถานะการรับเงินงวดสุดท้าย: <code>✅ ชำระครบถ้วนแล้ว (Paid)</code></li>
+<li>คลิกปุ่มสีเขียว <strong>&quot;🏁 ยืนยันปิดโครงการสมบูรณ์ (Complete Project)&quot;</strong></li>
+</ol>
+<hr>
+<h3>✅ ผลลัพธ์ที่คาดหวัง</h3>
+<ol>
+<li>สถานะโครงการเปลี่ยนเป็น <strong>&quot;Completed&quot;</strong> สมบูรณ์</li>
+<li>ระบบสร้างเอกสารบันทึกการส่งมอบงาน (Digital Handover Certificate) พร้อมแนบลายเซ็นลูกค้า, พิกัด GPS, คะแนน 5 ดาว และเงื่อนไขการรับประกัน 12 เดือน</li>
+<li>รายการบนกระดาน Kanban ถูกย้ายเข้าสู่คอลัมน์ <code>Close / Completed</code></li>
+<li>รายงาน Executive Dashboard อัปเดตรายได้, กำไรสุทธิ (P&amp;L) และสถิติความสำเร็จของโครงการทันที</li>
+</ol>
+<hr>
+<h2>14. ตารางบันทึกผลการทดสอบ UAT Checklist (Test Matrix Sheet)</h2>
+<table>
+<thead>
+<tr>
+<th align="center">ลำดับ</th>
+<th align="left">รหัสขั้นตอน</th>
+<th align="left">รายการทดสอบ</th>
+<th align="left">ข้อมูลที่ใช้ทดสอบ</th>
+<th align="left">ผลลัพธ์ที่คาดหวัง</th>
+<th align="center">ผลทดสอบ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"><strong>1</strong></td>
+<td align="left"><strong>TC-LEAD-01</strong></td>
+<td align="left">เพิ่ม Lead ใหม่พร้อมกรอกพิกัด GPS อัจฉริยะ</td>
+<td align="left">ชื่อ: คุณสมชาย, เบอร์: 0812345678, งาน: Renovate, พิกัด: <code>13.851979, 100.643406</code></td>
+<td align="left">บันทึกสำเร็จ ได้รหัส <code>LD-...</code> สถานะ New Lead หมุดแผนที่แสดงตรงตำแหน่ง</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>2</strong></td>
+<td align="left"><strong>TC-LEAD-02</strong></td>
+<td align="left">ดึงข้อมูลลูกค้าเดิมจาก Master Directory</td>
+<td align="left">พิมพ์ค้นหาชื่อลูกค้าใน Master</td>
+<td align="left">ข้อมูลชื่อ เบอร์โทร และไซต์งานถูก Auto-fill ครบถ้วน</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>3</strong></td>
+<td align="left"><strong>TC-SURV-01</strong></td>
+<td align="left">นัดหมายช่างสำรวจ (Smart QC Dispatch)</td>
+<td align="left">นัดหมายวันพรุ่งนี้ 10:00 น.</td>
+<td align="left">ระบบคัดกรองเฉพาะช่างที่ว่าง บันทึกนัดหมายสำเร็จ</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>4</strong></td>
+<td align="left"><strong>TC-SURV-02</strong></td>
+<td align="left">อนุมัตินัดหมายออก Site &amp; บันทึกผล Visit</td>
+<td align="left">สภาพบ้านเดิม: ฝ้าเพดานชื้น, ไปต่อ: ส่งใบเสนอราคา</td>
+<td align="left">สถานะ Lead ปรับเป็น <code>Pending Quote</code> อัตโนมัติ</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>5</strong></td>
+<td align="left"><strong>TC-DSGN-01</strong></td>
+<td align="left">อัปโหลดแบบ 3D และลูกค้าอนุมัติแบบ</td>
+<td align="left">แบบ 3D Rev A, ลูกค้าอนุมัติ</td>
+<td align="left">สถานะ Lead เป็น <code>Design Approved</code> สีเขียว</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>6</strong></td>
+<td align="left"><strong>TC-QUOT-01</strong></td>
+<td align="left">ออกใบเสนอราคา BOQ ดึงจาก Price Book</td>
+<td align="left">งานฝ้า + ไฟ + พื้น รวม 120,000 บาท</td>
+<td align="left">ออกใบเสนอราคา <code>QT-xxx</code> มี Margin ≥ 30%</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>7</strong></td>
+<td align="left"><strong>TC-GATE-01</strong></td>
+<td align="left">ทดสอบ Gatekeeper ล็อกการแปลงงานถ้ายังไม่จ่ายมัดจำ</td>
+<td align="left">พยายามกดแปลงโครงการโดยไม่จ่ายมัดจำ</td>
+<td align="left">ระบบล็อก ไม่อนุญาตให้เปิดโครงการ</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>8</strong></td>
+<td align="left"><strong>TC-PAYM-01</strong></td>
+<td align="left">รับชำระเงินมัดจำงวดแรก (Down Payment)</td>
+<td align="left">ยอดมัดจำ 60,000 บาท พร้อมแนบสลิป</td>
+<td align="left">บันทึกเงินสำเร็จ ➔ ปลดล็อกปุ่ม Convert to Project</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>9</strong></td>
+<td align="left"><strong>TC-CONV-01</strong></td>
+<td align="left">แปลง Lead เป็นโครงการติดตั้งจริง (11 Stages)</td>
+<td align="left">ยืนยันการแปลงงาน</td>
+<td align="left">สร้าง Smart Project ID, สืบทอด GPS 500m, เปิด 11 สเตจ</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>10</strong></td>
+<td align="left"><strong>TC-EXEC-01</strong></td>
+<td align="left">นำเข้าแม่แบบ Multi-Trade WBS</td>
+<td align="left">ห้องรับแขก: ไฟฟ้า + แอร์ + ฝ้า + พื้น</td>
+<td align="left">สร้าง Tasks ย่อย 4 หมวดพร้อมแท็ก กรองแยกหมวดได้</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>11</strong></td>
+<td align="left"><strong>TC-CHCK-01</strong></td>
+<td align="left">ช่างเช็คอินพิกัดดาวเทียม &amp; กล้องสด</td>
+<td align="left">GPS อยู่ในรัศมี 500m, ถ่ายภาพสด</td>
+<td align="left">Check-In สำเร็จ บันทึกเวลาและรูปเข้า Timesheet</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>12</strong></td>
+<td align="left"><strong>TC-QC-01</strong></td>
+<td align="left">ทดสอบ Defect &amp; Rework Loop</td>
+<td align="left">ติ๊กข้อบกพร่อง ➔ สั่งช่างแก้งาน</td>
+<td align="left">สถานะเป็น Reworking ล็อกขั้นตอนส่งมอบ</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>13</strong></td>
+<td align="left"><strong>TC-QC-02</strong></td>
+<td align="left">ตรวจผ่าน On-site QC หลังช่างแก้ไข</td>
+<td align="left">ผ่านครบ 5 ข้อ ➔ บันทึกผล</td>
+<td align="left">ปลดล็อกเข้าสู่แท็บส่งมอบงาน &amp; E-Sign ทันที</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>14</strong></td>
+<td align="left"><strong>TC-SIGN-01</strong></td>
+<td align="left">ลูกค้าประเมิน 5 ดาว &amp; เซ็นชื่อสด E-Sign</td>
+<td align="left">5 ดาว ⭐, เซ็นชื่อบน Canvas, รับประกัน 1 ปี</td>
+<td align="left">ลายเซ็นและคะแนนดาวแสดงผลชัดเจน</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+<tr>
+<td align="center"><strong>15</strong></td>
+<td align="left"><strong>TC-SETT-01</strong></td>
+<td align="left">บันทึกเงินงวดสุดท้าย &amp; ปิดโครงการสมบูรณ์</td>
+<td align="left">บันทึกชำระ 60,000 บาท ➔ ปิดโครงการ</td>
+<td align="left">สถานะเป็น <code>Completed</code> สรุป P&amp;L ใน Executive Dashboard</td>
+<td align="center"><code>[ ] Pass</code><br/><code>[ ] Fail</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>✍️ แบบฟอร์มลงนามตรวจรับรองผลการทดสอบ (UAT Sign-Off)</h3>
+<pre><code>ผลสรุปการทดสอบระบบ:
+[  ] ผ่านการตรวจรับทั้งหมด (Accepted - Ready for Production)
+[  ] ผ่านโดยมีเงื่อนไขปรับปรุงย่อย (Conditionally Accepted)
+[  ] ไม่ผ่าน ต้องแก้ไขข้อบกพร่อง (Rejected)
+
+ผู้รับผิดชอบการทดสอบ (QA / Tester Lead): _____________________________  วันที่: _____/_____/________
+ผู้จัดการโครงการ (Project Manager Lead): _____________________________  วันที่: _____/_____/________
+</code></pre>
+
+</body>
+</html>

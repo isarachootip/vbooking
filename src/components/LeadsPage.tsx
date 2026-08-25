@@ -205,16 +205,19 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   };
 
   const handleSelectCustomerFromMaster = async (cust: Customer) => {
-    setSelectedCustomerId(cust.id);
-    setFirstName(cust.firstName || '');
-    setLastName(cust.lastName || '');
-    setCustomerPhone(cust.phone || '');
-    setCustomerSearchQuery(cust.customerName || `${cust.firstName} ${cust.lastName || ''}`.trim());
+    const c = cust as any;
+    setSelectedCustomerId(c.id);
+    const fName = c.firstName || c.first_name || '';
+    const lName = c.lastName || c.last_name || '';
+    setFirstName(fName);
+    setLastName(lName);
+    setCustomerPhone(c.phone || '');
+    setCustomerSearchQuery(c.customerName || c.customer_name || `${fName} ${lName}`.trim());
     setIsCustomerDropdownOpen(false);
 
-    const sites = await fetchCustomerSites(cust.id);
+    const sites = await fetchCustomerSites(c.id);
     if (sites && sites.length > 0) {
-      const defaultSite = sites.find(s => s.isDefault) || sites[0];
+      const defaultSite = sites.find((s: any) => s.isDefault || s.is_default) || sites[0];
       handleSelectSite(defaultSite);
     } else {
       setSelectedSiteId('');
@@ -222,18 +225,19 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   };
 
   const handleSelectSite = (site: CustomerSite) => {
-    setSelectedSiteId(site.id);
-    setCustomerAddress(site.address || '');
-    setCustomerLatitude(site.latitude ? String(site.latitude) : '');
-    setCustomerLongitude(site.longitude ? String(site.longitude) : '');
-    if (site.mapUrl) {
-      setMapUrl(site.mapUrl);
-    } else if (site.latitude && site.longitude) {
-      setMapUrl(`https://www.google.com/maps?q=${site.latitude},${site.longitude}`);
+    const s = site as any;
+    setSelectedSiteId(s.id);
+    setCustomerAddress(s.address || '');
+    setCustomerLatitude(s.latitude ? String(s.latitude) : '');
+    setCustomerLongitude(s.longitude ? String(s.longitude) : '');
+    if (s.mapUrl || s.map_url) {
+      setMapUrl(s.mapUrl || s.map_url);
+    } else if (s.latitude && s.longitude) {
+      setMapUrl(`https://www.google.com/maps?q=${s.latitude},${s.longitude}`);
     }
-    if (site.coordinatorName) setSiteCoordinatorName(site.coordinatorName);
-    if (site.coordinatorPhone) setSiteCoordinatorPhone(site.coordinatorPhone);
-    if (site.coordinatorLineId) setSiteCoordinatorLineId(site.coordinatorLineId);
+    if (s.coordinatorName || s.coordinator_name) setSiteCoordinatorName(s.coordinatorName || s.coordinator_name);
+    if (s.coordinatorPhone || s.coordinator_phone) setSiteCoordinatorPhone(s.coordinatorPhone || s.coordinator_phone);
+    if (s.coordinatorLineId || s.coordinator_line_id) setSiteCoordinatorLineId(s.coordinatorLineId || s.coordinator_line_id);
   };
 
   const [jobType, setJobType] = useState('Quick service');
@@ -2506,7 +2510,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                               setIsCustomerDropdownOpen(true);
                             }}
                             onFocus={() => {
-                              if (customersMaster.length === 0) fetchCustomersMaster();
+                              fetchCustomersMaster();
                               setIsCustomerDropdownOpen(true);
                             }}
                             style={{
@@ -2524,7 +2528,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                         </div>
 
                         {/* Customer Search Dropdown Results */}
-                        {isCustomerDropdownOpen && customerSearchQuery.trim().length > 0 && (
+                        {isCustomerDropdownOpen && (
                           <div
                             style={{
                               position: 'absolute',
@@ -2536,50 +2540,67 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                               borderRadius: '8px',
                               marginTop: '4px',
                               boxShadow: '0 10px 25px rgba(0,0,0,0.25)',
-                              maxHeight: '200px',
+                              maxHeight: '220px',
                               overflowY: 'auto',
                               zIndex: 100
                             }}
                           >
-                            {customersMaster
-                              .filter(c => {
-                                const q = customerSearchQuery.toLowerCase();
-                                return (c.customerName && c.customerName.toLowerCase().includes(q)) ||
-                                       (c.firstName && c.firstName.toLowerCase().includes(q)) ||
-                                       (c.lastName && c.lastName.toLowerCase().includes(q)) ||
-                                       (c.companyName && c.companyName.toLowerCase().includes(q)) ||
-                                       (c.phone && c.phone.includes(q)) ||
-                                       (c.customerCode && c.customerCode.toLowerCase().includes(q));
-                              })
-                              .slice(0, 10)
-                              .map(c => (
-                                <div
-                                  key={c.id}
-                                  onClick={() => handleSelectCustomerFromMaster(c)}
-                                  style={{
-                                    padding: '0.55rem 0.75rem',
-                                    borderBottom: '1px solid var(--border-color)',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    gap: '0.5rem'
-                                  }}
-                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
-                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                                >
-                                  <div>
-                                    <strong style={{ color: 'var(--text-primary)' }}>
-                                      {c.customerType === 'corporate' && c.companyName ? c.companyName : (c.customerName || `${c.firstName} ${c.lastName || ''}`.trim())}
-                                    </strong>
-                                    {c.phone && <span style={{ color: 'var(--text-secondary)', marginLeft: '0.4rem', fontSize: '0.75rem' }}>📞 {c.phone}</span>}
+                            {(() => {
+                              const q = customerSearchQuery.trim().toLowerCase();
+                              const filtered = customersMaster.filter((c: any) => {
+                                if (!q) return true;
+                                const cName = (c.customerName || c.customer_name || '').toLowerCase();
+                                const fName = (c.firstName || c.first_name || '').toLowerCase();
+                                const lName = (c.lastName || c.last_name || '').toLowerCase();
+                                const compName = (c.companyName || c.company_name || '').toLowerCase();
+                                const phone = (c.phone || '').toLowerCase();
+                                const code = (c.customerCode || c.customer_code || '').toLowerCase();
+                                return cName.includes(q) || fName.includes(q) || lName.includes(q) || compName.includes(q) || phone.includes(q) || code.includes(q);
+                              });
+
+                              if (filtered.length === 0) {
+                                return (
+                                  <div style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+                                    {q ? `ไม่พบข้อมูลลูกค้าที่ตรงกับ "${customerSearchQuery}"` : 'ยังไม่มีข้อมูลลูกค้าใน Master'}
                                   </div>
-                                  <span style={{ fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
-                                    {c.customerCode || 'CUST'}
-                                  </span>
-                                </div>
-                              ))}
+                                );
+                              }
+
+                              return filtered.slice(0, 10).map((c: any) => {
+                                const displayName = ((c.customerType === 'corporate' || c.customer_type === 'corporate') && (c.companyName || c.company_name))
+                                  ? (c.companyName || c.company_name)
+                                  : (c.customerName || c.customer_name || `${c.firstName || c.first_name || ''} ${c.lastName || c.last_name || ''}`.trim());
+                                const displayCode = c.customerCode || c.customer_code || 'CUST';
+                                return (
+                                  <div
+                                    key={c.id}
+                                    onClick={() => handleSelectCustomerFromMaster(c)}
+                                    style={{
+                                      padding: '0.6rem 0.75rem',
+                                      borderBottom: '1px solid var(--border-color)',
+                                      cursor: 'pointer',
+                                      fontSize: '0.8rem',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      gap: '0.5rem'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                  >
+                                    <div>
+                                      <strong style={{ color: 'var(--text-primary)' }}>
+                                        {displayName}
+                                      </strong>
+                                      {c.phone && <span style={{ color: '#059669', marginLeft: '0.4rem', fontSize: '0.75rem', fontWeight: 600 }}>📞 {c.phone}</span>}
+                                    </div>
+                                    <span style={{ fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 700, fontFamily: 'monospace' }}>
+                                      {displayCode}
+                                    </span>
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         )}
                       </div>

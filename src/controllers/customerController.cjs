@@ -1,5 +1,52 @@
 const pool = require('../config/db.cjs');
 
+function formatCustomer(c) {
+  if (!c) return null;
+  return {
+    ...c,
+    customerId: c.id,
+    customerCode: c.customer_code,
+    customerType: c.customer_type,
+    firstName: c.first_name,
+    lastName: c.last_name,
+    customerName: c.customer_name || `${c.first_name || ''} ${c.last_name || ''}`.trim(),
+    companyName: c.company_name,
+    taxId: c.tax_id,
+    phone: c.phone,
+    phoneSecondary: c.phone_secondary,
+    lineId: c.line_id,
+    email: c.email,
+    notes: c.notes,
+    sitesCount: c.sites_count ? Number(c.sites_count) : 0,
+    leadsCount: c.leads_count ? Number(c.leads_count) : 0,
+    defaultSiteId: c.default_site_id,
+    defaultSiteName: c.default_site_name,
+    defaultSiteAddress: c.default_site_address,
+    defaultSiteLat: c.default_site_lat,
+    defaultSiteLng: c.default_site_lng,
+    createdAt: c.created_at,
+    updatedAt: c.updated_at
+  };
+}
+
+function formatCustomerSite(s) {
+  if (!s) return null;
+  return {
+    ...s,
+    customerId: s.customer_id,
+    siteName: s.site_name,
+    isDefault: Boolean(s.is_default),
+    postalCode: s.postal_code,
+    mapUrl: s.map_url,
+    coordinatorName: s.coordinator_name,
+    coordinatorPhone: s.coordinator_phone,
+    coordinatorLineId: s.coordinator_line_id,
+    siteNotes: s.site_notes,
+    createdAt: s.created_at,
+    updatedAt: s.updated_at
+  };
+}
+
 // GET /api/customers
 exports.getCustomers = async (req, res) => {
   try {
@@ -49,7 +96,7 @@ exports.getCustomers = async (req, res) => {
     query += ` ORDER BY c.created_at DESC`;
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    res.json(result.rows.map(formatCustomer));
   } catch (err) {
     console.error('Error getting customers:', err);
     res.status(500).json({ error: 'Failed to fetch customers' });
@@ -64,13 +111,13 @@ exports.getCustomerById = async (req, res) => {
     if (customerRes.rows.length === 0) {
       return res.status(404).json({ error: 'Customer not found' });
     }
-    const customer = customerRes.rows[0];
+    const customer = formatCustomer(customerRes.rows[0]);
 
     const sitesRes = await pool.query(
       'SELECT * FROM customer_sites WHERE customer_id = $1 ORDER BY is_default DESC, created_at ASC',
       [id]
     );
-    customer.sites = sitesRes.rows;
+    customer.sites = sitesRes.rows.map(formatCustomerSite);
 
     // Recent leads
     const leadsRes = await pool.query(
@@ -271,7 +318,7 @@ exports.getCustomerSites = async (req, res) => {
       'SELECT * FROM customer_sites WHERE customer_id = $1 ORDER BY is_default DESC, created_at ASC',
       [id]
     );
-    res.json(result.rows);
+    res.json(result.rows.map(formatCustomerSite));
   } catch (err) {
     console.error('Error fetching customer sites:', err);
     res.status(500).json({ error: 'Failed to fetch customer sites' });
