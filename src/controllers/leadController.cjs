@@ -65,9 +65,9 @@ exports.createLead = async (req, res) => {
       leadId = `${prefix}${runningPart}`;
     }
     
-    const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
-    const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');
-    const fullName = customer_name || `${fName} ${lName}`.trim();
+    const fName = (customer_first_name || (customer_name ? customer_name.split(' ')[0] : '') || 'ลูกค้า').trim();
+    const lName = (customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '') || '').trim();
+    const fullName = (customer_name || `${fName} ${lName}` || 'ลูกค้า').trim();
 
     // Auto-link or auto-create Customer Master if needed
     let finalCustId = customer_id || null;

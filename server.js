@@ -486,6 +486,8 @@ const initDB = async () => {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS site_visit_approved_by VARCHAR(150);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS site_visit_approved_at VARCHAR(50);
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS site_visit_approval_notes TEXT;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_id TEXT;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_site_id TEXT;
 
       UPDATE leads SET 
         customer_first_name = CASE 
