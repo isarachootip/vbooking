@@ -679,14 +679,14 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate phone number: must be required and digits only
-    const trimmedPhone = customerPhone.trim();
+    // Validate phone number: must be required, digits only, max 10 digits
+    const trimmedPhone = customerPhone.trim().replace(/\D/g, '');
     if (!trimmedPhone) {
       alert('กรุณากรอกเบอร์โทรติดต่อ');
       return;
     }
-    if (!/^\d+$/.test(trimmedPhone)) {
-      alert('เบอร์โทรติดต่อต้องเป็นตัวเลขทั้งหมดเท่านั้น');
+    if (trimmedPhone.length < 9 || trimmedPhone.length > 10) {
+      alert('เบอร์โทรติดต่อต้องเป็นตัวเลขความยาว 9 - 10 หลัก (เช่น 0812345678, 021234567)');
       return;
     }
     
@@ -2319,11 +2319,14 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                     <div>
                       <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>เบอร์โทรศัพท์ (หน้างาน)</label>
                       <input 
-                        type="text"
+                        type="tel"
+                        maxLength={10}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={siteCoordinatorPhone}
-                        onChange={e => setSiteCoordinatorPhone(e.target.value)}
-                        placeholder="เบอร์ติดต่อ"
-                        style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
+                        onChange={e => setSiteCoordinatorPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        placeholder="เบอร์ติดต่อ (10 หลัก)"
+                        style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem', fontFamily: 'monospace' }}
                       />
                     </div>
                     <div>
@@ -2656,16 +2659,24 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                          เบอร์โทรติดต่อ *
-                        </label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                            เบอร์โทรติดต่อ *
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: customerPhone.length === 10 ? '#10b981' : 'var(--text-tertiary)', fontWeight: 600 }}>
+                            {customerPhone.length}/10 หลัก
+                          </span>
+                        </div>
                         <input 
-                          type="text" 
+                          type="tel" 
                           required
+                          maxLength={10}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={customerPhone}
-                          onChange={e => setCustomerPhone(e.target.value.replace(/\D/g, ''))}
+                          onChange={e => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                           placeholder="เช่น 0932652639"
-                          style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
+                          style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontFamily: 'monospace' }}
                         />
                       </div>
                       <div>
@@ -2891,8 +2902,17 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                               <input type="text" value={siteCoordinatorName} onChange={e => setSiteCoordinatorName(e.target.value)} style={{ width: '100%', padding: '0.4rem', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.8rem' }} />
                             </div>
                             <div>
-                              <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>เบอร์โทรศัพท์ *</label>
-                              <input type="text" value={siteCoordinatorPhone} onChange={e => setSiteCoordinatorPhone(e.target.value)} style={{ width: '100%', padding: '0.4rem', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.8rem' }} />
+                              <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>เบอร์โทรศัพท์ * (10 หลัก)</label>
+                              <input 
+                                type="tel" 
+                                maxLength={10}
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={siteCoordinatorPhone} 
+                                onChange={e => setSiteCoordinatorPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} 
+                                placeholder="08xxxxxxxx"
+                                style={{ width: '100%', padding: '0.4rem', border: '1px solid #fca5a5', borderRadius: '4px', fontSize: '0.8rem', fontFamily: 'monospace' }} 
+                              />
                             </div>
                           </div>
                           <div>
