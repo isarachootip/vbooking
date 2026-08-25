@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Search, MapPin, Compass, Check, X, Navigation } from 'lucide-react';
+import { Search, MapPin, Compass, Check, X, Navigation, Layers, Copy, ExternalLink, Globe } from 'lucide-react';
 
 interface GisMapPickerModalProps {
   isOpen: boolean;
@@ -35,6 +35,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   const defaultLat = 13.7563;
@@ -52,6 +53,8 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [isReverseGeocoding, setIsReverseGeocoding] = useState<boolean>(false);
   const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [mapType, setMapType] = useState<'street' | 'satellite' | 'hybrid'>('street');
+  const [copied, setCopied] = useState<boolean>(false);
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -105,6 +108,38 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
     }
   };
 
+  const getTileLayer = (type: 'street' | 'satellite' | 'hybrid') => {
+    if (type === 'satellite') {
+      return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+        maxZoom: 19,
+      });
+    }
+    if (type === 'hybrid') {
+      return L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        attribution: '&copy; Google Satellite Hybrid',
+        maxZoom: 20,
+      });
+    }
+    return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
+      subdomains: ['a', 'b', 'c'],
+    });
+  };
+
+  const handleSwitchMapType = (type: 'street' | 'satellite' | 'hybrid') => {
+    setMapType(type);
+    if (mapInstanceRef.current) {
+      if (tileLayerRef.current) {
+        mapInstanceRef.current.removeLayer(tileLayerRef.current);
+      }
+      const newLayer = getTileLayer(type);
+      newLayer.addTo(mapInstanceRef.current);
+      tileLayerRef.current = newLayer;
+    }
+  };
+
   // Initialize and update map
   useEffect(() => {
     if (!isOpen) {
@@ -112,6 +147,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         markerRef.current = null;
+        tileLayerRef.current = null;
       }
       return;
     }
@@ -138,6 +174,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
         }
         mapInstanceRef.current = null;
         markerRef.current = null;
+        tileLayerRef.current = null;
       }
 
       const map = L.map(mapContainerRef.current, {
@@ -148,11 +185,9 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-        subdomains: ['a', 'b', 'c'],
-      }).addTo(map);
+      const layer = getTileLayer(mapType);
+      layer.addTo(map);
+      tileLayerRef.current = layer;
 
       const marker = L.marker([lat, lng], {
         icon: customPinIcon,
@@ -203,6 +238,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
         }
         mapInstanceRef.current = null;
         markerRef.current = null;
+        tileLayerRef.current = null;
       }
     };
   }, [isOpen, initialLat, initialLng]);
@@ -511,42 +547,59 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
             <div
               style={{
                 position: 'absolute',
-                top: '100%',
+                top: 'calc(100% + 4px)',
                 left: '1.25rem',
                 right: '1.25rem',
-                background: 'var(--bg-secondary, #ffffff)',
-                border: '1px solid var(--border-color, #cbd5e1)',
-                borderRadius: '8px',
-                marginTop: '4px',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                maxHeight: '220px',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '12px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.1)',
+                maxHeight: '260px',
                 overflowY: 'auto',
-                zIndex: 1050,
+                zIndex: 2500,
               }}
             >
-              {searchResults.map((res, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => handleSelectSearchResult(res)}
-                  style={{
-                    padding: '0.65rem 1rem',
-                    borderBottom: idx < searchResults.length - 1 ? '1px solid var(--border-color, #f1f5f9)' : 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.825rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-tertiary, #f8fafc)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <MapPin size={14} color="#ef4444" style={{ flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {res.display_name}
-                  </span>
-                </div>
-              ))}
+              <div style={{ padding: '0.4rem 0.85rem', fontSize: '0.72rem', color: '#64748b', fontWeight: 700, borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>ผลการค้นหาสถานที่ ({searchResults.length} รายการ)</span>
+                <button type="button" onClick={() => setSearchResults([])} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.7rem' }}>ปิด ✕</button>
+              </div>
+              {searchResults.map((res, idx) => {
+                const parts = res.display_name.split(',');
+                const title = parts[0]?.trim();
+                const subtitle = parts.slice(1, 4).join(',').trim();
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => handleSelectSearchResult(res)}
+                    style={{
+                      padding: '0.65rem 1rem',
+                      borderBottom: idx < searchResults.length - 1 ? '1px solid #f1f5f9' : 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.825rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.65rem',
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#eff6ff')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '#ffffff')}
+                  >
+                    <div style={{ background: '#fee2e2', padding: '0.35rem', borderRadius: '50%', display: 'flex', flexShrink: 0 }}>
+                      <MapPin size={15} color="#ef4444" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {title}
+                      </div>
+                      {subtitle && (
+                        <div style={{ fontSize: '0.72rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>
+                          {subtitle}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -559,28 +612,99 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
               max-height: none !important;
             }
           `}</style>
-          {/* FLOATING MAP INSTRUCTION PILL */}
+
+          {/* MAP TYPE SWITCHER BUTTONS (Top Right) */}
           <div
             style={{
               position: 'absolute',
               top: '12px',
+              right: '12px',
+              zIndex: 400,
+              display: 'flex',
+              background: 'rgba(255, 255, 255, 0.92)',
+              backdropFilter: 'blur(6px)',
+              padding: '3px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
+              border: '1px solid rgba(0,0,0,0.08)',
+              gap: '2px',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleSwitchMapType('street')}
+              style={{
+                border: 'none',
+                padding: '0.35rem 0.65rem',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: mapType === 'street' ? 700 : 500,
+                background: mapType === 'street' ? '#0f172a' : 'transparent',
+                color: mapType === 'street' ? '#ffffff' : '#334155',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              🗺️ แผนที่ถนน
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchMapType('satellite')}
+              style={{
+                border: 'none',
+                padding: '0.35rem 0.65rem',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: mapType === 'satellite' ? 700 : 500,
+                background: mapType === 'satellite' ? '#0f172a' : 'transparent',
+                color: mapType === 'satellite' ? '#ffffff' : '#334155',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              🛰️ ดาวเทียม
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchMapType('hybrid')}
+              style={{
+                border: 'none',
+                padding: '0.35rem 0.65rem',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: mapType === 'hybrid' ? 700 : 500,
+                background: mapType === 'hybrid' ? '#0f172a' : 'transparent',
+                color: mapType === 'hybrid' ? '#ffffff' : '#334155',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              🏙️ ไฮบริด
+            </button>
+          </div>
+
+          {/* FLOATING MAP INSTRUCTION PILL (Bottom Left - avoids collision with search) */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '12px',
               left: '12px',
               zIndex: 400,
-              background: 'rgba(15, 23, 42, 0.85)',
+              background: 'rgba(15, 23, 42, 0.88)',
               color: '#ffffff',
-              padding: '0.4rem 0.85rem',
+              padding: '0.38rem 0.8rem',
               borderRadius: '9999px',
-              fontSize: '0.8rem',
-              fontWeight: 700,
+              fontSize: '0.78rem',
+              fontWeight: 600,
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
               pointerEvents: 'none',
               backdropFilter: 'blur(4px)',
             }}
           >
-            <span>👉 ลากหมุดสีแดง 📍 หรือคลิกบนแผนที่ เพื่อระบุตำแหน่งบ้านลูกค้า</span>
+            <span>👉 ลากหมุดสีแดง 📍 หรือคลิกบนแผนที่เพื่อระบุบ้านลูกค้า</span>
           </div>
 
           <div
@@ -619,13 +743,13 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
               gap: '0.75rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>
                   ละติจูด (Lat)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>{currentLat.toFixed(6)}</strong>
+                  <strong style={{ fontSize: '0.92rem', color: '#0f172a', fontFamily: 'monospace' }}>{currentLat.toFixed(6)}</strong>
                   <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>
                     {formatToDMS(currentLat, true)}
                   </span>
@@ -636,12 +760,39 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
                   ลองจิจูด (Lng)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>{currentLng.toFixed(6)}</strong>
+                  <strong style={{ fontSize: '0.92rem', color: '#0f172a', fontFamily: 'monospace' }}>{currentLng.toFixed(6)}</strong>
                   <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>
                     {formatToDMS(currentLng, false)}
                   </span>
                 </div>
               </div>
+
+              {/* Copy coordinates button */}
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${currentLat.toFixed(6)}, ${currentLng.toFixed(6)}`);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                style={{
+                  background: copied ? '#10b981' : '#f1f5f9',
+                  color: copied ? '#ffffff' : '#475569',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  padding: '0.25rem 0.55rem',
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {copied ? <Check size={12} /> : <Copy size={12} />}
+                {copied ? 'คัดลอกแล้ว!' : 'คัดลอกพิกัด'}
+              </button>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
