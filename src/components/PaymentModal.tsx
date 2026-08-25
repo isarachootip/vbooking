@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { User } from '../types';
 import {
   X, DollarSign, CheckCircle2, AlertCircle, Clock, Plus,
-  CreditCard, ShieldCheck, RefreshCw, FileText, ArrowRight, Check
+  CreditCard, ShieldCheck, RefreshCw, FileText, ArrowRight, Check,
+  Upload, Image as ImageIcon, Tag, Eye, Trash2
 } from 'lucide-react';
 
 interface LeadPayment {
@@ -14,6 +15,8 @@ interface LeadPayment {
   amount: number;
   payment_method: string;
   payment_type: string;
+  ticket_no?: string | null;
+  reference_no?: string | null;
   slip_url?: string | null;
   payment_date?: string | null;
   status: string;
@@ -23,6 +26,49 @@ interface LeadPayment {
   created_at: string;
   created_by?: string | null;
 }
+
+// Client-side image compressor utility
+const compressImageFile = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.78): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (readerEvent) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(readerEvent.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL(file.type || 'image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = readerEvent.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+};
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -68,9 +114,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
   const [paymentType, setPaymentType] = useState('Down Payment');
+  const [ticketNo, setTicketNo] = useState('');
   const [slipUrl, setSlipUrl] = useState('');
+  const [slipMode, setSlipMode] = useState<'upload' | 'url'>('upload');
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
+  const [previewZoomImage, setPreviewZoomImage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -111,12 +162,34 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       fetchPaymentsAndQuotes();
       setPaymentMethod(PAYMENT_METHODS[0]);
       setPaymentType('Down Payment');
+      setTicketNo('');
       setSlipUrl('');
+      setSlipMode('upload');
       setPaymentDate(new Date().toISOString().split('T')[0]);
       setNotes('');
       setActiveTab('form');
     }
   }, [isOpen, lead?.id]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, HEIC) เท่านั้น', 'error');
+      return;
+    }
+
+    try {
+      showToast('กำลังประมวลผลรูปภาพ...', 'success');
+      const compressedBase64 = await compressImageFile(file);
+      setSlipUrl(compressedBase64);
+      showToast('แนบรูปสลิปสำเร็จ!', 'success');
+    } catch (err) {
+      console.error('Error compressing slip:', err);
+      showToast('ไม่สามารถโหลดรูปภาพได้', 'error');
+    }
+  };
 
   const totalPaid = payments.reduce((acc, p) => acc + parseFloat(String(p.amount || 0)), 0);
 
@@ -136,6 +209,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           amount: parseFloat(amount || '0'),
           payment_method: paymentMethod,
           payment_type: paymentType,
+          ticket_no: ticketNo.trim() || null,
+          reference_no: ticketNo.trim() || null,
           slip_url: slipUrl || null,
           payment_date: paymentDate,
           status: 'Verified & Received',
@@ -152,7 +227,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         onSaved?.();
       } else {
         const err = await res.json().catch(() => ({}));
-        showToast(err.error || 'เกิดข้อผิดพลาดในการบันทึก', 'error');
+        showToast(err.details || err.error || 'เกิดข้อผิดพลาดในการบันทึก', 'error');
       }
     } catch {
       showToast('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');
@@ -194,9 +269,40 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
       )}
 
+      {/* Modal Zoom Preview */}
+      {previewZoomImage && (
+        <div
+          onClick={() => setPreviewZoomImage(null)}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.88)', zIndex: 3000, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', padding: '1.5rem', cursor: 'zoom-out'
+          }}
+        >
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
+            <img
+              src={previewZoomImage}
+              alt="Slip Zoom"
+              style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '12px', objectFit: 'contain', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}
+            />
+            <button
+              onClick={() => setPreviewZoomImage(null)}
+              style={{
+                position: 'absolute', top: '-12px', right: '-12px',
+                background: '#ef4444', border: 'none', color: 'white',
+                borderRadius: '50%', width: '32px', height: '32px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={{
         background: 'var(--bg-primary)', borderRadius: '16px',
-        border: '1px solid var(--border-color)', width: '700px', maxWidth: '96vw',
+        border: '1px solid var(--border-color)', width: '720px', maxWidth: '96vw',
         boxShadow: '0 25px 60px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', margin: 'auto'
       }}>
         {/* Header */}
@@ -231,9 +337,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             style={{
               flex: 1, padding: '0.75rem 1rem', border: 'none',
               background: activeTab === 'form' ? 'var(--bg-primary)' : 'transparent',
-              color: activeTab === 'form' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+              color: activeTab === 'form' ? '#10b981' : 'var(--text-secondary)',
               fontWeight: activeTab === 'form' ? 700 : 500, fontSize: '0.83rem', cursor: 'pointer',
-              borderBottom: activeTab === 'form' ? '2px solid var(--accent-primary)' : '2px solid transparent'
+              borderBottom: activeTab === 'form' ? '2px solid #10b981' : '2px solid transparent'
             }}
           >
             + บันทึกรับชำระเงินมัดจำ
@@ -244,9 +350,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             style={{
               flex: 1, padding: '0.75rem 1rem', border: 'none',
               background: activeTab === 'history' ? 'var(--bg-primary)' : 'transparent',
-              color: activeTab === 'history' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+              color: activeTab === 'history' ? '#10b981' : 'var(--text-secondary)',
               fontWeight: activeTab === 'history' ? 700 : 500, fontSize: '0.83rem', cursor: 'pointer',
-              borderBottom: activeTab === 'history' ? '2px solid var(--accent-primary)' : '2px solid transparent'
+              borderBottom: activeTab === 'history' ? '2px solid #10b981' : '2px solid transparent'
             }}
           >
             ประวัติการรับชำระ ({payments.length}) · ยอดรวม ฿{totalPaid.toLocaleString()}
@@ -254,7 +360,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
 
         {/* Body */}
-        <div style={{ padding: '1.25rem', overflowY: 'auto', maxHeight: '72vh' }}>
+        <div style={{ padding: '1.25rem', overflowY: 'auto', maxHeight: '74vh' }}>
           {activeTab === 'form' && (
             <form onSubmit={handleSubmitPayment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Linked Quotation info */}
@@ -308,23 +414,155 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
               </div>
 
+              {/* Key Ticket / Reference No. */}
               <div>
-                <label style={lbl}>ลิงก์รูปภาพสลิปโอนเงิน / ใบเสร็จรับเงิน</label>
+                <label style={lbl}>
+                  <Tag size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle', color: '#10b981' }} />
+                  เลขที่ตั๋ว / เลขที่ใบเสร็จ / เลขที่อ้างอิงธุรกรรม (Key Ticket / Reference No.)
+                </label>
                 <input
-                  type="url"
-                  value={slipUrl}
-                  onChange={e => setSlipUrl(e.target.value)}
-                  placeholder="https://... หรือแนบลิงก์รูปสลิป"
-                  style={inp}
+                  type="text"
+                  value={ticketNo}
+                  onChange={e => setTicketNo(e.target.value)}
+                  placeholder="เช่น TICKET-2026-0801, REC-9821, หรือ Transaction Ref ID"
+                  style={{ ...inp, fontFamily: 'monospace', fontWeight: 600 }}
                 />
               </div>
 
+              {/* Slip Upload & Attachment */}
+              <div style={{ background: 'var(--bg-secondary)', padding: '0.9rem', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label style={{ ...lbl, marginBottom: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <ImageIcon size={14} style={{ color: '#10b981' }} />
+                    แนบรูปภาพสลิปโอนเงิน / ใบเสร็จรับเงิน (Add Slip)
+                  </label>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setSlipMode('upload')}
+                      style={{
+                        fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: '4px', border: 'none',
+                        background: slipMode === 'upload' ? '#10b981' : 'transparent',
+                        color: slipMode === 'upload' ? 'white' : 'var(--text-secondary)',
+                        cursor: 'pointer', fontWeight: 600
+                      }}
+                    >
+                      📁 อัปโหลดไฟล์ / ถ่ายรูป
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSlipMode('url')}
+                      style={{
+                        fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: '4px', border: 'none',
+                        background: slipMode === 'url' ? '#10b981' : 'transparent',
+                        color: slipMode === 'url' ? 'white' : 'var(--text-secondary)',
+                        cursor: 'pointer', fontWeight: 600
+                      }}
+                    >
+                      🔗 ลิงก์ URL
+                    </button>
+                  </div>
+                </div>
+
+                {slipMode === 'upload' ? (
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                    
+                    {!slipUrl ? (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                          border: '2px dashed var(--border-color)',
+                          borderRadius: '8px',
+                          padding: '1.25rem',
+                          textAlign: 'center',
+                          cursor: 'pointer',
+                          background: 'var(--bg-tertiary)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <Upload size={28} style={{ color: '#10b981', margin: '0 auto 0.4rem', display: 'block' }} />
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          คลิกเพื่อเลือกรูปสลิป หรือ ถ่ายรูปจากมือถือ
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)', marginTop: '0.2rem' }}>
+                          รองรับ JPG, PNG, HEIC (ระบบจะบีบอัดขนาดให้อัตโนมัติ)
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--bg-tertiary)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <img
+                          src={slipUrl}
+                          alt="Slip Preview"
+                          onClick={() => setPreviewZoomImage(slipUrl)}
+                          style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', cursor: 'pointer', border: '1px solid var(--border-color)' }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <CheckCircle2 size={14} /> แนบรูปสลิปแล้ว
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                            คลิกที่รูปเพื่อดูภาพขนาดใหญ่
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewZoomImage(slipUrl)}
+                            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.35rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
+                          >
+                            <Eye size={13} /> ดู
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSlipUrl('');
+                              if (fileInputRef.current) fileInputRef.current.value = '';
+                            }}
+                            style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', padding: '0.35rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
+                          >
+                            <Trash2 size={13} /> ลบ
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="url"
+                      value={slipUrl}
+                      onChange={e => setSlipUrl(e.target.value)}
+                      placeholder="https://... หรือแนบลิงก์รูปสลิปจาก Cloud Storage"
+                      style={inp}
+                    />
+                    {slipUrl && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <img
+                          src={slipUrl}
+                          alt="Slip URL Preview"
+                          onError={(e) => (e.currentTarget.style.display = 'none')}
+                          onClick={() => setPreviewZoomImage(slipUrl)}
+                          style={{ maxHeight: '100px', borderRadius: '6px', cursor: 'pointer', border: '1px solid var(--border-color)' }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div>
-                <label style={lbl}>หมายเหตุการชำระเงิน / เลขที่อ้างอิง</label>
+                <label style={lbl}>หมายเหตุการชำระเงินเพิ่มเติม</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  placeholder="เช่น มัดจำ 30% งวดแรก, ธนาคารกสิกรไทย..."
+                  placeholder="เช่น มัดจำ 30% งวดแรก ธนาคารกสิกรไทย สาขา..."
                   rows={2}
                   style={{ ...inp, resize: 'vertical' } as React.CSSProperties}
                 />
@@ -393,13 +631,20 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   style={{
                     background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
                     borderLeft: '4px solid #10b981', borderRadius: '10px', padding: '1rem',
-                    display: 'flex', flexDirection: 'column', gap: '0.5rem'
+                    display: 'flex', flexDirection: 'column', gap: '0.6rem'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, fontSize: '1rem', color: '#10b981' }}>
-                      + ฿{Number(p.amount).toLocaleString()} บาท
-                    </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#10b981' }}>
+                        + ฿{Number(p.amount).toLocaleString()} บาท
+                      </span>
+                      {(p.ticket_no || p.reference_no) && (
+                        <span style={{ padding: '0.15rem 0.5rem', borderRadius: '6px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 600 }}>
+                          🏷️ {p.ticket_no || p.reference_no}
+                        </span>
+                      )}
+                    </div>
                     <span style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', fontSize: '0.75rem', fontWeight: 700 }}>
                       {p.payment_type}
                     </span>
@@ -413,10 +658,23 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   </div>
 
                   {p.slip_url && (
-                    <div>
-                      <a href={p.slip_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.78rem', color: '#0284c7', textDecoration: 'underline' }}>
-                        🔗 ดูสลิปหลักฐานการโอน
-                      </a>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <img
+                        src={p.slip_url}
+                        alt="Slip Thumbnail"
+                        onClick={() => setPreviewZoomImage(p.slip_url || null)}
+                        style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px', cursor: 'pointer', border: '1px solid var(--border-color)' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)' }}>หลักฐานการชำระเงิน (Slip)</div>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewZoomImage(p.slip_url || null)}
+                          style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.75rem', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                          คลิกเพื่อดูรูปสลิปขนาดเต็ม
+                        </button>
+                      </div>
                     </div>
                   )}
 

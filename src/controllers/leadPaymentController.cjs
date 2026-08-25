@@ -26,6 +26,8 @@ exports.createLeadPayment = async (req, res) => {
       amount,
       payment_method,
       payment_type,
+      ticket_no,
+      reference_no,
       slip_url,
       payment_date,
       status,
@@ -40,12 +42,13 @@ exports.createLeadPayment = async (req, res) => {
     const insertResult = await pool.query(
       `INSERT INTO lead_payments
          (id, lead_id, quotation_id, amount, payment_method, payment_type,
-          slip_url, payment_date, status, verified_by, verified_at, notes, created_at, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          ticket_no, reference_no, slip_url, payment_date, status, verified_by, verified_at, notes, created_at, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
        RETURNING *`,
       [
         id, leadId, quotation_id || null, parseFloat(amount || 0),
         payment_method || 'Bank Transfer', payment_type || 'Down Payment',
+        ticket_no || reference_no || null, reference_no || ticket_no || null,
         slip_url || null, payment_date || now,
         status || 'Verified & Received', verified_by || 'Admin', now,
         notes || null, now, created_by || 'System'

@@ -657,6 +657,8 @@ const initDB = async () => {
         created_by          VARCHAR(255)
       );
       CREATE INDEX IF NOT EXISTS idx_lead_payments_lead_id ON lead_payments(lead_id);
+      ALTER TABLE lead_payments ADD COLUMN IF NOT EXISTS ticket_no VARCHAR(100);
+      ALTER TABLE lead_payments ADD COLUMN IF NOT EXISTS reference_no VARCHAR(100);
 
       -- Phase 03: Projects & Tasks Execution Enhancements
       ALTER TABLE projects ADD COLUMN IF NOT EXISTS site_latitude NUMERIC;
