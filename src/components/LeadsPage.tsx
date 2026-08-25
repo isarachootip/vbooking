@@ -180,10 +180,13 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
   const fetchCustomersMaster = async () => {
     try {
-      const res = await fetch('/api/customers');
+      const authUserId = currentUser?.id || (typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '');
+      const res = await fetch('/api/customers', {
+        headers: authUserId ? { 'X-User-Id': authUserId } : {}
+      });
       if (res.ok) {
         const data = await res.json();
-        setCustomersMaster(data);
+        setCustomersMaster(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error('Error fetching customers master:', err);
@@ -192,10 +195,13 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
   const fetchCustomerSites = async (customerId: string) => {
     try {
-      const res = await fetch(`/api/customers/${customerId}/sites`);
+      const authUserId = currentUser?.id || (typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '');
+      const res = await fetch(`/api/customers/${customerId}/sites`, {
+        headers: authUserId ? { 'X-User-Id': authUserId } : {}
+      });
       if (res.ok) {
         const sites: CustomerSite[] = await res.json();
-        setCustomerSites(sites);
+        setCustomerSites(Array.isArray(sites) ? sites : []);
         return sites;
       }
     } catch (err) {

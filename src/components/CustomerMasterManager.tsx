@@ -11,12 +11,20 @@ interface CustomerMasterManagerProps {
   currentUser?: any;
 }
 
-export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = () => {
+export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = ({ currentUser }) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<'all' | 'individual' | 'corporate'>('all');
   const [expandedCustomerId, setExpandedCustomerId] = useState<string | null>(null);
+
+  const getAuthHeaders = () => {
+    const authUserId = currentUser?.id || (typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '');
+    return {
+      'Content-Type': 'application/json',
+      ...(authUserId ? { 'X-User-Id': authUserId } : {})
+    };
+  };
 
   // Customer Modal state
   const [isCustModalOpen, setIsCustModalOpen] = useState<boolean>(false);
@@ -60,10 +68,12 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = () =>
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/customers');
+      const res = await fetch('/api/customers', {
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         const data = await res.json();
-        setCustomers(data);
+        setCustomers(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error('Error fetching customers:', err);
@@ -78,7 +88,9 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = () =>
 
   const fetchCustomerSites = async (customerId: string) => {
     try {
-      const res = await fetch(`/api/customers/${customerId}/sites`);
+      const res = await fetch(`/api/customers/${customerId}/sites`, {
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         const sites = await res.json();
         setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, sites } : c));
@@ -166,7 +178,7 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = () =>
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
       });
 
@@ -187,7 +199,10 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = () =>
       return;
     }
     try {
-      const res = await fetch(`/api/customers/${cust.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/customers/${cust.id}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         fetchCustomers();
       } else {
@@ -254,7 +269,7 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = () =>
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
       });
 
@@ -274,7 +289,10 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = () =>
   const handleDeleteSite = async (customerId: string, siteId: string, siteName: string) => {
     if (!confirm(`คุณต้องการลบไซต์งาน "${siteName}" ใช่หรือไม่?`)) return;
     try {
-      const res = await fetch(`/api/customers/sites/${siteId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/customers/sites/${siteId}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
       if (res.ok) {
         fetchCustomerSites(customerId);
         fetchCustomers();
