@@ -330,3 +330,113 @@ export interface QCDailyPlan {
   createdBy?: string;
 }
 
+export interface CustomerSite {
+  id: string;
+  customerId: string;
+  siteName: string;
+  isDefault: boolean;
+  address: string;
+  subdistrict?: string;
+  district?: string;
+  province?: string;
+  postalCode?: string;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  mapUrl?: string;
+  coordinatorName?: string;
+  coordinatorPhone?: string;
+  coordinatorLineId?: string;
+  siteNotes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Customer {
+  id: string;
+  customerCode?: string;
+  customerType: 'individual' | 'corporate';
+  firstName: string;
+  lastName?: string;
+  customerName?: string;
+  companyName?: string;
+  taxId?: string;
+  phone: string;
+  phoneSecondary?: string;
+  lineId?: string;
+  email?: string;
+  notes?: string;
+  sites?: CustomerSite[];
+  sitesCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// ─── MA (Maintenance Agreement) Types ─────────────────────────────────────────
+
+export interface MAServiceItem {
+  id: string;
+  name: string;        // e.g. "ห้องนอนใหญ่"
+  brand?: string;      // e.g. "Mitsubishi"
+  model?: string;
+  btu?: string;        // e.g. "1.5"
+  location?: string;
+  notes?: string;
+}
+
+export interface MARound {
+  id: string;
+  contractId: string;
+  projectId?: string;
+  roundNumber: number;
+  scheduledDate?: string;
+  actualDate?: string;
+  status: 'Scheduled' | 'InProgress' | 'Completed' | 'Rescheduled' | 'Skipped';
+  notes?: string;
+  createdAt?: string;
+  // Joined from projects
+  projId?: string;
+  projName?: string;
+  projStatus?: string;
+}
+
+export interface MAContract {
+  id: string;
+  contractNo?: string;
+  customerId?: string;
+  customerSiteId?: string;
+  serviceType?: string;
+  serviceItems: MAServiceItem[];
+  frequencyMonths: number;
+  totalRounds: number;
+  contractStartDate?: string;
+  contractEndDate?: string;
+  contractValue?: number;
+  status: 'Active' | 'Completed' | 'Cancelled' | 'Suspended';
+  notes?: string;
+  createdAt?: string;
+  createdBy?: string;
+  // Joined fields from API
+  customerName?: string;
+  customerPhone?: string;
+  siteName?: string;
+  siteAddress?: string;
+  totalRoundsCount?: number;
+  completedRounds?: number;
+  rounds?: MARound[];
+}
+
+export interface MAChecklistItem {
+  id: string;
+  label: string;
+  required: boolean;
+  checked?: boolean;
+  notes?: string;
+}
+
+export interface MAChecklistTemplate {
+  id: string;
+  serviceType: string;
+  templateName?: string;
+  checklistItems: MAChecklistItem[];
+  createdAt?: string;
+}

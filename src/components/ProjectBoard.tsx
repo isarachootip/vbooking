@@ -41,9 +41,10 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
   const [showScheduleMatrix, setShowScheduleMatrix] = useState<boolean>(true);
 
   // Dynamic Workflow Columns based on selected filter type or full workflow for 'all'
+  const matchedMasterType = masterProjectTypes.find((t: any) => t.id === filterType);
   const activeColumnKeys = filterType === 'all'
     ? getWorkflowColumnsForType('renovate')
-    : getWorkflowColumnsForType(filterType);
+    : getWorkflowColumnsForType(matchedMasterType?.name || filterType);
 
   const columns = activeColumnKeys.map(colKey => ({
     id: colKey,
@@ -61,14 +62,27 @@ export const ProjectBoard = ({ projects = [], setProjects, tasks = [], users = [
   const filteredProjects = projects.filter(p => {
     const isMember = currentUser?.globalRole === 'Admin' || 
                     currentUser?.globalRole === 'Manager' || 
-                    p.members?.some(m => m.userId === currentUser?.id);
+                    p.members?.some(m => m.userId === currentUser?.id || (m as any).id === currentUser?.id);
     if (!isMember) return false;
 
     if (filterType === 'all') return true;
     
+    // Check match with masterProjectTypes
+    if (matchedMasterType) {
+      const typeName = (matchedMasterType.name || '').toLowerCase();
+      const projType = (p.projectType || '').toLowerCase();
+      if (projType === typeName || projType.includes(typeName) || typeName.includes(projType)) return true;
+    }
+
     // Normalize old construction to new_house/renovate to keep compatibility
     const normalizedType = p.projectType === 'construction' ? 'new_house' : p.projectType;
-    return (normalizedType || 'new_house').toLowerCase() === filterType.toLowerCase();
+    const projTypeStr = (p.projectType || '').toLowerCase();
+    const filterStr = filterType.toLowerCase();
+
+    return (normalizedType || 'new_house').toLowerCase() === filterStr ||
+           projTypeStr === filterStr ||
+           projTypeStr.includes(filterStr) ||
+           filterStr.includes(projTypeStr);
   });
 
   const handleDragStart = (projectId: string) => {

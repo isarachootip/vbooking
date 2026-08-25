@@ -467,6 +467,28 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   </span>
                 );
               })()}
+              {project.leadId && (
+                <span 
+                  onClick={() => navigate('/leads')}
+                  title={`โครงการนี้แปลงมาจาก Lead: ${project.leadId} (คลิกเพื่อดูหน้า Leads)`}
+                  style={{ 
+                    fontSize: '0.75rem', 
+                    padding: '0.2rem 0.65rem', 
+                    borderRadius: 'var(--radius-full)', 
+                    background: 'rgba(99, 102, 241, 0.12)', 
+                    color: '#6366f1', 
+                    fontWeight: 700, 
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    cursor: 'pointer'
+                  }}
+                  className="hover-lift"
+                >
+                  <FileText size={12} /> Lead Ref: {project.leadId}
+                </span>
+              )}
             </div>
             <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
               {project.name}
@@ -1614,7 +1636,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase' }}>ขั้นตอนการก่อสร้างและควบคุมงาน</span>
-                      <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.2rem 0 0 0', color: 'var(--text-primary)' }}>PHASE 03: Project Execution (JMT)</h2>
+                      <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.2rem 0 0 0', color: 'var(--text-primary)' }}>PHASE 03: Project Execution (INT)</h2>
                     </div>
                     <button 
                       onClick={() => updateFlowState({ phase: 'PHASE_02_DESIGN_QUOTE_PAYMENT' })}
@@ -1624,58 +1646,58 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     </button>
                   </div>
 
-                  {/* Confirm Plan / JMT Integration */}
+                  {/* Confirm Plan / INT Integration */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>📋 Step 7: สร้างแผนงานโครงการ [JMT Plan Integration]</div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>📋 Step 7: สร้างแผนงานโครงการ [INT Plan Integration]</div>
                     
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      ระบบรองรับการสร้างแผนและดึงช่างติดตั้งจากฐานระบบ JMT เพื่อยืนยันความพร้อมหน้างาน
+                      ระบบรองรับการสร้างแผนและดึงช่างติดตั้งจากฐานระบบ INT เพื่อยืนยันความพร้อมหน้างาน
                     </div>
 
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem' }}>
                       <button 
                         onClick={() => {
                           updateFlowState({ project_plan_created: true });
-                          alert('สร้างแผนโครงการใน JMT และยืนยันกับลูกค้าเสร็จสมบูรณ์!');
+                          alert('สร้างแผนโครงการใน INT และยืนยันกับลูกค้าเสร็จสมบูรณ์!');
                         }}
                         style={{
                           background: flowState.project_plan_created ? 'rgba(16,185,129,0.15)' : 'var(--accent-primary)',
                           color: flowState.project_plan_created ? '#10b981' : 'white',
                           border: flowState.project_plan_created ? '1px solid #10b981' : 'none',
-                          padding: '0.5rem 1rem',
+                          padding: '0.55rem 1.1rem',
                           borderRadius: '6px',
                           fontWeight: 700,
                           cursor: 'pointer',
-                          fontSize: '0.8rem'
+                          fontSize: '0.85rem'
                         }}
                       >
-                        {flowState.project_plan_created ? '✓ แผนงาน JMT บันทึกเรียบร้อย' : 'สร้างแผนงานและ WBS (JMT)'}
+                        {flowState.project_plan_created ? '✓ แผนงาน INT บันทึกเรียบร้อย' : 'สร้างแผนงานและ WBS (INT)'}
                       </button>
 
                       <button 
                         onClick={() => {
                           const mockTechs = ['สมใจ แสนดี (ช่างไฟฟ้า)', 'ณรงค์ ทนทาน (ช่างฝีมือ)', 'วิชัย อิ่มใจ (ช่างทั่วไป)'];
                           updateFlowState({ technicians: mockTechs });
-                          alert('ดึงรายชื่อช่างผู้ร่วมงานจากระบบ JMT เรียบร้อย: ' + mockTechs.join(', '));
+                          alert('ดึงรายชื่อช่างผู้ร่วมงานจากระบบ INT เรียบร้อย: ' + mockTechs.join(', '));
                         }}
                         style={{
                           background: 'transparent',
                           color: 'var(--text-primary)',
                           border: '1px solid var(--border-color)',
-                          padding: '0.5rem 1rem',
+                          padding: '0.55rem 1.1rem',
                           borderRadius: '6px',
                           fontWeight: 600,
                           cursor: 'pointer',
-                          fontSize: '0.8rem'
+                          fontSize: '0.85rem'
                         }}
                       >
-                        👥 ดึงช่างติดตั้งจาก JMT
+                        👥 ดึงช่างติดตั้งจาก INT
                       </button>
                     </div>
 
                     {flowState.technicians && flowState.technicians.length > 0 && (
                       <div style={{ background: 'var(--bg-primary)', padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>ช่างจาก JMT:</span>
+                        <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>ช่างจาก INT:</span>
                         {flowState.technicians.map((t: any, idx: number) => (
                           <span key={idx} style={{ background: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--accent-primary)' }}>{t}</span>
                         ))}
@@ -1922,11 +1944,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                           <button 
                             onClick={() => {
-                              alert('ดึงพนักงานที่ร่วมทำงานเสร็จสิ้น: \n- ' + (flowState.technicians?.join('\n- ') || 'ไม่พบรายชื่อในระบบ JMT'));
+                              alert('ดึงพนักงานที่ร่วมทำงานเสร็จสิ้น: \n- ' + (flowState.technicians?.join('\n- ') || 'ไม่พบรายชื่อในระบบ INT'));
                             }}
                             style={{ padding: '0.4rem 0.8rem', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
                           >
-                            Pull JMT Technicians
+                            Pull INT Technicians
                           </button>
                           <button 
                             onClick={() => {
@@ -2057,7 +2079,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div style={{ borderBottom: '1px dashed var(--border-color)', margin: '0.5rem 0' }} />
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phase 03: Project Execution</div>
                   
-                  <FlowBox title="Create Plan [JMT]" isActive={flowState.phase === 'PHASE_03_PROJECT_EXECUTION' && !flowState.project_plan_created} isCompleted={flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' || (flowState.phase === 'PHASE_03_PROJECT_EXECUTION' && flowState.project_plan_created)} />
+                  <FlowBox title="Create Plan [INT]" isActive={flowState.phase === 'PHASE_03_PROJECT_EXECUTION' && !flowState.project_plan_created} isCompleted={flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' || (flowState.phase === 'PHASE_03_PROJECT_EXECUTION' && flowState.project_plan_created)} />
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>↓</div>
                   <FlowBox title="Start Project (Check-in)" isActive={flowState.phase === 'PHASE_03_PROJECT_EXECUTION' && flowState.project_plan_created && !flowState.work_started} isCompleted={flowState.phase === 'PHASE_04_QC_HANDOVER_AFTERSALES' || (flowState.phase === 'PHASE_03_PROJECT_EXECUTION' && flowState.work_started)} />
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>↓</div>

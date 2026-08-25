@@ -841,6 +841,11 @@ export const Projects = ({
                         </td>
                         <td style={{ padding: '0.85rem 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                           <div style={{ fontWeight: 500 }}>{extra.branch || 'สาขาบางนา'}</div>
+                          {project.leadId && (
+                            <div style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 600, marginTop: '2px' }}>
+                              📋 {project.leadId}
+                            </div>
+                          )}
                           {extra.surveyTicketNo && <div style={{ fontSize: '0.75rem' }}>🎫 {extra.surveyTicketNo}</div>}
                         </td>
                         <td style={{ padding: '0.85rem 1rem' }}>

@@ -76,7 +76,8 @@ const requireAuth = async (req, res, next) => {
     '/auth/line/callback', 
     '/db-status',
     '/webhooks/github',
-    '/webhooks/gitlab'
+    '/webhooks/gitlab',
+    '/chat'
   ];
   
   if (publicPaths.some(p => req.path === p || req.path.startsWith(p))) {
@@ -745,9 +746,223 @@ const initDB = async () => {
         created_at          VARCHAR(50) NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_qc_plan_items_plan_id ON qc_plan_items(plan_id);
+
+      -- Customers Master Table
+      CREATE TABLE IF NOT EXISTS customers (
+        id VARCHAR(50) PRIMARY KEY,
+        customer_code VARCHAR(50) UNIQUE,
+        customer_type VARCHAR(20) DEFAULT 'individual',
+        first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100),
+        customer_name VARCHAR(150),
+        company_name VARCHAR(150),
+        tax_id VARCHAR(50),
+        phone VARCHAR(50),
+        phone_secondary VARCHAR(50),
+        line_id VARCHAR(100),
+        email VARCHAR(150),
+        notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Customer Sites Table
+      CREATE TABLE IF NOT EXISTS customer_sites (
+        id VARCHAR(50) PRIMARY KEY,
+        customer_id VARCHAR(50) NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+        site_name VARCHAR(150) NOT NULL,
+        is_default BOOLEAN DEFAULT false,
+        address TEXT NOT NULL,
+        subdistrict VARCHAR(100),
+        district VARCHAR(100),
+        province VARCHAR(100),
+        postal_code VARCHAR(20),
+        latitude NUMERIC,
+        longitude NUMERIC,
+        map_url TEXT,
+        coordinator_name VARCHAR(150),
+        coordinator_phone VARCHAR(50),
+        coordinator_line_id VARCHAR(100),
+        site_notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_sites_customer_id ON customer_sites(customer_id);
+
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_id VARCHAR(50) REFERENCES customers(id) ON DELETE SET NULL;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_site_id VARCHAR(50) REFERENCES customer_sites(id) ON DELETE SET NULL;
+
+      -- MA Contract (Recurring Maintenance Agreement)
+      CREATE TABLE IF NOT EXISTS ma_contracts (
+        id                  VARCHAR(50) PRIMARY KEY,
+        contract_no         VARCHAR(50) UNIQUE,
+        customer_id         VARCHAR(50) REFERENCES customers(id) ON DELETE SET NULL,
+        customer_site_id    VARCHAR(50) REFERENCES customer_sites(id) ON DELETE SET NULL,
+        service_type        VARCHAR(100),
+        service_items       JSONB DEFAULT '[]',
+        frequency_months    INTEGER DEFAULT 3,
+        total_rounds        INTEGER DEFAULT 4,
+        contract_start_date VARCHAR(50),
+        contract_end_date   VARCHAR(50),
+        contract_value      NUMERIC DEFAULT 0,
+        status              VARCHAR(50) DEFAULT 'Active',
+        notes               TEXT,
+        created_at          TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        created_by          VARCHAR(50)
+      );
+      CREATE INDEX IF NOT EXISTS idx_ma_contracts_customer ON ma_contracts(customer_id);
+
+      -- MA Rounds (Each service visit under a contract)
+      CREATE TABLE IF NOT EXISTS ma_rounds (
+        id                  VARCHAR(50) PRIMARY KEY,
+        contract_id         VARCHAR(50) NOT NULL REFERENCES ma_contracts(id) ON DELETE CASCADE,
+        project_id          VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL,
+        round_number        INTEGER NOT NULL,
+        scheduled_date      VARCHAR(50),
+        actual_date         VARCHAR(50),
+        status              VARCHAR(50) DEFAULT 'Scheduled',
+        notes               TEXT,
+        created_at          TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_ma_rounds_contract ON ma_rounds(contract_id);
+
+      -- MA Checklist Templates (per service type)
+      CREATE TABLE IF NOT EXISTS ma_checklist_templates (
+        id                  VARCHAR(50) PRIMARY KEY,
+        service_type        VARCHAR(100) NOT NULL,
+        template_name       VARCHAR(200),
+        checklist_items     JSONB DEFAULT '[]',
+        created_at          TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
     `);
 
+    // Auto-migrate existing leads data to customers and customer_sites if customers table is empty
+    const custCountRes = await client.query('SELECT COUNT(*) FROM customers');
+    if (parseInt(custCountRes.rows[0].count, 10) === 0) {
+      console.log('Migrating existing customer data from leads to customer master...');
+      const existingLeads = await client.query(`
+        SELECT DISTINCT ON (COALESCE(NULLIF(customer_phone, ''), customer_name))
+          id, customer_name, customer_first_name, customer_last_name, customer_phone,
+          customer_address, customer_latitude, customer_longitude, map_url,
+          coordinator_name, coordinator_phone, coordinator_line_id, created_at
+        FROM leads
+        WHERE customer_name IS NOT NULL AND customer_name != ''
+        ORDER BY COALESCE(NULLIF(customer_phone, ''), customer_name), created_at ASC
+      `);
+
+      let seq = 1;
+      for (const lead of existingLeads.rows) {
+        const custId = `cust_${Date.now()}_${seq}`;
+        const custCode = `CUST-${String(seq).padStart(5, '0')}`;
+        const fName = (lead.customer_first_name || lead.customer_name.split(' ')[0] || 'ลูกค้า').trim();
+        const lName = (lead.customer_last_name || lead.customer_name.split(' ').slice(1).join(' ') || '').trim();
+        const fullName = lead.customer_name.trim();
+
+        await client.query(`
+          INSERT INTO customers (id, customer_code, customer_type, first_name, last_name, customer_name, phone, created_at, updated_at)
+          VALUES ($1, $2, 'individual', $3, $4, $5, $6, NOW(), NOW())
+          ON CONFLICT (id) DO NOTHING
+        `, [custId, custCode, fName, lName, fullName, lead.customer_phone || null]);
+
+        // Create Site for this customer
+        let siteId = null;
+        if (lead.customer_address || lead.customer_latitude) {
+          siteId = `site_${Date.now()}_${seq}`;
+          await client.query(`
+            INSERT INTO customer_sites (
+              id, customer_id, site_name, is_default, address, latitude, longitude, map_url,
+              coordinator_name, coordinator_phone, coordinator_line_id, created_at, updated_at
+            ) VALUES ($1, $2, 'สถานที่หลัก (Site 1)', true, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+            ON CONFLICT (id) DO NOTHING
+          `, [
+            siteId, custId, lead.customer_address || 'ไม่ระบุที่อยู่',
+            lead.customer_latitude || null, lead.customer_longitude || null, lead.map_url || null,
+            lead.coordinator_name || fName, lead.coordinator_phone || lead.customer_phone || null,
+            lead.coordinator_line_id || null
+          ]);
+        }
+
+        // Link all matching leads to this customer
+        await client.query(`
+          UPDATE leads SET customer_id = $1, customer_site_id = COALESCE($2, customer_site_id)
+          WHERE (customer_phone = $3 AND $3 IS NOT NULL AND $3 != '') OR (customer_name = $4)
+        `, [custId, siteId, lead.customer_phone, lead.customer_name]);
+
+        seq++;
+      }
+      console.log(`Migrated ${seq - 1} customers into Customer Master.`);
+    }
+
+    // Seed MA Checklist Templates if empty
+    const clTplCount = await client.query('SELECT COUNT(*) FROM ma_checklist_templates');
+    if (parseInt(clTplCount.rows[0].count, 10) === 0) {
+      const defaultTemplates = [
+        {
+          id: 'mact_ac_wash',
+          service_type: 'ล้างแอร์',
+          template_name: 'Checklist ล้างแอร์มาตรฐาน',
+          checklist_items: JSON.stringify([
+            { id: 'ac1', label: 'ถอดและทำความสะอาดแผ่นกรองอากาศ (Filter)', required: true },
+            { id: 'ac2', label: 'ล้างคอยล์เย็น (Evaporator Coil) ด้วยน้ำยาล้างคอยล์', required: true },
+            { id: 'ac3', label: 'ล้างและเป่าท่อระบายน้ำทิ้ง (Drain Pipe)', required: true },
+            { id: 'ac4', label: 'เช็คระดับสารทำความเย็น (Refrigerant Level)', required: true },
+            { id: 'ac5', label: 'ทำความสะอาดครีบ Condenser ภายนอก', required: false },
+            { id: 'ac6', label: 'ทดสอบเดินเครื่อง — วัดอุณหภูมิลมเย็น (≤16°C)', required: true },
+            { id: 'ac7', label: 'ถ่ายภาพ Before (ก่อนล้าง)', required: true },
+            { id: 'ac8', label: 'ถ่ายภาพ After (หลังล้าง)', required: true }
+          ])
+        },
+        {
+          id: 'mact_electrical',
+          service_type: 'ตรวจระบบไฟฟ้า',
+          template_name: 'Checklist ตรวจระบบไฟฟ้ามาตรฐาน',
+          checklist_items: JSON.stringify([
+            { id: 'el1', label: 'ตรวจสภาพตู้ MDB / ตู้ควบคุมไฟหลัก', required: true },
+            { id: 'el2', label: 'วัดแรงดันไฟฟ้า (Voltage Check)', required: true },
+            { id: 'el3', label: 'ตรวจสายดิน (Ground/Earth Check)', required: true },
+            { id: 'el4', label: 'ทดสอบ RCD/ELCB (ตัดไฟรั่ว)', required: true },
+            { id: 'el5', label: 'ตรวจสภาพสายไฟและเต้ารับ', required: true },
+            { id: 'el6', label: 'ถ่ายภาพ Before/After', required: true }
+          ])
+        },
+        {
+          id: 'mact_plumbing',
+          service_type: 'ตรวจระบบประปา',
+          template_name: 'Checklist ตรวจระบบประปา',
+          checklist_items: JSON.stringify([
+            { id: 'pl1', label: 'ตรวจท่อน้ำและข้อต่อ (หารอยรั่ว)', required: true },
+            { id: 'pl2', label: 'เช็คแรงดันน้ำ (Water Pressure)', required: true },
+            { id: 'pl3', label: 'ตรวจวาล์วปิด-เปิด (Shut-off Valves)', required: true },
+            { id: 'pl4', label: 'ตรวจถังแรงดันน้ำ (Pressure Tank)', required: false },
+            { id: 'pl5', label: 'ถ่ายภาพ Before/After', required: true }
+          ])
+        },
+        {
+          id: 'mact_cctv',
+          service_type: 'ตรวจ CCTV',
+          template_name: 'Checklist ตรวจระบบ CCTV',
+          checklist_items: JSON.stringify([
+            { id: 'cc1', label: 'ตรวจสภาพกล้องและมุมมอง (Camera Position)', required: true },
+            { id: 'cc2', label: 'ทดสอบภาพ Daytime (ความชัดเจน)', required: true },
+            { id: 'cc3', label: 'ทดสอบ Night Vision / IR', required: true },
+            { id: 'cc4', label: 'เช็คพื้นที่จัดเก็บ HDD/NVR', required: true },
+            { id: 'cc5', label: 'ทดสอบการ Playback ย้อนหลัง', required: true },
+            { id: 'cc6', label: 'ถ่ายภาพ Before/After', required: true }
+          ])
+        }
+      ];
+      for (const tpl of defaultTemplates) {
+        await client.query(
+          `INSERT INTO ma_checklist_templates (id, service_type, template_name, checklist_items) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING`,
+          [tpl.id, tpl.service_type, tpl.template_name, tpl.checklist_items]
+        );
+      }
+      console.log('Seeded MA checklist templates.');
+    }
+
+
     // Seed/Upsert 9 Detailed Master Zones
+
     const detailedMasterZones = [
       { id: 'zone-bkk', code: 'BKK', name: '[BKK] กรุงเทพฯ & ปริมณฑล', region: 'กรุงเทพฯ & ปริมณฑล', description: 'ครอบคลุม กรุงเทพฯ, นนทบุรี, ปทุมธานี, สมุทรปราการ, สมุทรสาคร', provinces: ['กรุงเทพมหานคร', 'นนทบุรี', 'ปทุมธานี', 'สมุทรปราการ', 'สมุทรสาคร'] },
       { id: 'zone-c', code: 'C', name: '[C] ภาคกลาง', region: 'ภาคกลาง', description: 'ครอบคลุม พระนครศรีอยุธยา, สระบุรี, ลพบุรี, ชัยนาท, นครนายก, อุทัยธานี, นครปฐม, สุพรรณบุรี', provinces: ['พระนครศรีอยุธยา', 'สระบุรี', 'ลพบุรี', 'ชัยนาท', 'นครนายก', 'อุทัยธานี', 'นครปฐม', 'สุพรรณบุรี'] },
@@ -1088,6 +1303,27 @@ const initDB = async () => {
         );
       }
       console.log('Seeded Installation task templates.');
+    }
+
+    // Seed MA Air templates if not present
+    const maAirTemplateCount = await client.query("SELECT COUNT(*) FROM task_templates WHERE project_template_name ILIKE '%MA air%' OR project_template_name ILIKE '%MA Air%'");
+    if (parseInt(maAirTemplateCount.rows[0].count) === 0) {
+      console.log('Seeding MA Air task templates...');
+      const maAirTemplates = [
+        { id: 'tpl_ma_air_1', title: 'เข้าพื้นที่และตรวจเช็กสภาพเครื่องก่อนทำงาน (Pre-inspection & Initial Test)', description: 'ตรวจสอบการทำงานเดิม วัดอุณหภูมิลมจ่าย เช็กเสียงผิดปกติ และกระแสไฟฟ้าก่อนเริ่มบริการ', priority: 'Medium', start_percent: 0, end_percent: 15, estimated_hours: 1, project_template_name: 'MA Air' },
+        { id: 'tpl_ma_air_2', title: 'ตัดระบบไฟและเตรียมพื้นที่ป้องกัน (Power Off & Area Protection)', description: 'สับเบรกเกอร์ตัดไฟ คลุมผ้าใบกันน้ำ/พลาสติกป้องกันเฟอร์นิเจอร์และพื้นโดยรอบ', priority: 'High', start_percent: 15, end_percent: 25, estimated_hours: 0.5, project_template_name: 'MA Air' },
+        { id: 'tpl_ma_air_3', title: 'ถอดล้างคอยล์เย็นและแผ่นกรอง (Indoor Unit Deep Cleaning)', description: 'ถอดหน้ากาก แผ่นฟิลเตอร์ ถาดน้ำทิ้ง ฉีดล้างแผงฟินคอยล์เย็นด้วยปั๊มแรงดันสูงและล้างท่อน้ำทิ้งป้องกันน้ำหยด', priority: 'Urgent', start_percent: 25, end_percent: 60, estimated_hours: 2, project_template_name: 'MA Air' },
+        { id: 'tpl_ma_air_4', title: 'ล้างทำความสะอาดคอยล์ร้อนภายนอก (Outdoor Condenser Cleaning)', description: 'ฉีดล้างแผงระบายความร้อนคอยล์ร้อน เป่าแห้ง และตรวจเช็กมอเตอร์พัดลม', priority: 'Medium', start_percent: 60, end_percent: 80, estimated_hours: 1.5, project_template_name: 'MA Air' },
+        { id: 'tpl_ma_air_5', title: 'ตรวจวัดแรงดันน้ำยาและกระแสไฟฟ้า (Refrigerant & Amp Check)', description: 'วัดแรงดันน้ำยาแอร์ (PSI) ตรวจวัดกระแสไฟการทำงานของคอมเพรสเซอร์ และตรวจสภาพสายไฟ', priority: 'High', start_percent: 80, end_percent: 90, estimated_hours: 1, project_template_name: 'MA Air' },
+        { id: 'tpl_ma_air_6', title: 'ทดสอบระบบ ทำความสะอาดพื้นที่ และส่งมอบงาน (Post-Test & Handover)', description: 'เปิดเครื่องทดสอบความเย็น วัดอุณหภูมิลมเป่า ทำความสะอาดพื้นที่หน้างาน บันทึกรูป Before/After และส่งมอบงานให้ลูกค้า', priority: 'Urgent', start_percent: 90, end_percent: 100, estimated_hours: 1, project_template_name: 'MA Air' }
+      ];
+      for (const tpl of maAirTemplates) {
+        await client.query(
+          'INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours, project_template_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING',
+          [tpl.id, tpl.title, tpl.description, tpl.priority, tpl.start_percent, tpl.end_percent, tpl.estimated_hours, tpl.project_template_name]
+        );
+      }
+      console.log('Seeded MA Air task templates.');
     }
 
     // Ensure all existing users have a password hash
@@ -1539,7 +1775,7 @@ app.post('/api/chat', async (req, res) => {
       try {
         const genAI = new GoogleGenerativeAI(apiKey.trim());
         const model = genAI.getGenerativeModel({ 
-          model: "gemini-flash-latest",
+          model: "gemini-3.5-flash",
           systemInstruction: systemPrompt
         });
 
@@ -1551,10 +1787,7 @@ app.post('/api/chat', async (req, res) => {
         console.error('Gemini SDK Error:', geminiErr);
         return res.json({ reply: `[Gemini API Error] ${geminiErr.message || 'Unknown SDK Error'}` });
       }
-
-
-
-      }
+    }
 
     // Basic Rule-based mock response
     let reply = 'ขออภัยครับ ตอนนี้ผมเป็นเพียงบอททดสอบ ยังไม่สามารถตอบคำถามซับซ้อนได้ครับ (ตั้งค่า API Key เพื่อใช้งาน AI)';
@@ -4396,8 +4629,11 @@ app.post('/api/clean-tasks', async (req, res) => {
   }
 });
 // ==========================================
-// LEADS API & QC DAILY PLAN API
+// LEADS API & QC DAILY PLAN API & CUSTOMER MASTER API
 // ==========================================
+const customerRoutes = require('./src/routes/customerRoutes.cjs');
+app.use('/api/customers', customerRoutes);
+
 const leadRoutes = require('./src/routes/leadRoutes.cjs');
 app.use('/api/leads', leadRoutes);
 
@@ -4521,7 +4757,7 @@ app.post('/api/leads/:id/convert', async (req, res) => {
     );
 
     const templateResult = await pool.query(
-        'SELECT * FROM task_templates WHERE project_template_name = $1 ORDER BY start_percent ASC',
+        'SELECT * FROM task_templates WHERE project_template_name ILIKE $1 ORDER BY start_percent ASC',
         [lead.job_type]
     );
     
@@ -4963,6 +5199,191 @@ integrationRouter.delete('/branches/:id', async (req, res) => {
 });
 
 app.use('/api/integration', integrationRouter);
+
+// ─── MA Contracts ────────────────────────────────────────────────────────────
+app.get('/api/ma-contracts', requireAuth, async (req, res) => {
+  try {
+    const { customer_id, status } = req.query;
+    let query = `
+      SELECT mc.*,
+        c.customer_name, c.phone as customer_phone,
+        cs.site_name, cs.address as site_address,
+        (SELECT COUNT(*) FROM ma_rounds mr WHERE mr.contract_id = mc.id)::int as total_rounds_count,
+        (SELECT COUNT(*) FROM ma_rounds mr WHERE mr.contract_id = mc.id AND mr.status = 'Completed')::int as completed_rounds
+      FROM ma_contracts mc
+      LEFT JOIN customers c ON mc.customer_id = c.id
+      LEFT JOIN customer_sites cs ON mc.customer_site_id = cs.id
+    `;
+    const params = [];
+    const conditions = [];
+    if (customer_id) { conditions.push(`mc.customer_id = $${params.length + 1}`); params.push(customer_id); }
+    if (status) { conditions.push(`mc.status = $${params.length + 1}`); params.push(status); }
+    if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
+    query += ' ORDER BY mc.created_at DESC';
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('GET /api/ma-contracts error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ma-contracts', requireAuth, async (req, res) => {
+  try {
+    const {
+      id, contract_no, customer_id, customer_site_id, service_type,
+      service_items, frequency_months, total_rounds,
+      contract_start_date, contract_end_date, contract_value,
+      status, notes, created_by
+    } = req.body;
+    const cid = id || `mac_${Date.now()}`;
+    let cno = contract_no;
+    if (!cno) {
+      const yr = new Date().getFullYear();
+      const countRes = await pool.query(`SELECT COUNT(*) FROM ma_contracts WHERE contract_no LIKE $1`, [`MAC-${yr}-%`]);
+      const seq = String(parseInt(countRes.rows[0].count, 10) + 1).padStart(4, '0');
+      cno = `MAC-${yr}-${seq}`;
+    }
+    const result = await pool.query(
+      `INSERT INTO ma_contracts (id, contract_no, customer_id, customer_site_id, service_type, service_items, frequency_months, total_rounds, contract_start_date, contract_end_date, contract_value, status, notes, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       ON CONFLICT (id) DO UPDATE SET
+         customer_id=EXCLUDED.customer_id, customer_site_id=EXCLUDED.customer_site_id,
+         service_type=EXCLUDED.service_type, service_items=EXCLUDED.service_items,
+         frequency_months=EXCLUDED.frequency_months, total_rounds=EXCLUDED.total_rounds,
+         contract_start_date=EXCLUDED.contract_start_date, contract_end_date=EXCLUDED.contract_end_date,
+         contract_value=EXCLUDED.contract_value, status=EXCLUDED.status, notes=EXCLUDED.notes
+       RETURNING *`,
+      [cid, cno, customer_id || null, customer_site_id || null, service_type || null,
+       JSON.stringify(service_items || []), frequency_months || 3, total_rounds || 4,
+       contract_start_date || null, contract_end_date || null, contract_value || 0,
+       status || 'Active', notes || null, created_by || null]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('POST /api/ma-contracts error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/ma-contracts/:id', requireAuth, async (req, res) => {
+  try {
+    const contractRes = await pool.query(
+      `SELECT mc.*, c.customer_name, c.phone as customer_phone, cs.site_name, cs.address as site_address
+       FROM ma_contracts mc
+       LEFT JOIN customers c ON mc.customer_id = c.id
+       LEFT JOIN customer_sites cs ON mc.customer_site_id = cs.id
+       WHERE mc.id = $1`,
+      [req.params.id]
+    );
+    if (contractRes.rows.length === 0) return res.status(404).json({ error: 'Contract not found' });
+    const roundsRes = await pool.query(
+      `SELECT mr.*, p.id as proj_id, p.name as proj_name, p.status as proj_status
+       FROM ma_rounds mr
+       LEFT JOIN projects p ON mr.project_id = p.id
+       WHERE mr.contract_id = $1
+       ORDER BY mr.round_number ASC`,
+      [req.params.id]
+    );
+    res.json({ ...contractRes.rows[0], rounds: roundsRes.rows });
+  } catch (err) {
+    console.error('GET /api/ma-contracts/:id error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/ma-contracts/:id', requireAuth, async (req, res) => {
+  try {
+    const { status, notes, contract_value, contract_end_date } = req.body;
+    const result = await pool.query(
+      `UPDATE ma_contracts SET
+         status = COALESCE($1, status),
+         notes = COALESCE($2, notes),
+         contract_value = COALESCE($3, contract_value),
+         contract_end_date = COALESCE($4, contract_end_date)
+       WHERE id = $5 RETURNING *`,
+      [status || null, notes || null, contract_value || null, contract_end_date || null, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── MA Rounds ────────────────────────────────────────────────────────────────
+app.post('/api/ma-rounds', requireAuth, async (req, res) => {
+  try {
+    const { id, contract_id, project_id, round_number, scheduled_date, actual_date, status, notes } = req.body;
+    const rid = id || `mar_${Date.now()}`;
+    const result = await pool.query(
+      `INSERT INTO ma_rounds (id, contract_id, project_id, round_number, scheduled_date, actual_date, status, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT (id) DO UPDATE SET
+         project_id=EXCLUDED.project_id, scheduled_date=EXCLUDED.scheduled_date,
+         actual_date=EXCLUDED.actual_date, status=EXCLUDED.status, notes=EXCLUDED.notes
+       RETURNING *`,
+      [rid, contract_id, project_id || null, round_number, scheduled_date || null, actual_date || null, status || 'Scheduled', notes || null]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('POST /api/ma-rounds error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/ma-rounds/:id', requireAuth, async (req, res) => {
+  try {
+    const { project_id, scheduled_date, actual_date, status, notes } = req.body;
+    const result = await pool.query(
+      `UPDATE ma_rounds SET
+         project_id = COALESCE($1, project_id),
+         scheduled_date = COALESCE($2, scheduled_date),
+         actual_date = COALESCE($3, actual_date),
+         status = COALESCE($4, status),
+         notes = COALESCE($5, notes)
+       WHERE id = $6 RETURNING *`,
+      [project_id || null, scheduled_date || null, actual_date || null, status || null, notes || null, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── MA Checklist Templates ───────────────────────────────────────────────────
+app.get('/api/ma-checklist-templates', requireAuth, async (req, res) => {
+  try {
+    const { service_type } = req.query;
+    let query = 'SELECT * FROM ma_checklist_templates';
+    const params = [];
+    if (service_type) {
+      query += ' WHERE service_type = $1';
+      params.push(service_type);
+    }
+    query += ' ORDER BY service_type ASC';
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ma-checklist-templates', requireAuth, async (req, res) => {
+  try {
+    const { id, service_type, template_name, checklist_items } = req.body;
+    const tid = id || `mact_${Date.now()}`;
+    const result = await pool.query(
+      `INSERT INTO ma_checklist_templates (id, service_type, template_name, checklist_items)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (id) DO UPDATE SET service_type=EXCLUDED.service_type, template_name=EXCLUDED.template_name, checklist_items=EXCLUDED.checklist_items
+       RETURNING *`,
+      [tid, service_type, template_name || service_type, JSON.stringify(checklist_items || [])]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Using app.use instead of app.get('/(.*)', ...) to avoid path-to-regexp v6 incompatibility
 app.use((req, res) => {

@@ -715,7 +715,7 @@ export const QCHandoverModal: React.FC<QCHandoverModalProps> = ({
             <form onSubmit={handleSubmitHandoverAndSettle} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
                 <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-                  👷‍♂️ สรุปทีมช่างปฏิบัติงานจริง (JMT Technicians Settlement)
+                  👷‍♂️ สรุปทีมช่างปฏิบัติงานจริง (INT Technicians Settlement)
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                   ช่างและทีมงานที่บันทึกชั่วโมงทำงาน Timesheet ในโครงการนี้จะได้รับการตัดจ่ายตาม Cost Rate มาตรฐาน

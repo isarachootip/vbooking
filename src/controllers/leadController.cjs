@@ -34,7 +34,12 @@ exports.getLeads = async (req, res) => {
 
 exports.createLead = async (req, res) => {
   try {
-    const { id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, notes, sales_contact_id } = req.body;
+    let { 
+      id, customer_name, customer_first_name, customer_last_name, customer_phone, 
+      customer_address, customer_latitude, customer_longitude, map_url, job_type, 
+      notes, sales_contact_id, customer_id, customer_site_id, site_name,
+      coordinator_name, coordinator_phone, coordinator_line_id
+    } = req.body;
     const now = new Date().toISOString();
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -46,29 +51,97 @@ exports.createLead = async (req, res) => {
     let leadId = id;
     if (!leadId) {
       const countRes = await pool.query(
-        `SELECT id FROM leads WHERE id LIKE $1 ORDER BY id DESC LIMIT 1`,
+        `SELECT id FROM leads WHERE id LIKE $1`,
         [`${prefix}%`]
       );
-      let nextSeq = 1;
-      if (countRes.rows.length > 0) {
-        const lastId = countRes.rows[0].id;
-        const lastNum = parseInt(lastId.replace(prefix, ''), 10);
-        if (!isNaN(lastNum)) {
-          nextSeq = lastNum + 1;
+      let maxNum = 0;
+      for (const row of countRes.rows) {
+        const numPart = parseInt(row.id.replace(prefix, ''), 10);
+        if (!isNaN(numPart) && numPart > maxNum) {
+          maxNum = numPart;
         }
       }
-      const runningPart = String(nextSeq).padStart(5, '0');
-      leadId = `LD-${dateStr}-${runningPart}`;
+      const runningPart = String(maxNum + 1).padStart(5, '0');
+      leadId = `${prefix}${runningPart}`;
     }
     
     const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
     const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');
     const fullName = customer_name || `${fName} ${lName}`.trim();
 
+    // Auto-link or auto-create Customer Master if needed
+    let finalCustId = customer_id || null;
+    let finalSiteId = customer_site_id || null;
+
+    if (!finalCustId && (fullName || customer_phone)) {
+      try {
+        // Check if customer exists by phone or exact name
+        let existingCust = null;
+        if (customer_phone && customer_phone.trim()) {
+          const checkRes = await pool.query('SELECT id FROM customers WHERE phone = $1 LIMIT 1', [customer_phone.trim()]);
+          if (checkRes.rows.length > 0) existingCust = checkRes.rows[0];
+        }
+        if (!existingCust && fullName) {
+          const checkRes = await pool.query('SELECT id FROM customers WHERE LOWER(customer_name) = LOWER($1) LIMIT 1', [fullName]);
+          if (checkRes.rows.length > 0) existingCust = checkRes.rows[0];
+        }
+
+        if (existingCust) {
+          finalCustId = existingCust.id;
+        } else {
+          // Create new customer
+          const newCustId = `cust_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+          const custCode = `CUST-${dateStr}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+          await pool.query(
+            `INSERT INTO customers (id, customer_code, customer_type, first_name, last_name, customer_name, phone, created_at, updated_at)
+             VALUES ($1, $2, 'individual', $3, $4, $5, $6, NOW(), NOW())`,
+            [newCustId, custCode, fName, lName, fullName, customer_phone || null]
+          );
+          finalCustId = newCustId;
+        }
+      } catch (e) {
+        console.error('Error auto-syncing customer master in createLead:', e);
+      }
+    }
+
+    // Auto-link or auto-create Site if needed
+    if (finalCustId && !finalSiteId && (customer_address || customer_latitude)) {
+      try {
+        const siteNameFinal = site_name || (customer_address ? customer_address.substring(0, 40) : 'สถานที่ติดตั้ง');
+        const newSiteId = `site_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        await pool.query(
+          `INSERT INTO customer_sites (
+            id, customer_id, site_name, is_default, address, latitude, longitude, map_url,
+            coordinator_name, coordinator_phone, coordinator_line_id, created_at, updated_at
+          ) VALUES ($1, $2, $3, true, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())`,
+          [
+            newSiteId, finalCustId, siteNameFinal, customer_address || 'ไม่ระบุที่อยู่',
+            customer_latitude || null, customer_longitude || null, map_url || null,
+            coordinator_name || fName, coordinator_phone || customer_phone || null,
+            coordinator_line_id || null
+          ]
+        );
+        finalSiteId = newSiteId;
+      } catch (e) {
+        console.error('Error auto-syncing site in createLead:', e);
+      }
+    }
+
     const result = await pool.query(
-      `INSERT INTO leads (id, customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, notes, created_at, updated_at, sales_contact_id) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
-      [leadId, fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, 'New', notes, now, now, sales_contact_id || null]
+      `INSERT INTO leads (
+        id, customer_name, customer_first_name, customer_last_name, customer_phone, 
+        customer_address, customer_latitude, customer_longitude, map_url, job_type, 
+        status, notes, created_at, updated_at, sales_contact_id, customer_id, customer_site_id,
+        coordinator_name, coordinator_phone, coordinator_line_id
+      ) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) 
+      RETURNING *`,
+      [
+        leadId, fullName, fName, lName, customer_phone, customer_address, 
+        customer_latitude || null, customer_longitude || null, map_url || null, 
+        job_type, 'New', notes, now, now, sales_contact_id || null, 
+        finalCustId, finalSiteId, coordinator_name || null, coordinator_phone || null, coordinator_line_id || null
+      ]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -80,7 +153,13 @@ exports.createLead = async (req, res) => {
 exports.updateLead = async (req, res) => {
   try {
     const { id } = req.params;
-    const { customer_name, customer_first_name, customer_last_name, customer_phone, customer_address, customer_latitude, customer_longitude, map_url, job_type, status, appointment_date, appointment_type, appointment_assignee, notes, project_id, coordinator_name, coordinator_phone, coordinator_line_id, surveyor_id, survey_date, sales_contact_id } = req.body;
+    const { 
+      customer_name, customer_first_name, customer_last_name, customer_phone, 
+      customer_address, customer_latitude, customer_longitude, map_url, job_type, 
+      status, appointment_date, appointment_type, appointment_assignee, notes, 
+      project_id, coordinator_name, coordinator_phone, coordinator_line_id, 
+      surveyor_id, survey_date, sales_contact_id, customer_id, customer_site_id 
+    } = req.body;
     const now = new Date().toISOString();
 
     const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
@@ -89,9 +168,22 @@ exports.updateLead = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE leads 
-       SET customer_name = $1, customer_first_name = $2, customer_last_name = $3, customer_phone = $4, customer_address = $5, customer_latitude = $6, customer_longitude = $7, map_url = $8, job_type = $9, status = $10, appointment_date = $11, appointment_type = $12, appointment_assignee = $13, notes = $14, updated_at = $15, project_id = COALESCE($16, project_id), coordinator_name = $17, coordinator_phone = $18, coordinator_line_id = $19, surveyor_id = $20, survey_date = $21, sales_contact_id = COALESCE($23, sales_contact_id)
+       SET customer_name = $1, customer_first_name = $2, customer_last_name = $3, customer_phone = $4, 
+           customer_address = $5, customer_latitude = $6, customer_longitude = $7, map_url = $8, 
+           job_type = $9, status = $10, appointment_date = $11, appointment_type = $12, 
+           appointment_assignee = $13, notes = $14, updated_at = $15, project_id = COALESCE($16, project_id), 
+           coordinator_name = $17, coordinator_phone = $18, coordinator_line_id = $19, 
+           surveyor_id = $20, survey_date = $21, sales_contact_id = COALESCE($23, sales_contact_id),
+           customer_id = COALESCE($24, customer_id), customer_site_id = COALESCE($25, customer_site_id)
        WHERE id = $22 RETURNING *`,
-      [fullName, fName, lName, customer_phone, customer_address, customer_latitude || null, customer_longitude || null, map_url || null, job_type, status, appointment_date || null, appointment_type || null, appointment_assignee || null, notes, now, project_id, coordinator_name || null, coordinator_phone || null, coordinator_line_id || null, surveyor_id || null, survey_date || null, id, sales_contact_id || null]
+      [
+        fullName, fName, lName, customer_phone, customer_address, 
+        customer_latitude || null, customer_longitude || null, map_url || null, 
+        job_type, status, appointment_date || null, appointment_type || null, 
+        appointment_assignee || null, notes, now, project_id, coordinator_name || null, 
+        coordinator_phone || null, coordinator_line_id || null, surveyor_id || null, 
+        survey_date || null, id, sales_contact_id || null, customer_id || null, customer_site_id || null
+      ]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
     res.json(result.rows[0]);

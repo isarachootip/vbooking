@@ -214,7 +214,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                   <strong>Customer Handover & Digital E-Signature:</strong> Customers rate satisfaction (1–5 stars) and sign directly on the HTML5 canvas signature pad, generating warranty coverage (6–36 months).
                 </li>
                 <li style={{ marginBottom: '0.35rem' }}>
-                  <strong>BMT Close & Settlement:</strong> Summarizes JMT technician labor, logs final payment, and transitions the project to <code>Completed</code> status.
+                  <strong>BMT Close & Settlement:</strong> Summarizes INT technician labor, logs final payment, and transitions the project to <code>Completed</code> status.
                 </li>
               </ul>
             </div>
@@ -806,7 +806,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                   <strong>Customer Handover & Digital E-Signature:</strong> ลูกค้าให้คะแนนความพึงพอใจ (1–5 ดาว ⭐) และลงนามตรวจรับมอบงานบนกระดานดิจิทัลสด (HTML5 Canvas) พร้อมออกใบรับประกัน 6–36 เดือน
                 </li>
                 <li style={{ marginBottom: '0.35rem' }}>
-                  <strong>BMT Settlement & Close Job:</strong> สรุปต้นทุนค่าแรงช่าง JMT, บันทึกการรับชำระเงินงวดสุดท้าย และเปลี่ยนสถานะโครงการเป็น <code>Completed</code> สมบูรณ์
+                  <strong>BMT Settlement & Close Job:</strong> สรุปต้นทุนค่าแรงช่าง INT, บันทึกการรับชำระเงินงวดสุดท้าย และเปลี่ยนสถานะโครงการเป็น <code>Completed</code> สมบูรณ์
                 </li>
               </ul>
             </div>

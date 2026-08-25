@@ -72,8 +72,8 @@ exports.createQCInspection = async (req, res) => {
     }
 
     await pool.query(
-      `UPDATE projects SET execution_phase = $1, status = $2, updated_at = $3 WHERE id = $4`,
-      [phase, projectStatus, now, projectId]
+      `UPDATE projects SET execution_phase = $1, status = $2 WHERE id = $3`,
+      [phase, projectStatus, projectId]
     );
 
     res.json(insertResult.rows[0]);
@@ -129,8 +129,8 @@ exports.submitHandover = async (req, res) => {
 
     // Update Project Status to Completed / Close Job
     await pool.query(
-      `UPDATE projects SET status = 'Completed', execution_phase = 'Closed & Settled', updated_at = $1 WHERE id = $2`,
-      [now, projectId]
+      `UPDATE projects SET status = 'Completed', execution_phase = 'Closed & Settled' WHERE id = $1`,
+      [projectId]
     );
 
     res.json(insertResult.rows[0]);

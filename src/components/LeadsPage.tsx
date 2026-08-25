@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck } from 'lucide-react';
-import type { User } from '../types';
+import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, Building2, User } from 'lucide-react';
+import type { User as UserType, Customer, CustomerSite } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { GisMapPickerModal, formatToDMS } from './GisMapPickerModal';
@@ -25,6 +25,8 @@ interface LeadFollowup {
 
 interface Lead {
   id: string;
+  customer_id?: string | null;
+  customer_site_id?: string | null;
   customer_name: string;
   customer_first_name?: string;
   customer_last_name?: string;
@@ -43,6 +45,7 @@ interface Lead {
   site_visit_approved_at?: string | null;
   site_visit_approval_notes?: string | null;
   notes: string;
+
   created_at: string;
   updated_at: string;
   project_id: string | null;
@@ -64,48 +67,33 @@ interface Lead {
 }
 
 interface LeadsPageProps {
-  currentUser: User | null;
+  currentUser: UserType | null;
   branches?: any[];
-  users?: User[];
+  users?: UserType[];
 }
 
 export const formatLeadCode = (lead: { id: string; created_at?: string } | null | undefined): string => {
   if (!lead || !lead.id) return 'LD-20260824-00001';
 
-  // If already formatted like LD-YYYYMMDD-XXXXX
-  const match = lead.id.match(/^LD-(\d{8})-(\d+)$/);
-  if (match) {
-    const datePart = match[1];
-    const numPart = String(parseInt(match[2], 10)).padStart(5, '0');
-    return `LD-${datePart}-${numPart}`;
-  }
-  
   // Format Date: YYYYMMDD
   let datePart = '20260824';
   if (lead.created_at) {
     try {
       const d = new Date(lead.created_at);
-      if (!isNaN(d.getTime())) {
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        datePart = `${yyyy}${mm}${dd}`;
-      }
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      datePart = `${yyyy}${mm}${dd}`;
     } catch {
-      // fallback
+      datePart = '20260824';
     }
   }
 
-  // Format 5-digit Running Number: XXXXX
-  const digits = lead.id.replace(/\D/g, '');
-  let runningPart = '00001';
-  if (digits.length >= 5) {
-    runningPart = digits.slice(-5);
-  } else if (digits.length > 0) {
-    runningPart = digits.padStart(5, '0');
-  }
+  // Extract running number
+  const numMatch = lead.id.match(/\d+$/);
+  const numPart = numMatch ? String(parseInt(numMatch[0], 10)).padStart(5, '0') : '00001';
 
-  return `LD-${datePart}-${runningPart}`;
+  return `LD-${datePart}-${numPart}`;
 };
 
 export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageProps) => {
@@ -114,16 +102,44 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [isSiteVisitModalOpen, setIsSiteVisitModalOpen] = useState(false);
-  const [isVisitResultModalOpen, setIsVisitResultModalOpen] = useState(false);
   const [selectedLeadForVisitResult, setSelectedLeadForVisitResult] = useState<Lead | null>(null);
 
-  // Phase 02: Design & Payment Modal states
+  // Customer Master Auto-Suggest & Site Select
+  const [customersMaster, setCustomersMaster] = useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [customerSites, setCustomerSites] = useState<CustomerSite[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState<string>('');
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState<boolean>(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState<string>('');
+  const [newSiteName, setNewSiteName] = useState<string>('');
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalLeads, setTotalLeads] = useState<number>(0);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(50);
+
+  // Phase 13 Modal States
+  const [isVisitResultModalOpen, setIsVisitResultModalOpen] = useState(false);
+  const [selectedLeadForVisit, setSelectedLeadForVisit] = useState<Lead | null>(null);
+
+  // Phase 02: Designs Modal States
   const [isDesignModalOpen, setIsDesignModalOpen] = useState(false);
   const [selectedLeadForDesign, setSelectedLeadForDesign] = useState<Lead | null>(null);
+
+  // Phase 02: Payments Modal States
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedLeadForPayment, setSelectedLeadForPayment] = useState<Lead | null>(null);
+
+  // Phase 02: Timeline Modal States
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const [selectedLeadForTimeline, setSelectedLeadForTimeline] = useState<Lead | null>(null);
+
+  // Site Coordinator State (Phase 12 Mockup)
+  const [siteCoordinatorName, setSiteCoordinatorName] = useState('');
+  const [siteCoordinatorPhone, setSiteCoordinatorPhone] = useState('');
+  const [siteCoordinatorLineId, setSiteCoordinatorLineId] = useState('');
+  const [siteMapUrl, setSiteMapUrl] = useState('');
 
   // Follow-up Modal & History
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
@@ -138,12 +154,6 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [followupNotes, setFollowupNotes] = useState('');
   const [followupNewStatus, setFollowupNewStatus] = useState('Contacted');
   
-  // Site Visit Enhanced Fields
-  const [siteCoordinatorName, setSiteCoordinatorName] = useState('');
-  const [siteCoordinatorPhone, setSiteCoordinatorPhone] = useState('');
-  const [siteCoordinatorLineId, setSiteCoordinatorLineId] = useState('');
-  const [siteMapUrl, setSiteMapUrl] = useState('');
-
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -167,6 +177,64 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [surveyorId, setSurveyorId] = useState('');
   const [salesContactId, setSalesContactId] = useState(currentUser?.id || '');
   const [availableSurveyors, setAvailableSurveyors] = useState<any[]>([]);
+
+  const fetchCustomersMaster = async () => {
+    try {
+      const res = await fetch('/api/customers');
+      if (res.ok) {
+        const data = await res.json();
+        setCustomersMaster(data);
+      }
+    } catch (err) {
+      console.error('Error fetching customers master:', err);
+    }
+  };
+
+  const fetchCustomerSites = async (customerId: string) => {
+    try {
+      const res = await fetch(`/api/customers/${customerId}/sites`);
+      if (res.ok) {
+        const sites: CustomerSite[] = await res.json();
+        setCustomerSites(sites);
+        return sites;
+      }
+    } catch (err) {
+      console.error('Error fetching customer sites:', err);
+    }
+    return [];
+  };
+
+  const handleSelectCustomerFromMaster = async (cust: Customer) => {
+    setSelectedCustomerId(cust.id);
+    setFirstName(cust.firstName || '');
+    setLastName(cust.lastName || '');
+    setCustomerPhone(cust.phone || '');
+    setCustomerSearchQuery(cust.customerName || `${cust.firstName} ${cust.lastName || ''}`.trim());
+    setIsCustomerDropdownOpen(false);
+
+    const sites = await fetchCustomerSites(cust.id);
+    if (sites && sites.length > 0) {
+      const defaultSite = sites.find(s => s.isDefault) || sites[0];
+      handleSelectSite(defaultSite);
+    } else {
+      setSelectedSiteId('');
+    }
+  };
+
+  const handleSelectSite = (site: CustomerSite) => {
+    setSelectedSiteId(site.id);
+    setCustomerAddress(site.address || '');
+    setCustomerLatitude(site.latitude ? String(site.latitude) : '');
+    setCustomerLongitude(site.longitude ? String(site.longitude) : '');
+    if (site.mapUrl) {
+      setMapUrl(site.mapUrl);
+    } else if (site.latitude && site.longitude) {
+      setMapUrl(`https://www.google.com/maps?q=${site.latitude},${site.longitude}`);
+    }
+    if (site.coordinatorName) setSiteCoordinatorName(site.coordinatorName);
+    if (site.coordinatorPhone) setSiteCoordinatorPhone(site.coordinatorPhone);
+    if (site.coordinatorLineId) setSiteCoordinatorLineId(site.coordinatorLineId);
+  };
 
   const [jobType, setJobType] = useState('Quick service');
   const [status, setStatus] = useState('New');
@@ -201,10 +269,6 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [activeActionMenuLeadId]);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalLeads, setTotalLeads] = useState(0);
 
   const fetchLeads = async (page = 1) => {
     setIsLoading(true);
@@ -642,6 +706,9 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
     const fullCustomerName = `${firstName.trim()} ${lastName.trim()}`.trim();
     const leadData = {
+      customer_id: selectedCustomerId || null,
+      customer_site_id: selectedSiteId || null,
+      site_name: newSiteName || null,
       customer_name: fullCustomerName,
       customer_first_name: firstName.trim(),
       customer_last_name: lastName.trim(),
@@ -681,10 +748,12 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         setIsModalOpen(false);
         fetchLeads();
       } else {
-        alert('Failed to save lead');
+        const errJson = await response.json().catch(() => ({}));
+        alert(errJson.error || 'Failed to save lead');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving lead', err);
+      alert('Error saving lead: ' + (err.message || err));
     }
   };
 
@@ -806,8 +875,26 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         setNotes(lead.notes || '');
       }
       setRequireVisit(lead.status === 'Qualified' || !!lead.coordinator_name);
+      
+      if (lead.customer_id) {
+        setSelectedCustomerId(lead.customer_id);
+        fetchCustomerSites(lead.customer_id);
+      } else {
+        setSelectedCustomerId('');
+        setCustomerSites([]);
+      }
+      setSelectedSiteId(lead.customer_site_id || '');
+      setCustomerSearchQuery(lead.customer_name || '');
+      setNewSiteName('');
     } else {
       setEditingLead(null);
+      setSelectedCustomerId('');
+      setCustomerSites([]);
+      setSelectedSiteId('');
+      setCustomerSearchQuery('');
+      setNewSiteName('');
+      fetchCustomersMaster();
+
       setFirstName('');
       setLastName('');
       setCustomerPhone('');
@@ -2369,11 +2456,175 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                 {/* ── LEFT COLUMN: ข้อมูลทั่วไป & พิกัดแผนที่ (GPS) ── */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   
-                  {/* SECTION 1: ข้อมูลทั่วไปของลูกค้า */}
+                  {/* SECTION 1: ข้อมูลทั่วไปของลูกค้า & MASTER DIRECTORY */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: 700, fontSize: '1rem' }}>
-                      <FileText size={18} /> ข้อมูลทั่วไปของลูกค้า
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: 700, fontSize: '1rem' }}>
+                        <FileText size={18} /> ข้อมูลทั่วไปของลูกค้า
+                      </div>
+                      {selectedCustomerId && (
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, background: '#dbeafe', color: '#1e40af', padding: '0.2rem 0.5rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <CheckCircle2 size={12} /> เชื่อมต่อ Customer Master แล้ว
+                        </span>
+                      )}
                     </div>
+
+                    {/* CUSTOMER MASTER AUTO-SUGGEST & SITE SELECTOR */}
+                    <div style={{ background: 'var(--bg-tertiary)', padding: '0.75rem', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <Users size={14} color="#eab308" /> ค้นหาลูกค้าเดิมจาก Master (Auto-fill)
+                        </span>
+                        {selectedCustomerId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCustomerId('');
+                              setCustomerSites([]);
+                              setSelectedSiteId('');
+                              setCustomerSearchQuery('');
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.72rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 600 }}
+                          >
+                            <X size={12} /> ล้างการเชื่อมต่อ Master
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Search / Select Customer Input */}
+                      <div style={{ position: 'relative' }}>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="text"
+                            placeholder="พิมพ์ชื่อ, เบอร์โทร หรือบริษัท เพื่อดึงข้อมูลลูกค้าเดิม..."
+                            value={customerSearchQuery}
+                            onChange={(e) => {
+                              setCustomerSearchQuery(e.target.value);
+                              setIsCustomerDropdownOpen(true);
+                            }}
+                            onFocus={() => {
+                              if (customersMaster.length === 0) fetchCustomersMaster();
+                              setIsCustomerDropdownOpen(true);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.45rem 0.75rem 0.45rem 2rem',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border-color)',
+                              background: 'var(--bg-secondary)',
+                              fontSize: '0.82rem',
+                              color: 'var(--text-primary)',
+                              outline: 'none'
+                            }}
+                          />
+                          <Search size={14} style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                        </div>
+
+                        {/* Customer Search Dropdown Results */}
+                        {isCustomerDropdownOpen && customerSearchQuery.trim().length > 0 && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              background: 'var(--bg-secondary)',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '8px',
+                              marginTop: '4px',
+                              boxShadow: '0 10px 25px rgba(0,0,0,0.25)',
+                              maxHeight: '200px',
+                              overflowY: 'auto',
+                              zIndex: 100
+                            }}
+                          >
+                            {customersMaster
+                              .filter(c => {
+                                const q = customerSearchQuery.toLowerCase();
+                                return (c.customerName && c.customerName.toLowerCase().includes(q)) ||
+                                       (c.firstName && c.firstName.toLowerCase().includes(q)) ||
+                                       (c.lastName && c.lastName.toLowerCase().includes(q)) ||
+                                       (c.companyName && c.companyName.toLowerCase().includes(q)) ||
+                                       (c.phone && c.phone.includes(q)) ||
+                                       (c.customerCode && c.customerCode.toLowerCase().includes(q));
+                              })
+                              .slice(0, 10)
+                              .map(c => (
+                                <div
+                                  key={c.id}
+                                  onClick={() => handleSelectCustomerFromMaster(c)}
+                                  style={{
+                                    padding: '0.55rem 0.75rem',
+                                    borderBottom: '1px solid var(--border-color)',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <div>
+                                    <strong style={{ color: 'var(--text-primary)' }}>
+                                      {c.customerType === 'corporate' && c.companyName ? c.companyName : (c.customerName || `${c.firstName} ${c.lastName || ''}`.trim())}
+                                    </strong>
+                                    {c.phone && <span style={{ color: 'var(--text-secondary)', marginLeft: '0.4rem', fontSize: '0.75rem' }}>📞 {c.phone}</span>}
+                                  </div>
+                                  <span style={{ fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
+                                    {c.customerCode || 'CUST'}
+                                  </span>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SITE SELECTION (IF CUSTOMER HAS SITES) */}
+                      {selectedCustomerId && customerSites.length > 0 && (
+                        <div style={{ marginTop: '0.35rem', background: 'var(--bg-secondary)', padding: '0.5rem 0.65rem', borderRadius: '8px', border: '1.5px solid #10b981' }}>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#065f46', marginBottom: '0.25rem' }}>
+                            🏢 เลือกสถานที่ติดตั้ง / ไซต์งานของลูกค้ารายนี้ ({customerSites.length} แห่ง):
+                          </label>
+                          <select
+                            value={selectedSiteId}
+                            onChange={(e) => {
+                              const siteId = e.target.value;
+                              if (siteId === '__new__') {
+                                setSelectedSiteId('');
+                                setCustomerAddress('');
+                                setCustomerLatitude('');
+                                setCustomerLongitude('');
+                                setMapUrl('');
+                              } else {
+                                const found = customerSites.find(s => s.id === siteId);
+                                if (found) handleSelectSite(found);
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.45rem 0.65rem',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border-color)',
+                              background: 'var(--bg-tertiary)',
+                              color: 'var(--text-primary)',
+                              fontSize: '0.82rem',
+                              fontWeight: 600,
+                              outline: 'none'
+                            }}
+                          >
+                            {customerSites.map(s => (
+                              <option key={s.id} value={s.id}>
+                                {s.isDefault ? '★ [ไซต์หลัก] ' : '📍 '}{s.siteName} {s.address ? `- ${s.address.substring(0, 35)}...` : ''}
+                              </option>
+                            ))}
+                            <option value="__new__">➕ + เพิ่มสถานที่ติดตั้ง / ไซต์งานใหม่ให้ลูกค้าคนนี้...</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                       <div>

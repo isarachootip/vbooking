@@ -119,7 +119,7 @@
 | :--- | :--- | :--- | :--- |
 | **Phase 01: Lead & Survey** | รับข้อมูลลูกค้า, นัดหมายสำรวจ และสรุปผลหน้างาน | • `LeadsPage.tsx`<br/>• `SiteVisitResultModal.tsx` | ข้อมูลสภาพหน้างานจริง, ขอบเขตงาน และประมาณการงบเบื้องต้น |
 | **Phase 02: Design, Quote & Payment** | จัดการตรวจรับแบบ 3D, เสนอราคา BOQ และรับเงินมัดจำ | • `DesignApprovalModal.tsx`<br/>• `PaymentModal.tsx`<br/>• `QuotationBuilder` | แบบ 2D/3D ที่ลูกค้าอนุมัติ, ใบเสนอราคาอนุมัติ และสลิปมัดจำงวดแรก |
-| **Phase 03: Project Execution** | สร้างแผนงาน WBS, มอบหมายช่าง JMT และเช็คอิน GPS | • `SiteCheckInOut.tsx`<br/>• `ProjectBoard.tsx`<br/>• `ProjectPlan.tsx` | การเช็คอินพิกัดดาวเทียม (500 ม.), ภาพถ่ายก่อน/หลัง และความคืบหน้า 100% |
+| **Phase 03: Project Execution** | สร้างแผนงาน WBS, มอบหมายช่าง INT และเช็คอิน GPS | • `SiteCheckInOut.tsx`<br/>• `ProjectBoard.tsx`<br/>• `ProjectPlan.tsx` | การเช็คอินพิกัดดาวเทียม (500 ม.), ภาพถ่ายก่อน/หลัง และความคืบหน้า 100% |
 | **Phase 04: QC, Handover & Settle** | ตรวจสอบคุณภาพงาน (Online QC สำหรับ Quick Job / On-site QC สำหรับ Renovate), เซ็นรับมอบงาน และปิดโครงการ | • `QCHandoverModal.tsx`<br/>• `ProjectDetail.tsx` | ผลตรวจ QC Pass (Online/On-site), ลายเซ็นดิจิทัล E-Signature, 5 ดาว, ใบรับประกัน และปิด Job |
 
 
@@ -188,7 +188,19 @@
    - ช่างเฉพาะทางกรองดูเฉพาะแท็กของตนเอง เช่น `#ไฟฟ้า` หรือ `#แอร์` บน Kanban Board
    - บันทึกเวลา Timesheet ตรงกับ Task ของตนเอง พร้อมแนบภาพถ่ายชิ้นงานเพื่อคำนวณต้นทุนค่าแรงแม่นยำ
 
-#### ง. การสร้างโครงการใหม่โดยตรง (Create New Project)
+#### ง. สรุปความแตกต่างสำคัญ: Check-in ช่วงสำรวจ (Survey) vs. Check-in บน Kanban (Execution)
+> [!NOTE]
+> **ทำไมระบบถึงมี Check-in 2 จุด?**
+> * **1. ในขั้นตอน `Survey` (ก่อนแปลงงาน / สำรวจหน้างาน):**
+>   - การ Check-in / Check-out จะ **ฝังอยู่ข้างในบันทึกผลสำรวจ (Embedded Form)**
+>   - เป็นการลงพื้นที่ **ครั้งเดียว (Single Visit)** ของช่าง QC เพื่อเช็คพิกัด GPS วัดพื้นที่ ถ่ายรูป Before และสรุปความต้องการลูกค้าเพื่อส่งต่อให้ดีไซเนอร์ทำแบบ 3D
+> * **2. คอลัมน์ `Check-in` และ `Check-out` บน Kanban (หลังแปลงงาน / ก่อสร้างจริง):**
+>   - แยกเป็นคอลัมน์ขั้นตอนหลักของ **Phase 03: Project Execution**
+>   - เพราะงานก่อสร้าง/รีโนเวทจริงประกอบด้วย **หลาย Task / หลายทีมช่าง (Multi-Trade)** เช่น ช่างไฟ ช่างแอร์ ช่างฝ้า ช่างกระเบื้อง
+>   - ช่างแต่ละทีมจะเข้าทำงานหลายวัน และกดเช็คอิน-เช็คเอาต์ประจำวัน (Daily Timesheet) แยกตาม **Task ย่อย** ของตนเอง
+>   - คอลัมน์ `Check-in` บน Kanban จึงหมายถึงสถานะภาพรวมของโครงการว่า *"กำลังมีทีมช่างเข้าปฏิบัติงานจริงในพื้นที่ (Active Execution)"*
+
+#### จ. การสร้างโครงการใหม่โดยตรง (Create New Project)
 1. ไปที่เมนู **"Projects" (`/projects`)**
 2. คลิกปุ่ม **"+ Create Project"**
 3. ระบุรายละเอียด:

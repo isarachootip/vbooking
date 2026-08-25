@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import type { TaskTemplate, User, MasterProjectType, ServicePriceItem } from '../types';
-import { Layers, Plus, Trash2, Edit, Database, Layers3, Sparkles, BookOpen, ArrowRight, CheckCircle2, Zap, Wrench, ShieldCheck, Home, MapPin, Building2, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Layers, Plus, Trash2, Edit, Database, Layers3, Sparkles, BookOpen, ArrowRight, CheckCircle2, Zap, Wrench, ShieldCheck, Home, MapPin, Building2, ChevronDown, ChevronUp, Search, Users } from 'lucide-react';
 import { PriceBookManager } from './PriceBookManager';
+import { CustomerMasterManager } from './CustomerMasterManager';
 import { getWorkflowStagesForType, getWorkflowColumnsForType } from '../config/workflows';
 
 interface MasterManagementProps {
@@ -16,8 +17,6 @@ interface MasterManagementProps {
   masterBranches?: any[];
   masterZones?: any[];
 }
-
-
 
 export const defaultMasterTypes: MasterProjectType[] = [
   {
@@ -93,7 +92,8 @@ export const MasterManagement = ({
   masterBranches = [],
   masterZones = []
 }: MasterManagementProps) => {
-  const [activeTab, setActiveTab] = useState<'project_types' | 'task_templates' | 'workflow_stages' | 'price_book' | 'vq_branches' | 'vq_zones'>('project_types');
+  const [activeTab, setActiveTab] = useState<'customers' | 'project_types' | 'task_templates' | 'workflow_stages' | 'price_book' | 'vq_branches' | 'vq_zones'>('customers');
+
 
   // Use props instead of local state
   const masterTypes = masterProjectTypes && masterProjectTypes.length > 0 ? masterProjectTypes : defaultMasterTypes;
@@ -218,7 +218,26 @@ export const MasterManagement = ({
       </div>
 
       {/* ── TABS NAVIGATION ── */}
-      <div style={{ display: 'flex', gap: '0.75rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+        <button
+          onClick={() => setActiveTab('customers')}
+          style={{
+            padding: '0.55rem 1.1rem',
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            background: activeTab === 'customers' ? 'var(--accent-primary)' : 'transparent',
+            color: activeTab === 'customers' ? 'white' : 'var(--text-secondary)',
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem'
+          }}
+        >
+          <Users size={16} /> ฐานข้อมูลลูกค้า & ไซต์งาน (Customers & Sites)
+        </button>
+
         <button
           onClick={() => setActiveTab('project_types')}
           style={{
@@ -339,6 +358,11 @@ export const MasterManagement = ({
           ข้อมูลโซน (VQ)
         </button>
       </div>
+
+      {/* ── TAB 0: CUSTOMER MASTER & MULTI-SITES ── */}
+      {activeTab === 'customers' && (
+        <CustomerMasterManager currentUser={_currentUser} />
+      )}
 
       {/* ── TAB 1: MASTER PROJECT TYPES (5 GROUPS) ── */}
       {activeTab === 'project_types' && (

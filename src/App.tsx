@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText, ClipboardList } from 'lucide-react';
+
 import { PMTBrandLogo } from './components/PMTBrandLogo';
 import { Dashboard } from './components/Dashboard';
 import { ExecutiveDashboard } from './components/ExecutiveDashboard';
@@ -24,6 +25,9 @@ import { ProjectTimeline } from './components/ProjectTimeline';
 import { ProjectDetail } from './components/ProjectDetail';
 import { LeadsPage } from './components/LeadsPage';
 import { QuotationManager } from './components/QuotationManager';
+import { CustomerMasterManager } from './components/CustomerMasterManager';
+import { MAContracts } from './components/MAContracts';
+
 
 import { mockUsers, mockProjects, mockTasks, mockTimesheets } from './data/mockData';
 import type { User, Project, Task, TimesheetEntry, TaskTemplate, Sprint, Release, PermissionScheme, ProjectWorkflow, CostRate, MasterProjectType, SystemSettings, Branch, ServicePriceItem } from './types';
@@ -449,6 +453,9 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           <SidebarItem icon={MessageSquare} label={t.chat} path="/chat" badgeCount={unreadChatCount} />
           <SidebarItem icon={Users} label={t.team} path="/team" />
           <SidebarItem icon={UserCog} label={t.userManagement} path="/users" />
+          <SidebarItem icon={Users} label={lang === 'th' ? 'ข้อมูลลูกค้า & ไซต์งาน' : 'Customers & Sites'} path="/customers" />
+          <SidebarItem icon={ClipboardList} label={lang === 'th' ? 'สัญญา MA 🔧' : 'MA Contracts'} path="/ma-contracts" />
+
           <SidebarItem icon={Database} label={lang === 'th' ? 'จัดการ Master Data' : 'Maintain Master'} path="/master-management" />
           <SidebarItem icon={BarChart3} label={t.reports} path="/reports" />
           <SidebarItem icon={SettingsIcon} label={t.settings} path="/settings" />
@@ -1200,6 +1207,9 @@ function App() {
           <Route path="/chat" element={<ProjectChat projects={projects} users={users} currentUser={currentUser} systemSettings={systemSettings} />} />
           <Route path="/team" element={<TeamApprovals users={users} setUsers={handleSetUsers} timesheets={timesheets} setTimesheets={handleSetTimesheets} projects={projects} setProjects={handleSetProjects} tasks={tasks} currentUser={currentUser} branches={branches} />} />
           <Route path="/users" element={<UserManagement users={users} setUsers={setUsers} projects={projects} currentUser={currentUser} fetchInitialData={fetchInitialData} branches={branches && branches.length > 0 ? branches : masterBranches} />} />
+          <Route path="/customers" element={<CustomerMasterManager currentUser={currentUser} />} />
+          <Route path="/ma-contracts" element={<MAContracts currentUser={currentUser} />} />
+
           <Route path="/master-management" element={<MasterManagement taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} priceBook={priceBook} setPriceBook={setPriceBook} currentUser={currentUser} fetchInitialData={fetchInitialData} masterBranches={masterBranches} masterZones={masterZones} />} />
           <Route path="/reports" element={<Reports timesheets={timesheets} projects={projects} users={users} currentUser={currentUser} tasks={tasks} costRates={costRates} sprints={sprints} />} />
           <Route path="/settings" element={<Settings taskTemplates={taskTemplates} setTaskTemplates={handleSetTaskTemplates} masterProjectTypes={masterProjectTypes} setMasterProjectTypes={handleSetMasterProjectTypes} permissionSchemes={permissionSchemes} setPermissionSchemes={handleSetPermissionSchemes} currentUser={currentUser} costRates={costRates} setCostRates={handleSetCostRates} systemSettings={systemSettings} setSystemSettings={setSystemSettings} fetchInitialData={fetchInitialData} users={users} setUsers={handleSetUsers} />} />

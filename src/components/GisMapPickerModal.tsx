@@ -35,6 +35,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   const defaultLat = 13.7563;
   const defaultLng = 100.5018;
@@ -51,6 +52,21 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [isReverseGeocoding, setIsReverseGeocoding] = useState<boolean>(false);
   const [isLocating, setIsLocating] = useState<boolean>(false);
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSearchResults([]);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   // Custom Pin Icon using SVG to avoid missing asset paths
   const customPinIcon = L.divIcon({
@@ -147,6 +163,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
         const pos = marker.getLatLng();
         setCurrentLat(pos.lat);
         setCurrentLng(pos.lng);
+        setSearchResults([]);
         reverseGeocode(pos.lat, pos.lng);
       });
 
@@ -155,6 +172,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
         marker.setLatLng([clickLat, clickLng]);
         setCurrentLat(clickLat);
         setCurrentLng(clickLng);
+        setSearchResults([]);
         reverseGeocode(clickLat, clickLng);
       });
 
@@ -374,6 +392,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
 
         {/* SEARCH & ACTION TOOLBAR */}
         <div
+          ref={searchContainerRef}
           style={{
             padding: '0.75rem 1.25rem',
             background: 'var(--bg-secondary, #ffffff)',
@@ -382,7 +401,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
             gap: '0.5rem',
             alignItems: 'center',
             position: 'relative',
-            zIndex: 10,
+            zIndex: 1000,
           }}
         >
           <form
@@ -397,7 +416,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.55rem 0.85rem 0.55rem 2.2rem',
+                  padding: '0.55rem 2rem 0.55rem 2.2rem',
                   borderRadius: '8px',
                   border: '1px solid var(--border-color, #cbd5e1)',
                   background: 'var(--bg-tertiary, #f1f5f9)',
@@ -416,6 +435,31 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
                   color: 'var(--text-muted, #94a3b8)',
                 }}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSearchResults([]);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '0.6rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted, #94a3b8)',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
             <button
               type="submit"
@@ -474,10 +518,10 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
                 border: '1px solid var(--border-color, #cbd5e1)',
                 borderRadius: '8px',
                 marginTop: '4px',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
                 maxHeight: '220px',
                 overflowY: 'auto',
-                zIndex: 20,
+                zIndex: 1050,
               }}
             >
               {searchResults.map((res, idx) => (
@@ -521,7 +565,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
               position: 'absolute',
               top: '12px',
               left: '12px',
-              zIndex: 1000,
+              zIndex: 400,
               background: 'rgba(15, 23, 42, 0.85)',
               color: '#ffffff',
               padding: '0.4rem 0.85rem',
@@ -536,7 +580,7 @@ export const GisMapPickerModal: React.FC<GisMapPickerModalProps> = ({
               backdropFilter: 'blur(4px)',
             }}
           >
-            <span>👉 ลากหมุดหมุดสีแดง 📍 หรือคลิกบนแผนที่ เพื่อระบุตำแหน่งบ้านลูกค้า</span>
+            <span>👉 ลากหมุดสีแดง 📍 หรือคลิกบนแผนที่ เพื่อระบุตำแหน่งบ้านลูกค้า</span>
           </div>
 
           <div
