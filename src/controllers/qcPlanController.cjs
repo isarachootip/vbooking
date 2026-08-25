@@ -346,8 +346,10 @@ exports.generateDailyPlan = async (req, res) => {
       const actualDistanceKm = drivingMetrics.distanceKm || minDistance;
       totalKm += actualDistanceKm;
 
+      const uniqueItemId = `qcit_${planId}_${nextStop.leadId || nextStop.projectId || 'stop'}_${seq}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+
       optimizedItems.push({
-        id: nextStop.id || `item_${Date.now()}_${seq}`,
+        id: uniqueItemId,
         planId: planId,
         leadId: nextStop.leadId || null,
         projectId: nextStop.projectId || null,
@@ -389,7 +391,13 @@ exports.generateDailyPlan = async (req, res) => {
       await pool.query(
         `INSERT INTO qc_daily_plans
            (id, qc_id, plan_date, origin_latitude, origin_longitude, origin_address, total_estimated_km, total_estimated_duration_min, status, created_at, updated_at, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         ON CONFLICT (id) DO UPDATE SET
+           origin_latitude = EXCLUDED.origin_latitude,
+           origin_longitude = EXCLUDED.origin_longitude,
+           total_estimated_km = EXCLUDED.total_estimated_km,
+           total_estimated_duration_min = EXCLUDED.total_estimated_duration_min,
+           updated_at = NOW()`,
         [planId, qc_id, targetDate, originLat, originLng, originAddr, totalKm, totalEstDurationMin, 'Confirmed', now, now, req.headers['x-user-id'] || 'GM']
       );
     }
@@ -399,7 +407,12 @@ exports.generateDailyPlan = async (req, res) => {
       await pool.query(
         `INSERT INTO qc_plan_items
            (id, plan_id, lead_id, project_id, sequence_order, time_slot, site_name, customer_name, customer_phone, site_address, site_latitude, site_longitude, estimated_distance_from_prev_km, status, notes, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+         ON CONFLICT (id) DO UPDATE SET
+           sequence_order = EXCLUDED.sequence_order,
+           time_slot = EXCLUDED.time_slot,
+           estimated_distance_from_prev_km = EXCLUDED.estimated_distance_from_prev_km,
+           status = EXCLUDED.status`,
         [
           item.id, planId, item.leadId, item.projectId, item.sequenceOrder, item.timeSlot,
           item.siteName, item.customerName, item.customerPhone, item.siteAddress,
