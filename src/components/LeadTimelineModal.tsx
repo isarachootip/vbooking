@@ -4,6 +4,7 @@ import {
   Building, Palette, DollarSign, ArrowRight, ShieldCheck, Check,
   AlertCircle, RefreshCw, Layers, FileText
 } from 'lucide-react';
+import { formatToDDMMYYYY } from '../utils';
 
 interface TimelineEvent {
   id: string;
@@ -341,17 +342,17 @@ export const LeadTimelineModal: React.FC<LeadTimelineModalProps> = ({
                         </span>
                         {event.appointment_date && (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#9333ea', fontWeight: 600 }}>
-                            📅 เวลานัดหมาย: {event.appointment_date} {event.appointment_time || ''}
+                            📅 เวลานัดหมาย: {formatToDDMMYYYY(event.appointment_date)} {event.appointment_time || ''}
                           </span>
                         )}
                         {event.actual_visit_date && (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#1e40af', fontWeight: 600 }}>
-                            📍 วันที่ลงพื้นที่จริง: {event.actual_visit_date}
+                            📍 วันที่ลงพื้นที่จริง: {formatToDDMMYYYY(event.actual_visit_date)}
                           </span>
                         )}
                         {event.payment_date && (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#059669', fontWeight: 600 }}>
-                            💵 วันที่ชำระ: {event.payment_date}
+                            💵 วันที่ชำระ: {formatToDDMMYYYY(event.payment_date)}
                           </span>
                         )}
                       </div>

@@ -66,6 +66,19 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
   const [isVisitResultModalOpen, setIsVisitResultModalOpen] = useState(false);
   const [selectedLeadForVisitResult, setSelectedLeadForVisitResult] = useState<SiteVisitLead | null>(null);
 
+  const formatAppointmentDateTime = (dateStr?: string | null): string => {
+    if (!dateStr) return 'ยังไม่ระบุวันเวลา';
+    const parts = dateStr.trim().split(' ');
+    const datePart = parts[0];
+    const timePart = parts[1] || '';
+    const dateMatch = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateMatch) {
+      const formattedDate = `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`;
+      return timePart ? `${formattedDate} เวลา ${timePart} น.` : formattedDate;
+    }
+    return formatToDDMMYYYY(dateStr) || dateStr;
+  };
+
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -410,7 +423,7 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
                       <Calendar size={15} /> กำหนดการนัดหมายลงพื้นที่:
                     </div>
                     <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                      📅 {lead.appointment_date || 'ยังไม่ระบุวันเวลา'}
+                      📅 {formatAppointmentDateTime(lead.appointment_date)}
                     </div>
                     {lead.appointment_type && (
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>

@@ -6,6 +6,8 @@ import {
   RefreshCw, DollarSign, MessageSquare, Camera, Image,
   Upload, Trash2, ZoomIn, Eye, Sparkles, HelpCircle, ArrowUpRight
 } from 'lucide-react';
+import { formatToDDMMYYYY } from '../utils';
+import { CustomDateInput } from './CustomDateInput';
 
 interface SiteVisitResult {
   id: string;
@@ -742,8 +744,8 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                 </div>
                 {(nact === 'follow_up_call' || nact === 'reschedule_visit') && (
                   <div>
-                    <label style={lbl}>วันนัดหมายครั้งถัดไป</label>
-                    <input type="date" value={nadate} onChange={e => setNadate(e.target.value)} style={inp} />
+                    <label style={lbl}>วันนัดหมายครั้งถัดไป (DD/MM/YYYY)</label>
+                    <CustomDateInput value={nadate} onChange={e => setNadate(e.target.value)} style={inp} />
                   </div>
                 )}
                 <div>

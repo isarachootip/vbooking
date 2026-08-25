@@ -5,6 +5,8 @@ import {
   CreditCard, ShieldCheck, RefreshCw, FileText, ArrowRight, Check,
   Upload, Image as ImageIcon, Tag, Eye, Trash2
 } from 'lucide-react';
+import { formatToDDMMYYYY } from '../utils';
+import { CustomDateInput } from './CustomDateInput';
 
 interface LeadPayment {
   id: string;
@@ -409,8 +411,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label style={lbl}>วันที่ได้รับเงินจริง *</label>
-                  <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)} style={inp} required />
+                  <label style={lbl}>วันที่ได้รับเงินจริง * (DD/MM/YYYY)</label>
+                  <CustomDateInput value={paymentDate} onChange={e => setPaymentDate(e.target.value)} style={inp} required />
                 </div>
               </div>
 
@@ -652,7 +654,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem' }}>
                     <div><b style={{ color: 'var(--text-tertiary)' }}>ช่องทาง:</b> {p.payment_method}</div>
-                    <div><b style={{ color: 'var(--text-tertiary)' }}>วันที่ชำระ:</b> {p.payment_date ? new Date(p.payment_date).toLocaleDateString('th-TH') : '-'}</div>
+                    <div><b style={{ color: 'var(--text-tertiary)' }}>วันที่ชำระ:</b> {p.payment_date ? formatToDDMMYYYY(p.payment_date) : '-'}</div>
                     {p.quotation_number && <div><b style={{ color: 'var(--text-tertiary)' }}>ใบเสนอราคา:</b> {p.quotation_number}</div>}
                     {p.verified_by && <div><b style={{ color: 'var(--text-tertiary)' }}>ผู้ตรวจสอบ:</b> {p.verified_by}</div>}
                   </div>

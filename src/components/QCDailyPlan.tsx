@@ -9,6 +9,7 @@ import {
   Home, Check, ArrowRight, Car, Compass, Layers, CheckSquare, X
 } from 'lucide-react';
 import { formatToDDMMYYYY } from '../utils';
+import { CustomDateInput } from './CustomDateInput';
 import { GisMapPickerModal } from './GisMapPickerModal';
 import { SiteVisitResultModal } from './SiteVisitResultModal';
 import { QCHandoverModal } from './QCHandoverModal';
@@ -533,14 +534,20 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
               </button>
             </div>
 
-            {/* Date Picker Input */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-tertiary, #f8fafc)', padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
-              <Calendar size={15} color="#64748b" />
-              <input
-                type="date"
+            {/* Date Picker Input (DD/MM/YYYY) */}
+            <div style={{ width: '160px' }}>
+              <CustomDateInput
                 value={selectedDate}
                 onChange={e => setSelectedDate(e.target.value)}
-                style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', outline: 'none' }}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color, #e2e8f0)',
+                  background: 'var(--bg-tertiary, #f8fafc)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  outline: 'none'
+                }}
               />
             </div>
 
