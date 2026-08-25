@@ -146,7 +146,7 @@ exports.createLead = async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error creating lead:', err);
-    res.status(500).json({ error: 'Failed to create lead' });
+    res.status(500).json({ error: 'Failed to create lead', details: err.message });
   }
 };
 
@@ -189,7 +189,7 @@ exports.updateLead = async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error updating lead:', err);
-    res.status(500).json({ error: 'Failed to update lead' });
+    res.status(500).json({ error: 'Failed to update lead', details: err.message });
   }
 };
 
