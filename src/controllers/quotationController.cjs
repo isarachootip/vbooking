@@ -5,6 +5,7 @@ exports.createQuotation = async (req, res) => {
     const { 
       lead_id, 
       project_id, 
+      customer_id,
       issue_date, 
       valid_until, 
       vat_type, 
@@ -50,16 +51,17 @@ exports.createQuotation = async (req, res) => {
     // Insert quotation header
     const quoResult = await pool.query(
       `INSERT INTO quotations (
-        id, lead_id, project_id, quotation_number, issue_date, valid_until, status, 
+        id, lead_id, project_id, customer_id, quotation_number, issue_date, valid_until, status, 
         subtotal, vat_type, vat_amount, grand_total, total_cost, notes, 
         customer_name, customer_phone, customer_address, 
         created_at, created_by, updated_at
       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
       [
         quoId, 
         lead_id || null, 
         project_id || null, 
+        customer_id || null,
         quotation_number, 
         issue_date || now.split('T')[0], 
         valid_until || null, 
@@ -109,15 +111,17 @@ exports.createQuotation = async (req, res) => {
 
 exports.getQuotations = async (req, res) => {
   try {
-    const { lead_id, project_id, status } = req.query;
+    const { lead_id, project_id, customer_id, status } = req.query;
     let query = `
       SELECT q.*, 
-             COALESCE(q.customer_name, l.customer_name, p.customer_name, 'ลูกค้าทั่วไป') AS customer_name,
-             COALESCE(q.customer_phone, l.customer_phone, p.customer_phone, '') AS customer_phone,
+             COALESCE(q.customer_name, c.customer_name, l.customer_name, p.customer_name, 'ลูกค้าทั่วไป') AS customer_name,
+             COALESCE(q.customer_phone, c.phone, l.customer_phone, p.customer_phone, '') AS customer_phone,
              COALESCE(q.customer_address, l.customer_address, '') AS customer_address,
+             c.customer_code,
              l.job_type AS lead_job_type,
              p.name AS project_name
       FROM quotations q
+      LEFT JOIN customers c ON q.customer_id = c.id
       LEFT JOIN leads l ON q.lead_id = l.id
       LEFT JOIN projects p ON q.project_id = p.id
     `;
@@ -131,6 +135,10 @@ exports.getQuotations = async (req, res) => {
     if (project_id) {
       params.push(project_id);
       conditions.push(`q.project_id = $${params.length}`);
+    }
+    if (customer_id) {
+      params.push(customer_id);
+      conditions.push(`q.customer_id = $${params.length}`);
     }
     if (status) {
       params.push(status);
@@ -156,12 +164,14 @@ exports.getQuotationById = async (req, res) => {
     const { id } = req.params;
     const quoResult = await pool.query(`
       SELECT q.*, 
-             COALESCE(q.customer_name, l.customer_name, p.customer_name, 'ลูกค้าทั่วไป') AS customer_name,
-             COALESCE(q.customer_phone, l.customer_phone, p.customer_phone, '') AS customer_phone,
+             COALESCE(q.customer_name, c.customer_name, l.customer_name, p.customer_name, 'ลูกค้าทั่วไป') AS customer_name,
+             COALESCE(q.customer_phone, c.phone, l.customer_phone, p.customer_phone, '') AS customer_phone,
              COALESCE(q.customer_address, l.customer_address, '') AS customer_address,
+             c.customer_code,
              l.job_type AS lead_job_type,
              p.name AS project_name
       FROM quotations q
+      LEFT JOIN customers c ON q.customer_id = c.id
       LEFT JOIN leads l ON q.lead_id = l.id
       LEFT JOIN projects p ON q.project_id = p.id
       WHERE q.id = $1

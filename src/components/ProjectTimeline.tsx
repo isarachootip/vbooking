@@ -11,7 +11,7 @@ interface ProjectTimelineProps {
 
 export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = [] }: ProjectTimelineProps) => {
 
-  const [currentDate, setCurrentDate] = useState<Date>(new Date(2026, 6, 1)); // Default to July 2026 as in screenshot context
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date()); // Default to Current Month
   const [filterType, setFilterType] = useState<string>('all');
 
   const filteredProjects = projects.filter(p => {
@@ -60,6 +60,15 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
 
   const nextMonth = () => {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const isCurrentMonthNow = () => {
+    const now = new Date();
+    return currentDate.getFullYear() === now.getFullYear() && currentDate.getMonth() === now.getMonth();
   };
 
   const monthLabel = currentDate.toLocaleString('th-TH', { month: 'long', year: 'numeric' });
@@ -157,15 +166,35 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
 
 
           {/* Month selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.25rem 0.5rem' }}>
-            <button onClick={prevMonth} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.25rem' }} className="hover-lift">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.25rem 0.5rem' }}>
+            <button onClick={prevMonth} title="เดือนก่อนหน้า" style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.25rem', borderRadius: '4px' }} className="hover-lift">
               <ChevronLeft size={16} />
             </button>
-            <span style={{ fontSize: '0.825rem', fontWeight: 700, minWidth: '120px', textAlign: 'center', color: 'var(--text-primary)' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, minWidth: '120px', textAlign: 'center', color: 'var(--text-primary)' }}>
               {monthLabel}
             </span>
-            <button onClick={nextMonth} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.25rem' }} className="hover-lift">
+            <button onClick={nextMonth} title="เดือนถัดไป" style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.25rem', borderRadius: '4px' }} className="hover-lift">
               <ChevronRight size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={goToToday}
+              style={{
+                marginLeft: '0.25rem',
+                padding: '0.25rem 0.65rem',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                borderRadius: '5px',
+                border: isCurrentMonthNow() ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                background: isCurrentMonthNow() ? 'rgba(37, 99, 235, 0.15)' : 'var(--bg-primary)',
+                color: isCurrentMonthNow() ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              className="hover-lift"
+              title="กลับไปที่เดือนปัจจุบัน"
+            >
+              เดือนปัจจุบัน
             </button>
           </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, ShieldAlert, Lock, Building2, User } from 'lucide-react';
 import type { User as UserType, Customer, CustomerSite } from '../types';
 import { formatToDDMMYYYY } from '../utils';
@@ -98,6 +99,7 @@ export const formatLeadCode = (lead: { id: string; created_at?: string } | null 
 };
 
 export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageProps) => {
+  const navigate = useNavigate();
   const isPrivilegedUser = Boolean(
     currentUser && (
       currentUser.globalRole === 'Admin' ||
@@ -260,7 +262,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     if (s.coordinatorLineId || s.coordinator_line_id) setSiteCoordinatorLineId(s.coordinatorLineId || s.coordinator_line_id);
   };
 
-  const [jobType, setJobType] = useState('Quick service');
+  const [jobType, setJobType] = useState('Renovate Service');
   const [status, setStatus] = useState('New');
   const [selectedZone, setSelectedZone] = useState<string>('[BKK] กรุงเทพฯ & ปริมณฑล');
   const [branch, setBranch] = useState(() => {
@@ -795,8 +797,11 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       
       if (response.ok) {
         const data = await response.json();
-        alert(`✅ แปลงเป็นโครงการติดตั้งสำเร็จ!\nรหัสโครงการ: ${data.project?.id || ''}\nสถานะ: Active Execution`);
+        const createdProjectId = data.project?.id || '';
         fetchLeads();
+        if (confirm(`✅ แปลงเป็นโครงการติดตั้งสำเร็จ!\n\nรหัสโครงการ: ${createdProjectId}\nชื่อโครงการ: ${data.project?.name || ''}\nสถานะ: To Do (Active Execution)\n\nต้องการเปิดไปที่หน้ารายชื่อโครงการ (Projects) เพื่อดูงานทันทีเลยหรือไม่?`)) {
+          navigate(`/projects#${createdProjectId}`);
+        }
       } else {
         const data = await response.json();
         alert('เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถแปลงโครงการได้'));
@@ -927,7 +932,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       setCustomerLongitude('');
       setMapUrl('');
       setSmartInput('');
-      setJobType('Quick service');
+      setJobType('Renovate Service');
       setStatus('New');
       setSelectedZone('[BKK] กรุงเทพฯ & ปริมณฑล');
       const bkkBranches = branches.filter(b => b.zone === '[BKK] กรุงเทพฯ & ปริมณฑล');
@@ -3149,8 +3154,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                           onChange={e => setJobType(e.target.value)}
                           style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 700 }}
                         >
-                          <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
                           <option value="Renovate Service">Renovate Service (งานรีโนเวท)</option>
+                          <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
                           <option value="MA Service">MA Service (งานซ่อมบำรุง)</option>
                         </select>
                       </div>

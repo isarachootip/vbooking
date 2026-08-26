@@ -1081,7 +1081,7 @@ const initDB = async () => {
         { id: 'u3', name: 'Mike Johnson', email: 'mike.j@company.com', avatar: 'https://i.pravatar.cc/150?u=u3', globalRole: 'Employee', department: 'Design' },
         { id: 'u4', name: 'isarachootip', email: 'isarachootip@gmail.com', avatar: 'https://i.pravatar.cc/150?u=u4', globalRole: 'Admin', department: 'Management' }
       ];
-      const defaultPwHash = crypto.createHash('sha256').update('password123').digest('hex');
+      const defaultPwHash = crypto.createHash('sha256').update('123456').digest('hex');
       for (const u of mockUsers) {
         await client.query(
           'INSERT INTO users (id, name, email, avatar, global_role, department, password_hash) VALUES ($1, $2, $3, $4, $5, $6, $7)',
@@ -1331,14 +1331,14 @@ const initDB = async () => {
     }
 
     // Ensure all existing users have a password hash
-    const defaultPwHash = crypto.createHash('sha256').update('password123').digest('hex');
+    const defaultPwHash = crypto.createHash('sha256').update('123456').digest('hex');
     await client.query('UPDATE users SET password_hash = $1 WHERE password_hash IS NULL', [defaultPwHash]);
 
     // Ensure admin user (isarachootip) exists in production
     const adminEmail = 'isarachootip@gmail.com';
     const adminExists = await client.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
     if (adminExists.rows.length === 0) {
-      const adminPwHash = crypto.createHash('sha256').update('password123').digest('hex');
+      const adminPwHash = crypto.createHash('sha256').update('123456').digest('hex');
       await client.query(
         `INSERT INTO users (id, name, email, avatar, global_role, department, password_hash)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -1836,8 +1836,8 @@ app.post('/api/auth/login', async (req, res) => {
     }
     
     if (!user.password_hash) {
-      if (password === 'password123') {
-        const defaultHash = crypto.createHash('sha256').update('password123').digest('hex');
+      if (password === '123456' || password === 'password123') {
+        const defaultHash = crypto.createHash('sha256').update(password).digest('hex');
         await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [defaultHash, user.id]);
       } else {
         return res.status(401).json({ error: 'Invalid email or password' });
@@ -2839,7 +2839,7 @@ app.post('/api/users', async (req, res) => {
     } else if (existingUser.rows.length > 0 && existingUser.rows[0].password_hash) {
       pwHash = existingUser.rows[0].password_hash;
     } else {
-      pwHash = crypto.createHash('sha256').update('password123').digest('hex');
+      pwHash = crypto.createHash('sha256').update('123456').digest('hex');
     }
 
     await pool.query(
@@ -3148,6 +3148,44 @@ app.delete('/api/milestones/:id', async (req, res) => {
   }
 });
 
+app.get('/api/projects', async (req, res) => {
+  try {
+    const projectsRes = await pool.query('SELECT * FROM projects ORDER BY created_at DESC NULLS LAST, id DESC');
+    const projects = projectsRes.rows.map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      status: p.status,
+      startDate: p.start_date,
+      endDate: p.end_date,
+      budget: parseFloat(p.budget || '0'),
+      members: p.members,
+      customColumns: p.custom_columns,
+      permissionSchemeId: p.permission_scheme_id,
+      projectType: p.project_type || 'dev',
+      supportTaskStyle: p.support_task_style || 'categories',
+      address: p.address || '',
+      projectValue: parseFloat(p.project_value || '0'),
+      invoicedValue: parseFloat(p.invoiced_value || '0'),
+      collectedValue: parseFloat(p.collected_value || '0'),
+      plannedExpense: parseFloat(p.planned_expense || '0'),
+      actualExpense: parseFloat(p.actual_expense || '0'),
+      extraDetails: p.extra_details || {},
+      leadId: p.lead_id,
+      customer_name: p.customer_name,
+      customer_phone: p.customer_phone,
+      customer_address: p.address,
+      customerName: p.customer_name,
+      customerPhone: p.customer_phone,
+      customerAddress: p.address,
+      convertedAt: p.converted_at
+    }));
+    res.json(projects);
+  } catch (err) {
+    console.error('Error fetching projects:', err);
+    res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
 
 app.post('/api/projects', async (req, res) => {
   let { id, name, description, status, startDate, endDate, budget, members, customColumns, permissionSchemeId, projectType, supportTaskStyle, address, projectValue, invoicedValue, collectedValue, plannedExpense, actualExpense, projectTemplateName, extraDetails } = req.body;
@@ -4666,7 +4704,17 @@ app.post('/api/leads/:id/convert', async (req, res) => {
     end.setDate(end.getDate() + 7);
     const endDateStr = end.toISOString();
 
-    const membersJson = JSON.stringify(admin_id ? [{ id: admin_id, role: 'Manager' }] : []);
+    const initialMembers = [];
+    if (admin_id) {
+      initialMembers.push({ id: admin_id, userId: admin_id, role: 'Manager' });
+    }
+    if (lead.sales_contact_id && lead.sales_contact_id !== admin_id) {
+      initialMembers.push({ id: lead.sales_contact_id, userId: lead.sales_contact_id, role: 'Sales' });
+    }
+    if (lead.surveyor_id && lead.surveyor_id !== admin_id && lead.surveyor_id !== lead.sales_contact_id) {
+      initialMembers.push({ id: lead.surveyor_id, userId: lead.surveyor_id, role: 'Surveyor' });
+    }
+    const membersJson = JSON.stringify(initialMembers);
 
     const jobType = (lead.job_type || '').toLowerCase().trim();
     const commonStages = ["To Do"];
@@ -4727,7 +4775,12 @@ app.post('/api/leads/:id/convert', async (req, res) => {
       bmt_payment_recorded: false,
       bmt_aftersales_result: '',
     };
-    const initialExtraDetails = { lifecycle: initialLifecycle };
+    const initialExtraDetails = { 
+      lifecycle: initialLifecycle,
+      branch: 'สาขาบางนา',
+      buildingType: 'บ้านเดี่ยว',
+      customerStaffPic: lead.sales_contact_id || admin_id || ''
+    };
 
     const projResult = await pool.query(
       `INSERT INTO projects (id, name, description, status, start_date, end_date, members, address, project_type, custom_columns, lead_id, customer_name, customer_phone, converted_at, site_latitude, site_longitude, site_radius_meters, execution_phase, extra_details)

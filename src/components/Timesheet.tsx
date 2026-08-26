@@ -1182,21 +1182,23 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
           justifyContent: 'center',
           zIndex: 1100
         }}>
-          <div className="glass-panel" style={{ padding: '2rem', width: '650px', maxWidth: '95%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="glass-panel" style={{ padding: '2rem', width: '650px', maxWidth: '95%', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
             <div className="flex-between">
-              <h2 className="text-gradient" style={{ fontSize: '1.5rem' }}>{editingEntryId ? 'Edit Work Time' : 'Log Work Time'}</h2>
-              <button onClick={() => { setIsModalOpen(false); resetForm(); }} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                {editingEntryId ? 'แก้ไขเวลาทำงาน (Edit Work Time)' : 'บันทึกเวลาทำงาน (Log Work Time)'}
+              </h2>
+              <button onClick={() => { setIsModalOpen(false); resetForm(); }} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem' }}>
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Project *</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>โครงการ (Project) *</label>
                 <select 
                   value={projectId} 
                   onChange={e => { setProjectId(e.target.value); setTaskId(''); }}
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 500 }}
                   required
                 >
                   <option value="">Select Project...</option>
@@ -1204,12 +1206,12 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                 </select>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Task</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>งาน (Task)</label>
                 <select 
                   value={taskId} 
                   onChange={e => setTaskId(e.target.value)}
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 500 }}
                   disabled={!projectId}
                 >
                   <option value="">General Work / No Task</option>
@@ -1218,9 +1220,9 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
               </div>
 
               {/* Visual Time Bar Picker */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  Work Period — Drag to select time range
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  ช่วงเวลาทำงาน (Work Period) — ลากเมาส์บนแถบเพื่อเลือกช่วงเวลา
                 </label>
                 
                 {/* Time bar info */}
@@ -1229,43 +1231,44 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                     {startTime && endTime ? (
                       <>
                         <span style={{ 
-                          background: 'rgba(0, 206, 209, 0.15)', 
-                          border: '1px solid rgba(0, 206, 209, 0.3)', 
+                          background: 'rgba(37, 99, 235, 0.12)', 
+                          border: '1px solid rgba(37, 99, 235, 0.4)', 
                           padding: '0.3rem 0.75rem', 
-                          borderRadius: 'var(--radius-md)', 
-                          fontWeight: 600, 
-                          fontSize: '1rem',
-                          color: 'var(--accent-primary)'
+                          borderRadius: '6px', 
+                          fontWeight: 800, 
+                          fontSize: '1.05rem',
+                          color: '#2563eb'
                         }}>
                           {startTime}
                         </span>
-                        <span style={{ color: 'var(--text-muted)' }}>→</span>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>→</span>
                         <span style={{ 
-                          background: 'rgba(0, 206, 209, 0.15)', 
-                          border: '1px solid rgba(0, 206, 209, 0.3)', 
+                          background: 'rgba(37, 99, 235, 0.12)', 
+                          border: '1px solid rgba(37, 99, 235, 0.4)', 
                           padding: '0.3rem 0.75rem', 
-                          borderRadius: 'var(--radius-md)', 
-                          fontWeight: 600, 
-                          fontSize: '1rem',
-                          color: 'var(--accent-primary)'
+                          borderRadius: '6px', 
+                          fontWeight: 800, 
+                          fontSize: '1.05rem',
+                          color: '#2563eb'
                         }}>
                           {endTime}
                         </span>
                       </>
                     ) : (
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Click and drag on the bar below</span>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>คลิกและลากเมาส์บนแถบเวลาด้านล่าง</span>
                     )}
                   </div>
                   {hours && (
                     <span style={{ 
-                      background: 'linear-gradient(135deg, rgba(0,206,209,0.2), rgba(124,58,237,0.2))', 
+                      background: 'rgba(124, 58, 237, 0.15)', 
+                      border: '1px solid rgba(124, 58, 237, 0.4)',
                       padding: '0.3rem 0.75rem', 
-                      borderRadius: 'var(--radius-md)', 
-                      fontWeight: 700, 
+                      borderRadius: '6px', 
+                      fontWeight: 800, 
                       fontSize: '1.1rem',
-                      color: 'var(--text-primary)'
+                      color: '#7c3aed'
                     }}>
-                      {hours}h
+                      {hours} ชม. ({hours}h)
                     </span>
                   )}
                 </div>
@@ -1293,8 +1296,8 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                     <div
                       style={{
                         position: 'relative',
-                        background: 'var(--bg-tertiary)',
-                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--bg-primary)',
+                        borderRadius: '6px',
                         border: '1px solid var(--border-color)',
                         overflow: 'hidden',
                         userSelect: 'none',
@@ -1332,16 +1335,16 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                       }}
                     >
                       {/* Hour labels */}
-                      <div style={{ display: 'flex', height: 20 }}>
+                      <div style={{ display: 'flex', height: 22, background: 'var(--bg-tertiary)' }}>
                         {Array.from({ length: BAR_END - BAR_START }, (_, i) => (
                           <div key={i} style={{ 
                             flex: 1, 
                             textAlign: 'center', 
-                            fontSize: '0.55rem', 
-                            color: 'rgba(255,255,255,0.85)',
-                            borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                            fontSize: '0.65rem', 
+                            color: 'var(--text-primary)',
+                            borderLeft: i > 0 ? '1px solid var(--border-color)' : 'none',
                             paddingTop: 3,
-                            fontWeight: 600,
+                            fontWeight: 800,
                           }}>
                             {String(BAR_START + i).padStart(2, '0')}
                           </div>
@@ -1349,7 +1352,7 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                       </div>
 
                       {/* Slots bar */}
-                      <div style={{ display: 'flex', height: 32, position: 'relative' }}>
+                      <div style={{ display: 'flex', height: 36, position: 'relative' }}>
                         {Array.from({ length: SLOTS }, (_, i) => {
                           const isSelected = startSlot >= 0 && endSlot > startSlot && i >= startSlot && i < endSlot;
                           const isHour = i % 2 === 0;
@@ -1359,23 +1362,25 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                               style={{
                                 flex: 1,
                                 background: isSelected 
-                                  ? 'linear-gradient(180deg, rgba(0,206,209,0.4), rgba(0,206,209,0.2))' 
+                                  ? 'linear-gradient(180deg, rgba(37,99,235,0.45), rgba(37,99,235,0.25))' 
                                   : 'transparent',
-                                borderLeft: isHour ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.02)',
+                                borderLeft: isHour ? '1px solid var(--border-color)' : '1px dashed rgba(150,150,150,0.2)',
                                 transition: 'background 0.1s',
                                 position: 'relative',
                               }}
                             >
                               {isSelected && i === startSlot && (
                                 <div style={{
-                                  position: 'absolute', left: 0, top: 0, bottom: 0, width: 2,
-                                  background: 'var(--accent-primary)', borderRadius: 1,
+                                  position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
+                                  background: '#2563eb', borderRadius: 1,
+                                  boxShadow: '0 0 6px rgba(37,99,235,0.8)'
                                 }} />
                               )}
                               {isSelected && i === endSlot - 1 && (
                                 <div style={{
-                                  position: 'absolute', right: 0, top: 0, bottom: 0, width: 2,
-                                  background: 'var(--accent-primary)', borderRadius: 1,
+                                  position: 'absolute', right: 0, top: 0, bottom: 0, width: 3,
+                                  background: '#2563eb', borderRadius: 1,
+                                  boxShadow: '0 0 6px rgba(37,99,235,0.8)'
                                 }} />
                               )}
                             </div>
@@ -1384,11 +1389,11 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                       </div>
 
                       {/* Bottom hour ticks */}
-                      <div style={{ display: 'flex', height: 6 }}>
+                      <div style={{ display: 'flex', height: 6, background: 'var(--bg-tertiary)' }}>
                         {Array.from({ length: BAR_END - BAR_START }, (_, i) => (
                           <div key={i} style={{ 
                             flex: 1, 
-                            borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                            borderLeft: i > 0 ? '1px solid var(--border-color)' : 'none',
                           }} />
                         ))}
                       </div>
@@ -1397,101 +1402,101 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                 })()}
 
                 {/* Fine-tune inputs row */}
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: '0.25rem' }}>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Start</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>Start</span>
                     <input 
                       type="time" 
                       value={startTime} 
                       onChange={e => handleStartTimeChange(e.target.value)} 
-                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.25rem 0.4rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.75rem', flex: 1 }}
+                      style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '5px', padding: '0.35rem 0.5rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem', fontWeight: 700, flex: 1 }}
                     />
                   </div>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>End</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>End</span>
                     <input 
                       type="time" 
                       value={endTime} 
                       onChange={e => handleEndTimeChange(e.target.value)} 
-                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.25rem 0.4rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.75rem', flex: 1 }}
+                      style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '5px', padding: '0.35rem 0.5rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem', fontWeight: 700, flex: 1 }}
                     />
                   </div>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Hours</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>Hours</span>
                     <input 
                       type="number" 
                       step="0.5" min="0.5" max="24"
                       value={hours} 
                       onChange={e => setHours(e.target.value)} 
-                      style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '0.25rem 0.4rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.75rem', flex: 1 }}
+                      style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '5px', padding: '0.35rem 0.5rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.8rem', fontWeight: 700, flex: 1 }}
                       required
                     />
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>เป้าหมาย / Description (Goal/Activity) *</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>เป้าหมาย / Description (Goal/Activity) *</label>
                 <textarea 
                   value={description} 
                   onChange={e => setDescription(e.target.value)} 
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none', minHeight: '60px', resize: 'vertical' }}
-                  placeholder="What was the goal or task?"
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', outline: 'none', minHeight: '65px', resize: 'vertical', fontSize: '0.85rem' }}
+                  placeholder="รายละเอียดงานที่ทำ หรือเป้าหมายของงาน..."
                   required
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>ผลการทำงาน / Work Results (Optional)</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>ผลการทำงาน / Work Results (Optional)</label>
                 <textarea 
                   value={workResults} 
                   onChange={e => setWorkResults(e.target.value)} 
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 1rem', color: 'var(--text-primary)', outline: 'none', minHeight: '60px', resize: 'vertical' }}
-                  placeholder="What was the actual result?"
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', outline: 'none', minHeight: '65px', resize: 'vertical', fontSize: '0.85rem' }}
+                  placeholder="ผลงานที่เสร็จสิ้น ข้อสังเกต หรือปัญหาที่พบ..."
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <ImageIcon size={16} /> Attach Proof of Work Image (Optional)
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <ImageIcon size={16} /> แนบรูปภาพหลักฐานการทำงาน (Attach Proof of Work Image)
                 </label>
                 
                 {imageUrl ? (
-                  <div style={{ position: 'relative', width: '120px', height: '90px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', overflow: 'hidden', background: 'var(--bg-tertiary)' }}>
+                  <div style={{ position: 'relative', width: '130px', height: '95px', borderRadius: '6px', border: '1px solid var(--border-color)', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
                     <img src={imageUrl} alt="Proof of work preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <button 
                       type="button" 
                       onClick={() => setImageUrl('')} 
-                      style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                      style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
                       title="Remove image"
                     >
-                      <X size={12} style={{ margin: 'auto' }} />
+                      <X size={13} style={{ margin: 'auto' }} />
                     </button>
                   </div>
                 ) : isCameraActive ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '320px' }}>
-                    <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-color)', background: '#000', position: 'relative', aspectRatio: '4/3' }}>
+                    <div style={{ borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', background: '#000', position: 'relative', aspectRatio: '4/3' }}>
                       <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button 
                         type="button" 
                         onClick={capturePhoto} 
-                        style={{ padding: '0.4rem 0.8rem', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                        style={{ padding: '0.4rem 0.8rem', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
                       >
-                        Capture Photo
+                        ถ่ายรูป (Capture)
                       </button>
                       <button 
                         type="button" 
                         onClick={stopCamera} 
-                        style={{ padding: '0.4rem 0.8rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontSize: '0.8rem' }}
+                        style={{ padding: '0.4rem 0.8rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
                       >
-                        Cancel
+                        ยกเลิก
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <input 
                       type="file" 
                       accept="image/*" 
@@ -1506,18 +1511,19 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: '0.5rem', 
-                        padding: '0.5rem 1rem', 
-                        background: 'var(--bg-tertiary)', 
+                        padding: '0.45rem 0.85rem', 
+                        background: 'var(--bg-secondary)', 
                         border: '1px solid var(--border-color)', 
-                        borderRadius: 'var(--radius-md)', 
-                        color: 'var(--text-secondary)', 
+                        borderRadius: '6px', 
+                        color: 'var(--text-primary)', 
                         cursor: isUploading ? 'not-allowed' : 'pointer',
-                        fontSize: '0.85rem'
+                        fontSize: '0.82rem',
+                        fontWeight: 600
                       }}
                       className="hover-lift"
                     >
                       <Paperclip size={14} />
-                      {isUploading ? 'Uploading...' : 'Choose Image'}
+                      {isUploading ? 'Uploading...' : 'เลือกรูปภาพ (Choose Image)'}
                     </label>
                     <button 
                       type="button" 
@@ -1527,46 +1533,49 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: '0.5rem', 
-                        padding: '0.5rem 1rem', 
-                        background: 'var(--bg-tertiary)', 
+                        padding: '0.45rem 0.85rem', 
+                        background: 'var(--bg-secondary)', 
                         border: '1px solid var(--border-color)', 
-                        borderRadius: 'var(--radius-md)', 
-                        color: 'var(--text-secondary)', 
+                        borderRadius: '6px', 
+                        color: 'var(--text-primary)', 
                         cursor: isUploading ? 'not-allowed' : 'pointer',
-                        fontSize: '0.85rem'
+                        fontSize: '0.82rem',
+                        fontWeight: 600
                       }}
                       className="hover-lift"
                     >
                       <span style={{ fontSize: '14px' }}>📷</span>
-                      Use Camera
+                      เปิดกล้อง (Use Camera)
                     </button>
                   </div>
                 )}
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Submission Status</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>สถานะการส่ง (Submission Status)</label>
                 <select 
                   value={entryStatus} 
                   onChange={e => setEntryStatus(e.target.value as TimesheetStatus)}
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem', color: 'var(--text-primary)', outline: 'none' }}
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 500 }}
                 >
-                  <option value="Pending">Submit for Approval (Pending)</option>
-                  <option value="Draft">Save as Draft (Draft)</option>
+                  <option value="Pending">ส่งขออนุมัติ (Submit for Approval)</option>
+                  <option value="Draft">บันทึกเป็นร่าง (Save as Draft)</option>
                 </select>
               </div>
 
               <button type="submit" style={{ 
-                background: 'var(--accent-primary)', 
+                background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)', 
                 color: 'white', 
                 border: 'none', 
                 padding: '0.75rem', 
-                borderRadius: 'var(--radius-md)', 
-                fontWeight: 600, 
+                borderRadius: '8px', 
+                fontWeight: 700, 
+                fontSize: '0.95rem',
                 cursor: 'pointer',
-                marginTop: '1rem'
+                marginTop: '0.5rem',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)'
               }} className="hover-lift">
-                {editingEntryId ? 'Save Changes' : 'Log Time Entry'}
+                {editingEntryId ? 'บันทึกการแก้ไข' : 'บันทึกเวลาทำงาน (Log Time Entry)'}
               </button>
             </form>
           </div>

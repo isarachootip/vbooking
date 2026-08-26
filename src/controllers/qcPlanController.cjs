@@ -668,14 +668,26 @@ exports.updatePlan = async (req, res) => {
 exports.getTeamSchedule = async (req, res) => {
   try {
     const { date } = req.query;
-    const targetDate = date || new Date().toISOString().split('T')[0];
+    let targetDate = (date || new Date().toISOString().split('T')[0]).trim();
+    if (targetDate.includes('/')) {
+      const parts = targetDate.split('/');
+      if (parts.length === 3) {
+        targetDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+    }
 
-    // 1. Get all users
+    // 1. Get all QC department users (QC1 - QC10)
     const usersRes = await pool.query(
       `SELECT id, name, email, avatar, global_role, department, job_types 
        FROM users 
+       WHERE department ILIKE '%QC%' 
+          OR global_role ILIKE '%QC%' 
+          OR name ILIKE 'QC%'
        ORDER BY name ASC`
     );
+
+    // Natural sort users by name (QC1, QC2, ... QC10)
+    usersRes.rows.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
     // Standard daily slots
     const standardSlots = [

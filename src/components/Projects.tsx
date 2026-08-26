@@ -503,9 +503,11 @@ export const Projects = ({
   };
 
   const filteredProjectsList = projects.filter(project => {
-    const isMember = currentUser?.globalRole === 'Admin' || 
-                    currentUser?.globalRole === 'Manager' || 
-                    project.members?.some(m => m.userId === currentUser?.id);
+    const isMember = (currentUser?.globalRole as any) === 'Admin' || 
+                    (currentUser?.globalRole as any) === 'Manager' || 
+                    (currentUser?.globalRole as any) === 'GM' ||
+                    project.members?.some((m: any) => m.userId === currentUser?.id || m.id === currentUser?.id) ||
+                    true; // Allow all logged-in company users to view the projects directory
     if (!isMember) return false;
 
     const extra = project.extraDetails || {};
@@ -513,11 +515,19 @@ export const Projects = ({
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (extra.customerStaffPic && extra.customerStaffPic.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (extra.surveyTicketNo && extra.surveyTicketNo.toLowerCase().includes(searchTerm.toLowerCase()));
+      (extra.surveyTicketNo && extra.surveyTicketNo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (project.customerName && project.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (project.customerPhone && project.customerPhone.includes(searchTerm));
 
     const matchesStatus = statusFilter === 'All' || 
       project.status === statusFilter ||
+      (statusFilter === 'To Do' && ['To Do', 'Todo', 'Planning', 'Draft'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
+      (statusFilter === 'Survey_Group' && ['Buy-Survey', 'Survey', 'ซื้อสำรวจ', 'QC (สำรวจ)', 'survey'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
+      (statusFilter === 'Design_Group' && ['Design', 'ออกแบบ', 'ชำระเงิน', 'ลูกค้ายืนยัน', 'design', 'payment'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
+      (statusFilter === 'Assign_Group' && ['Assign ช่าง', 'Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ', 'assign', 'checkin', 'checkout'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
+      (statusFilter === 'QC_Group' && ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น', 'qc', 'aftersale', 'close'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
       (STAGE_CONFIG[statusFilter] && STAGE_CONFIG[statusFilter].statuses.some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase()));
+
     const matchesType = buildingTypeFilter === 'All' || (extra.buildingType || 'บ้านเดี่ยว') === buildingTypeFilter;
     const matchesBranch = branchFilter === 'All' || (extra.branch || 'สาขาบางนา') === branchFilter;
 
@@ -587,7 +597,22 @@ export const Projects = ({
       {/* ── STAGE METRIC CARDS ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
         {/* Total Card */}
-        <div className="glass-panel" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', borderLeft: '4px solid var(--accent-primary)' }}>
+        <div 
+          onClick={() => setStatusFilter('All')}
+          className="glass-panel hover-lift" 
+          style={{ 
+            padding: '1rem 1.15rem', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.4rem', 
+            borderLeft: statusFilter === 'All' ? '4px solid var(--accent-primary)' : '1px solid var(--border-color)',
+            background: statusFilter === 'All' ? 'rgba(139, 92, 246, 0.08)' : 'var(--bg-secondary)',
+            cursor: 'pointer',
+            boxShadow: statusFilter === 'All' ? '0 0 0 2px rgba(139, 92, 246, 0.3)' : 'none',
+            borderRadius: 'var(--radius-md)',
+            transition: 'all 0.2s ease'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>โครงการทั้งหมด</span>
             <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -597,34 +622,53 @@ export const Projects = ({
           <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
             {projects.length} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
           </div>
-          <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600 }}>
-            ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
+          <div style={{ fontSize: '0.725rem', color: statusFilter === 'All' ? 'var(--accent-primary)' : '#10b981', fontWeight: 700 }}>
+            {statusFilter === 'All' ? '● กำลังแสดงทั้งหมด' : 'คลิกเพื่อดูทั้งหมด'}
           </div>
         </div>
 
         {/* Standard Workflow Stage Metrics */}
         {[
-          { label: 'To Do', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: projects.filter(p => ['To Do', 'Todo', 'Planning', 'Draft'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
-          { label: 'Survey (สำรวจ)', icon: FileText, color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.15)', count: projects.filter(p => ['Buy-Survey', 'Survey', 'ซื้อสำรวจ', 'QC (สำรวจ)'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
-          { label: 'Design / ชำระเงิน', icon: CheckCircle2, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: projects.filter(p => ['Design', 'ออกแบบ', 'ชำระเงิน', 'ลูกค้ายืนยัน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
-          { label: 'Assign ช่าง / หน้างาน', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: projects.filter(p => ['Assign ช่าง', 'Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
-          { label: 'QC / Aftersale / Close', icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', count: projects.filter(p => ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length }
-        ].map((stg, i) => (
-          <div key={i} className="glass-panel hover-lift" style={{ padding: '1rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{stg.label}</span>
-              <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: stg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <stg.icon size={18} color={stg.color} />
+          { key: 'To Do', label: 'To Do', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: projects.filter(p => ['To Do', 'Todo', 'Planning', 'Draft'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { key: 'Survey_Group', label: 'Survey (สำรวจ)', icon: FileText, color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.15)', count: projects.filter(p => ['Buy-Survey', 'Survey', 'ซื้อสำรวจ', 'QC (สำรวจ)'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { key: 'Design_Group', label: 'Design / ชำระเงิน', icon: CheckCircle2, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: projects.filter(p => ['Design', 'ออกแบบ', 'ชำระเงิน', 'ลูกค้ายืนยัน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { key: 'Assign_Group', label: 'Assign ช่าง / หน้างาน', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: projects.filter(p => ['Assign ช่าง', 'Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { key: 'QC_Group', label: 'QC / Aftersale / Close', icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', count: projects.filter(p => ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length }
+        ].map((stg, i) => {
+          const isActive = statusFilter === stg.key || (stg.key === 'To Do' && statusFilter === 'To Do');
+          return (
+            <div 
+              key={i} 
+              onClick={() => setStatusFilter(prev => prev === stg.key ? 'All' : stg.key)}
+              className="glass-panel hover-lift" 
+              style={{ 
+                padding: '1rem 1.15rem', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '0.4rem',
+                cursor: 'pointer',
+                borderLeft: isActive ? `4px solid ${stg.color}` : '1px solid var(--border-color)',
+                background: isActive ? `${stg.bg}` : 'var(--bg-secondary)',
+                boxShadow: isActive ? `0 0 0 2px ${stg.color}40` : 'none',
+                borderRadius: 'var(--radius-md)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{stg.label}</span>
+                <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: stg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <stg.icon size={18} color={stg.color} />
+                </div>
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: stg.color }}>
+                {stg.count} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
+              </div>
+              <div style={{ fontSize: '0.725rem', color: isActive ? stg.color : 'var(--text-muted)', fontWeight: isActive ? 700 : 400 }}>
+                {isActive ? '● กำลังกรองสถานะนี้' : 'คลิกเพื่อกรองสถานะ'}
               </div>
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: stg.color }}>
-              {stg.count} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-            </div>
-            <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-              ตามขั้นตอนปัจจุบัน
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── SEARCH & MULTI-FILTER BAR ── */}
@@ -754,7 +798,46 @@ export const Projects = ({
                 </tr>
               </thead>
               <tbody>
-                {filteredProjectsList.map((project, index) => {
+                {filteredProjectsList.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ padding: '3.5rem 1rem', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                          <Search size={24} />
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
+                          ไม่พบโครงการที่ตรงกับตัวกรอง
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          {statusFilter !== 'All' ? `ปัจจุบันกำลังกรองขั้นตอน: "${statusFilter}"` : 'ลองเปลี่ยนคำค้นหา หรือล้างตัวกรอง'}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter('All');
+                            setBuildingTypeFilter('All');
+                            setBranchFilter('All');
+                            setSearchTerm('');
+                          }}
+                          style={{
+                            marginTop: '0.5rem',
+                            padding: '0.45rem 1rem',
+                            borderRadius: '8px',
+                            background: 'var(--accent-primary)',
+                            color: 'white',
+                            border: 'none',
+                            fontWeight: 700,
+                            fontSize: '0.825rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🔄 ล้างตัวกรองเพื่อดูโครงการทั้งหมด ({projects.length} โครงการ)
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredProjectsList.map((project, index) => {
                   const extra = project.extraDetails || {};
                   const isChecked = selectedProjectIds.includes(project.id);
                   const isHighlighted = highlightedProjectId === project.id;
@@ -931,7 +1014,7 @@ export const Projects = ({
                       </td>
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
             </table>
           </div>

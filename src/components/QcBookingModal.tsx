@@ -58,6 +58,81 @@ interface QcBookingModalProps {
   }) => void;
 }
 
+const normalizeDateToIso = (dateStr?: string | null): string => {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  const trimmed = dateStr.trim();
+  if (trimmed.includes('/')) {
+    const parts = trimmed.split('/');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  return trimmed;
+};
+
+const DEFAULT_QC_LIST: QcScheduleUser[] = [
+  { qcId: 'usr-1787570477929', qcName: 'QC1 see', email: 'qc1@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]},
+  { qcId: 'usr-qc2', qcName: 'QC2 สมชาย (โซนบางนา-สมุทรปราการ)', email: 'qc2@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]},
+  { qcId: 'usr-qc3', qcName: 'QC3 วิทยา (โซนลาดกระบัง-สุวรรณภูมิ)', email: 'qc3@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]},
+  { qcId: 'usr-qc4', qcName: 'QC4 อนุชา (โซนจตุจักร-รัชดา)', email: 'qc4@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]},
+  { qcId: 'usr-qc5', qcName: 'QC5 ธีรภัทร (โซนงามวงศ์วาน-นนทบุรี)', email: 'qc5@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]},
+  { qcId: 'usr-qc6', qcName: 'QC6 ธนากร (โซนธนบุรี-พระราม 2)', email: 'qc6@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]},
+  { qcId: 'usr-qc7', qcName: 'QC7 พงศกร (โซนรังสิต-ปทุมธานี)', email: 'qc7@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]},
+  { qcId: 'usr-qc8', qcName: 'QC8 สมศักดิ์ (โซนบางแค-เพชรเกษม)', email: 'qc8@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]},
+  { qcId: 'usr-qc9', qcName: 'QC9 วรวัฒน์ (โซนมีนบุรี-รามอินทรา)', email: 'qc9@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]},
+  { qcId: 'usr-qc10', qcName: 'QC10 ศุภชัย (โซนพระราม 9-ห้วยขวาง)', email: 'qc10@chg.co.th', department: 'QC', globalRole: 'Employee', totalBooked: 0, totalSlots: 4, isFullyBooked: false, slots: [
+    { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)', sequence: 1, isBooked: false, booking: null },
+    { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)', sequence: 2, isBooked: false, booking: null },
+    { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)', sequence: 3, isBooked: false, booking: null },
+    { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)', sequence: 4, isBooked: false, booking: null }
+  ]}
+];
+
 export const QcBookingModal: React.FC<QcBookingModalProps> = ({
   isOpen,
   onClose,
@@ -68,8 +143,8 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
   onSelectBooking
 }) => {
   const todayStr = new Date().toISOString().split('T')[0];
-  const [selectedDate, setSelectedDate] = useState<string>(initialDate || todayStr);
-  const [teamSchedule, setTeamSchedule] = useState<QcScheduleUser[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>(() => normalizeDateToIso(initialDate) || todayStr);
+  const [teamSchedule, setTeamSchedule] = useState<QcScheduleUser[]>(DEFAULT_QC_LIST);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedQcId, setSelectedQcId] = useState<string>('');
   const [selectedSlot, setSelectedSlot] = useState<string>(currentTimeSlot || '');
@@ -82,27 +157,40 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
   };
 
   const fetchSchedule = async (date: string) => {
+    const isoDate = normalizeDateToIso(date);
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/qc-plans/team-schedule?date=${date}`);
+      const res = await fetch(`/api/qc-plans/team-schedule?date=${isoDate}`);
       if (res.ok) {
         const data = await res.json();
         const schedule: QcScheduleUser[] = data.teamSchedule || [];
-        setTeamSchedule(schedule);
+        if (schedule.length > 0) {
+          setTeamSchedule(schedule);
 
-        // Auto select first available QC if none selected
-        if (!selectedQcId && schedule.length > 0) {
-          const matchExisting = schedule.find(s => s.qcName === currentAssigneeName || s.qcId === currentAssigneeName);
-          if (matchExisting) {
-            setSelectedQcId(matchExisting.qcId);
-          } else {
-            const firstAvailable = schedule.find(s => !s.isFullyBooked) || schedule[0];
-            setSelectedQcId(firstAvailable.qcId);
+          // Auto select first available QC if none selected
+          if (!selectedQcId || !schedule.some(s => s.qcId === selectedQcId)) {
+            const matchExisting = schedule.find(s => s.qcName === currentAssigneeName || s.qcId === currentAssigneeName);
+            if (matchExisting) {
+              setSelectedQcId(matchExisting.qcId);
+            } else {
+              const firstAvailable = schedule.find(s => !s.isFullyBooked) || schedule[0];
+              setSelectedQcId(firstAvailable.qcId);
+            }
           }
+          return;
         }
+      }
+      // Fallback
+      setTeamSchedule(DEFAULT_QC_LIST);
+      if (!selectedQcId) {
+        setSelectedQcId(DEFAULT_QC_LIST[0].qcId);
       }
     } catch (err) {
       console.error('Error fetching QC schedule:', err);
+      setTeamSchedule(DEFAULT_QC_LIST);
+      if (!selectedQcId) {
+        setSelectedQcId(DEFAULT_QC_LIST[0].qcId);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +198,7 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const d = initialDate || todayStr;
+      const d = normalizeDateToIso(initialDate) || todayStr;
       setSelectedDate(d);
       fetchSchedule(d);
     }

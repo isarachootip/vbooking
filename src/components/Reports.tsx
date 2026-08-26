@@ -47,17 +47,8 @@ export const Reports = ({ timesheets, projects, users, currentUser, tasks, costR
     ? timesheets
     : timesheets.filter(ts => ts.userId === currentUser?.id);
 
-  // Default to the month of the latest timesheet entry, or June 2026
-  const [calendarDate, setCalendarDate] = useState<Date>(() => {
-    if (visibleTimesheets.length > 0) {
-      const dates = visibleTimesheets.map(t => new Date(t.date));
-      const latestDate = new Date(Math.max(...dates.map(d => d.getTime())));
-      if (!isNaN(latestDate.getTime())) {
-        return new Date(latestDate.getFullYear(), latestDate.getMonth(), 1);
-      }
-    }
-    return new Date(2026, 5, 1);
-  });
+  // Default to current month
+  const [calendarDate, setCalendarDate] = useState<Date>(() => new Date());
 
   const prevMonth = () => setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   const nextMonth = () => setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));

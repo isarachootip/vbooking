@@ -59,6 +59,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
   const [priceBook, setPriceBook] = useState<ServicePriceItem[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Filters & Search
@@ -70,9 +71,10 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
   const [previewQuotation, setPreviewQuotation] = useState<Quotation | null>(null);
 
   // Form States
-  const [customerSource, setCustomerSource] = useState<'custom' | 'lead' | 'project'>('lead');
+  const [customerSource, setCustomerSource] = useState<'custom' | 'lead' | 'project' | 'customer'>('lead');
   const [selectedLeadId, setSelectedLeadId] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
@@ -128,17 +130,34 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [quoRes, pbRes, leadsRes, projRes] = await Promise.all([
+      const [quoRes, pbRes, leadsRes, projRes, custRes] = await Promise.all([
         fetch('/api/quotations'),
         fetch('/api/pricebook'),
         fetch('/api/leads'),
-        fetch('/api/projects')
+        fetch('/api/projects'),
+        fetch('/api/customers')
       ]);
 
-      if (quoRes.ok) setQuotations(await quoRes.json());
-      if (pbRes.ok) setPriceBook(await pbRes.json());
-      if (leadsRes.ok) setLeads(await leadsRes.json());
-      if (projRes.ok) setProjects(await projRes.json());
+      if (quoRes.ok) {
+        const qData = await quoRes.json();
+        setQuotations(Array.isArray(qData) ? qData : (qData.data || []));
+      }
+      if (pbRes.ok) {
+        const pbData = await pbRes.json();
+        setPriceBook(Array.isArray(pbData) ? pbData : (pbData.data || []));
+      }
+      if (leadsRes.ok) {
+        const lData = await leadsRes.json();
+        setLeads(Array.isArray(lData) ? lData : (lData.data || []));
+      }
+      if (projRes.ok) {
+        const pData = await projRes.json();
+        setProjects(Array.isArray(pData) ? pData : (pData.data || []));
+      }
+      if (custRes && custRes.ok) {
+        const cData = await custRes.json();
+        setCustomers(Array.isArray(cData) ? cData : (cData.data || []));
+      }
     } catch (err) {
       console.error('Error loading quotation data:', err);
     } finally {
@@ -146,25 +165,93 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
     }
   };
 
+  const handleSourceChange = (src: 'lead' | 'project' | 'customer' | 'custom') => {
+    setCustomerSource(src);
+    if (src === 'custom') {
+      setSelectedLeadId('');
+      setSelectedProjectId('');
+      setSelectedCustomerId('');
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerAddress('');
+    } else if (src === 'lead') {
+      setSelectedProjectId('');
+      setSelectedCustomerId('');
+      if (selectedLeadId) {
+        handleLeadSelect(selectedLeadId);
+      } else {
+        setCustomerName('');
+        setCustomerPhone('');
+        setCustomerAddress('');
+      }
+    } else if (src === 'project') {
+      setSelectedLeadId('');
+      setSelectedCustomerId('');
+      if (selectedProjectId) {
+        handleProjectSelect(selectedProjectId);
+      } else {
+        setCustomerName('');
+        setCustomerPhone('');
+        setCustomerAddress('');
+      }
+    } else if (src === 'customer') {
+      setSelectedLeadId('');
+      setSelectedProjectId('');
+      if (selectedCustomerId) {
+        handleCustomerSelect(selectedCustomerId);
+      } else {
+        setCustomerName('');
+        setCustomerPhone('');
+        setCustomerAddress('');
+      }
+    }
+  };
+
   const handleLeadSelect = (leadId: string) => {
     setSelectedLeadId(leadId);
-    if (!leadId) return;
+    if (!leadId) {
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerAddress('');
+      return;
+    }
     const lead = leads.find(l => l.id === leadId);
     if (lead) {
-      setCustomerName(lead.customer_name || '');
-      setCustomerPhone(lead.customer_phone || '');
-      setCustomerAddress(lead.customer_address || '');
+      setCustomerName(lead.customer_name || lead.customerName || '');
+      setCustomerPhone(lead.customer_phone || lead.customerPhone || '');
+      setCustomerAddress(lead.customer_address || lead.customerAddress || lead.address || '');
     }
   };
 
   const handleProjectSelect = (projId: string) => {
     setSelectedProjectId(projId);
-    if (!projId) return;
+    if (!projId) {
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerAddress('');
+      return;
+    }
     const proj = projects.find(p => p.id === projId);
     if (proj) {
-      setCustomerName(proj.customer_name || proj.name || '');
-      setCustomerPhone(proj.customer_phone || '');
-      setCustomerAddress(proj.customer_address || '');
+      setCustomerName(proj.customer_name || proj.customerName || proj.name || '');
+      setCustomerPhone(proj.customer_phone || proj.customerPhone || '');
+      setCustomerAddress(proj.customer_address || proj.customerAddress || proj.address || '');
+    }
+  };
+
+  const handleCustomerSelect = (custId: string) => {
+    setSelectedCustomerId(custId);
+    if (!custId) {
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerAddress('');
+      return;
+    }
+    const cust = customers.find(c => c.id === custId || c.customerId === custId);
+    if (cust) {
+      setCustomerName(cust.customer_name || cust.customerName || `${cust.first_name || ''} ${cust.last_name || ''}`.trim() || cust.company_name || '');
+      setCustomerPhone(cust.phone || cust.phone_secondary || '');
+      setCustomerAddress(cust.default_site_address || cust.defaultSiteAddress || cust.address || '');
     }
   };
 
@@ -256,6 +343,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
       const payload = {
         lead_id: customerSource === 'lead' ? (selectedLeadId || null) : null,
         project_id: customerSource === 'project' ? (selectedProjectId || null) : null,
+        customer_id: customerSource === 'customer' ? (selectedCustomerId || null) : null,
         customer_name: customerName.trim() || 'ลูกค้าทั่วไป',
         customer_phone: customerPhone.trim(),
         customer_address: customerAddress.trim(),
@@ -291,6 +379,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
   const resetForm = () => {
     setSelectedLeadId('');
     setSelectedProjectId('');
+    setSelectedCustomerId('');
     setCustomerName('');
     setCustomerPhone('');
     setCustomerAddress('');
@@ -429,6 +518,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
           <button 
             onClick={() => {
               resetForm();
+              fetchAllData();
               setIsModalOpen(true);
             }}
             style={{ 
@@ -559,7 +649,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                   <FileText size={36} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
                   <div>ไม่พบข้อมูลใบเสนอราคา</div>
                   <button 
-                    onClick={() => { resetForm(); setIsModalOpen(true); }}
+                    onClick={() => { resetForm(); fetchAllData(); setIsModalOpen(true); }}
                     style={{ marginTop: '0.75rem', background: 'var(--accent-primary)', color: 'white', border: 'none', padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
                   >
                     + สร้างใบแรกเลย
@@ -680,24 +770,31 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                     <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <UserIcon size={14} color="var(--accent-primary)" /> ข้อมูลลูกค้าและโครงการ
                     </label>
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                       <button 
                         type="button" 
-                        onClick={() => setCustomerSource('lead')} 
+                        onClick={() => handleSourceChange('lead')} 
                         style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: customerSource === 'lead' ? 'var(--accent-primary)' : 'transparent', color: customerSource === 'lead' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: 600 }}
                       >
                         จาก Leads
                       </button>
                       <button 
                         type="button" 
-                        onClick={() => setCustomerSource('project')} 
+                        onClick={() => handleSourceChange('project')} 
                         style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: customerSource === 'project' ? 'var(--accent-primary)' : 'transparent', color: customerSource === 'project' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: 600 }}
                       >
                         จาก Projects
                       </button>
                       <button 
                         type="button" 
-                        onClick={() => setCustomerSource('custom')} 
+                        onClick={() => handleSourceChange('customer')} 
+                        style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: customerSource === 'customer' ? 'var(--accent-primary)' : 'transparent', color: customerSource === 'customer' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        จาก ฐานข้อมูลกลาง
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => handleSourceChange('custom')} 
                         style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: customerSource === 'custom' ? 'var(--accent-primary)' : 'transparent', color: customerSource === 'custom' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: 600 }}
                       >
                         กรอกเอง
@@ -714,7 +811,9 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                       >
                         <option value="">-- เลือกลูกค้ามุ่งหวัง (Lead) --</option>
                         {leads.map(l => (
-                          <option key={l.id} value={l.id}>{l.customer_name} ({l.job_type || 'ทั่วไป'}) - {l.customer_phone}</option>
+                          <option key={l.id} value={l.id}>
+                            {l.id}: {l.customer_name || l.customerName || 'ลูกค้า'} ({l.job_type || l.jobType || 'ทั่วไป'}) {l.customer_phone || l.customerPhone ? `- ${l.customer_phone || l.customerPhone}` : ''}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -729,8 +828,34 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                       >
                         <option value="">-- เลือกโครงการ (Project) --</option>
                         {projects.map(p => (
-                          <option key={p.id} value={p.id}>{p.id}: {p.name} ({p.customer_name || 'ลูกค้า'})</option>
+                          <option key={p.id} value={p.id}>
+                            {p.id}: {p.name} {p.customer_name || p.customerName ? `(${p.customer_name || p.customerName})` : ''}
+                          </option>
                         ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {customerSource === 'customer' && (
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <select 
+                        value={selectedCustomerId} 
+                        onChange={e => handleCustomerSelect(e.target.value)} 
+                        style={{ width: '100%', padding: '0.45rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
+                      >
+                        <option value="">-- เลือกลูกค้าจากฐานข้อมูลกลาง (Master Customers) --</option>
+                        {customers.map(c => {
+                          const cId = c.id || c.customerId;
+                          const code = c.customer_code || c.customerCode || cId;
+                          const name = c.customer_name || c.customerName || `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.company_name || 'ลูกค้า';
+                          const phone = c.phone || c.phone_secondary || '';
+                          const addr = c.default_site_address || c.defaultSiteAddress || c.address || '';
+                          return (
+                            <option key={cId} value={cId}>
+                              {code}: {name} {phone ? `- ${phone}` : ''} {addr ? `(${addr.length > 35 ? addr.slice(0, 35) + '...' : addr})` : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                   )}
