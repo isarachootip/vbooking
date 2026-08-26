@@ -6,13 +6,15 @@ import {
   MapPin, Navigation, Calendar, CheckCircle2, Clock, 
   Phone, User as UserIcon, ShieldCheck, ChevronRight, AlertTriangle, 
   RefreshCw, Sparkles, Plus, Trash2, Edit3, ExternalLink, 
-  Home, Check, ArrowRight, Car, Compass, Layers, CheckSquare, X
+  Home, Check, ArrowRight, Car, Compass, Layers, CheckSquare, X,
+  LayoutGrid, Lock
 } from 'lucide-react';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { GisMapPickerModal } from './GisMapPickerModal';
 import { SiteVisitResultModal } from './SiteVisitResultModal';
 import { QCHandoverModal } from './QCHandoverModal';
+import { QcBookingModal } from './QcBookingModal';
 
 interface QCDailyPlanProps {
   currentUser: User | null;
@@ -68,6 +70,12 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
   // Check-in status tracking
   const [checkingInItemId, setCheckingInItemId] = useState<string | null>(null);
 
+  // View Mode: 'route_map' (Route TSP map) | 'monitor_dashboard' (QC Team Monitor Grid)
+  const [viewMode, setViewMode] = useState<'route_map' | 'monitor_dashboard'>('route_map');
+  const [teamSchedule, setTeamSchedule] = useState<any[]>([]);
+  const [isScheduleLoading, setIsScheduleLoading] = useState<boolean>(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
+
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -82,6 +90,24 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
   );
 
   const selectedUserObj = users.find(u => u.id === selectedQcId) || currentUser;
+
+  // Fetch Team Schedule Overview
+  const fetchTeamSchedule = async () => {
+    setIsScheduleLoading(true);
+    try {
+      const res = await fetch(`/api/qc-plans/team-schedule?date=${selectedDate}`, {
+        headers: { 'X-User-Id': currentUser?.id || '' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTeamSchedule(data.teamSchedule || []);
+      }
+    } catch (err) {
+      console.error('Error fetching QC team schedule:', err);
+    } finally {
+      setIsScheduleLoading(false);
+    }
+  };
 
   // Fetch Daily Plan for selected QC and Date
   const fetchPlan = async () => {
@@ -109,7 +135,10 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
 
   useEffect(() => {
     fetchPlan();
-  }, [selectedQcId, selectedDate]);
+    if (viewMode === 'monitor_dashboard') {
+      fetchTeamSchedule();
+    }
+  }, [selectedQcId, selectedDate, viewMode]);
 
   // Auto Generate & Optimize Route from Home Origin
   const handleAutoGenerate = async () => {
@@ -492,6 +521,51 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
 
           {/* CONTROLS: DATE & QC SELECTOR */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
+            {/* VIEW MODE SWITCHER */}
+            <div style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+              <button
+                type="button"
+                onClick={() => setViewMode('route_map')}
+                style={{
+                  padding: '5px 11px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: viewMode === 'route_map' ? '#2563eb' : 'transparent',
+                  color: viewMode === 'route_map' ? 'white' : 'var(--text-secondary)',
+                  fontWeight: viewMode === 'route_map' ? 700 : 500,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <Navigation size={13} /> 🗺️ แผนที่เส้นทาง
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode('monitor_dashboard');
+                  fetchTeamSchedule();
+                }}
+                style={{
+                  padding: '5px 11px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: viewMode === 'monitor_dashboard' ? '#059669' : 'transparent',
+                  color: viewMode === 'monitor_dashboard' ? 'white' : 'var(--text-secondary)',
+                  fontWeight: viewMode === 'monitor_dashboard' ? 700 : 500,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <LayoutGrid size={13} /> 📊 Monitor ตารางงาน QC
+              </button>
+            </div>
+
             {/* Quick Date Pills */}
             <div style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px' }}>
               <button
@@ -567,15 +641,14 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
               </select>
             </div>
 
-            {/* AUTO OPTIMIZE BUTTON */}
+            {/* BOOK QC MODAL BUTTON */}
             <button
               type="button"
-              disabled={isGenerating || isLoading}
-              onClick={handleAutoGenerate}
+              onClick={() => setIsBookingModalOpen(true)}
               style={{
-                padding: '0.55rem 1.1rem',
+                padding: '0.55rem 0.95rem',
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                background: 'linear-gradient(135deg, #059669, #10b981)',
                 color: 'white',
                 border: 'none',
                 fontSize: '0.85rem',
@@ -583,39 +656,345 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-                opacity: isGenerating ? 0.7 : 1
+                gap: '5px',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
               }}
             >
-              {isGenerating ? <RefreshCw size={15} className="spin" /> : <Sparkles size={15} />}
-              {isGenerating ? 'กำลังจัดเส้นทาง...' : '⚡ จัด Route อัตโนมัติ'}
+              <Sparkles size={15} /> 🔍 จองคิว QC / ล็อกสล็อต
             </button>
 
+            {/* AUTO OPTIMIZE BUTTON */}
+            {viewMode === 'route_map' && (
+              <button
+                type="button"
+                disabled={isGenerating || isLoading}
+                onClick={handleAutoGenerate}
+                style={{
+                  padding: '0.55rem 1.1rem',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                  color: 'white',
+                  border: 'none',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                  opacity: isGenerating ? 0.7 : 1
+                }}
+              >
+                {isGenerating ? <RefreshCw size={15} className="spin" /> : <Sparkles size={15} />}
+                {isGenerating ? 'กำลังจัดเส้นทาง...' : '⚡ จัด Route อัตโนมัติ'}
+              </button>
+            )}
+
             {/* ADD MANUAL STOP BUTTON */}
-            <button
-              type="button"
-              onClick={() => setIsAddStopModalOpen(true)}
-              style={{
-                padding: '0.55rem 0.9rem',
-                borderRadius: '8px',
-                background: 'var(--bg-tertiary, #f1f5f9)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-color, #cbd5e1)',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-            >
-              <Plus size={15} /> เพิ่มจุดตรวจ
-            </button>
+            {viewMode === 'route_map' && (
+              <button
+                type="button"
+                onClick={() => setIsAddStopModalOpen(true)}
+                style={{
+                  padding: '0.55rem 0.9rem',
+                  borderRadius: '8px',
+                  background: 'var(--bg-tertiary, #f1f5f9)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color, #cbd5e1)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <Plus size={15} /> เพิ่มจุดตรวจ
+              </button>
+            )}
           </div>
         </div>
       </div>
 
+      {viewMode === 'monitor_dashboard' ? (
+        /* QC TEAM SCHEDULE MONITOR DASHBOARD VIEW */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* KPI Workload Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(37, 99, 235, 0.12)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <UserIcon size={22} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เจ้าหน้าที่ QC ทั้งหมด</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>{teamSchedule.length} ท่าน</div>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(234, 88, 12, 0.12)', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Clock size={22} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>คิวงานที่จองแล้ว ({formatToDDMMYYYY(selectedDate)})</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ea580c' }}>
+                  {teamSchedule.reduce((acc, u) => acc + (u.totalBooked || 0), 0)} คิว
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.12)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CheckCircle2 size={22} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>คิวว่างพร้อมรับงาน</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#059669' }}>
+                  {teamSchedule.reduce((acc, u) => acc + ((u.totalSlots || 4) - (u.totalBooked || 0)), 0)} คิว
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--card-bg, #fff)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.12)', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Lock size={22} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เจ้าหน้าที่คิวเต็ม</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#dc2626' }}>
+                  {teamSchedule.filter(u => u.isFullyBooked).length} ท่าน
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Schedule Matrix Table */}
+          <div style={{ background: 'var(--card-bg, #fff)', borderRadius: '16px', border: '1px solid var(--border-color)', padding: '1.25rem', overflowX: 'auto', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <LayoutGrid size={18} color="#059669" /> ตารางมอนิเตอร์ตารางงานทีม QC ประจำวันที่ {formatToDDMMYYYY(selectedDate)}
+                </h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  แสดงสถานะคิวงานแบบแบ่งรอบเวลา (Slot) เพื่อให้ผู้จัดการและทีมขายตรวจสอบความพร้อมก่อนจองคิว
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={fetchTeamSchedule}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-tertiary)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                >
+                  <RefreshCw size={12} className={isScheduleLoading ? 'spin' : ''} /> รีเฟรชตาราง
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsBookingModalOpen(true)}
+                  style={{
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #059669, #10b981)',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                  }}
+                >
+                  <Sparkles size={12} /> + จองคิว QC
+                </button>
+              </div>
+            </div>
+
+            {isScheduleLoading ? (
+              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                กำลังโหลดตารางงานทีม QC...
+              </div>
+            ) : teamSchedule.length === 0 ? (
+              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                ไม่พบข้อมูลเจ้าหน้าที่ QC
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: '950px' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-tertiary)' }}>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-secondary)', borderTopLeftRadius: '8px', borderBottomLeftRadius: '8px', width: '200px' }}>
+                      เจ้าหน้าที่ QC
+                    </th>
+                    <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', fontSize: '0.78rem', fontWeight: 800, color: '#1e40af', width: '20%' }}>
+                      ☀️ ช่วงเช้า 1 (09:00 - 11:00)
+                    </th>
+                    <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', fontSize: '0.78rem', fontWeight: 800, color: '#0284c7', width: '20%' }}>
+                      🍲 ช่วงเที่ยง (11:30 - 13:30)
+                    </th>
+                    <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', fontSize: '0.78rem', fontWeight: 800, color: '#ea580c', width: '20%' }}>
+                      🌤️ ช่วงบ่าย (14:00 - 16:00)
+                    </th>
+                    <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', fontSize: '0.78rem', fontWeight: 800, color: '#7c3aed', width: '20%' }}>
+                      🌆 ช่วงเย็น (16:30 - 18:30)
+                    </th>
+                    <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-secondary)', borderTopRightRadius: '8px', borderBottomRightRadius: '8px', width: '120px' }}>
+                      แผนที่ / จัด Route
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teamSchedule.map((userSchedule, rowIdx) => (
+                    <tr key={userSchedule.qcId} style={{ borderBottom: '1px solid var(--border-color)', background: rowIdx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)' }}>
+                      <td style={{ padding: '0.85rem 1rem', verticalAlign: 'top' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <div style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '50%',
+                            background: '#2563eb',
+                            color: 'white',
+                            fontWeight: 800,
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            {userSchedule.qcName.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                              {userSchedule.qcName}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                              แผนก {userSchedule.department || 'QC'} • {userSchedule.globalRole || 'Employee'}
+                            </div>
+                            <div style={{ marginTop: '0.2rem' }}>
+                              {userSchedule.isFullyBooked ? (
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#dc2626', background: 'rgba(239, 68, 68, 0.12)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                  🔒 คิวเต็ม (4/4)
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#059669', background: 'rgba(16, 185, 129, 0.12)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                  ว่าง {userSchedule.totalSlots - userSchedule.totalBooked} คิว
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 4 Time Slots */}
+                      {userSchedule.slots.map((s: any) => (
+                        <td key={s.slot} style={{ padding: '0.6rem', verticalAlign: 'top' }}>
+                          {s.isBooked ? (
+                            <div style={{
+                              background: 'rgba(234, 88, 12, 0.07)',
+                              border: '1px solid rgba(234, 88, 12, 0.25)',
+                              borderRadius: '8px',
+                              padding: '0.6rem',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.25rem'
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#ea580c', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                  <Lock size={11} /> ติดงาน
+                                </span>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#2563eb', background: '#dbeafe', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
+                                  {s.booking?.status || 'นัดหมาย'}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {s.booking?.customerName || s.booking?.title}
+                              </div>
+                              {s.booking?.customerPhone && (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                                  📞 {s.booking.customerPhone}
+                                </div>
+                              )}
+                              {s.booking?.siteAddress && (
+                                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.booking.siteAddress}>
+                                  📍 {s.booking.siteAddress}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => {
+                                setSelectedQcId(userSchedule.qcId);
+                                setIsBookingModalOpen(true);
+                              }}
+                              style={{
+                                border: '1px dashed rgba(16, 185, 129, 0.4)',
+                                background: 'rgba(16, 185, 129, 0.03)',
+                                borderRadius: '8px',
+                                padding: '0.85rem 0.5rem',
+                                textAlign: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              className="hover-card"
+                              title="คลิกเพื่อจองคิวนี้"
+                            >
+                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+                                🟢 ว่าง
+                              </div>
+                              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                                + คลิกจองคิว
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                      ))}
+
+                      {/* Action: Open Map / TSP for this QC */}
+                      <td style={{ padding: '0.85rem 0.75rem', textAlign: 'center', verticalAlign: 'middle' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedQcId(userSchedule.qcId);
+                            setViewMode('route_map');
+                          }}
+                          style={{
+                            padding: '0.4rem 0.75rem',
+                            borderRadius: '6px',
+                            background: 'rgba(37, 99, 235, 0.1)',
+                            border: '1px solid rgba(37, 99, 235, 0.3)',
+                            color: '#2563eb',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}
+                        >
+                          <Navigation size={12} /> ดูแผนที่ Route
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* ROUTE MAP VIEW (ORIGINAL CONTENT) */
+        <>
       {/* ORIGIN BANNER & SUMMARY METRICS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
         {/* 🏠 Origin Home Card */}
@@ -1055,6 +1434,8 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
           })}
         </div>
       </div>
+      </>
+      )}
 
       {/* MODAL 1: ADD MANUAL STOP */}
       {isAddStopModalOpen && (
@@ -1244,6 +1625,26 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
           users={users}
         />
       )}
+
+      {/* MODAL 6: QC BOOKING & SLOT LOCK MODAL */}
+      <QcBookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => {
+          setIsBookingModalOpen(false);
+          fetchTeamSchedule();
+          fetchPlan();
+        }}
+        initialDate={selectedDate}
+        currentAssigneeName={selectedUserObj?.name}
+        onSelectBooking={async ({ qcId, date, timeSlot }) => {
+          setSelectedDate(date);
+          setSelectedQcId(qcId);
+          setIsBookingModalOpen(false);
+          showToast(`✅ จองคิว QC เรียบร้อย: ${date} (${timeSlot})`, 'success');
+          fetchTeamSchedule();
+          fetchPlan();
+        }}
+      />
     </div>
   );
 };

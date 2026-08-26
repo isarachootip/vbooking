@@ -10,6 +10,7 @@ import { DesignApprovalModal } from './DesignApprovalModal';
 import { PaymentModal } from './PaymentModal';
 import { LeadTimelineModal } from './LeadTimelineModal';
 import { SearchableBranchSelect } from './SearchableBranchSelect';
+import { QcBookingModal } from './QcBookingModal';
 
 interface LeadFollowup {
   id: string;
@@ -157,6 +158,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
   const [selectedLeadForFollowup, setSelectedLeadForFollowup] = useState<Lead | null>(null);
   const [followupsList, setFollowupsList] = useState<LeadFollowup[]>([]);
+  const [isQcBookingModalOpen, setIsQcBookingModalOpen] = useState(false);
 
   // Follow-up Form states
   const [activityType, setActivityType] = useState('ให้โทรกลับ');
@@ -2295,12 +2297,35 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
               {/* APPOINTMENT DATE & TIME */}
               <div style={{ background: 'rgba(147, 51, 234, 0.05)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(147, 51, 234, 0.2)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Clock size={16} /> กำหนดนัดหมายวันเวลา
-                </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <Clock size={16} /> กำหนดนัดหมายวันเวลา & จองคิว QC
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsQcBookingModalOpen(true)}
+                    style={{
+                      padding: '0.3rem 0.75rem',
+                      borderRadius: '6px',
+                      background: 'linear-gradient(135deg, #059669, #10b981)',
+                      color: 'white',
+                      border: 'none',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                    }}
+                    className="hover-lift"
+                  >
+                    <Sparkles size={13} /> 🔍 ตรวจสอบคิวว่าง & จองคิว QC (Slot Lock)
+                  </button>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>วันที่นัดหมาย</label>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>วันที่นัดหมาย (DD/MM/YYYY)</label>
                     <CustomDateInput 
                       value={appointmentDate}
                       onChange={e => setAppointmentDate(e.target.value)}
@@ -2308,16 +2333,17 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>เวลานัดหมาย</label>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>เวลานัดหมาย / ช่วงเวลา</label>
                     <input 
-                      type="time"
+                      type="text"
                       value={appointmentTime}
                       onChange={e => setAppointmentTime(e.target.value)}
+                      placeholder="เช่น 10:00 หรือ 09:00 - 11:00 น."
                       style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ผู้รับผิดชอบ / ช่างที่จะไป site</label>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ผู้รับผิดชอบ / ช่าง QC</label>
                     <input 
                       type="text"
                       value={assigneeName}
@@ -3427,6 +3453,28 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           setSelectedLeadForTimeline(null);
         }}
         lead={selectedLeadForTimeline}
+      />
+
+      {/* QC BOOKING & REAL-TIME SLOT LOCKING MODAL */}
+      <QcBookingModal
+        isOpen={isQcBookingModalOpen}
+        onClose={() => setIsQcBookingModalOpen(false)}
+        initialDate={appointmentDate}
+        currentAssigneeName={assigneeName}
+        currentTimeSlot={appointmentTime}
+        leadInfo={selectedLeadForFollowup ? {
+          id: selectedLeadForFollowup.id,
+          customerName: selectedLeadForFollowup.customer_name,
+          customerPhone: selectedLeadForFollowup.customer_phone,
+          address: selectedLeadForFollowup.customer_address,
+          jobType: selectedLeadForFollowup.job_type
+        } : null}
+        onSelectBooking={({ qcName, date, timeSlot, timeOnly }) => {
+          setAppointmentDate(date);
+          setAppointmentTime(timeSlot || timeOnly);
+          setAssigneeName(qcName);
+          setActivityType('1.2.2 นัดลงพื้นที่ site งาน');
+        }}
       />
 
     </div>

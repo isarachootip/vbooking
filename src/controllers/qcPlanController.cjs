@@ -663,3 +663,134 @@ exports.updatePlan = async (req, res) => {
     res.status(500).json({ error: 'Failed to update QC plan' });
   }
 };
+
+// 9. Get Team Schedule & Time Slot Availability for a given date
+exports.getTeamSchedule = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date || new Date().toISOString().split('T')[0];
+
+    // 1. Get all users
+    const usersRes = await pool.query(
+      `SELECT id, name, email, avatar, global_role, department, job_types 
+       FROM users 
+       ORDER BY name ASC`
+    );
+
+    // Standard daily slots
+    const standardSlots = [
+      { slot: '09:00 - 11:00 น.', label: 'ช่วงเช้า 1 (09:00 - 11:00)' },
+      { slot: '11:30 - 13:30 น.', label: 'ช่วงเที่ยง (11:30 - 13:30)' },
+      { slot: '14:00 - 16:00 น.', label: 'ช่วงบ่าย (14:00 - 16:00)' },
+      { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)' }
+    ];
+
+    // 2. Fetch all daily plan items on targetDate
+    const planItemsRes = await pool.query(
+      `SELECT i.*, p.qc_id, p.plan_date
+       FROM qc_plan_items i
+       JOIN qc_daily_plans p ON i.plan_id = p.id
+       WHERE p.plan_date = $1`,
+      [targetDate]
+    );
+
+    // 3. Fetch all leads with appointment on targetDate
+    const leadsRes = await pool.query(
+      `SELECT id, customer_name, customer_phone, customer_address, job_type, 
+              appointment_date, appointment_type, appointment_assignee, surveyor_id,
+              site_visit_approval_status, status
+       FROM leads
+       WHERE (appointment_date LIKE $1 OR survey_date LIKE $1)`,
+      [`${targetDate}%`]
+    );
+
+    // 4. Map schedule for each QC user
+    const teamSchedule = usersRes.rows.map(u => {
+      // Find items in qc_plan_items for this user
+      const userPlanItems = planItemsRes.rows.filter(it => it.qc_id === u.id);
+      
+      // Find leads directly assigned to this user
+      const userLeads = leadsRes.rows.filter(l => 
+        l.appointment_assignee === u.name || 
+        l.surveyor_id === u.id || 
+        l.appointment_assignee === u.id
+      );
+
+      // Build slot schedule
+      const slots = standardSlots.map((s, idx) => {
+        // Check if there's a plan item matching this slot or sequence
+        const matchingPlanItem = userPlanItems.find(it => 
+          (it.time_slot && it.time_slot.includes(s.slot.split(' ')[0])) || 
+          it.sequence_order === (idx + 1)
+        );
+
+        // Check if there's an assigned lead matching this time/date
+        const matchingLead = userLeads.find(l => {
+          if (!l.appointment_date) return false;
+          const parts = l.appointment_date.split(' ');
+          const timePart = parts[1] || '';
+          if (timePart) {
+            const hour = parseInt(timePart.split(':')[0], 10);
+            if (idx === 0 && hour >= 8 && hour < 11) return true;
+            if (idx === 1 && hour >= 11 && hour < 14) return true;
+            if (idx === 2 && hour >= 14 && hour < 16) return true;
+            if (idx === 3 && hour >= 16) return true;
+          }
+          return false;
+        });
+
+        const isBooked = Boolean(matchingPlanItem || matchingLead);
+        const bookedData = matchingPlanItem ? {
+          title: matchingPlanItem.site_name,
+          customerName: matchingPlanItem.customer_name,
+          customerPhone: matchingPlanItem.customer_phone,
+          siteAddress: matchingPlanItem.site_address,
+          status: matchingPlanItem.status,
+          leadId: matchingPlanItem.lead_id,
+          projectId: matchingPlanItem.project_id
+        } : (matchingLead ? {
+          title: `นัดหมาย: ${matchingLead.customer_name}`,
+          customerName: matchingLead.customer_name,
+          customerPhone: matchingLead.customer_phone,
+          siteAddress: matchingLead.customer_address,
+          status: matchingLead.site_visit_approval_status === 'Approved' ? 'Confirmed' : 'Pending',
+          leadId: matchingLead.id,
+          appointmentType: matchingLead.appointment_type
+        } : null);
+
+        return {
+          slot: s.slot,
+          label: s.label,
+          sequence: idx + 1,
+          isBooked,
+          booking: bookedData
+        };
+      });
+
+      const bookedCount = slots.filter(s => s.isBooked).length;
+
+      return {
+        qcId: u.id,
+        qcName: u.name,
+        email: u.email,
+        avatar: u.avatar,
+        globalRole: u.global_role,
+        department: u.department,
+        totalBooked: bookedCount,
+        totalSlots: standardSlots.length,
+        isFullyBooked: bookedCount >= standardSlots.length,
+        slots
+      };
+    });
+
+    res.json({
+      date: targetDate,
+      totalQc: teamSchedule.length,
+      teamSchedule
+    });
+  } catch (err) {
+    console.error('Error fetching QC team schedule:', err);
+    res.status(500).json({ error: 'Failed to fetch team schedule' });
+  }
+};
+

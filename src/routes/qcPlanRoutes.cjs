@@ -3,6 +3,7 @@ const router = express.Router();
 const qcPlanController = require('../controllers/qcPlanController.cjs');
 
 // Route definitions for QC Daily Planning
+router.get('/team-schedule', qcPlanController.getTeamSchedule);
 router.get('/daily', qcPlanController.getDailyPlans);
 router.post('/generate', qcPlanController.generateDailyPlan);
 router.put('/:planId', qcPlanController.updatePlan);
