@@ -74,6 +74,47 @@ interface LeadsPageProps {
   users?: UserType[];
 }
 
+export interface LeadRoomDetail {
+  id: string;
+  room_name: string;
+  room_size?: string;
+  work_types: string[];
+  custom_work_type?: string;
+  notes?: string;
+}
+
+const ROOM_NAME_ICONS: Record<string, string> = {
+  'ห้องรับแขก': '🛋️',
+  'ห้องครัว': '🍳',
+  'ห้องน้ำ/ห้องส้วม': '🚿',
+  'ลาน/สนามหญ้า': '🌳',
+  'ลานซักล้าง': '🧺',
+  'ตกแต่งภายนอก': '🏡',
+  'ห้องนอน': '🛏️',
+  'ห้องโถง/ห้องรับแขก': '🏛️',
+  'สำนักงาน/ออฟฟิศ': '💼',
+  'ลานจอดรถ': '🚗',
+};
+
+const getRoomNameIcon = (name: string): string => {
+  for (const key of Object.keys(ROOM_NAME_ICONS)) {
+    if (name.includes(key)) return ROOM_NAME_ICONS[key];
+  }
+  return '🏠';
+};
+
+const RENOVATION_WORK_CARDS = [
+  { id: 'งานไฟฟ้า & แสงสว่าง', label: 'งานไฟฟ้า & แสงสว่าง', icon: '💡', color: '#d97706', bg: '#fef3c7', border: '#fcd34d' },
+  { id: 'งานปูน & ก่อฉาบ', label: 'งานปูน & ก่อฉาบ', icon: '🧱', color: '#b45309', bg: '#ffedd5', border: '#fed7aa' },
+  { id: 'งานกระเบื้อง & ปูพื้น', label: 'งานกระเบื้อง & ปูพื้น', icon: '🔲', color: '#0d9488', bg: '#ccfbf1', border: '#99f6e4' },
+  { id: 'งานประปา & สุขภัณฑ์', label: 'งานประปา & สุขภัณฑ์', icon: '💧', color: '#0284c7', bg: '#e0f2fe', border: '#bae6fd' },
+  { id: 'งานฝ้า & ทาสี', label: 'งานฝ้า & ทาสี', icon: '🎨', color: '#4f46e5', bg: '#e0e7ff', border: '#c7d2fe' },
+  { id: 'งานป้องกัน & กันซึม', label: 'งานป้องกัน & กันซึม', icon: '🛡️', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
+  { id: 'งานประตู-หน้าต่าง & กระจก', label: 'ประตู-หน้าต่าง & กระจก', icon: '🪟', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+  { id: 'งานบิวท์อิน & ตกแต่ง', label: 'งานบิวท์อิน & ตกแต่ง', icon: '🚪', color: '#9333ea', bg: '#fae8ff', border: '#f5d0fe' },
+  { id: 'งานอื่นๆ', label: 'อื่นๆ (ระบุเอง)', icon: '🔧', color: '#7c3aed', bg: '#ede9fe', border: '#ddd6fe' },
+];
+
 export const formatLeadCode = (lead: { id: string; created_at?: string } | null | undefined): string => {
   if (!lead || !lead.id) return 'LD-20260824-00001';
 
@@ -310,6 +351,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [initialBudget, setInitialBudget] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('โอนเข้าบัญชีธนาคาร');
   const [workAreas, setWorkAreas] = useState<string[]>([]);
+  const [leadRoomDetails, setLeadRoomDetails] = useState<LeadRoomDetail[]>([]);
   const [requiredWorkTypes, setRequiredWorkTypes] = useState<string[]>([]);
   const [customRequiredWorkType, setCustomRequiredWorkType] = useState('');
   const [notes, setNotes] = useState('');
@@ -739,9 +781,47 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   };
 
   const toggleWorkArea = (area: string) => {
-    setWorkAreas(prev => 
-      prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]
+    if (workAreas.includes(area)) {
+      setWorkAreas(prev => prev.filter(a => a !== area));
+      setLeadRoomDetails(prev => prev.filter(r => r.room_name !== area));
+    } else {
+      setWorkAreas(prev => [...prev, area]);
+      setLeadRoomDetails(prev => [
+        ...prev,
+        {
+          id: `room_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          room_name: area,
+          room_size: '',
+          work_types: [],
+          custom_work_type: '',
+          notes: ''
+        }
+      ]);
+    }
+  };
+
+  const toggleRoomWorkType = (roomId: string, workTypeId: string) => {
+    setLeadRoomDetails(prev =>
+      prev.map(r => {
+        if (r.id !== roomId) return r;
+        const exists = r.work_types.includes(workTypeId);
+        const updated = exists
+          ? r.work_types.filter(w => w !== workTypeId)
+          : [...r.work_types, workTypeId];
+        return { ...r, work_types: updated };
+      })
     );
+  };
+
+  const updateLeadRoomField = (roomId: string, field: 'room_size' | 'custom_work_type' | 'notes', value: string) => {
+    setLeadRoomDetails(prev =>
+      prev.map(r => (r.id === roomId ? { ...r, [field]: value } : r))
+    );
+  };
+
+  const removeLeadRoom = (roomId: string, roomName: string) => {
+    setLeadRoomDetails(prev => prev.filter(r => r.id !== roomId));
+    setWorkAreas(prev => prev.filter(a => a !== roomName));
   };
 
   const toggleRequiredWorkType = (type: string) => {
@@ -771,6 +851,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       initialBudget,
       paymentMethod,
       workAreas,
+      roomDetails: leadRoomDetails,
       requiredWorkTypes: requiredWorkTypes.map(t => t === 'งานอื่นๆ' && customRequiredWorkType ? `งานอื่นๆ: ${customRequiredWorkType}` : t),
       customRequiredWorkType,
       branch
@@ -928,6 +1009,20 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           setInitialBudget(details.initialBudget || '');
           setPaymentMethod(details.paymentMethod || 'โอนเข้าบัญชีธนาคาร');
           setWorkAreas(details.workAreas || []);
+          if (Array.isArray(details.roomDetails) && details.roomDetails.length > 0) {
+            setLeadRoomDetails(details.roomDetails);
+          } else if (Array.isArray(details.workAreas) && details.workAreas.length > 0) {
+            setLeadRoomDetails(details.workAreas.map((area: string, idx: number) => ({
+              id: `room_${idx}_${Date.now()}`,
+              room_name: area,
+              room_size: '',
+              work_types: [],
+              custom_work_type: '',
+              notes: ''
+            })));
+          } else {
+            setLeadRoomDetails([]);
+          }
 
           const reqTypes: string[] = details.requiredWorkTypes || [];
           const hasCustomOther = reqTypes.some(t => t.startsWith('งานอื่นๆ:'));
@@ -994,6 +1089,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       setInitialBudget('');
       setPaymentMethod('โอนเข้าบัญชีธนาคาร');
       setWorkAreas([]);
+      setLeadRoomDetails([]);
       setRequiredWorkTypes([]);
       setCustomRequiredWorkType('');
       setNotes('');
@@ -3302,7 +3398,14 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
                     {/* พื้นที่งาน Checkboxes Panel */}
                     <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>พื้นที่งาน (Work Areas)</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>พื้นที่งาน (Work Areas)</span>
+                        {workAreas.length > 0 && (
+                          <span style={{ fontSize: '0.72rem', color: 'var(--accent-primary)', fontWeight: 700 }}>
+                            เลือกแล้ว {workAreas.length} ห้อง
+                          </span>
+                        )}
+                      </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
                         {[
                           'ห้องรับแขก', 'ห้องครัว', 'ห้องน้ำ/ห้องส้วม',
@@ -3321,6 +3424,188 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                         ))}
                       </div>
                     </div>
+
+                    {/* DYNAMIC ROOM-BY-ROOM CARDS PANEL */}
+                    {leadRoomDetails.length > 0 && (
+                      <div style={{
+                        border: '1.5px solid rgba(168, 85, 247, 0.4)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '0.85rem',
+                        background: 'linear-gradient(180deg, rgba(168, 85, 247, 0.04), rgba(59, 130, 246, 0.04))',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.75rem'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span>📋</span> รายละเอียดและงานที่ต้องทำแยกตามห้อง ({leadRoomDetails.length} ห้อง)
+                          </span>
+                          <span style={{ fontSize: '0.72rem', background: '#ede9fe', color: '#6d28d9', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: 700 }}>
+                            {leadRoomDetails.length} ห้อง
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {leadRoomDetails.map((room, rIdx) => (
+                            <div
+                              key={room.id}
+                              style={{
+                                background: 'var(--bg-secondary)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '10px',
+                                overflow: 'hidden',
+                                boxShadow: 'var(--shadow-sm)',
+                                display: 'flex',
+                                flexDirection: 'column'
+                              }}
+                            >
+                              {/* Room Header */}
+                              <div style={{
+                                padding: '0.5rem 0.75rem',
+                                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(59, 130, 246, 0.12))',
+                                borderBottom: '1px solid var(--border-color)',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <span style={{ fontSize: '1.1rem' }}>{getRoomNameIcon(room.room_name)}</span>
+                                  <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                                    ห้องที่ {rIdx + 1}: {room.room_name}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeLeadRoom(room.id, room.room_name)}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#ef4444',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    padding: '0.2rem 0.4rem',
+                                    borderRadius: '4px'
+                                  }}
+                                  title="ยกเลิกห้องนี้"
+                                >
+                                  ✕ ลบห้องนี้
+                                </button>
+                              </div>
+
+                              {/* Room Content */}
+                              <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                {/* Room Size */}
+                                <div>
+                                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#2563eb', marginBottom: '0.25rem' }}>
+                                    📐 ขนาดห้อง / พื้นที่
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={room.room_size || ''}
+                                    onChange={e => updateLeadRoomField(room.id, 'room_size', e.target.value)}
+                                    placeholder="เช่น 4 x 5 ม. (20 ตร.ม.) หรือ สูง 2.8 ม."
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.4rem 0.6rem',
+                                      background: 'var(--bg-tertiary)',
+                                      border: '1px solid var(--border-color)',
+                                      borderRadius: '6px',
+                                      fontSize: '0.8rem',
+                                      color: 'var(--text-primary)',
+                                      outline: 'none'
+                                    }}
+                                  />
+                                </div>
+
+                                {/* Work types for this room */}
+                                <div>
+                                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#7c3aed', marginBottom: '0.35rem' }}>
+                                    ⚡ งานที่ต้องทำใน {room.room_name} (คลิกเลือกการ์ดงานด้านล่าง):
+                                  </label>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.35rem' }}>
+                                    {RENOVATION_WORK_CARDS.map(work => {
+                                      const isSelected = room.work_types.includes(work.id);
+                                      return (
+                                        <button
+                                          key={work.id}
+                                          type="button"
+                                          onClick={() => toggleRoomWorkType(room.id, work.id)}
+                                          style={{
+                                            padding: '0.4rem 0.5rem',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            border: isSelected ? `2px solid ${work.color}` : '1px solid var(--border-color)',
+                                            background: isSelected ? work.bg : 'var(--bg-tertiary)',
+                                            color: isSelected ? work.color : 'var(--text-secondary)',
+                                            fontWeight: isSelected ? 700 : 500,
+                                            fontSize: '0.74rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.3rem',
+                                            textAlign: 'left',
+                                            transition: 'all 0.15s ease'
+                                          }}
+                                        >
+                                          <span>{work.icon}</span>
+                                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{work.label}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Custom input if อื่นๆ is selected */}
+                                  {room.work_types.includes('งานอื่นๆ') && (
+                                    <div style={{ marginTop: '0.35rem' }}>
+                                      <input
+                                        type="text"
+                                        value={room.custom_work_type || ''}
+                                        onChange={e => updateLeadRoomField(room.id, 'custom_work_type', e.target.value)}
+                                        placeholder="ระบุงานอื่นๆ สำหรับห้องนี้ เช่น งานติดตั้งพัดลมดูดอากาศ, งานเจาะผนัง..."
+                                        style={{
+                                          width: '100%',
+                                          padding: '0.35rem 0.6rem',
+                                          background: '#f5f3ff',
+                                          border: '1.5px solid #8b5cf6',
+                                          borderRadius: '6px',
+                                          fontSize: '0.78rem',
+                                          color: '#5b21b6',
+                                          outline: 'none'
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Room Notes */}
+                                <div>
+                                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
+                                    📝 รายละเอียด / ปัญหาเฉพาะห้องนี้
+                                  </label>
+                                  <textarea
+                                    rows={2}
+                                    value={room.notes || ''}
+                                    onChange={e => updateLeadRoomField(room.id, 'notes', e.target.value)}
+                                    placeholder="ระบุความต้องการเฉพาะ หรือสภาพเดิมของห้องนี้..."
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.35rem 0.6rem',
+                                      background: 'var(--bg-tertiary)',
+                                      border: '1px solid var(--border-color)',
+                                      borderRadius: '6px',
+                                      fontSize: '0.78rem',
+                                      color: 'var(--text-primary)',
+                                      outline: 'none',
+                                      resize: 'vertical'
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* ประเภทงานที่ต้องการ Checkboxes Panel WITH CUSTOM INPUT */}
                     <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
