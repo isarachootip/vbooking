@@ -70,10 +70,28 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
   // Destination Options
   const [saveAsQuotation, setSaveAsQuotation] = useState(true);
   const [saveAsWbs, setSaveAsWbs] = useState(true);
-  const [targetProjectId, setTargetProjectId] = useState(defaultProjectId || (projects[0]?.id || ''));
+  const [internalProjects, setInternalProjects] = useState<any[]>(projects || []);
+  const [targetProjectId, setTargetProjectId] = useState<string>(defaultProjectId || '__NEW_PROJECT__');
   const [replaceExistingTasks, setReplaceExistingTasks] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      fetch('/api/projects')
+        .then(r => r.json())
+        .then(d => {
+          const list = Array.isArray(d) ? d : (d.data || []);
+          setInternalProjects(list);
+          if (defaultProjectId) {
+            setTargetProjectId(defaultProjectId);
+          } else if (!targetProjectId || targetProjectId === '') {
+            setTargetProjectId(list.length > 0 ? list[0].id : '__NEW_PROJECT__');
+          }
+        })
+        .catch(err => console.error('Fetch projects error:', err));
+    }
+  }, [isOpen, defaultProjectId]);
 
   if (!isOpen) return null;
 
@@ -269,13 +287,40 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
 
       // 2. Import into Project WBS if checked
       if (saveAsWbs) {
-        if (!targetProjectId) {
-          alert('กรุณาเลือกโครงการปลายทางที่จะนำเข้า WBS');
-          setIsSaving(false);
-          return;
+        let finalProjectId = targetProjectId;
+
+        if (!finalProjectId || finalProjectId === '__NEW_PROJECT__') {
+          // Auto create project
+          const projName = customerName ? `[Renovate Service] ${customerName}` : `[Renovate Service] โครงการใหม่ (${quotationNumber})`;
+          const today = new Date().toISOString().split('T')[0];
+          const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+
+          const createRes = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: projName,
+              description: `โครงการที่สร้างจากการสแกนใบเสนอราคา ${quotationNumber} (${customerName || 'ลูกค้า'})`,
+              projectType: 'Renovate Service',
+              status: 'In Progress',
+              priority: 'High',
+              startDate: today,
+              endDate: nextMonth,
+              address: customerAddress || '',
+              budget: grandTotal,
+              projectValue: grandTotal
+            })
+          });
+
+          if (!createRes.ok) {
+            const errD = await createRes.json().catch(() => ({}));
+            throw new Error(errD.error || 'ไม่สามารถสร้างโครงการใหม่ได้');
+          }
+          const newProj = await createRes.json();
+          finalProjectId = newProj.id;
         }
 
-        const wbsRes = await fetch(`/api/quotations/import-boq-wbs/${targetProjectId}`, {
+        const wbsRes = await fetch(`/api/quotations/import-boq-wbs/${finalProjectId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -730,7 +775,7 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
                         onChange={e => setTargetProjectId(e.target.value)}
                         style={{
                           width: '100%',
-                          padding: '0.4rem 0.6rem',
+                          padding: '0.45rem 0.65rem',
                           borderRadius: '4px',
                           border: '1px solid var(--border-color)',
                           background: 'var(--bg-tertiary)',
@@ -739,7 +784,10 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
                           fontWeight: 600
                         }}
                       >
-                        {projects.map(p => (
+                        <option value="__NEW_PROJECT__" style={{ color: '#10b981', fontWeight: 700 }}>
+                          ✨ + สร้างเป็นโครงการใหม่ทันที (Auto-create New Project)
+                        </option>
+                        {internalProjects.map(p => (
                           <option key={p.id} value={p.id}>
                             🏢 {p.name} ({p.projectType || 'Renovate'})
                           </option>

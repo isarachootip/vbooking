@@ -1660,8 +1660,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       </div>
 
       {/* ── LEADS TABLE ── */}
-      <div className="glass-panel" style={{ padding: 0, overflow: 'hidden', width: '100%', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-        <div style={{ overflowX: 'auto', width: '100%' }}>
+      <div className="glass-panel" style={{ padding: 0, overflow: 'visible', width: '100%', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
+        <div style={{ overflowX: 'auto', width: '100%', minHeight: sortedLeads.length <= 2 ? '360px' : 'auto', paddingBottom: activeActionMenuLeadId ? '120px' : '0', transition: 'padding-bottom 0.15s ease' }}>
           <table className="leads-table" style={{ width: '100%', minWidth: '1100px', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }}>
@@ -1902,14 +1902,15 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                               <div
                                 style={{
                                   position: 'absolute',
-                                  top: 'calc(100% + 4px)',
+                                  top: index >= 2 && index >= sortedLeads.length - 2 ? 'auto' : 'calc(100% + 4px)',
+                                  bottom: index >= 2 && index >= sortedLeads.length - 2 ? 'calc(100% + 4px)' : 'auto',
                                   right: 0,
-                                  width: '230px',
+                                  width: '235px',
                                   background: 'var(--bg-primary)',
                                   border: '1px solid var(--border-color)',
                                   borderRadius: '8px',
-                                  boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
-                                  zIndex: 100,
+                                  boxShadow: '0 16px 36px rgba(0,0,0,0.3)',
+                                  zIndex: 999,
                                   padding: '0.35rem 0',
                                   display: 'flex',
                                   flexDirection: 'column',
