@@ -101,6 +101,8 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
 
   const getStatusColor = (status: string) => {
     const mapping: Record<string, string> = {
+      'To Do': '#2563eb',
+      'In Progress': '#0284c7',
       'ซื้อสำรวจ': '#0284c7',
       'QC (สำรวจ)': '#d97706',
       'ออกแบบ': '#7c3aed',
@@ -109,16 +111,16 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
       'ชำระเงิน': '#059669',
       'ดำเนินการโครงการ': '#0d9488',
       'ช่าง check-in/check out siteงาน': '#0891b2',
-      'Project complete': '#2563eb',
+      'Project complete': '#16a34a',
       'QC (ส่งมอบ)': '#4f46e5',
       'aftersales': '#ea580c',
       'ปิดjob': '#9333ea',
       'Active': '#059669',
       'Planning': '#475569',
-      'Completed': '#9333ea',
+      'Completed': '#16a34a',
       'On Hold': '#d97706'
     };
-    return mapping[status] || 'var(--accent-primary)';
+    return mapping[status] || '#2563eb';
   };
 
   return (
@@ -127,10 +129,10 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
       {/* Header section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', flexShrink: 0 }}>
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Calendar size={24} color="var(--accent-primary)" /> ปฏิทินไทม์ไลน์โครงการ (Project Calendar Timeline)
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#8B0000' }}>
+            <Calendar size={26} color="#8B0000" /> ปฏิทินไทม์ไลน์โครงการ (Project Calendar Timeline)
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+          <p style={{ color: '#000000', fontSize: '0.9rem', fontWeight: 600, margin: '0.2rem 0 0 0' }}>
             ภาพรวมตารางเวลาและกำหนดการดำเนินโครงการก่อสร้างติดตั้งทั้งหมดรายเดือน
           </p>
         </div>
@@ -139,7 +141,7 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           
           {/* Project type filter */}
-          <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.35rem', background: 'var(--bg-secondary)', padding: '0.3rem', borderRadius: '8px', border: '1.5px solid var(--border-color)', flexWrap: 'wrap' }}>
             {[
               { id: 'all', label: 'แสดงทั้งหมด' },
               ...masterProjectTypes.filter((t: any) => t.isActive !== false).map((t: any) => ({ id: t.id, label: t.badgeText || t.name }))
@@ -148,15 +150,16 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                 key={t.id}
                 onClick={() => setFilterType(t.id)}
                 style={{
-                  padding: '0.4rem 0.85rem',
-                  border: 'none',
+                  padding: '0.45rem 0.9rem',
+                  border: filterType === t.id ? '1.5px solid #700000' : '1px solid var(--border-color)',
                   borderRadius: '6px',
-                  background: filterType === t.id ? 'var(--accent-primary)' : 'transparent',
-                  color: filterType === t.id ? 'white' : 'var(--text-secondary)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
+                  background: filterType === t.id ? '#8B0000' : 'var(--bg-tertiary)',
+                  color: filterType === t.id ? '#ffffff' : '#000000',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
                   cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  boxShadow: filterType === t.id ? '0 2px 8px rgba(139,0,0,0.3)' : 'none',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 {t.label}
@@ -166,30 +169,30 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
 
 
           {/* Month selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.25rem 0.5rem' }}>
-            <button onClick={prevMonth} title="เดือนก่อนหน้า" style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.25rem', borderRadius: '4px' }} className="hover-lift">
-              <ChevronLeft size={16} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', borderRadius: '8px', padding: '0.3rem 0.6rem' }}>
+            <button onClick={prevMonth} title="เดือนก่อนหน้า" style={{ background: 'transparent', border: 'none', color: '#000000', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.25rem', borderRadius: '4px' }} className="hover-lift">
+              <ChevronLeft size={18} />
             </button>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, minWidth: '120px', textAlign: 'center', color: 'var(--text-primary)' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 800, minWidth: '130px', textAlign: 'center', color: '#000000' }}>
               {monthLabel}
             </span>
-            <button onClick={nextMonth} title="เดือนถัดไป" style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.25rem', borderRadius: '4px' }} className="hover-lift">
-              <ChevronRight size={16} />
+            <button onClick={nextMonth} title="เดือนถัดไป" style={{ background: 'transparent', border: 'none', color: '#000000', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.25rem', borderRadius: '4px' }} className="hover-lift">
+              <ChevronRight size={18} />
             </button>
             <button
               type="button"
               onClick={goToToday}
               style={{
-                marginLeft: '0.25rem',
-                padding: '0.25rem 0.65rem',
-                fontSize: '0.72rem',
+                marginLeft: '0.35rem',
+                padding: '0.3rem 0.75rem',
+                fontSize: '0.78rem',
                 fontWeight: 700,
-                borderRadius: '5px',
-                border: isCurrentMonthNow() ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                background: isCurrentMonthNow() ? 'rgba(37, 99, 235, 0.15)' : 'var(--bg-primary)',
-                color: isCurrentMonthNow() ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                borderRadius: '6px',
+                border: isCurrentMonthNow() ? '1.5px solid #8B0000' : '1.5px solid var(--border-color)',
+                background: isCurrentMonthNow() ? 'rgba(139, 0, 0, 0.12)' : 'var(--bg-tertiary)',
+                color: isCurrentMonthNow() ? '#8B0000' : '#000000',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.15s'
               }}
               className="hover-lift"
               title="กลับไปที่เดือนปัจจุบัน"
@@ -234,10 +237,10 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
             <div style={{
               width: '240px',
               padding: '1rem',
-              fontWeight: 700,
-              fontSize: '0.75rem',
-              color: 'var(--text-primary)',
-              borderRight: '1px solid var(--border-color)',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              color: '#000000',
+              borderRight: '1.5px solid var(--border-color)',
               flexShrink: 0,
               background: 'var(--bg-tertiary)',
               position: 'sticky',
@@ -258,10 +261,11 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                   justifyContent: 'center',
                   padding: '0.4rem 0',
                   borderRight: '1px solid var(--border-color)',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  background: 'var(--bg-tertiary)'
                 }}>
-                  <span style={{ fontSize: '0.55rem', fontWeight: 600, color: getDayNameColor(d) }}>{getDayName(d)}</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: getDayNameColor(d), marginTop: '0.1rem' }}>{d}</span>
+                  <span style={{ fontSize: '0.62rem', fontWeight: 800, color: getDayNameColor(d) }}>{getDayName(d)}</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: getDayNameColor(d), marginTop: '0.1rem' }}>{d}</span>
                 </div>
               ))}
             </div>
@@ -270,7 +274,7 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
           {/* Table Body rows */}
           <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
             {filteredProjects.length === 0 ? (
-              <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-secondary)', width: '100%' }}>
+              <div style={{ padding: '4rem', textAlign: 'center', color: '#000000', fontWeight: 700, width: '100%' }}>
                 ไม่มีโครงการในเงื่อนไขการกรองหรือช่วงเวลานี้
               </div>
             ) : (
@@ -289,7 +293,7 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                     <div style={{
                       width: '240px',
                       padding: '0.85rem 1rem',
-                      borderRight: '1px solid var(--border-color)',
+                      borderRight: '1.5px solid var(--border-color)',
                       flexShrink: 0,
                       background: 'var(--bg-secondary)',
                       position: 'sticky',
@@ -298,24 +302,24 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'center',
-                      gap: '0.2rem'
+                      gap: '0.25rem'
                     }}>
-                      <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-primary)', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={proj.name}>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#000000', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={proj.name}>
                         {proj.name}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <span style={{
-                          fontSize: '0.65rem',
-                          background: `${getStatusColor(proj.status)}25`,
-                          color: getStatusColor(proj.status),
-                          border: `1px solid ${getStatusColor(proj.status)}40`,
-                          padding: '0.15rem 0.45rem',
+                          fontSize: '0.68rem',
+                          background: getStatusColor(proj.status),
+                          color: '#ffffff',
+                          border: '1px solid rgba(0,0,0,0.15)',
+                          padding: '0.15rem 0.5rem',
                           borderRadius: '4px',
-                          fontWeight: 700
+                          fontWeight: 800
                         }}>
                           {proj.status}
                         </span>
-                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#000000', fontWeight: 700 }}>
                           {(() => {
                             const matchType = masterProjectTypes.find((t: any) => t.id === proj.projectType);
                             return matchType ? matchType.name : (proj.projectType || 'ก่อสร้าง');
@@ -334,7 +338,7 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                           <div key={d} style={{
                             width: '32px',
                             borderRight: '1px solid var(--border-color)',
-                            opacity: 0.5,
+                            opacity: 0.6,
                             height: '100%',
                             flexShrink: 0
                           }} />
@@ -346,16 +350,17 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                         <div style={{
                           position: 'absolute',
                           left: `${(barLayout.startCol - 1) * 32 + 4}px`,
-                          width: `${barLayout.span * 32 - 8}px`,
-                          height: '34px',
-                          background: `linear-gradient(135deg, ${getStatusColor(proj.status)}, ${getStatusColor(proj.status)}dd)`,
+                          width: `${Math.max(barLayout.span * 32 - 8, 32)}px`,
+                          height: '36px',
+                          background: getStatusColor(proj.status),
+                          border: '1.5px solid rgba(0, 0, 0, 0.25)',
                           borderRadius: '6px',
                           display: 'flex',
                           alignItems: 'center',
                           padding: '0 0.5rem',
                           color: '#ffffff',
-                          textShadow: '0 1px 3px rgba(0, 0, 0, 0.8)',
-                          boxShadow: '0 3px 8px rgba(0, 0, 0, 0.15)',
+                          textShadow: '0 1px 2px rgba(0, 0, 0, 0.9)',
+                          boxShadow: '0 3px 8px rgba(0, 0, 0, 0.2)',
                           cursor: 'pointer',
                           zIndex: 2,
                           overflow: 'hidden',
@@ -368,7 +373,7 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                           {barLayout.isStartsBefore && (
                             <span style={{ marginRight: '0.2rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>◀</span>
                           )}
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, textShadow: '0 1px 3px rgba(0,0,0,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.9)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {proj.name} {proj.address ? `(📍 ${proj.address})` : ''}
                           </span>
                           {barLayout.isEndsAfter && (
