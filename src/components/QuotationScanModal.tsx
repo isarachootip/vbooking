@@ -90,6 +90,27 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
     }
   };
 
+  const handleOneClickDemoScan = () => {
+    setQuotationNumber('QT-202608-009');
+    setIssueDate(new Date().toISOString().split('T')[0]);
+    setCustomerName('คุณจงใจ มานิด');
+    setCustomerPhone('0819876543');
+    setCustomerAddress('88/12 ซอยสุขุมวิท 101/1 แขวงบางจาก เขตพระโขนง กรุงเทพฯ 10260');
+    setItems([
+      { id: 'item_1', service_name: 'งานเตรียมพื้นที่ กั้นโซนพลาสติกป้องกันฝุ่น ปูแผ่นกันรอยพื้น', quantity: 1, unit_type: 'งาน', unit_price: 3500, total_price: 3500, trade: 'งานรื้อถอน', trade_color: '#ef4444', estimated_hours: 8 },
+      { id: 'item_2', service_name: 'งานรื้อถอนกระเบื้องเดิม สุขภัณฑ์เดิม และขนย้ายเศษวัสดุไปทิ้ง', quantity: 1, unit_type: 'งาน', unit_price: 6500, total_price: 6500, trade: 'งานรื้อถอน', trade_color: '#ef4444', estimated_hours: 16 },
+      { id: 'item_3', service_name: 'งานเดินท่อน้ำดี PPR และท่อน้ำทิ้ง PVC พร้อมทดสอบแรงดันน้ำ', quantity: 3, unit_type: 'จุด', unit_price: 1200, total_price: 3600, trade: 'งานประปา', trade_color: '#3b82f6', estimated_hours: 12 },
+      { id: 'item_4', service_name: 'งานกรีดผนังร้อยท่อสายไฟเมน ติดตั้งเต้ารับ ปลั๊ก และสวิตช์', quantity: 8, unit_type: 'จุด', unit_price: 550, total_price: 4400, trade: 'งานไฟฟ้า', trade_color: '#f59e0b', estimated_hours: 16 },
+      { id: 'item_5', service_name: 'งานติดตั้งโครงคร่าว C-Line และแผ่นฝ้าเพดานยิปซัมกันชื้น', quantity: 25, unit_type: 'ตร.ม.', unit_price: 380, total_price: 9500, trade: 'งานฝ้าเพดาน', trade_color: '#8b5cf6', estimated_hours: 16 },
+      { id: 'item_6', service_name: 'งานเทปูนปรับระดับพื้น ทากันซึม และปูกระเบื้องพื้นผนังพร้อมยาแนว', quantity: 40, unit_type: 'ตร.ม.', unit_price: 450, total_price: 18000, trade: 'งานปูกระเบื้อง', trade_color: '#06b6d4', estimated_hours: 24 },
+      { id: 'item_7', service_name: 'งานฉาบสกิมโค้ท ทาสีรองพื้นปูนเก่า และทาสีจริงกึ่งเงา 2 เที่ยว', quantity: 55, unit_type: 'ตร.ม.', unit_price: 160, total_price: 8800, trade: 'งานทาสี', trade_color: '#ec4899', estimated_hours: 16 },
+      { id: 'item_8', service_name: 'งานติดตั้งสุขภัณฑ์ห้องน้ำ ชักโครก อ่างล้างหน้า ฝักบัว และฉากกั้น', quantity: 1, unit_type: 'ชุด', unit_price: 4500, total_price: 4500, trade: 'งานสุขภัณฑ์', trade_color: '#10b981', estimated_hours: 8 },
+      { id: 'item_9', service_name: 'งานติดตั้งโคมไฟดาวน์ไลท์ LED และพัดลมระบายอากาศ', quantity: 6, unit_type: 'ชุด', unit_price: 650, total_price: 3900, trade: 'งานไฟฟ้า', trade_color: '#f59e0b', estimated_hours: 6 },
+      { id: 'item_10', service_name: 'งานทำความสะอาด Deep Clean เคลียร์พื้นที่ และตรวจรับส่งมอบ', quantity: 1, unit_type: 'งาน', unit_price: 2000, total_price: 2000, trade: 'งานติดตั้งทั่วไป', trade_color: '#6b7280', estimated_hours: 6 }
+    ]);
+    setScanStep('review');
+  };
+
   const loadSampleData = () => {
     const sample = `เลขที่เอกสาร: QT-202608-009
 วันที่: 28/08/2026
@@ -98,17 +119,18 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
 สถานที่ติดตั้ง: 88/12 ซอยสุขุมวิท 101/1 แขวงบางจาก เขตพระโขนง กทม.
 
 รายการงานและรายละเอียด BOQ:
-1. งานรื้อถอนกระเบื้องและสุขภัณฑ์เดิม พร้อมขนเศษทิ้ง	1	งาน	6,500	6,500
-2. งานเดินท่อน้ำดี PPR และท่อน้ำทิ้ง PVC ใหม่	3	จุด	1,200	3,600
-3. งานเดินสายไฟเมน ร้อยท่อ ติดตั้งเต้ารับและสวิตช์	8	จุด	550	4,400
-4. งานติดตั้งโครงคร่าว C-Line และฝ้าเพดานกันชื้น	20	ตร.ม.	380	7,600
-5. งานปูกระเบื้องพื้นและผนังห้องน้ำ พร้อมยาแนว	35	ตร.ม.	420	14,700
-6. งานทาสีรองพื้นปูนเก่าและทาสีจริงกึ่งเงา	45	ตร.ม.	150	6,750
-7. งานติดตั้งสุขภัณฑ์ ชักโครก อ่างล้างหน้า ฝักบัว	1	ชุด	3,500	3,500
-8. งานติดตั้งโคมไฟดาวน์ไลท์ LED และพัดลมดูดอากาศ	4	ชุด	650	2,600
-9. งานทำความสะอาดเคลียร์พื้นที่ และตรวจรับส่งมอบ	1	งาน	2,000	2,000
+1. งานเตรียมพื้นที่ กั้นโซนพลาสติกป้องกันฝุ่น ปูแผ่นกันรอยพื้น	1	งาน	3,500	3,500
+2. งานรื้อถอนกระเบื้องและสุขภัณฑ์เดิม พร้อมขนเศษทิ้ง	1	งาน	6,500	6,500
+3. งานเดินท่อน้ำดี PPR และท่อน้ำทิ้ง PVC ใหม่	3	จุด	1,200	3,600
+4. งานเดินสายไฟเมน ร้อยท่อ ติดตั้งเต้ารับและสวิตช์	8	จุด	550	4,400
+5. งานติดตั้งโครงคร่าว C-Line และฝ้าเพดานกันชื้น	25	ตร.ม.	380	9,500
+6. งานปูกระเบื้องพื้นและผนังห้องน้ำ พร้อมยาแนว	40	ตร.ม.	450	18,000
+7. งานทาสีรองพื้นปูนเก่าและทาสีจริงกึ่งเงา	55	ตร.ม.	160	8,800
+8. งานติดตั้งสุขภัณฑ์ ชักโครก อ่างล้างหน้า ฝักบัว	1	ชุด	4,500	4,500
+9. งานติดตั้งโคมไฟดาวน์ไลท์ LED และพัดลมดูดอากาศ	6	ชุด	650	3,900
+10. งานทำความสะอาดเคลียร์พื้นที่ และตรวจรับส่งมอบ	1	งาน	2,000	2,000
 
-ยอดรวมทั้งสิ้น: 51,650 บาท`;
+ยอดรวมทั้งสิ้น: 64,700 บาท`;
     setPastedText(sample);
   };
 
@@ -484,6 +506,86 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
                   />
                 </div>
               )}
+
+              {/* Sample Files Download & Instant Demo Bar */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                borderRadius: 'var(--radius-md)',
+                padding: '0.85rem 1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.6rem'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    📥 ตัวอย่างเอกสาร BOQ สำหรับทดลองระบบ (Sample Files):
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleOneClickDemoScan}
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.4rem 0.9rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                    }}
+                    className="hover-lift"
+                  >
+                    <Sparkles size={14} /> ⚡ 1-Click Demo (สแกนตัวอย่างทันที)
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  <a
+                    href="/samples/sample_boq_renovate.csv"
+                    download="sample_boq_renovate.csv"
+                    style={{
+                      textDecoration: 'none',
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      color: '#10b981',
+                      padding: '0.4rem 0.75rem',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <FileSpreadsheet size={15} /> 📊 ดาวน์โหลดไฟล์ตัวอย่าง CSV (Excel)
+                  </a>
+                  <a
+                    href="/samples/sample_boq_renovate.txt"
+                    download="sample_boq_renovate.txt"
+                    style={{
+                      textDecoration: 'none',
+                      background: 'rgba(59, 130, 246, 0.12)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      color: '#3b82f6',
+                      padding: '0.4rem 0.75rem',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <FileText size={15} /> 📄 ดาวน์โหลดไฟล์ตัวอย่าง TXT (Text)
+                  </a>
+                </div>
+              </div>
 
               {/* Supported Trades Preview */}
               <div style={{ background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', padding: '0.85rem 1rem', border: '1px solid var(--border-color)' }}>
