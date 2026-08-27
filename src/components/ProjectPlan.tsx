@@ -1167,90 +1167,94 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
                     const statusColors = getStatusColor(m.status);
 
                     return (
-                      <div key={m.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', overflow: 'hidden' }}>
+                      <div key={m.id} style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
                         {/* Milestone row */}
-                        <div style={{ padding: '1rem 1.25rem', display: 'grid', gridTemplateColumns: '28px 2fr 1fr 1fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'center', cursor: 'pointer' }} onClick={() => toggleMilestone(m.id)}>
+                        <div style={{ padding: '1rem 1.25rem', display: 'grid', gridTemplateColumns: '28px 2fr 1fr 1fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'center', cursor: 'pointer', background: 'var(--bg-secondary)' }} onClick={() => toggleMilestone(m.id)}>
                         {/* Expand icon */}
-                        <span style={{ color: '#6b7280' }}>
-                          {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        <span style={{ color: 'var(--text-primary)', display: 'flex', alignItems: 'center' }}>
+                          {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                         </span>
                         {/* Title */}
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', fontWeight: 700 }}>MAIN</span>
-                            <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'white' }}>{m.title}</span>
+                            <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem', borderRadius: '5px', background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.3)', fontWeight: 800 }}>MAIN</span>
+                            <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{m.title}</span>
                           </div>
-                          <p style={{ fontSize: '0.875rem', color: '#9ca3af', marginTop: '0.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px' }}>{m.description}</p>
+                          {m.description && (
+                            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }}>{m.description}</p>
+                          )}
                         </div>
                         {/* Dates */}
-                        <div style={{ fontSize: '0.9rem', color: '#d1d5db' }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                           {m.startDate && m.endDate ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                               <span>{formatToDDMMYYYY(m.startDate)}</span>
-                              <ArrowRight size={10} />
+                              <ArrowRight size={12} style={{ color: 'var(--text-secondary)' }} />
                               <span>{formatToDDMMYYYY(m.endDate)}</span>
                             </div>
-                          ) : <span style={{ color: '#4b5563' }}>Not scheduled</span>}
+                          ) : <span style={{ color: 'var(--text-muted)' }}>ยังไม่กำหนดวัน</span>}
                         </div>
                         {/* Hours */}
-                        <span style={{ fontSize: '1rem', fontWeight: 700, color: 'white' }}>{m.estimatedHours}h</span>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#f59e0b' }}>{m.estimatedHours}h</span>
                         {/* Owner */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <img src={getAssigneeAvatar(m.assigneeId)} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%' }} />
-                          <span style={{ fontSize: '0.9rem', color: '#d1d5db' }}>{getAssigneeName(m.assigneeId)}</span>
+                          <img src={getAssigneeAvatar(m.assigneeId)} alt="" style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1px solid var(--border-color)' }} />
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>{getAssigneeName(m.assigneeId)}</span>
                         </div>
                         {/* Status + Progress */}
                         <div>
-                          <span style={{ fontSize: '0.82rem', padding: '0.2rem 0.6rem', borderRadius: '6px', background: statusColors.bg, color: statusColors.text, border: `1px solid ${statusColors.border}33`, fontWeight: 600 }}>{m.status}</span>
-                          <div style={{ marginTop: '0.35rem', width: '80px', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
-                            <div style={{ width: `${progress}%`, height: '100%', background: getPriorityColor(m.priority), borderRadius: '2px' }} />
+                          <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', borderRadius: '6px', background: statusColors.bg, color: statusColors.text, border: `1px solid ${statusColors.border}`, fontWeight: 700 }}>{m.status}</span>
+                          <div style={{ marginTop: '0.35rem', width: '80px', height: '5px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${progress}%`, height: '100%', background: getPriorityColor(m.priority), borderRadius: '3px' }} />
                           </div>
                         </div>
                         {/* Actions */}
                         <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '0.35rem' }}>
-                          <button onClick={() => openAddSubtask(m.id)} title="Add subtask" style={{ background: 'rgba(99,102,241,0.15)', border: 'none', color: '#818cf8', cursor: 'pointer', borderRadius: '6px', padding: '0.35rem 0.5rem', display: 'flex' }}><Plus size={13} /></button>
-                          <button onClick={() => openEditTask(m)} title="Edit" style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: '#9ca3af', cursor: 'pointer', borderRadius: '6px', padding: '0.35rem 0.5rem', display: 'flex' }}><Edit size={13} /></button>
-                          <button onClick={() => handleDeleteTask(m.id, true)} title="Delete" style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#ef4444', cursor: 'pointer', borderRadius: '6px', padding: '0.35rem 0.5rem', display: 'flex' }}><Trash2 size={13} /></button>
+                          <button onClick={() => openAddSubtask(m.id)} title="Add subtask" style={{ background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.25)', color: '#2563eb', cursor: 'pointer', borderRadius: '6px', padding: '0.35rem 0.5rem', display: 'flex' }}><Plus size={14} /></button>
+                          <button onClick={() => openEditTask(m)} title="Edit" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', borderRadius: '6px', padding: '0.35rem 0.5rem', display: 'flex' }}><Edit size={14} /></button>
+                          <button onClick={() => handleDeleteTask(m.id, true)} title="Delete" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#ef4444', cursor: 'pointer', borderRadius: '6px', padding: '0.35rem 0.5rem', display: 'flex' }}><Trash2 size={14} /></button>
                         </div>
                       </div>
 
                       {/* Subtasks (expanded) */}
                       {isExpanded && (
-                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.15)' }}>
+                        <div style={{ borderTop: '1px solid var(--border-color)', background: 'var(--bg-tertiary)' }}>
                           {subtasks.length === 0 ? (
-                            <div style={{ padding: '0.75rem 1.5rem', fontSize: '0.85rem', color: '#4b5563', fontStyle: 'italic' }}>No subtasks yet — click ➕ to add one.</div>
+                            <div style={{ padding: '0.75rem 1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>ยังไม่มีงานย่อย — คลิก ➕ เพื่อเพิ่มงานย่อย</div>
                           ) : visibleSubtasks.length === 0 ? (
-                            <div style={{ padding: '0.75rem 1.5rem', fontSize: '0.85rem', color: '#4b5563', fontStyle: 'italic' }}>No subtasks match your search query.</div>
+                            <div style={{ padding: '0.75rem 1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>ไม่พบงานย่อยที่ตรงกับคำค้นหา</div>
                           ) : (
                             visibleSubtasks.map(sub => {
                               const subColors = getStatusColor(sub.status);
                               return (
-                                <div key={sub.id} style={{ padding: '0.65rem 1.25rem 0.65rem 3rem', display: 'grid', gridTemplateColumns: '28px 2fr 1fr 1fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                                  <span style={{ color: '#374151', fontSize: '0.85rem' }}>↳</span>
+                                <div key={sub.id} style={{ padding: '0.65rem 1.25rem 0.65rem 3rem', display: 'grid', gridTemplateColumns: '28px 2fr 1fr 1fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'center', borderBottom: '1px solid var(--border-color)' }}>
+                                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 700 }}>↳</span>
                                   <div>
-                                    <span style={{ fontSize: '0.95rem', fontWeight: 500, color: '#e5e7eb' }}>{sub.title}</span>
-                                    <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '260px' }}>{sub.description}</p>
+                                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>{sub.title}</span>
+                                    {sub.description && (
+                                      <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>{sub.description}</p>
+                                    )}
                                   </div>
-                                  <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+                                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                                     {sub.startDate ? formatToDDMMYYYY(sub.startDate) : '—'}
                                   </div>
-                                  <span style={{ fontSize: '0.92rem', color: '#e5e7eb' }}>{sub.estimatedHours}h</span>
+                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#f59e0b' }}>{sub.estimatedHours}h</span>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <img src={getAssigneeAvatar(sub.assigneeId)} alt="" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
-                                    <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{getAssigneeName(sub.assigneeId)}</span>
+                                    <img src={getAssigneeAvatar(sub.assigneeId)} alt="" style={{ width: '24px', height: '24px', borderRadius: '50%', border: '1px solid var(--border-color)' }} />
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>{getAssigneeName(sub.assigneeId)}</span>
                                   </div>
-                                  <span style={{ fontSize: '0.8rem', padding: '0.15rem 0.5rem', borderRadius: '5px', background: subColors.bg, color: subColors.text, fontWeight: 600 }}>{sub.status}</span>
+                                  <span style={{ fontSize: '0.78rem', padding: '0.15rem 0.5rem', borderRadius: '5px', background: subColors.bg, color: subColors.text, border: `1px solid ${subColors.border}`, fontWeight: 700 }}>{sub.status}</span>
                                   <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                    <button onClick={() => openEditTask(sub)} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: '#9ca3af', cursor: 'pointer', borderRadius: '6px', padding: '0.3rem 0.45rem', display: 'flex' }}><Edit size={12} /></button>
-                                    <button onClick={() => handleDeleteTask(sub.id, false)} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#ef4444', cursor: 'pointer', borderRadius: '6px', padding: '0.3rem 0.45rem', display: 'flex' }}><Trash2 size={12} /></button>
+                                    <button onClick={() => openEditTask(sub)} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', borderRadius: '6px', padding: '0.3rem 0.45rem', display: 'flex' }}><Edit size={12} /></button>
+                                    <button onClick={() => handleDeleteTask(sub.id, false)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#ef4444', cursor: 'pointer', borderRadius: '6px', padding: '0.3rem 0.45rem', display: 'flex' }}><Trash2 size={12} /></button>
                                   </div>
                                 </div>
                               );
                             })
                           )}
-                          <div style={{ padding: '0.5rem 1.25rem 0.5rem 3rem' }}>
-                            <button onClick={() => openAddSubtask(m.id)} style={{ background: 'transparent', border: '1px dashed rgba(99,102,241,0.4)', color: '#818cf8', cursor: 'pointer', borderRadius: '6px', padding: '0.35rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                              <Plus size={13} /> Add Subtask
+                          <div style={{ padding: '0.6rem 1.25rem 0.6rem 3rem' }}>
+                            <button onClick={() => openAddSubtask(m.id)} style={{ background: 'var(--bg-secondary)', border: '1px dashed #3b82f6', color: '#2563eb', cursor: 'pointer', borderRadius: '6px', padding: '0.4rem 0.85rem', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <Plus size={14} /> + เพิ่มงานย่อย (Add Subtask)
                             </button>
                           </div>
                         </div>
