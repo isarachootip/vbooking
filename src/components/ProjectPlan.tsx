@@ -521,8 +521,24 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
     setIsModalOpen(false);
   };
 
-  const labelStyle = { fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem', display: 'block' };
-  const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '0.6rem 0.9rem', color: 'var(--text-primary)', outline: 'none', width: '100%', fontSize: '0.9rem' };
+  const labelStyle: React.CSSProperties = { 
+    fontSize: '0.82rem', 
+    fontWeight: 700, 
+    color: 'var(--text-primary)', 
+    marginBottom: '0.35rem', 
+    display: 'block' 
+  };
+  const inputStyle: React.CSSProperties = { 
+    background: 'var(--bg-tertiary)', 
+    border: '1.5px solid var(--border-color)', 
+    borderRadius: '8px', 
+    padding: '0.65rem 0.9rem', 
+    color: 'var(--text-primary)', 
+    outline: 'none', 
+    width: '100%', 
+    fontSize: '0.9rem',
+    fontWeight: 500
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
@@ -1255,25 +1271,46 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
 
       {/* ─── CRUD Modal ─── */}
       {isModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '2rem', width: '640px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 className="text-gradient" style={{ fontSize: '1.5rem', fontWeight: 700 }}>{editingTask ? 'Edit Task' : (formIsMain ? 'Add New Milestone' : 'Add Subtask')}</h2>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer' }}><X size={22} /></button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '1rem' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.75rem', width: '640px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                {editingTask ? '✏️ แก้ไขงาน (Edit Task)' : (formIsMain ? '🎯 เพิ่ม Milestone หลัก (Add Milestone)' : '📝 เพิ่มงานย่อย (Add Subtask)')}
+              </h2>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.25rem' }}><X size={22} /></button>
             </div>
 
             <form onSubmit={handleSaveTask} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Task type toggle (only when adding new) */}
               {!editingTask && (
                 <div>
-                  <label style={labelStyle}>Task Type</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    {(['Main', 'Sub'] as const).map(type => (
-                      <button key={type} type="button" onClick={() => { setFormIsMain(type === 'Main'); if (type === 'Main') setFormParentId(''); else setFormParentId(defaultParentId || ''); }}
-                        style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: `1px solid ${(type === 'Main') === formIsMain ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)'}`, background: (type === 'Main') === formIsMain ? 'rgba(99,102,241,0.2)' : 'transparent', color: (type === 'Main') === formIsMain ? '#a5b4fc' : '#6b7280', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}>
-                        {type === 'Main' ? '🎯 Main Milestone' : '📝 Subtask'}
-                      </button>
-                    ))}
+                  <label style={labelStyle}>ประเภทงาน (Task Type)</label>
+                  <div style={{ display: 'flex', gap: '0.65rem' }}>
+                    {(['Main', 'Sub'] as const).map(type => {
+                      const isSelected = (type === 'Main') === formIsMain;
+                      return (
+                        <button 
+                          key={type} 
+                          type="button" 
+                          onClick={() => { setFormIsMain(type === 'Main'); if (type === 'Main') setFormParentId(''); else setFormParentId(defaultParentId || ''); }}
+                          style={{ 
+                            flex: 1, 
+                            padding: '0.65rem 1rem', 
+                            borderRadius: '8px', 
+                            border: isSelected ? '2px solid #3b82f6' : '1px solid var(--border-color)', 
+                            background: isSelected ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'var(--bg-tertiary)', 
+                            color: isSelected ? '#ffffff' : 'var(--text-primary)', 
+                            cursor: 'pointer', 
+                            fontWeight: 700, 
+                            fontSize: '0.88rem',
+                            boxShadow: isSelected ? '0 4px 12px rgba(37,99,235,0.3)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {type === 'Main' ? '🎯 Main Milestone (งานหลัก)' : '📝 Subtask (งานย่อย)'}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1281,9 +1318,9 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
               {/* Parent task selector (for subtasks) */}
               {!formIsMain && (
                 <div>
-                  <label style={labelStyle}>Under Milestone *</label>
+                  <label style={labelStyle}>อยู่ภายใต้หมวดงานหลัก (Under Milestone) *</label>
                   <select value={formParentId} onChange={e => setFormParentId(e.target.value)} style={inputStyle} required>
-                    <option value="">Select Main Task...</option>
+                    <option value="">-- เลือกหมวดงานหลัก --</option>
                     {projectMilestones.filter(m => m.id !== editingTask?.id).map(m => (
                       <option key={m.id} value={m.id}>{m.title} ({m.estimatedHours}h)</option>
                     ))}
@@ -1293,32 +1330,32 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
 
               {/* Title */}
               <div>
-                <label style={labelStyle}>Title *</label>
-                <input type="text" value={formTitle} onChange={e => setFormTitle(e.target.value)} style={inputStyle} placeholder="Enter task title..." required />
+                <label style={labelStyle}>ชื่องาน (Task Title) *</label>
+                <input type="text" value={formTitle} onChange={e => setFormTitle(e.target.value)} style={inputStyle} placeholder="ระบุชื่องาน / รายละเอียดงาน..." required />
               </div>
 
               {/* Description */}
               <div>
-                <label style={labelStyle}>Description</label>
-                <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)} style={{ ...inputStyle, minHeight: '72px', resize: 'vertical' }} placeholder="Brief summary of this task..." />
+                <label style={labelStyle}>รายละเอียดและขอบเขตงาน (Description)</label>
+                <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)} style={{ ...inputStyle, minHeight: '72px', resize: 'vertical' }} placeholder="ระบุรายละเอียดเพิ่มเติม หรือขอบเขตงาน..." />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 {/* Status */}
                 <div>
-                  <label style={labelStyle}>Status</label>
+                  <label style={labelStyle}>สถานะงาน (Status)</label>
                   <select value={formStatus} onChange={e => setFormStatus(e.target.value as TaskStatus)} style={inputStyle}>
                     {statuses.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 {/* Priority */}
                 <div>
-                  <label style={labelStyle}>Priority</label>
+                  <label style={labelStyle}>ความสำคัญ (Priority)</label>
                   <select value={formPriority} onChange={e => setFormPriority(e.target.value as TaskPriority)} style={inputStyle}>
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                    <option value="Urgent">Urgent</option>
+                    <option value="Low">🟢 Low (ต่ำ)</option>
+                    <option value="Medium">🟡 Medium (ปานกลาง)</option>
+                    <option value="High">🟠 High (สูง)</option>
+                    <option value="Urgent">🔴 Urgent (เร่งด่วน)</option>
                   </select>
                 </div>
               </div>
@@ -1326,15 +1363,15 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 {/* Assignee */}
                 <div>
-                  <label style={labelStyle}>Assignee</label>
+                  <label style={labelStyle}>ผู้รับผิดชอบ / ช่าง (Assignee)</label>
                   <select value={formAssigneeId} onChange={e => setFormAssigneeId(e.target.value)} style={inputStyle}>
-                    <option value="">Unassigned</option>
-                    {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    <option value="">-- ยังไม่มอบหมาย (Unassigned) --</option>
+                    {users.map(u => <option key={u.id} value={u.id}>👤 {u.name}</option>)}
                   </select>
                 </div>
                 {/* Est Hours */}
                 <div>
-                  <label style={labelStyle}>Est. Hours</label>
+                  <label style={labelStyle}>ชม. ประมาณการ (Est. Hours)</label>
                   <input type="number" value={formEstHours} onChange={e => setFormEstHours(e.target.value)} style={inputStyle} min="0" placeholder="0" />
                 </div>
               </div>
@@ -1342,18 +1379,18 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 {/* Start Date */}
                 <div>
-                  <label style={labelStyle}>Start Date</label>
+                  <label style={labelStyle}>วันที่เริ่ม (Start Date)</label>
                   <CustomDateInput value={formStartDate} onChange={e => setFormStartDate(e.target.value)} style={inputStyle} />
                 </div>
                 {/* End Date */}
                 <div>
-                  <label style={labelStyle}>End Date</label>
+                  <label style={labelStyle}>วันที่สิ้นสุด (End Date)</label>
                   <CustomDateInput value={formEndDate} onChange={e => setFormEndDate(e.target.value)} style={inputStyle} />
                 </div>
               </div>
 
-              <button type="submit" className="hover-lift" style={{ background: 'linear-gradient(135deg, var(--accent-primary), #7c3aed)', color: 'white', border: 'none', padding: '0.85rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '1rem' }}>
-                <Save size={18} /> {editingTask ? 'Update Task' : 'Save Task'}
+              <button type="submit" className="hover-lift" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', color: 'white', border: 'none', padding: '0.85rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '1rem', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}>
+                <Save size={18} /> {editingTask ? 'บันทึกการแก้ไข (Update Task)' : 'บันทึกงาน (Save Task)'}
               </button>
             </form>
           </div>
