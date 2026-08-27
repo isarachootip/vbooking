@@ -4054,7 +4054,8 @@ app.post('/api/tasks', async (req, res) => {
         releaseId || null,
         storyPoints || 0,
         issueType || 'Task',
-        updatedAt
+        updatedAt,
+        afterImage || null
       ]
     );
     res.json({ success: true });
