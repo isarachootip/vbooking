@@ -577,6 +577,7 @@ const initDB = async () => {
         created_by          VARCHAR(255)
       );
       CREATE INDEX IF NOT EXISTS idx_lead_site_visit_results_lead_id ON lead_site_visit_results(lead_id);
+      ALTER TABLE lead_site_visit_results ADD COLUMN IF NOT EXISTS room_plans JSONB DEFAULT '[]'::jsonb;
 
       -- Phase 14: Designs & 2D/3D Approvals
       CREATE TABLE IF NOT EXISTS lead_designs (

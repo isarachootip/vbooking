@@ -490,6 +490,7 @@ exports.addVisitResult = async (req, res) => {
       next_action_date,
       internal_notes,
       photos,
+      room_plans,
       created_by
     } = req.body;
 
@@ -500,8 +501,8 @@ exports.addVisitResult = async (req, res) => {
       `INSERT INTO lead_site_visit_results
          (id, lead_id, followup_id, visited_by_id, visited_by_name, visit_date, visit_result,
           site_condition, work_scope_summary, estimated_budget, customer_interest, customer_decision,
-          next_action, next_action_date, internal_notes, photos, created_at, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+          next_action, next_action_date, internal_notes, photos, room_plans, created_at, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
        RETURNING *`,
       [
         resultId, id, followup_id || null, visited_by_id || null,
@@ -511,6 +512,7 @@ exports.addVisitResult = async (req, res) => {
         customer_interest || null, customer_decision || null,
         next_action || null, next_action_date || null,
         internal_notes || null, photos || [],
+        room_plans ? JSON.stringify(room_plans) : '[]',
         now, created_by || 'System'
       ]
     );
@@ -555,7 +557,7 @@ exports.updateVisitResult = async (req, res) => {
     const {
       visit_result, site_condition, work_scope_summary, estimated_budget,
       customer_interest, customer_decision, next_action, next_action_date,
-      internal_notes, photos
+      internal_notes, photos, room_plans
     } = req.body;
     const now = new Date().toISOString();
 
@@ -570,8 +572,9 @@ exports.updateVisitResult = async (req, res) => {
            next_action = COALESCE($7, next_action),
            next_action_date = $8,
            internal_notes = $9,
-           photos = COALESCE($10, photos)
-       WHERE id = $11 AND lead_id = $12
+           photos = COALESCE($10, photos),
+           room_plans = COALESCE($11, room_plans)
+       WHERE id = $12 AND lead_id = $13
        RETURNING *`,
       [
         visit_result || null, site_condition || null, work_scope_summary || null,
@@ -579,6 +582,7 @@ exports.updateVisitResult = async (req, res) => {
         customer_interest || null, customer_decision || null,
         next_action || null, next_action_date || null,
         internal_notes || null, photos || null,
+        room_plans ? JSON.stringify(room_plans) : null,
         resultId, id
       ]
     );

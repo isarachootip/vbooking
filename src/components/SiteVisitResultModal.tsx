@@ -4,10 +4,22 @@ import {
   X, ClipboardCheck, Calendar, User as UserIcon,
   CheckCircle2, AlertCircle, Clock, ChevronRight, Building,
   RefreshCw, DollarSign, MessageSquare, Camera, Image,
-  Upload, Trash2, ZoomIn, Eye, Sparkles, HelpCircle, ArrowUpRight
+  Upload, Trash2, ZoomIn, Eye, Sparkles, HelpCircle, ArrowUpRight,
+  Layers, Plus, Wrench, Shield, Zap, Droplets, CheckSquare, Square
 } from 'lucide-react';
 import { formatToDDMMYYYY, getTodayDateString, isDateInPast } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
+
+export interface RoomVisitPlan {
+  id: string;
+  room_name: string;
+  room_size: string;
+  improvement_systems: string[];
+  custom_system?: string;
+  condition_notes?: string;
+  photo?: string;
+  photo_size?: number;
+}
 
 interface SiteVisitResult {
   id: string;
@@ -26,6 +38,7 @@ interface SiteVisitResult {
   next_action_date?: string | null;
   internal_notes?: string | null;
   photos?: string[];
+  room_plans?: RoomVisitPlan[] | string;
   created_at: string;
   created_by?: string | null;
 }
@@ -40,6 +53,9 @@ interface SiteVisitResultModalProps {
     customer_address?: string;
     job_type?: string;
     branch?: string;
+    notes?: string | null;
+    work_areas?: string[] | null;
+    required_work_types?: string[] | null;
   } | null;
   currentUser: User | null;
   users?: User[];
@@ -54,6 +70,45 @@ interface PhotoSlotConfig {
   placeholderGuide: string;
   sampleImg: string;
 }
+
+const ROOM_ICONS: Record<string, string> = {
+  'ห้องรับแขก': '🛋️',
+  'ห้องครัว': '🍳',
+  'ห้องน้ำ/ห้องส้วม': '🚿',
+  'ลาน/สนามหญ้า': '🌳',
+  'ลานซักล้าง': '🧺',
+  'ตกแต่งภายนอก': '🏡',
+  'ห้องนอน': '🛏️',
+  'ห้องโถง/ห้องรับแขก': '🏛️',
+  'สำนักงาน/ออฟฟิศ': '💼',
+  'ลานจอดรถ': '🚗',
+};
+
+const getRoomIcon = (name: string): string => {
+  for (const key of Object.keys(ROOM_ICONS)) {
+    if (name.includes(key)) return ROOM_ICONS[key];
+  }
+  return '🏠';
+};
+
+const DEFAULT_ROOM_OPTIONS = [
+  'ห้องรับแขก', 'ห้องครัว', 'ห้องน้ำ/ห้องส้วม',
+  'ลาน/สนามหญ้า', 'ลานซักล้าง', 'ตกแต่งภายนอก',
+  'ห้องนอน', 'ห้องโถง/ห้องรับแขก', 'สำนักงาน/ออฟฟิศ',
+  'ลานจอดรถ'
+];
+
+const IMPROVEMENT_SYSTEMS = [
+  { id: 'ระบบไฟ', label: 'ระบบไฟ & แสงสว่าง', icon: '💡', color: '#d97706', bg: '#fef3c7', border: '#fcd34d' },
+  { id: 'งานปูน', label: 'งานปูน & ก่อฉาบ', icon: '🧱', color: '#b45309', bg: '#ffedd5', border: '#fed7aa' },
+  { id: 'งานกระเบื้อง', label: 'งานกระเบื้อง & ปูพื้น', icon: '🔲', color: '#0d9488', bg: '#ccfbf1', border: '#99f6e4' },
+  { id: 'ระบบน้ำ', label: 'ระบบน้ำ & สุขภัณฑ์', icon: '💧', color: '#0284c7', bg: '#e0f2fe', border: '#bae6fd' },
+  { id: 'งานฝ้าและสี', label: 'งานฝ้า & ทาสี', icon: '🎨', color: '#4f46e5', bg: '#e0e7ff', border: '#c7d2fe' },
+  { id: 'ระบบป้องกัน', label: 'ระบบป้องกัน & กันซึม', icon: '🛡️', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
+  { id: 'ประตูหน้าต่าง', label: 'ประตู-หน้าต่าง & กระจก', icon: '🪟', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+  { id: 'งานบิวท์อิน', label: 'งานบิวท์อิน & ตกแต่ง', icon: '🚪', color: '#9333ea', bg: '#fae8ff', border: '#f5d0fe' },
+  { id: 'อื่นๆ', label: 'อื่นๆ (ระบุเอง)', icon: '🔧', color: '#7c3aed', bg: '#ede9fe', border: '#ddd6fe' },
+];
 
 const PHOTO_SLOTS: PhotoSlotConfig[] = [
   {
@@ -176,6 +231,25 @@ const compressImageFile = (file: File, maxWidth = 1200, maxHeight = 1200, qualit
   });
 };
 
+const extractLeadWorkAreas = (leadObj: any): string[] => {
+  if (!leadObj) return [];
+  if (Array.isArray(leadObj.work_areas) && leadObj.work_areas.length > 0) {
+    return leadObj.work_areas;
+  }
+  if (leadObj.notes && typeof leadObj.notes === 'string' && leadObj.notes.includes('[Details]:')) {
+    try {
+      const parts = leadObj.notes.split('[Details]:');
+      const details = JSON.parse(parts[1].trim());
+      if (Array.isArray(details.workAreas) && details.workAreas.length > 0) {
+        return details.workAreas;
+      }
+    } catch (e) {
+      console.error('Error parsing lead workAreas from notes:', e);
+    }
+  }
+  return [];
+};
+
 export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
   isOpen, onClose, lead, currentUser, users = [], onSaved,
 }) => {
@@ -197,7 +271,12 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
   const [nadate, setNadate] = useState('');
   const [inotes, setInotes] = useState('');
 
-  // 5 Photo Slots states
+  // Room-by-room visit plans state
+  const [roomPlans, setRoomPlans] = useState<RoomVisitPlan[]>([]);
+  const [newRoomNameInput, setNewRoomNameInput] = useState('');
+  const [compressingRoomId, setCompressingRoomId] = useState<string | null>(null);
+
+  // 5 Photo Slots states (Overview photos)
   const [photos, setPhotos] = useState<string[]>(['', '', '', '', '']);
   const [photoSizes, setPhotoSizes] = useState<number[]>([0, 0, 0, 0, 0]);
   const [compressingSlot, setCompressingSlot] = useState<number | null>(null);
@@ -216,7 +295,20 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
       const r = await fetch(`/api/leads/${lead.id}/visit-results`, {
         headers: { 'X-User-Id': currentUser?.id || '' }
       });
-      if (r.ok) setResults(await r.json());
+      if (r.ok) {
+        const data = await r.json();
+        const parsed = data.map((item: any) => {
+          if (typeof item.room_plans === 'string') {
+            try {
+              item.room_plans = JSON.parse(item.room_plans);
+            } catch {
+              item.room_plans = [];
+            }
+          }
+          return item;
+        });
+        setResults(parsed);
+      }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -233,6 +325,37 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
       setPhotos(['', '', '', '', '']);
       setPhotoSizes([0, 0, 0, 0, 0]);
       setTab('new');
+      setNewRoomNameInput('');
+
+      // Auto initialize Room-by-room visit plans from Lead Work Areas
+      const areas = extractLeadWorkAreas(lead);
+      if (areas.length > 0) {
+        setRoomPlans(
+          areas.map((area, idx) => ({
+            id: `room_${idx}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+            room_name: area,
+            room_size: '',
+            improvement_systems: [],
+            custom_system: '',
+            condition_notes: '',
+            photo: '',
+            photo_size: 0
+          }))
+        );
+      } else {
+        setRoomPlans([
+          {
+            id: `room_0_${Date.now()}`,
+            room_name: 'ห้องรับแขก',
+            room_size: '',
+            improvement_systems: [],
+            custom_system: '',
+            condition_notes: '',
+            photo: '',
+            photo_size: 0
+          }
+        ]);
+      }
     }
   }, [isOpen, lead?.id]);
 
@@ -242,7 +365,76 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
     setUname(u?.name || id);
   };
 
-  // Upload & Compress single slot
+  const toggleRoomSystem = (roomId: string, sysId: string) => {
+    setRoomPlans(prev =>
+      prev.map(r => {
+        if (r.id !== roomId) return r;
+        const exists = r.improvement_systems.includes(sysId);
+        const updated = exists
+          ? r.improvement_systems.filter(s => s !== sysId)
+          : [...r.improvement_systems, sysId];
+        return { ...r, improvement_systems: updated };
+      })
+    );
+  };
+
+  const updateRoomPlan = (roomId: string, field: keyof RoomVisitPlan, value: any) => {
+    setRoomPlans(prev =>
+      prev.map(r => (r.id === roomId ? { ...r, [field]: value } : r))
+    );
+  };
+
+  const handleAddRoom = (roomName: string) => {
+    const trimmed = roomName.trim();
+    if (!trimmed) return;
+    setRoomPlans(prev => [
+      ...prev,
+      {
+        id: `room_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        room_name: trimmed,
+        room_size: '',
+        improvement_systems: [],
+        custom_system: '',
+        condition_notes: '',
+        photo: '',
+        photo_size: 0
+      }
+    ]);
+    setNewRoomNameInput('');
+  };
+
+  const handleRemoveRoom = (roomId: string) => {
+    setRoomPlans(prev => prev.filter(r => r.id !== roomId));
+  };
+
+  const handleRoomPhotoUpload = async (roomId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCompressingRoomId(roomId);
+    try {
+      const { base64, sizeKB } = await compressImageFile(file, 1200, 1200, 0.75);
+      setRoomPlans(prev =>
+        prev.map(r =>
+          r.id === roomId ? { ...r, photo: base64, photo_size: sizeKB } : r
+        )
+      );
+      showToast(`บีบอัดรูปภาพห้องสำเร็จ (${sizeKB} KB)`, 'success');
+    } catch (err) {
+      console.error('Failed to compress room image:', err);
+      showToast('เกิดข้อผิดพลาดในการบีบอัดรูปภาพห้อง', 'error');
+    } finally {
+      setCompressingRoomId(null);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveRoomPhoto = (roomId: string) => {
+    setRoomPlans(prev =>
+      prev.map(r => (r.id === roomId ? { ...r, photo: '', photo_size: 0 } : r))
+    );
+  };
+
   const handleSlotUpload = async (slotIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -270,7 +462,6 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
     }
   };
 
-  // Bulk Upload up to 5 photos at once
   const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -282,11 +473,10 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
 
       let targetSlot = 0;
       for (let i = 0; i < files.length && i < 5; i++) {
-        // Find next empty slot or start from index
         while (targetSlot < 5 && newPhotos[targetSlot]) {
           targetSlot++;
         }
-        if (targetSlot >= 5) targetSlot = i; // Overwrite if all full
+        if (targetSlot >= 5) targetSlot = i;
 
         const file = files[i];
         const { base64, sizeKB } = await compressImageFile(file, 1200, 1200, 0.75);
@@ -307,7 +497,6 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
     }
   };
 
-  // Remove photo from slot
   const handleRemovePhoto = (slotIdx: number) => {
     setPhotos(prev => {
       const next = [...prev];
@@ -332,33 +521,59 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
 
     setSaving(true);
     try {
-      // Filter non-empty photos for payload
       const validPhotos = photos.filter(Boolean);
+
+      let finalWscope = wscope;
+      if (!finalWscope && roomPlans.length > 0) {
+        finalWscope = roomPlans
+          .map(r => {
+            const sys = [...r.improvement_systems];
+            if (sys.includes('อื่นๆ') && r.custom_system) {
+              const idx = sys.indexOf('อื่นๆ');
+              sys[idx] = `อื่นๆ (${r.custom_system})`;
+            }
+            const sysStr = sys.length > 0 ? ` [ระบบ: ${sys.join(', ')}]` : '';
+            const sizeStr = r.room_size ? ` (ขนาด ${r.room_size})` : '';
+            return `${r.room_name}${sizeStr}${sysStr}`;
+          })
+          .join(' | ');
+      }
 
       const r = await fetch(`/api/leads/${lead.id}/visit-results`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
         body: JSON.stringify({
-          visited_by_id: uid || null, visited_by_name: uname,
+          visited_by_id: uid || null,
+          visited_by_name: uname,
           visit_date: vdate ? new Date(vdate).toISOString() : new Date().toISOString(),
-          visit_result: vres, site_condition: scond || null, work_scope_summary: wscope || null,
+          visit_result: vres,
+          site_condition: scond || null,
+          work_scope_summary: finalWscope || null,
           estimated_budget: budget ? parseFloat(budget) : null,
-          customer_interest: cint || null, customer_decision: cdec,
-          next_action: nact, next_action_date: nadate || null,
+          customer_interest: cint || null,
+          customer_decision: cdec,
+          next_action: nact,
+          next_action_date: nadate || null,
           internal_notes: inotes || null,
           photos: validPhotos,
+          room_plans: roomPlans,
           created_by: currentUser?.name || 'System'
         })
       });
       if (r.ok) {
-        showToast('บันทึกสำเร็จ!', 'success');
-        await fetchR(); setTab('history'); onSaved?.();
+        showToast('บันทึก Visit Plan สำเร็จ!', 'success');
+        await fetchR();
+        setTab('history');
+        onSaved?.();
       } else {
         const err = await r.json().catch(() => ({}));
-        showToast(err.error || 'เกิดข้อผิดพลาด', 'error');
+        showToast(err.error || 'เกิดข้อผิดพลาดในการบันทึก', 'error');
       }
-    } catch { showToast('ไม่สามารถเชื่อมต่อ', 'error'); }
-    finally { setSaving(false); }
+    } catch {
+      showToast('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!isOpen || !lead) return null;
@@ -375,14 +590,16 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
   };
   const sec: React.CSSProperties = {
     background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
-    borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem'
+    borderRadius: '12px', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem'
   };
   const sh: React.CSSProperties = {
-    fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)',
-    display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.25rem'
+    fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)',
+    display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.15rem'
   };
 
-  const attachedCount = photos.filter(Boolean).length;
+  const attachedGeneralCount = photos.filter(Boolean).length;
+  const attachedRoomPhotoCount = roomPlans.filter(r => Boolean(r.photo)).length;
+  const totalPhotosCount = attachedGeneralCount + attachedRoomPhotoCount;
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1500, padding: '1rem', overflowY: 'auto' }}>
@@ -448,14 +665,16 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
         </div>
       )}
 
-      <div style={{ background: 'var(--bg-primary)', borderRadius: '16px', border: '1px solid var(--border-color)', width: '780px', maxWidth: '96vw', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', margin: 'auto' }}>
+      <div style={{ background: 'var(--bg-primary)', borderRadius: '16px', border: '1px solid var(--border-color)', width: '840px', maxWidth: '96vw', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', margin: 'auto' }}>
         {/* Header */}
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color)', background: 'linear-gradient(135deg,#1e40af,#7c3aed)', borderRadius: '16px 16px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <div style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '0.5rem', borderRadius: '8px', display: 'flex' }}><ClipboardCheck size={20} /></div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'white' }}>บันทึกผลการ Visit Site & แนบรูปภาพ 5 ช่อง</h3>
-              <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)' }}>{lead.customer_name} · {lead.job_type || ''}{lead.branch ? ' · ' + lead.branch : ''}</p>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'white' }}>บันทึก Visit Plan & ผลสำรวจหน้างานแยกตามห้อง</h3>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)' }}>
+                {lead.customer_name} · {lead.job_type || ''}{lead.branch ? ' · ' + lead.branch : ''}
+              </p>
             </div>
           </div>
           <button type="button" onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', cursor: 'pointer', padding: '0.35rem', borderRadius: '6px', display: 'flex' }}><X size={20} /></button>
@@ -463,7 +682,7 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
 
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
-          {([{ k: 'new' as const, l: '+ บันทึกผลใหม่' }, { k: 'history' as const, l: `ประวัติ (${results.length})` }]).map(t => (
+          {([{ k: 'new' as const, l: '+ บันทึก Visit Plan ใหม่' }, { k: 'history' as const, l: `ประวัติการ Visit (${results.length})` }]).map(t => (
             <button key={t.k} type="button" onClick={() => setTab(t.k)} style={{ flex: 1, padding: '0.75rem 1rem', border: 'none', background: tab === t.k ? 'var(--bg-primary)' : 'transparent', color: tab === t.k ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: tab === t.k ? 700 : 500, fontSize: '0.83rem', cursor: 'pointer', borderBottom: tab === t.k ? '2px solid var(--accent-primary)' : '2px solid transparent' }}>{t.l}</button>
           ))}
         </div>
@@ -472,9 +691,9 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
         <div style={{ padding: '1.25rem', overflowY: 'auto', maxHeight: '75vh' }}>
           {tab === 'new' && (
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-              {/* S1 */}
+              {/* SECTION 1: VISIT INFO */}
               <div style={sec}>
-                <div style={sh}><Calendar size={15} style={{ color: '#6366f1' }} /> ส่วนที่ 1 — ข้อมูลการ Visit</div>
+                <div style={sh}><Calendar size={16} style={{ color: '#6366f1' }} /> ส่วนที่ 1 — ข้อมูลการ Visit</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
                     <label style={lbl}>วัน/เวลาที่ไป Visit จริง *</label>
@@ -497,20 +716,390 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                 </div>
               </div>
 
-              {/* S2 */}
+              {/* SECTION 2: ROOM-BY-ROOM VISIT PLAN & PHOTOS */}
+              {vres === 'Visited' && (
+                <div style={{ ...sec, border: '1.5px solid rgba(59, 130, 246, 0.4)', background: 'linear-gradient(180deg, rgba(59, 130, 246, 0.03), rgba(147, 51, 234, 0.03))' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div>
+                      <div style={{ ...sh, margin: 0, color: '#1d4ed8' }}>
+                        <Layers size={17} style={{ color: '#2563eb' }} />
+                        <span>📋 แผนงานและภาพถ่ายแยกตามห้อง / พื้นที่งาน ({roomPlans.length} ห้อง)</span>
+                      </div>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0.15rem 0 0 0' }}>
+                        สร้างหัวข้อ Visit Plan อัตโนมัติตามพื้นที่งานที่เลือกในข้อมูลลูกค้า พร้อมระบุขนาดห้อง เลือกระบบที่ต้องปรับปรุง และแนบรูปภาพเฉพาะห้อง
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.72rem', background: '#dbeafe', color: '#1e40af', padding: '0.2rem 0.6rem', borderRadius: '10px', fontWeight: 700 }}>
+                        {roomPlans.length} พื้นที่งาน
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* ROOM CARDS LIST */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', marginTop: '0.25rem' }}>
+                    {roomPlans.length === 0 && (
+                      <div style={{ padding: '1.5rem', textAlign: 'center', background: 'var(--bg-tertiary)', borderRadius: '10px', border: '1.5px dashed var(--border-color)' }}>
+                        <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          ยังไม่มีการระบุห้อง/พื้นที่งาน กรุณากดเลือกเพิ่มห้องด้านล่าง:
+                        </p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'center' }}>
+                          {DEFAULT_ROOM_OPTIONS.slice(0, 6).map(name => (
+                            <button
+                              key={name}
+                              type="button"
+                              onClick={() => handleAddRoom(name)}
+                              style={{ padding: '0.35rem 0.75rem', borderRadius: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', fontSize: '0.78rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                            >
+                              <Plus size={13} /> {getRoomIcon(name)} {name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {roomPlans.map((room, rIdx) => {
+                      const hasPhoto = Boolean(room.photo);
+                      const isCompressing = compressingRoomId === room.id;
+
+                      return (
+                        <div
+                          key={room.id}
+                          style={{
+                            background: 'var(--bg-primary)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            boxShadow: 'var(--shadow-sm)',
+                            display: 'flex',
+                            flexDirection: 'column'
+                          }}
+                        >
+                          {/* Room Card Header */}
+                          <div style={{
+                            padding: '0.65rem 0.9rem',
+                            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(124, 58, 237, 0.08))',
+                            borderBottom: '1px solid var(--border-color)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontSize: '1.2rem' }}>{getRoomIcon(room.room_name)}</span>
+                              <div>
+                                <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                                  ห้องที่ {rIdx + 1}: {room.room_name}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveRoom(room.id)}
+                              title="ลบห้องนี้"
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                padding: '0.25rem 0.45rem',
+                                borderRadius: '4px',
+                                fontSize: '0.72rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem'
+                              }}
+                            >
+                              <Trash2 size={13} /> ลบห้อง
+                            </button>
+                          </div>
+
+                          {/* Room Card Body */}
+                          <div style={{ padding: '0.85rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.85rem', alignItems: 'start' }}>
+                              
+                              {/* Left Column: Dimensions, Systems, Notes */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                                {/* Room Size */}
+                                <div>
+                                  <label style={{ ...lbl, color: '#1e40af', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                    <span>📐</span> ขนาดห้อง / พื้นที่ (กว้าง x ยาว หรือ ตร.ม.) *
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={room.room_size}
+                                    onChange={e => updateRoomPlan(room.id, 'room_size', e.target.value)}
+                                    placeholder="เช่น 4 x 5 ม. (20 ตร.ม.) หรือ สูง 2.8 ม."
+                                    style={inp}
+                                  />
+                                </div>
+
+                                {/* Improvement Systems */}
+                                <div>
+                                  <label style={{ ...lbl, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                    <span>⚡</span> เลือกระบบที่ต้องปรับปรุง สำหรับห้องนี้ *
+                                  </label>
+                                  
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.4rem' }}>
+                                    {IMPROVEMENT_SYSTEMS.map(sys => {
+                                      const isChecked = room.improvement_systems.includes(sys.id);
+                                      return (
+                                        <button
+                                          key={sys.id}
+                                          type="button"
+                                          onClick={() => toggleRoomSystem(room.id, sys.id)}
+                                          style={{
+                                            padding: '0.45rem 0.6rem',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            border: isChecked ? `2px solid ${sys.color}` : '1px solid var(--border-color)',
+                                            background: isChecked ? sys.bg : 'var(--bg-tertiary)',
+                                            color: isChecked ? sys.color : 'var(--text-secondary)',
+                                            fontWeight: isChecked ? 700 : 500,
+                                            fontSize: '0.78rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.4rem',
+                                            textAlign: 'left'
+                                          }}
+                                        >
+                                          {isChecked ? <CheckSquare size={14} color={sys.color} /> : <Square size={14} />}
+                                          <span>{sys.icon} {sys.label}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Custom system specification if 'อื่นๆ' checked */}
+                                  {room.improvement_systems.includes('อื่นๆ') && (
+                                    <div style={{ marginTop: '0.4rem' }}>
+                                      <input
+                                        type="text"
+                                        value={room.custom_system || ''}
+                                        onChange={e => updateRoomPlan(room.id, 'custom_system', e.target.value)}
+                                        placeholder="ระบุระบบอื่นๆ เช่น งานฝ้าเพดาน, งานทาสี, งานปูกระเบื้อง..."
+                                        style={{ ...inp, border: '1.5px solid #8b5cf6', background: '#f5f3ff', color: '#5b21b6', fontSize: '0.8rem' }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Room Notes */}
+                                <div>
+                                  <label style={lbl}>สภาพปัญหา / รายละเอียดที่ต้องปรับปรุงเฉพาะห้องนี้</label>
+                                  <textarea
+                                    value={room.condition_notes || ''}
+                                    onChange={e => updateRoomPlan(room.id, 'condition_notes', e.target.value)}
+                                    placeholder="ระบุสภาพเดิม จุดชำรุด หรือสิ่งที่ต้องระวังสำหรับห้องนี้..."
+                                    rows={2}
+                                    style={{ ...inp, resize: 'vertical' } as React.CSSProperties}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Right Column: Dedicated Room Photo Box */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                <label style={{ ...lbl, color: '#059669', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                  <Camera size={14} /> รูปภาพ{room.room_name}
+                                </label>
+
+                                <div style={{
+                                  background: 'var(--bg-tertiary)',
+                                  border: hasPhoto ? '2px solid #10b981' : '1.5px dashed var(--border-color)',
+                                  borderRadius: '10px',
+                                  minHeight: '160px',
+                                  position: 'relative',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  overflow: 'hidden'
+                                }}>
+                                  {isCompressing ? (
+                                    <div style={{ textAlign: 'center', color: '#2563eb', fontSize: '0.75rem', fontWeight: 600, padding: '1rem' }}>
+                                      <RefreshCw size={20} className="animate-spin" style={{ margin: '0 auto 0.4rem auto' }} />
+                                      บีบอัดรูปภาพ...
+                                    </div>
+                                  ) : hasPhoto ? (
+                                    <>
+                                      <img
+                                        src={room.photo}
+                                        alt={`รูปภาพ ${room.room_name}`}
+                                        style={{ width: '100%', height: '160px', objectFit: 'cover', cursor: 'pointer' }}
+                                        onClick={() => setPreviewImageModal({ url: room.photo!, title: `รูปภาพ ${room.room_name}` })}
+                                      />
+                                      <div style={{
+                                        position: 'absolute',
+                                        top: '6px',
+                                        right: '6px',
+                                        display: 'flex',
+                                        gap: '4px',
+                                        background: 'rgba(0,0,0,0.65)',
+                                        borderRadius: '6px',
+                                        padding: '3px'
+                                      }}>
+                                        <button
+                                          type="button"
+                                          onClick={() => setPreviewImageModal({ url: room.photo!, title: `รูปภาพ ${room.room_name}` })}
+                                          style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '2px' }}
+                                          title="ดูภาพขยาย"
+                                        >
+                                          <ZoomIn size={14} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveRoomPhoto(room.id)}
+                                          style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px' }}
+                                          title="ลบรูปภาพนี้"
+                                        >
+                                          <Trash2 size={14} />
+                                        </button>
+                                      </div>
+                                      {room.photo_size ? (
+                                        <div style={{
+                                          position: 'absolute',
+                                          bottom: '6px',
+                                          left: '6px',
+                                          background: 'rgba(0,0,0,0.65)',
+                                          color: '#4ade80',
+                                          fontSize: '0.65rem',
+                                          padding: '2px 6px',
+                                          borderRadius: '4px',
+                                          fontWeight: 700
+                                        }}>
+                                          {room.photo_size} KB
+                                        </div>
+                                      ) : null}
+                                    </>
+                                  ) : (
+                                    <label style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      padding: '1rem',
+                                      textAlign: 'center'
+                                    }}>
+                                      <Camera size={26} style={{ color: 'var(--text-secondary)', marginBottom: '0.35rem' }} />
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700, marginBottom: '0.2rem' }}>
+                                        + ถ่าย / แนบรูป {room.room_name}
+                                      </span>
+                                      <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+                                        บีบอัดอัตโนมัติ (~100-200 KB)
+                                      </span>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => handleRoomPhotoUpload(room.id, e)}
+                                        style={{ display: 'none' }}
+                                      />
+                                    </label>
+                                  )}
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Add Room Bar */}
+                  <div style={{
+                    marginTop: '0.4rem',
+                    padding: '0.75rem',
+                    background: 'var(--bg-primary)',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <Plus size={14} /> เพิ่มห้อง/พื้นที่งาน:
+                    </span>
+
+                    {/* Quick chips for default rooms not yet added */}
+                    {DEFAULT_ROOM_OPTIONS.filter(name => !roomPlans.some(r => r.room_name === name)).slice(0, 5).map(name => (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => handleAddRoom(name)}
+                        style={{
+                          padding: '0.3rem 0.6rem',
+                          borderRadius: '6px',
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border-color)',
+                          fontSize: '0.73rem',
+                          color: 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem'
+                        }}
+                      >
+                        + {getRoomIcon(name)} {name}
+                      </button>
+                    ))}
+
+                    {/* Custom room input */}
+                    <div style={{ display: 'flex', gap: '0.3rem', flex: 1, minWidth: '180px' }}>
+                      <input
+                        type="text"
+                        value={newRoomNameInput}
+                        onChange={e => setNewRoomNameInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddRoom(newRoomNameInput);
+                          }
+                        }}
+                        placeholder="พิมพ์ชื่อห้องอื่นๆ เช่น ห้องทำงาน, ดาดฟ้า..."
+                        style={{ ...inp, padding: '0.35rem 0.6rem', fontSize: '0.78rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddRoom(newRoomNameInput)}
+                        disabled={!newRoomNameInput.trim()}
+                        style={{
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '6px',
+                          background: newRoomNameInput.trim() ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                          color: newRoomNameInput.trim() ? 'white' : 'var(--text-tertiary)',
+                          border: 'none',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: newRoomNameInput.trim() ? 'pointer' : 'not-allowed',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        เพิ่ม
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* SECTION 3: SITE CONDITION & WORK SCOPE SUMMARY */}
               {vres === 'Visited' && (
                 <div style={sec}>
-                  <div style={sh}><Building size={15} style={{ color: '#f59e0b' }} /> ส่วนที่ 2 — สภาพหน้างาน</div>
+                  <div style={sh}><Building size={15} style={{ color: '#f59e0b' }} /> ส่วนที่ 3 — สภาพหน้างานรวม & งบประมาณ</div>
                   <div>
-                    <label style={lbl}>สภาพบ้าน/พื้นที่</label>
-                    <textarea value={scond} onChange={e => setScond(e.target.value)} placeholder="เช่น บ้านเดี่ยว 2 ชั้น 200 ตร.ม." rows={2} style={{ ...inp, resize: 'vertical' } as React.CSSProperties} />
+                    <label style={lbl}>สภาพบ้าน / ข้อมูลโครงสร้างโดยรวม</label>
+                    <textarea value={scond} onChange={e => setScond(e.target.value)} placeholder="เช่น บ้านเดี่ยว 2 ชั้น โครงสร้างเดิมแข็งแรงดี มีจุดรั่วซึม..." rows={2} style={{ ...inp, resize: 'vertical' } as React.CSSProperties} />
                   </div>
                   <div>
-                    <label style={lbl}>สรุปขอบเขตงาน</label>
-                    <textarea value={wscope} onChange={e => setWscope(e.target.value)} placeholder="เช่น เปลี่ยนท่อน้ำ + ยาแนว" rows={2} style={{ ...inp, resize: 'vertical' } as React.CSSProperties} />
+                    <label style={lbl}>สรุปขอบเขตงานทั้งหมด (Work Scope Summary)</label>
+                    <textarea value={wscope} onChange={e => setWscope(e.target.value)} placeholder="หากเว้นว่าง ระบบจะสร้างสรุปจากรายการห้องและระบบที่เลือกให้อัตโนมัติ" rows={2} style={{ ...inp, resize: 'vertical' } as React.CSSProperties} />
                   </div>
                   <div style={{ maxWidth: '260px' }}>
-                    <label style={lbl}>งบประมาณประเมิน (บาท)</label>
+                    <label style={lbl}>งบประมาณประเมินเบื้องต้น (บาท)</label>
                     <div style={{ position: 'relative' }}>
                       <DollarSign size={14} style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
                       <input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder="0" min={0} style={{ ...inp, paddingLeft: '1.75rem' }} />
@@ -519,15 +1108,15 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                 </div>
               )}
 
-              {/* SECTION: 5 PHOTO SLOTS WITH COMPRESSION & SAMPLE PREVIEWS */}
+              {/* SECTION 4: 5 PHOTO SLOTS (OVERALL & EXTERIOR PHOTOS) */}
               {vres === 'Visited' && (
                 <div style={{ ...sec, border: '1.5px solid rgba(147, 51, 234, 0.35)', background: 'linear-gradient(180deg, rgba(147, 51, 234, 0.03), rgba(37, 99, 235, 0.03))' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div style={{ ...sh, margin: 0 }}>
                       <Camera size={16} style={{ color: '#9333ea' }} /> 
-                      <span>📸 แนบรูปภาพหน้างาน 5 ช่อง (บีบอัดอัตโนมัติ)</span>
-                      <span style={{ fontSize: '0.72rem', background: attachedCount > 0 ? '#dcfce7' : 'var(--bg-tertiary)', color: attachedCount > 0 ? '#16a34a' : 'var(--text-secondary)', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: 700 }}>
-                        แนบแล้ว {attachedCount}/5 รูป
+                      <span>📸 ภาพถ่ายภาพรวมหน้างาน 5 ช่อง (บีบอัดอัตโนมัติ)</span>
+                      <span style={{ fontSize: '0.72rem', background: attachedGeneralCount > 0 ? '#dcfce7' : 'var(--bg-tertiary)', color: attachedGeneralCount > 0 ? '#16a34a' : 'var(--text-secondary)', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: 700 }}>
+                        แนบแล้ว {attachedGeneralCount}/5 รูป
                       </span>
                     </div>
 
@@ -552,7 +1141,6 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                         <Eye size={12} /> ดูตัวอย่างภาพ 5 ช่อง
                       </button>
 
-                      {/* Bulk upload label */}
                       <label style={{
                         background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
                         color: 'white',
@@ -578,15 +1166,11 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                     </div>
                   </div>
 
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '-0.25rem 0 0.5rem 0' }}>
-                    * ระบบจะทำการบีบอัดรูปภาพความละเอียดสูงให้อัตโนมัติ (ลดเหลือ ~100-200 KB) เพื่อความรวดเร็วในการส่งข้อมูล
-                  </p>
-
-                  {/* 5 Slots Grid */}
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-                    gap: '0.65rem'
+                    gap: '0.65rem',
+                    marginTop: '0.25rem'
                   }}>
                     {PHOTO_SLOTS.map((slot) => {
                       const hasPhoto = !!photos[slot.index];
@@ -609,7 +1193,6 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                             minHeight: '165px'
                           }}
                         >
-                          {/* Slot Header */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.35rem' }}>
                             <span style={{ fontSize: '0.85rem' }}>{slot.icon}</span>
                             <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -617,7 +1200,6 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                             </span>
                           </div>
 
-                          {/* Image or Upload Placeholder */}
                           <div style={{
                             flex: 1,
                             position: 'relative',
@@ -642,7 +1224,6 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                                   style={{ width: '100%', height: '90px', objectFit: 'cover', cursor: 'pointer' }}
                                   onClick={() => setPreviewImageModal({ url: photos[slot.index], title: slot.label })}
                                 />
-                                {/* Overlay Controls */}
                                 <div style={{
                                   position: 'absolute',
                                   top: '4px',
@@ -697,7 +1278,6 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                             )}
                           </div>
 
-                          {/* Footer Tag */}
                           <div style={{ marginTop: '0.35rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {slot.subLabel}
@@ -715,28 +1295,28 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                 </div>
               )}
 
-              {/* S3 */}
+              {/* SECTION 5: CUSTOMER REQUIREMENTS & FEEDBACK */}
               {vres === 'Visited' && (
                 <div style={sec}>
-                  <div style={sh}><MessageSquare size={15} style={{ color: '#10b981' }} /> ส่วนที่ 3 — ความต้องการลูกค้า</div>
+                  <div style={sh}><MessageSquare size={15} style={{ color: '#10b981' }} /> ส่วนที่ 4 — ความต้องการลูกค้า & การตัดสินใจ</div>
                   <div>
-                    <label style={lbl}>สิ่งที่ลูกค้าพูด / ความต้องการ</label>
-                    <textarea value={cint} onChange={e => setCint(e.target.value)} placeholder="เช่น ต้องการซ่อมก่อน 10 ต.ค." rows={2} style={{ ...inp, resize: 'vertical' } as React.CSSProperties} />
+                    <label style={lbl}>สิ่งที่ลูกค้าพูด / ความต้องการเฉพาะเจาะจง</label>
+                    <textarea value={cint} onChange={e => setCint(e.target.value)} placeholder="เช่น ลูกค้าต้องการเร่งติดตั้งภายในสิ้นเดือน, เน้นโทนสีสว่าง..." rows={2} style={{ ...inp, resize: 'vertical' } as React.CSSProperties} />
                   </div>
                   <div>
                     <label style={lbl}>การตัดสินใจลูกค้า *</label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '0.5rem' }}>
                       {CUSTOMER_DECISION_OPTIONS.map(o => (
-                        <button key={o.value} type="button" onClick={() => setCdec(o.value)} style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', cursor: 'pointer', border: cdec === o.value ? '2px solid var(--accent-primary)' : '2px solid var(--border-color)', background: cdec === o.value ? 'var(--accent-bg)' : 'var(--bg-tertiary)', color: cdec === o.value ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: cdec === o.value ? 700 : 500, fontSize: '0.82rem', textAlign: 'left' }}>{o.label}</button>
+                        <button key={o.value} type="button" onClick={() => setCdec(o.value)} style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', cursor: 'pointer', border: cdec === o.value ? `2px solid var(--accent-primary)` : '2px solid var(--border-color)', background: cdec === o.value ? 'var(--accent-bg)' : 'var(--bg-tertiary)', color: cdec === o.value ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: cdec === o.value ? 700 : 500, fontSize: '0.82rem', textAlign: 'left' }}>{o.label}</button>
                       ))}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* S4 */}
+              {/* SECTION 6: NEXT ACTIONS */}
               <div style={sec}>
-                <div style={sh}><ChevronRight size={15} style={{ color: '#ec4899' }} /> ส่วนที่ 4 — การดำเนินการต่อ</div>
+                <div style={sh}><ChevronRight size={15} style={{ color: '#ec4899' }} /> ส่วนที่ 5 — การดำเนินการต่อ (Next Action)</div>
                 <div>
                   <label style={lbl}>การดำเนินการครั้งถัดไป *</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -769,59 +1349,183 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                 )}
                 <div>
                   <label style={lbl}>หมายเหตุภายใน (PM/SA/Admin)</label>
-                  <textarea value={inotes} onChange={e => setInotes(e.target.value)} placeholder="บันทึกข้อสังเกต" rows={2} style={{ ...inp, resize: 'vertical' } as React.CSSProperties} />
+                  <textarea value={inotes} onChange={e => setInotes(e.target.value)} placeholder="บันทึกข้อสังเกต หรือข้อมูลลับเฉพาะทีมงาน" rows={2} style={{ ...inp, resize: 'vertical' } as React.CSSProperties} />
                 </div>
               </div>
 
+              {/* ACTION BUTTONS */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" onClick={onClose} style={{ padding: '0.6rem 1.25rem', borderRadius: '8px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer' }}>ยกเลิก</button>
-                <button type="submit" disabled={saving} style={{ padding: '0.6rem 1.5rem', borderRadius: '8px', background: saving ? '#9ca3af' : 'linear-gradient(135deg,#1e40af,#7c3aed)', border: 'none', color: 'white', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: saving ? 'none' : '0 4px 14px rgba(99,102,241,0.4)' }}>
-                  {saving ? 'กำลังบันทึก...' : <><ClipboardCheck size={15} /> บันทึกผลการ Visit ({attachedCount} รูป)</>}
+                <button type="button" onClick={onClose} style={{ padding: '0.6rem 1.25rem', borderRadius: '8px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer' }}>
+                  ยกเลิก
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    padding: '0.6rem 1.5rem',
+                    borderRadius: '8px',
+                    background: saving ? '#9ca3af' : 'linear-gradient(135deg,#1e40af,#7c3aed)',
+                    border: 'none',
+                    color: 'white',
+                    fontWeight: 700,
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    boxShadow: saving ? 'none' : '0 4px 14px rgba(99,102,241,0.4)'
+                  }}
+                >
+                  {saving ? 'กำลังบันทึก...' : (
+                    <>
+                      <ClipboardCheck size={15} />
+                      บันทึก Visit Plan ({roomPlans.length} ห้อง · รวม {totalPhotosCount} รูป)
+                    </>
+                  )}
                 </button>
               </div>
             </form>
           )}
 
+          {/* TAB 2: HISTORY */}
           {tab === 'history' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>ประวัติ {results.length} รายการ</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ประวัติการ Visit ทั้งหมด ({results.length} ครั้ง)</span>
                 <button type="button" onClick={fetchR} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem' }}><RefreshCw size={13} /> รีเฟรช</button>
               </div>
-              {loading && <div style={{ textAlign: 'center', padding: '2rem' }}>กำลังโหลด...</div>}
+
+              {loading && <div style={{ textAlign: 'center', padding: '2rem' }}>กำลังโหลดประวัติ...</div>}
+              
               {!loading && results.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-tertiary)', border: '2px dashed var(--border-color)', borderRadius: '10px' }}>
                   <ClipboardCheck size={36} style={{ opacity: 0.4 }} />
-                  <p>ยังไม่มีผลการ Visit</p>
-                  <button type="button" onClick={() => setTab('new')} style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', padding: '0.45rem 1rem', fontWeight: 600, cursor: 'pointer' }}>+ บันทึกผลครั้งแรก</button>
+                  <p>ยังไม่มีประวัติการ Visit Site</p>
+                  <button type="button" onClick={() => setTab('new')} style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', padding: '0.45rem 1rem', fontWeight: 600, cursor: 'pointer' }}>+ บันทึกผล Visit ครั้งแรก</button>
                 </div>
               )}
+
               {!loading && results.map(r => {
                 const ro = VISIT_RESULT_OPTIONS.find(o => o.value === r.visit_result);
                 const dc = CUSTOMER_DECISION_OPTIONS.find(o => o.value === r.customer_decision);
                 const na2 = NEXT_ACTION_OPTIONS.find(o => o.value === r.next_action);
+                const pastRoomPlans: RoomVisitPlan[] = Array.isArray(r.room_plans) ? r.room_plans : [];
+
                 return (
-                  <div key={r.id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderLeft: `4px solid ${ro?.color || '#6b7280'}`, borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div key={r.id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderLeft: `4px solid ${ro?.color || '#6b7280'}`, borderRadius: '12px', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <span style={{ fontWeight: 700, color: ro?.color || 'var(--text-primary)' }}>{ro?.label || r.visit_result}</span>
+                      <span style={{ fontWeight: 700, color: ro?.color || 'var(--text-primary)', fontSize: '0.95rem' }}>
+                        {ro?.label || r.visit_result}
+                      </span>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'flex', gap: '0.75rem' }}>
                         <span>Visit: {fmtDate(r.visit_date)}</span>
                         <span>โดย: {r.visited_by_name_ref || r.visited_by_name || '-'}</span>
                       </div>
                     </div>
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem' }}>
-                      {r.site_condition && <div style={{ gridColumn: '1/-1' }}><b style={{ color: 'var(--text-tertiary)' }}>สภาพ: </b>{r.site_condition}</div>}
-                      {r.work_scope_summary && <div style={{ gridColumn: '1/-1' }}><b style={{ color: 'var(--text-tertiary)' }}>ขอบเขต: </b>{r.work_scope_summary}</div>}
-                      {r.estimated_budget != null && <div><b style={{ color: 'var(--text-tertiary)' }}>งบ: </b><span style={{ color: '#10b981', fontWeight: 700 }}>{Number(r.estimated_budget).toLocaleString('th-TH')} บาท</span></div>}
-                      {r.customer_decision && <div><b style={{ color: 'var(--text-tertiary)' }}>ตัดสินใจ: </b>{dc?.label || r.customer_decision}</div>}
+                      {r.site_condition && <div style={{ gridColumn: '1/-1' }}><b style={{ color: 'var(--text-tertiary)' }}>สภาพบ้าน/พื้นที่รวม: </b>{r.site_condition}</div>}
+                      {r.work_scope_summary && <div style={{ gridColumn: '1/-1' }}><b style={{ color: 'var(--text-tertiary)' }}>สรุปขอบเขตงาน: </b>{r.work_scope_summary}</div>}
+                      {r.estimated_budget != null && <div><b style={{ color: 'var(--text-tertiary)' }}>งบประมาณประเมิน: </b><span style={{ color: '#10b981', fontWeight: 700 }}>{Number(r.estimated_budget).toLocaleString('th-TH')} บาท</span></div>}
+                      {r.customer_decision && <div><b style={{ color: 'var(--text-tertiary)' }}>การตัดสินใจ: </b>{dc?.label || r.customer_decision}</div>}
                       {r.customer_interest && <div style={{ gridColumn: '1/-1' }}><b style={{ color: 'var(--text-tertiary)' }}>ความต้องการ: </b>{r.customer_interest}</div>}
                     </div>
 
-                    {/* Render Past Photos */}
+                    {/* RENDER ROOM-BY-ROOM VISIT PLANS */}
+                    {pastRoomPlans.length > 0 && (
+                      <div style={{ marginTop: '0.4rem', paddingTop: '0.6rem', borderTop: '1px dashed var(--border-color)' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2563eb', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <Layers size={14} /> รายละเอียดแผนงานแยกตามห้อง ({pastRoomPlans.length} ห้อง):
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.6rem' }}>
+                          {pastRoomPlans.map((rm, idx) => (
+                            <div
+                              key={rm.id || idx}
+                              style={{
+                                background: 'var(--bg-primary)',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px',
+                                padding: '0.65rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.4rem'
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                                  {getRoomIcon(rm.room_name)} {rm.room_name}
+                                </span>
+                                {rm.room_size && (
+                                  <span style={{ fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: 600 }}>
+                                    📐 {rm.room_size}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Systems badges */}
+                              {rm.improvement_systems && rm.improvement_systems.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                                  {rm.improvement_systems.map(sys => {
+                                    const sObj = IMPROVEMENT_SYSTEMS.find(s => s.id === sys);
+                                    const customLabel = sys === 'อื่นๆ' && rm.custom_system ? `อื่นๆ (${rm.custom_system})` : (sObj ? `${sObj.icon} ${sObj.label}` : sys);
+                                    return (
+                                      <span
+                                        key={sys}
+                                        style={{
+                                          fontSize: '0.68rem',
+                                          background: sObj?.bg || 'var(--bg-tertiary)',
+                                          color: sObj?.color || 'var(--text-primary)',
+                                          border: `1px solid ${sObj?.border || 'var(--border-color)'}`,
+                                          padding: '0.1rem 0.4rem',
+                                          borderRadius: '4px',
+                                          fontWeight: 600
+                                        }}
+                                      >
+                                        {customLabel}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* Room condition */}
+                              {rm.condition_notes && (
+                                <div style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                                  📝 {rm.condition_notes}
+                                </div>
+                              )}
+
+                              {/* Room photo thumbnail */}
+                              {rm.photo && (
+                                <div
+                                  onClick={() => setPreviewImageModal({ url: rm.photo!, title: `รูปภาพ ${rm.room_name}` })}
+                                  style={{
+                                    width: '100%',
+                                    height: '90px',
+                                    borderRadius: '6px',
+                                    overflow: 'hidden',
+                                    border: '1px solid var(--border-color)',
+                                    cursor: 'pointer',
+                                    position: 'relative'
+                                  }}
+                                >
+                                  <img src={rm.photo} alt={`รูปภาพ ${rm.room_name}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 5px', borderRadius: '4px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                    <ZoomIn size={10} /> ดูรูป
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Render Past Overall Photos */}
                     {r.photos && r.photos.length > 0 && (
-                      <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed var(--border-color)' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                          <Camera size={13} color="#9333ea" /> รูปภาพหน้างาน ({r.photos.length} รูป):
+                      <div style={{ marginTop: '0.4rem', paddingTop: '0.5rem', borderTop: '1px dashed var(--border-color)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9333ea', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <Camera size={13} color="#9333ea" /> รูปภาพภาพรวมหน้างาน ({r.photos.length} รูป):
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '4px' }}>
                           {r.photos.map((pUrl, pIdx) => (

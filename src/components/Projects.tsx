@@ -1578,9 +1578,12 @@ export const Projects = ({
                       </label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
                         {[
-                          'งานไฟฟ้า', 'งานออกแบบ', 'งานป้องกัน', 'งานประปา', 'งานติดตั้ง', 'งานอื่นๆ'
+                          'งานไฟฟ้า & แสงสว่าง', 'งานปูน & ก่อฉาบ', 'งานกระเบื้อง & ปูพื้น',
+                          'งานประปา & สุขภัณฑ์', 'งานฝ้า & ทาสี', 'งานป้องกัน & กันซึม',
+                          'งานประตู-หน้าต่าง & กระจก', 'งานบิวท์อิน & ตกแต่ง', 'งานออกแบบ 2D/3D',
+                          'งานติดตั้ง', 'งานอื่นๆ'
                         ].map(wt => {
-                          const checked = workTypes.includes(wt);
+                          const checked = workTypes.includes(wt) || (wt === 'งานอื่นๆ' && workTypes.includes('งานอื่นๆ')) || (wt === 'งานไฟฟ้า & แสงสว่าง' && workTypes.includes('งานไฟฟ้า')) || (wt === 'งานประปา & สุขภัณฑ์' && workTypes.includes('งานประปา')) || (wt === 'งานป้องกัน & กันซึม' && workTypes.includes('งานป้องกัน')) || (wt === 'งานออกแบบ 2D/3D' && workTypes.includes('งานออกแบบ'));
                           return (
                             <label key={wt} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
                               <input 
