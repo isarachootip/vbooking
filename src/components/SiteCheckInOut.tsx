@@ -1,8 +1,51 @@
 import { useState } from 'react';
-import { MapPin, Clock, CheckCircle2, Filter, Image as ImageIcon, Search, LogIn, LogOut, FileText, AlertCircle } from 'lucide-react';
+import { MapPin, Clock, CheckCircle2, Filter, Image as ImageIcon, Search, LogIn, LogOut, FileText, AlertCircle, Camera, Upload, Trash2, ZoomIn, RefreshCw } from 'lucide-react';
 import type { TimesheetEntry, Project, Task, User as UserType } from '../types';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
+
+// Client-side image compressor utility
+const compressImageFile = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.75): Promise<{ base64: string; sizeKB: number }> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (readerEvent) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Cannot get canvas context'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        const sizeKB = Math.round((dataUrl.length * 3) / 4 / 1024);
+        resolve({ base64: dataUrl, sizeKB });
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = readerEvent.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+};
 
 interface SiteCheckInOutProps {
   timesheets: TimesheetEntry[];
@@ -42,6 +85,8 @@ export const SiteCheckInOut = ({
   const [formDescription, setFormDescription] = useState<string>('');
   const [formWorkResults, setFormWorkResults] = useState<string>('');
   const [formImageUrl, setFormImageUrl] = useState<string>('');
+  const [photoSizeKB, setPhotoSizeKB] = useState<number>(0);
+  const [isCompressingImage, setIsCompressingImage] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Filter entries
@@ -79,6 +124,24 @@ export const SiteCheckInOut = ({
   const completedTodayCount = todayEntries.filter(t => t.endTime && t.endTime.trim() !== '').length;
   const totalHoursToday = todayEntries.reduce((sum, t) => sum + (Number(t.hours) || 0), 0);
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsCompressingImage(true);
+    try {
+      const { base64, sizeKB } = await compressImageFile(file, 1200, 1200, 0.75);
+      setFormImageUrl(base64);
+      setPhotoSizeKB(sizeKB);
+    } catch (err) {
+      console.error('Error compressing check-in photo:', err);
+      alert('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
+    } finally {
+      setIsCompressingImage(false);
+      e.target.value = '';
+    }
+  };
+
   const openCheckInModal = () => {
     setModalMode('checkin');
     setEditingEntryId(null);
@@ -92,6 +155,7 @@ export const SiteCheckInOut = ({
     setFormDescription('เข้าปฏิบัติงานหน้างาน (Check-In Site)');
     setFormWorkResults('');
     setFormImageUrl('');
+    setPhotoSizeKB(0);
     setIsModalOpen(true);
   };
 
@@ -108,6 +172,7 @@ export const SiteCheckInOut = ({
     setFormDescription(entry.description || 'ปฏิบัติงานเรียบร้อย (Check-Out)');
     setFormWorkResults(entry.workResults || 'เสร็จสิ้นภารกิจประจำวัน');
     setFormImageUrl(entry.imageUrl || '');
+    setPhotoSizeKB(entry.imageUrl && entry.imageUrl.length > 500 ? Math.round((entry.imageUrl.length * 3) / 4 / 1024) : 0);
     setIsModalOpen(true);
   };
 
@@ -574,15 +639,116 @@ export const SiteCheckInOut = ({
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>URL รูปถ่ายหลักฐานหน้างาน (Site Photo URL)</label>
-                <input 
-                  type="text" 
-                  placeholder="https://... หรือเลือกอัปโหลดรูปถ่าย" 
-                  value={formImageUrl} 
-                  onChange={e => setFormImageUrl(e.target.value)} 
-                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
-                />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '0.825rem', color: 'var(--text-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Camera size={15} color="#10b981" /> รูปถ่ายพื้นที่ / งานที่เข้าไปทำ (Site Evidence Photo)
+                  </label>
+                  {formImageUrl && (
+                    <span style={{ fontSize: '0.72rem', color: '#10b981', background: '#d1fae5', padding: '0.1rem 0.5rem', borderRadius: '10px', fontWeight: 700 }}>
+                      ✓ แนบรูปภาพแล้ว
+                    </span>
+                  )}
+                </div>
+
+                <div style={{
+                  background: 'var(--bg-tertiary)',
+                  border: formImageUrl ? '2px solid #10b981' : '1.5px dashed var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '0.75rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: '130px',
+                  position: 'relative'
+                }}>
+                  {isCompressingImage ? (
+                    <div style={{ textAlign: 'center', color: '#2563eb', padding: '1rem', fontSize: '0.8rem', fontWeight: 600 }}>
+                      <RefreshCw size={22} className="animate-spin" style={{ margin: '0 auto 0.4rem auto' }} />
+                      กำลังบีบอัดรูปภาพ...
+                    </div>
+                  ) : formImageUrl ? (
+                    <div style={{ position: 'relative', width: '100%', maxHeight: '200px', display: 'flex', justifyContent: 'center' }}>
+                      <img 
+                        src={formImageUrl} 
+                        alt="Site evidence" 
+                        style={{ maxHeight: '180px', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px', cursor: 'pointer' }}
+                        onClick={() => setPreviewImage(formImageUrl)}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        top: '6px',
+                        right: '6px',
+                        display: 'flex',
+                        gap: '4px',
+                        background: 'rgba(0,0,0,0.65)',
+                        borderRadius: '6px',
+                        padding: '3px'
+                      }}>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(formImageUrl)}
+                          style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '2px' }}
+                          title="ดูภาพขยาย"
+                        >
+                          <ZoomIn size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setFormImageUrl(''); setPhotoSizeKB(0); }}
+                          style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px' }}
+                          title="ลบรูปภาพนี้"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      {photoSizeKB ? (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '6px',
+                          left: '6px',
+                          background: 'rgba(0,0,0,0.65)',
+                          color: '#4ade80',
+                          fontSize: '0.65rem',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontWeight: 700
+                        }}>
+                          {photoSizeKB} KB
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.5rem' }}>
+                      <label style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        padding: '0.5rem 1.25rem',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        fontWeight: 700,
+                        fontSize: '0.825rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)'
+                      }}>
+                        <Camera size={16} /> <span>ถ่ายรูป / เลือกรูปภาพหน้างาน</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+                        บีบอัดอัตโนมัติ (~100-200 KB) รองรับทั้งกล้องมือถือและไฟล์ภาพ
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>

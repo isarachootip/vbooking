@@ -31,7 +31,7 @@ export const CustomDateInput = ({
       if ('showPicker' in inputRef.current && typeof (inputRef.current as any).showPicker === 'function') {
         try {
           (inputRef.current as any).showPicker();
-        } catch (e) {
+        } catch {
           inputRef.current.focus();
         }
       } else {
@@ -47,9 +47,11 @@ export const CustomDateInput = ({
       style={{ 
         position: 'relative', 
         width: '100%',
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
-        cursor: 'pointer'
+        cursor: 'pointer',
+        boxSizing: 'border-box',
+        ...style
       }}
     >
       <input
@@ -61,31 +63,30 @@ export const CustomDateInput = ({
         min={min}
         max={max}
         style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
           width: '100%',
-          ...style,
-          color: 'transparent',
-          caretColor: 'transparent',
-          cursor: 'pointer'
+          height: '100%',
+          opacity: 0,
+          cursor: 'pointer',
+          zIndex: 2
         }}
       />
       <div style={{
-        position: 'absolute',
-        left: '0.75rem',
-        right: '2rem',
-        top: '50%',
-        transform: 'translateY(-50%)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.4rem',
         color: value ? 'var(--text-primary)' : 'var(--text-muted)',
         pointerEvents: 'none',
         fontSize: '0.85rem',
         fontWeight: value ? 600 : 400,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.4rem',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap'
+        whiteSpace: 'nowrap',
+        width: '100%'
       }}>
-        <Calendar size={14} color="#64748b" />
+        <Calendar size={14} color="#64748b" style={{ flexShrink: 0 }} />
         <span>{formatted}</span>
       </div>
     </div>
