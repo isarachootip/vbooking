@@ -1437,6 +1437,7 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
       <QuotationScanModal
         isOpen={isScanModalOpen}
         onClose={() => setIsScanModalOpen(false)}
+        currentUser={currentUser}
         projects={projects}
         defaultProjectId={selectedProjectId}
         onSuccess={() => {

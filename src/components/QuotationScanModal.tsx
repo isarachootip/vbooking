@@ -5,7 +5,7 @@ import {
   Zap, Droplets, Grid, Paintbrush, Bath, Wind, DoorOpen, 
   Boxes, Wrench, FileSpreadsheet, FileImage
 } from 'lucide-react';
-import type { Project } from '../types';
+import type { Project, User } from '../types';
 
 export interface ScannedBoqItem {
   id: string;
@@ -22,11 +22,29 @@ export interface ScannedBoqItem {
 interface QuotationScanModalProps {
   isOpen: boolean;
   onClose: () => void;
+  currentUser?: User | null;
   projects?: Project[];
   leads?: any[];
   onSuccess?: () => void;
   defaultProjectId?: string;
 }
+
+const getAuthHeaders = (currentUser?: User | null) => {
+  let userId = currentUser?.id || '';
+  if (!userId && typeof window !== 'undefined') {
+    try {
+      const u = JSON.parse(localStorage.getItem('nt_current_user') || '{}');
+      userId = u?.id || localStorage.getItem('userId') || '';
+    } catch {
+      userId = localStorage.getItem('userId') || '';
+    }
+  }
+  return {
+    'Content-Type': 'application/json',
+    'x-user-id': userId,
+    'X-User-Id': userId
+  };
+};
 
 const TRADE_OPTIONS = [
   { trade: 'งานรื้อถอน', color: '#ef4444' },
@@ -45,6 +63,7 @@ const TRADE_OPTIONS = [
 export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
   isOpen,
   onClose,
+  currentUser,
   projects = [],
   leads = [],
   onSuccess,
@@ -78,7 +97,7 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
 
   React.useEffect(() => {
     if (isOpen) {
-      fetch('/api/projects')
+      fetch('/api/projects', { headers: getAuthHeaders(currentUser) })
         .then(r => r.json())
         .then(d => {
           const list = Array.isArray(d) ? d : (d.data || []);
@@ -91,7 +110,7 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
         })
         .catch(err => console.error('Fetch projects error:', err));
     }
-  }, [isOpen, defaultProjectId]);
+  }, [isOpen, defaultProjectId, currentUser]);
 
   if (!isOpen) return null;
 
@@ -178,7 +197,7 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
 
       const res = await fetch('/api/quotations/scan-boq', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(currentUser),
         body: JSON.stringify(payload)
       });
 
@@ -276,7 +295,7 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
 
         const quoRes = await fetch('/api/quotations', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(currentUser),
           body: JSON.stringify(quoPayload)
         });
 
@@ -297,7 +316,7 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
 
           const createRes = await fetch('/api/projects', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(currentUser),
             body: JSON.stringify({
               name: projName,
               description: `โครงการที่สร้างจากการสแกนใบเสนอราคา ${quotationNumber} (${customerName || 'ลูกค้า'})`,
@@ -322,7 +341,7 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
 
         const wbsRes = await fetch(`/api/quotations/import-boq-wbs/${finalProjectId}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(currentUser),
           body: JSON.stringify({
             items,
             replaceExisting: replaceExistingTasks

@@ -1466,6 +1466,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
       <QuotationScanModal
         isOpen={isScanModalOpen}
         onClose={() => setIsScanModalOpen(false)}
+        currentUser={currentUser}
         projects={projects}
         leads={leads}
         onSuccess={fetchAllData}
