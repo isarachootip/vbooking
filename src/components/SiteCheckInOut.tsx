@@ -47,6 +47,25 @@ const compressImageFile = (file: File, maxWidth = 1200, maxHeight = 1200, qualit
   });
 };
 
+const CHECKIN_PHOTO_SLOTS = [
+  { index: 0, label: '1. สภาพพื้นที่ก่อนเริ่มงาน', subLabel: 'ก่อนทำ / สภาพเดิม', icon: '🚪' },
+  { index: 1, label: '2. จุดที่กำลังปฏิบัติงาน', subLabel: 'ระหว่างทำ / ขั้นตอนงาน', icon: '⚡' },
+  { index: 2, label: '3. ผลงาน / จุดสำคัญ', subLabel: 'หลังทำเสร็จ / ส่งมอบ', icon: '🎯' }
+];
+
+const parseEntryImages = (imageUrl?: string): string[] => {
+  if (!imageUrl) return [];
+  if (imageUrl.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(imageUrl);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {
+      return [imageUrl];
+    }
+  }
+  return [imageUrl];
+};
+
 interface SiteCheckInOutProps {
   timesheets: TimesheetEntry[];
   setTimesheets: React.Dispatch<React.SetStateAction<TimesheetEntry[]>>;
