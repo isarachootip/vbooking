@@ -4,7 +4,7 @@ import {
   AlertCircle, ShieldCheck, Check, Sparkles, AlertTriangle, 
   ChevronRight, Lock, MapPin, Phone
 } from 'lucide-react';
-import { formatToDDMMYYYY } from '../utils';
+import { formatToDDMMYYYY, getTodayDateString, isDateInPast } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 
 export interface QcSlotInfo {
@@ -142,8 +142,11 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
   leadInfo,
   onSelectBooking
 }) => {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const [selectedDate, setSelectedDate] = useState<string>(() => normalizeDateToIso(initialDate) || todayStr);
+  const todayStr = getTodayDateString();
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const d = normalizeDateToIso(initialDate);
+    return d && !isDateInPast(d) ? d : todayStr;
+  });
   const [teamSchedule, setTeamSchedule] = useState<QcScheduleUser[]>(DEFAULT_QC_LIST);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedQcId, setSelectedQcId] = useState<string>('');
@@ -152,8 +155,9 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
   // Quick date jump
   const setQuickDate = (offsetDays: number) => {
     const d = new Date();
-    d.setDate(d.getDate() + offsetDays);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    d.setDate(d.getDate() + Math.max(0, offsetDays));
+    const nextDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setSelectedDate(nextDate);
   };
 
   const fetchSchedule = async (date: string) => {
@@ -198,9 +202,10 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const d = normalizeDateToIso(initialDate) || todayStr;
-      setSelectedDate(d);
-      fetchSchedule(d);
+      const d = normalizeDateToIso(initialDate);
+      const validDate = d && !isDateInPast(d) ? d : todayStr;
+      setSelectedDate(validDate);
+      fetchSchedule(validDate);
     }
   }, [isOpen, initialDate]);
 
@@ -215,6 +220,10 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
   const currentQc = teamSchedule.find(s => s.qcId === selectedQcId) || teamSchedule[0];
 
   const handleConfirm = () => {
+    if (selectedDate && isDateInPast(selectedDate)) {
+      alert('⚠️ ไม่สามารถจองคิววันย้อนหลังได้ กรุณาเลือกวันปัจจุบันหรือวันล่วงหน้า');
+      return;
+    }
     if (!currentQc) {
       alert('กรุณาเลือกเจ้าหน้าที่ QC');
       return;
@@ -330,7 +339,16 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
               <div style={{ width: '160px' }}>
                 <CustomDateInput
                   value={selectedDate}
-                  onChange={e => setSelectedDate(e.target.value)}
+                  min={todayStr}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val && isDateInPast(val)) {
+                      alert('⚠️ ไม่สามารถเลือกวันจองคิวย้อนหลังได้ กรุณาเลือกวันปัจจุบันหรือวันล่วงหน้า');
+                      setSelectedDate(todayStr);
+                      return;
+                    }
+                    setSelectedDate(val);
+                  }}
                   style={{
                     padding: '0.35rem 0.65rem',
                     background: 'var(--bg-secondary)',

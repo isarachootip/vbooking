@@ -14,35 +14,7 @@ export const STAGE_CONFIG: Record<string, { title: string; color: string; bg: st
     color: '#3b82f6',
     bg: 'rgba(59, 130, 246, 0.15)',
     description: 'รับแจ้งงาน / วางแผนเริ่มต้นโครงการ',
-    statuses: ['To Do', 'Todo', 'Planning', 'Draft', 'todo', 'บันทึกข้อมูลลูกค้า']
-  },
-  'Buy-Survey': {
-    title: 'Buy-Survey',
-    color: '#0ea5e9',
-    bg: 'rgba(14, 165, 233, 0.15)',
-    description: 'ลูกค้าสั่งซื้อบริการสำรวจหน้างาน (Survey Ticket)',
-    statuses: ['Buy-Survey', 'ซื้อสำรวจ', 'Survey Request', 'buy_survey']
-  },
-  'Survey': {
-    title: 'Survey',
-    color: '#f59e0b',
-    bg: 'rgba(245, 158, 11, 0.15)',
-    description: 'ช่าง/วิศวกรเข้าสำรวจและประเมินสภาพหน้างาน',
-    statuses: ['Survey', 'สำรวจ', 'QC (สำรวจ)', 'ประสานงาน/สำรวจ', 'survey']
-  },
-  'Design': {
-    title: 'Design',
-    color: '#8b5cf6',
-    bg: 'rgba(139, 92, 246, 0.15)',
-    description: 'ออกแบบ 3D / สรุปแบบ และจัดทำใบเสนอราคา',
-    statuses: ['Design', 'ออกแบบ', 'สร้างใบเสนอราคา', 'รอใบเสนอราคา', 'design']
-  },
-  'ชำระเงิน': {
-    title: 'ชำระเงิน',
-    color: '#10b981',
-    bg: 'rgba(16, 185, 129, 0.15)',
-    description: 'ลูกค้ายืนยันใบเสนอราคาและชำระเงินมัดจำ/ค่างวด',
-    statuses: ['ชำระเงิน', 'ลูกค้ายืนยัน', 'ลูกค้ายืนยันดำเนินการ', 'ยืนยันราคา/ใบดำเนินการ', 'payment']
+    statuses: ['To Do', 'Todo', 'Planning', 'Draft', 'todo', 'บันทึกข้อมูลลูกค้า', 'Buy-Survey', 'Survey', 'Design', 'ชำระเงิน', 'ซื้อสำรวจ', 'สำรวจ', 'ออกแบบ']
   },
   'Assign ช่าง': {
     title: 'Assign ช่าง',
@@ -90,7 +62,6 @@ export const STAGE_CONFIG: Record<string, { title: string; color: string; bg: st
 
 export const QUICK_SERVICE_COLUMNS: string[] = [
   'To Do',
-  'ชำระเงิน',
   'Assign ช่าง',
   'Check-in',
   'Check-out',
@@ -101,9 +72,6 @@ export const QUICK_SERVICE_COLUMNS: string[] = [
 
 export const INSTALLER_MA_COLUMNS: string[] = [
   'To Do',
-  'Buy-Survey',
-  'Survey',
-  'ชำระเงิน',
   'Assign ช่าง',
   'Check-in',
   'Check-out',
@@ -114,10 +82,6 @@ export const INSTALLER_MA_COLUMNS: string[] = [
 
 export const RENOVATE_BUILDIN_NEWHOUSE_COLUMNS: string[] = [
   'To Do',
-  'Buy-Survey',
-  'Survey',
-  'Design',
-  'ชำระเงิน',
   'Assign ช่าง',
   'Check-in',
   'Check-out',

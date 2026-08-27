@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileText, Plus, Search, Trash2, Printer, Save, CheckCircle, 
   ArrowUpRight, Eye, RefreshCw, DollarSign, Calendar, User as UserIcon, 
-  Building, Phone, MapPin, Tag, ListPlus, X, Check, FileCheck, Layers
+  Building, Phone, MapPin, Tag, ListPlus, X, Check, FileCheck, Layers, Sparkles, Upload
 } from 'lucide-react';
+import { QuotationScanModal } from './QuotationScanModal';
 import type { ServicePriceItem, User } from '../types';
 
 interface QuotationManagerProps {
@@ -68,6 +69,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
 
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [previewQuotation, setPreviewQuotation] = useState<Quotation | null>(null);
 
   // Form States
@@ -516,6 +518,26 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
           </button>
 
           <button 
+            onClick={() => setIsScanModalOpen(true)}
+            style={{ 
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+              color: 'white', 
+              padding: '0.65rem 1.25rem', 
+              borderRadius: '8px', 
+              border: 'none', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              fontWeight: 700, 
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+            }}
+            className="hover-lift"
+          >
+            <Sparkles size={18} /> อัปโหลด & สแกน BOQ
+          </button>
+
+          <button 
             onClick={() => {
               resetForm();
               fetchAllData();
@@ -645,15 +667,52 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
           <tbody>
             {filteredQuotations.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <FileText size={36} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
-                  <div>ไม่พบข้อมูลใบเสนอราคา</div>
-                  <button 
-                    onClick={() => { resetForm(); fetchAllData(); setIsModalOpen(true); }}
-                    style={{ marginTop: '0.75rem', background: 'var(--accent-primary)', color: 'white', border: 'none', padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
-                  >
-                    + สร้างใบแรกเลย
-                  </button>
+                <td colSpan={7} style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <FileText size={40} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
+                  <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>ไม่พบข้อมูลใบเสนอราคา</div>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0 0 1.25rem 0' }}>คุณสามารถอัปโหลดสแกนไฟล์ใบเสนอราคาเดิม หรือกดสร้างใบใหม่ได้ทันที</p>
+                  <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button 
+                      onClick={() => setIsScanModalOpen(true)}
+                      style={{ 
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                        color: 'white', 
+                        border: 'none', 
+                        padding: '0.6rem 1.35rem', 
+                        borderRadius: '8px', 
+                        cursor: 'pointer', 
+                        fontWeight: 700, 
+                        fontSize: '0.9rem',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.45rem',
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                      }}
+                      className="hover-lift"
+                    >
+                      <Sparkles size={18} /> ✨ อัปโหลด & สแกน BOQ
+                    </button>
+                    <button 
+                      onClick={() => { resetForm(); fetchAllData(); setIsModalOpen(true); }}
+                      style={{ 
+                        background: 'linear-gradient(135deg, var(--accent-primary) 0%, #6366f1 100%)', 
+                        color: 'white', 
+                        border: 'none', 
+                        padding: '0.6rem 1.35rem', 
+                        borderRadius: '8px', 
+                        cursor: 'pointer', 
+                        fontWeight: 700,
+                        fontSize: '0.9rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                      }}
+                      className="hover-lift"
+                    >
+                      <Plus size={18} /> + สร้างใบเสนอราคาใหม่
+                    </button>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -1402,6 +1461,15 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
           </div>
         </div>
       )}
+
+      {/* Quotation & BOQ Scanner Modal */}
+      <QuotationScanModal
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
+        projects={projects}
+        leads={leads}
+        onSuccess={fetchAllData}
+      />
 
     </div>
   );

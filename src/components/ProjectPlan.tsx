@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { Project, Task, User, TaskPriority, TaskStatus, TaskTemplate, PermissionScheme } from '../types';
-import { Calendar, CheckCircle2, Check, Clock, ArrowRight, Plus, Edit, Trash2, X, Save, Zap, ChevronDown, ChevronRight, BarChart3, Search } from 'lucide-react';
+import { Calendar, CheckCircle2, Check, Clock, ArrowRight, Plus, Edit, Trash2, X, Save, Zap, ChevronDown, ChevronRight, BarChart3, Search, Sparkles } from 'lucide-react';
 import { formatToDDMMYYYY } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
+import { QuotationScanModal } from './QuotationScanModal';
 
 interface Baseline {
   id: string;
@@ -82,6 +83,7 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
   const [compareData, setCompareData] = useState<CompareData | null>(null);
   const [loadingCompare, setLoadingCompare] = useState<boolean>(false);
   const [isBaselineModalOpen, setIsBaselineModalOpen] = useState(false);
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [newBaselineName, setNewBaselineName] = useState('');
   const [newBaselineDesc, setNewBaselineDesc] = useState('');
   const [savingBaseline, setSavingBaseline] = useState(false);
@@ -374,18 +376,35 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
       alert('This project must have both a Start Date and End Date to auto-generate milestones.');
       return;
     }
-    if (taskTemplates.length === 0) {
+    const pType = project.projectType || 'Renovate Service';
+    let matchingTemplates = taskTemplates.filter(tpl => 
+      tpl.projectTemplateName && (
+        tpl.projectTemplateName.toLowerCase() === pType.toLowerCase() ||
+        pType.toLowerCase().includes(tpl.projectTemplateName.toLowerCase()) ||
+        tpl.projectTemplateName.toLowerCase().includes(pType.toLowerCase())
+      )
+    );
+    if (matchingTemplates.length === 0) {
+      matchingTemplates = taskTemplates.filter(tpl => 
+        tpl.projectTemplateName === 'Renovate Service' || tpl.projectTemplateName === 'Renovation' || tpl.projectTemplateName === 'General'
+      );
+    }
+    if (matchingTemplates.length === 0) {
+      matchingTemplates = taskTemplates;
+    }
+
+    if (matchingTemplates.length === 0) {
       alert('No milestone templates found. Please add templates in Settings first.');
       return;
     }
-    if (!confirm(`Generate ${taskTemplates.length} milestone tasks for "${project.name}" from templates? Existing milestones will remain.`)) return;
+    if (!confirm(`Generate ${matchingTemplates.length} milestone tasks for "${project.name}" from templates? Existing milestones will remain.`)) return;
 
     setIsGenerating(true);
     const startD = new Date(project.startDate);
     const endD = new Date(project.endDate);
     const totalMs = endD.getTime() - startD.getTime();
 
-    const sorted = [...taskTemplates].sort((a, b) => a.startPercent - b.startPercent);
+    const sorted = [...matchingTemplates].sort((a, b) => a.startPercent - b.startPercent);
     const newTasks: Task[] = sorted.map(tpl => {
       const taskStartMs = startD.getTime() + (totalMs * tpl.startPercent / 100);
       const taskEndMs = startD.getTime() + (totalMs * tpl.endPercent / 100);
@@ -592,6 +611,30 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
               }}
             >
               <Save size={16} /> Save Version
+            </button>
+          )}
+
+          {/* Scan BOQ to WBS Button */}
+          {project && (
+            <button 
+              onClick={() => setIsScanModalOpen(true)} 
+              className="hover-lift" 
+              style={{ 
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                color: 'white', 
+                border: 'none', 
+                padding: '0.6rem 1.25rem', 
+                borderRadius: '8px', 
+                fontWeight: 700, 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem', 
+                fontSize: '0.9rem',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+              }}
+            >
+              <Sparkles size={16} /> สแกน BOQ เป็น WBS
             </button>
           )}
 
@@ -1389,6 +1432,17 @@ export const ProjectPlan = ({ projects, tasks, setTasks, users, taskTemplates, p
           </div>
         </div>
       )}
+
+      {/* Quotation & BOQ Scanner Modal */}
+      <QuotationScanModal
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
+        projects={projects}
+        defaultProjectId={selectedProjectId}
+        onSuccess={() => {
+          if (fetchInitialData) fetchInitialData();
+        }}
+      />
     </div>
   );
 };

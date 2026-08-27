@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { User, Project } from '../types';
+import { canOperateProject } from '../utils';
 import {
   X, CheckCircle2, AlertCircle, ShieldCheck, Star,
   FileCheck, DollarSign, Upload, Trash2, RefreshCw,
@@ -229,6 +230,11 @@ export const QCHandoverModal: React.FC<QCHandoverModalProps> = ({
   const handleSubmitQC = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!project) return;
+    const perm = canOperateProject(currentUser, project);
+    if (!perm.allowed) {
+      showToast(perm.reason || 'ไม่มีสิทธิ์บันทึกผล QC', 'error');
+      return;
+    }
     setIsSaving(true);
     const inspector = users.find(u => u.id === inspectorId);
     try {
@@ -272,6 +278,11 @@ export const QCHandoverModal: React.FC<QCHandoverModalProps> = ({
   const handleSubmitHandoverAndSettle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!project) return;
+    const perm = canOperateProject(currentUser, project);
+    if (!perm.allowed) {
+      showToast(perm.reason || 'ไม่มีสิทธิ์ปิดโครงการและส่งมอบงาน', 'error');
+      return;
+    }
     setIsSaving(true);
     const startDate = handoverDate || new Date().toISOString().split('T')[0];
     const end = new Date(startDate);

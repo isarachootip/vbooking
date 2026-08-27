@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Users, Plus, X, Edit, Trash2, FileText, Layers, Search, Download, CheckCircle2, Clock, Briefcase, ChevronLeft, ChevronRight, Eye, GitBranch } from 'lucide-react';
 import type { User, Project, ProjectStatus, ProjectRole, Task, PermissionScheme, ProjectWorkflow, TaskTemplate, MasterProjectType } from '../types';
-import { formatToDDMMYYYY } from '../utils';
+import { formatToDDMMYYYY, canOperateProject } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { getWorkflowColumnsForType, STAGE_CONFIG, ALL_WORKFLOW_COLUMNS, mapStatusToColumn } from '../config/workflows';
 
@@ -100,7 +100,7 @@ export const Projects = ({
   const [renovateQtNo, setRenovateQtNo] = useState('');
   const [renovateTicketNo, setRenovateTicketNo] = useState('');
   const [picUser, setPicUser] = useState('');
-  const [jobType, setJobType] = useState('');
+  const [jobType, setJobType] = useState('งานรีโนเวท');
   const [buildingType, setBuildingType] = useState('บ้านเดี่ยว');
   const [areaSize, setAreaSize] = useState('');
   const [initialBudget, setInitialBudget] = useState('');
@@ -159,7 +159,7 @@ export const Projects = ({
     setRenovateQtNo('');
     setRenovateTicketNo('');
     setPicUser('');
-    setJobType('');
+    setJobType('งานรีโนเวท');
     setBuildingType('บ้านเดี่ยว');
     setAreaSize('');
     setInitialBudget('');
@@ -322,11 +322,7 @@ export const Projects = ({
 
   // Permission Helpers
   const canManageWorkflow = (project: Project) => {
-    if (!currentUser) return false;
-    if (currentUser.globalRole === 'Admin') return true;
-    if (currentUser.globalRole === 'Manager') return true;
-    const member = project.members.find(m => m.userId === currentUser.id);
-    return member?.role === 'PM' || member?.role === 'Team Lead' || member?.role === 'Leader';
+    return canOperateProject(currentUser, project).allowed;
   };
 
   const canCreateProject = () => {
@@ -522,9 +518,8 @@ export const Projects = ({
     const matchesStatus = statusFilter === 'All' || 
       project.status === statusFilter ||
       (statusFilter === 'To Do' && ['To Do', 'Todo', 'Planning', 'Draft'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
-      (statusFilter === 'Survey_Group' && ['Buy-Survey', 'Survey', 'ซื้อสำรวจ', 'QC (สำรวจ)', 'survey'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
-      (statusFilter === 'Design_Group' && ['Design', 'ออกแบบ', 'ชำระเงิน', 'ลูกค้ายืนยัน', 'design', 'payment'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
-      (statusFilter === 'Assign_Group' && ['Assign ช่าง', 'Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ', 'assign', 'checkin', 'checkout'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
+      (statusFilter === 'Assign_Group' && ['Assign ช่าง', 'assign', 'จ่ายงาน'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
+      (statusFilter === 'Execution_Group' && ['Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ', 'checkin', 'checkout'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
       (statusFilter === 'QC_Group' && ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น', 'qc', 'aftersale', 'close'].some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase())) ||
       (STAGE_CONFIG[statusFilter] && STAGE_CONFIG[statusFilter].statuses.some(s => s.toLowerCase() === (project.status || '').trim().toLowerCase()));
 
@@ -630,9 +625,8 @@ export const Projects = ({
         {/* Standard Workflow Stage Metrics */}
         {[
           { key: 'To Do', label: 'To Do', icon: FileText, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', count: projects.filter(p => ['To Do', 'Todo', 'Planning', 'Draft'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
-          { key: 'Survey_Group', label: 'Survey (สำรวจ)', icon: FileText, color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.15)', count: projects.filter(p => ['Buy-Survey', 'Survey', 'ซื้อสำรวจ', 'QC (สำรวจ)'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
-          { key: 'Design_Group', label: 'Design / ชำระเงิน', icon: CheckCircle2, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: projects.filter(p => ['Design', 'ออกแบบ', 'ชำระเงิน', 'ลูกค้ายืนยัน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
-          { key: 'Assign_Group', label: 'Assign ช่าง / หน้างาน', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: projects.filter(p => ['Assign ช่าง', 'Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { key: 'Assign_Group', label: 'Assign ช่าง', icon: Users, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', count: projects.filter(p => ['Assign ช่าง', 'assign', 'จ่ายงาน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
+          { key: 'Execution_Group', label: 'Check-in / Check-out (หน้างาน)', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', count: projects.filter(p => ['Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length },
           { key: 'QC_Group', label: 'QC / Aftersale / Close', icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', count: projects.filter(p => ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length }
         ].map((stg, i) => {
           const isActive = statusFilter === stg.key || (stg.key === 'To Do' && statusFilter === 'To Do');

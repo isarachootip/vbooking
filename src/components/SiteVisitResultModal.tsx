@@ -6,7 +6,7 @@ import {
   RefreshCw, DollarSign, MessageSquare, Camera, Image,
   Upload, Trash2, ZoomIn, Eye, Sparkles, HelpCircle, ArrowUpRight
 } from 'lucide-react';
-import { formatToDDMMYYYY } from '../utils';
+import { formatToDDMMYYYY, getTodayDateString, isDateInPast } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 
 interface SiteVisitResult {
@@ -324,6 +324,12 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!lead) return;
+
+    if (nadate && isDateInPast(nadate)) {
+      alert('⚠️ ไม่สามารถเลือกวันนัดหมายครั้งถัดไปย้อนหลังได้ กรุณาเลือกวันปัจจุบันหรือวันล่วงหน้า');
+      return;
+    }
+
     setSaving(true);
     try {
       // Filter non-empty photos for payload
@@ -745,7 +751,20 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                 {(nact === 'follow_up_call' || nact === 'reschedule_visit') && (
                   <div>
                     <label style={lbl}>วันนัดหมายครั้งถัดไป (DD/MM/YYYY)</label>
-                    <CustomDateInput value={nadate} onChange={e => setNadate(e.target.value)} style={inp} />
+                    <CustomDateInput 
+                      value={nadate} 
+                      min={getTodayDateString()}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val && isDateInPast(val)) {
+                          alert('⚠️ ไม่สามารถเลือกวันนัดหมายย้อนหลังได้ กรุณาเลือกวันปัจจุบันหรือวันล่วงหน้า');
+                          setNadate(getTodayDateString());
+                          return;
+                        }
+                        setNadate(val);
+                      }} 
+                      style={inp} 
+                    />
                   </div>
                 )}
                 <div>

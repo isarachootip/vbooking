@@ -1195,7 +1195,7 @@ function App() {
           <Route path="/leads" element={<LeadsPage currentUser={currentUser} branches={branches} users={users} />} />
           <Route path="/quotations" element={<QuotationManager currentUser={currentUser} />} />
           <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} masterProjectTypes={masterProjectTypes} branches={branches} />} />
-          <Route path="/projects/:id" element={<ProjectDetail projects={projects} setProjects={handleSetProjects} users={users} currentUser={currentUser} tasks={tasks} setTasks={handleSetTasks} projectWorkflows={projectWorkflows} timesheets={timesheets} setTimesheets={handleSetTimesheets} />} />
+          <Route path="/projects/:id" element={<ProjectDetail projects={projects} setProjects={handleSetProjects} users={users} currentUser={currentUser} tasks={tasks} setTasks={handleSetTasks} projectWorkflows={projectWorkflows} timesheets={timesheets} setTimesheets={handleSetTimesheets} systemSettings={systemSettings} />} />
 
           <Route path="/project-board" element={<ProjectBoard projects={projects} setProjects={handleSetProjects} tasks={tasks} users={users} currentUser={currentUser} masterProjectTypes={masterProjectTypes} />} />
           <Route path="/project-timeline" element={<ProjectTimeline projects={projects} currentUser={currentUser} masterProjectTypes={masterProjectTypes} />} />

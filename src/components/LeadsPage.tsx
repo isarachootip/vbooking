@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, ShieldAlert, Lock, Building2, User } from 'lucide-react';
 import type { User as UserType, Customer, CustomerSite } from '../types';
-import { formatToDDMMYYYY } from '../utils';
+import { formatToDDMMYYYY, getTodayDateString, isDateInPast } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { GisMapPickerModal, formatToDMS } from './GisMapPickerModal';
 import { SiteVisitApprovalManager } from './SiteVisitApprovalManager';
@@ -127,6 +127,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState<boolean>(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState<string>('');
   const [newSiteName, setNewSiteName] = useState<string>('');
+  const [isSavingLead, setIsSavingLead] = useState<boolean>(false);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -228,20 +229,51 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
   const handleSelectCustomerFromMaster = async (cust: Customer) => {
     const c = cust as any;
-    setSelectedCustomerId(c.id);
-    const fName = c.firstName || c.first_name || '';
-    const lName = c.lastName || c.last_name || '';
+    setSelectedCustomerId(c.id || '');
+    
+    // For corporate or individual, determine first and last name properly
+    let fName = c.firstName || c.first_name || '';
+    let lName = c.lastName || c.last_name || '';
+    if (!fName && (c.companyName || c.company_name)) {
+      fName = c.companyName || c.company_name;
+    } else if (!fName && (c.customerName || c.customer_name)) {
+      const parts = (c.customerName || c.customer_name).split(' ');
+      fName = parts[0];
+      if (!lName && parts.length > 1) lName = parts.slice(1).join(' ');
+    }
+    if (!fName) fName = 'ลูกค้า';
+
     setFirstName(fName);
     setLastName(lName);
-    setCustomerPhone(c.phone || '');
-    setCustomerSearchQuery(c.customerName || c.customer_name || `${fName} ${lName}`.trim());
+
+    // Clean phone number to digits only (max 10 digits) so HTML5 pattern="[0-9]*" always passes
+    const rawPhone = c.phone || '';
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    setCustomerPhone(cleanPhone);
+
+    const displayName = c.companyName || c.company_name || c.customerName || c.customer_name || `${fName} ${lName}`.trim();
+    setCustomerSearchQuery(displayName);
     setIsCustomerDropdownOpen(false);
 
-    const sites = await fetchCustomerSites(c.id);
-    if (sites && sites.length > 0) {
-      const defaultSite = sites.find((s: any) => s.isDefault || s.is_default) || sites[0];
-      handleSelectSite(defaultSite);
-    } else {
+    try {
+      const sites = await fetchCustomerSites(c.id);
+      if (sites && sites.length > 0) {
+        const defaultSite = sites.find((s: any) => s.isDefault || s.is_default) || sites[0];
+        handleSelectSite(defaultSite);
+      } else {
+        setSelectedSiteId('');
+        if (c.defaultSiteAddress || c.default_site_address || c.address) {
+          setCustomerAddress(c.defaultSiteAddress || c.default_site_address || c.address || '');
+        }
+        if (c.defaultSiteLat || c.default_site_lat || c.latitude) {
+          setCustomerLatitude(String(c.defaultSiteLat || c.default_site_lat || c.latitude));
+        }
+        if (c.defaultSiteLng || c.default_site_lng || c.longitude) {
+          setCustomerLongitude(String(c.defaultSiteLng || c.default_site_lng || c.longitude));
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching sites during customer select:', e);
       setSelectedSiteId('');
     }
   };
@@ -343,6 +375,16 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     const init = async () => {
       await Promise.resolve();
       fetchLeads();
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const phoneParam = urlParams.get('phone') || urlParams.get('tel');
+        if (phoneParam) {
+          const clean = phoneParam.replace(/\D/g, '').slice(-10);
+          if (clean) {
+            setSearchTerm(clean);
+          }
+        }
+      }
     };
     init();
   }, []);
@@ -362,7 +404,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const openFollowupModal = (lead: Lead) => {
     setSelectedLeadForFollowup(lead);
     setActivityType('1.2.2 นัดลงพื้นที่ site งาน');
-    setAppointmentDate(lead.appointment_date ? lead.appointment_date.split(' ')[0] : '');
+    const existingDate = lead.appointment_date ? lead.appointment_date.split(' ')[0] : '';
+    setAppointmentDate(existingDate && !isDateInPast(existingDate) ? existingDate : getTodayDateString());
     setAppointmentTime(lead.appointment_date && lead.appointment_date.includes(' ') ? lead.appointment_date.split(' ')[1] : '10:00');
     setAssigneeName(lead.appointment_assignee || currentUser?.name || 'แอดมิน');
     setFollowupNotes('');
@@ -441,6 +484,11 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const handleSaveFollowup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLeadForFollowup) return;
+
+    if (appointmentDate && isDateInPast(appointmentDate)) {
+      alert('⚠️ ไม่สามารถบันทึกนัดหมายวันย้อนหลังได้ กรุณาเลือกวันปัจจุบันหรือวันล่วงหน้า');
+      return;
+    }
 
     try {
       const res = await fetch(`/api/leads/${selectedLeadForFollowup.id}/followups`, {
@@ -738,7 +786,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       customer_name: fullCustomerName,
       customer_first_name: firstName.trim(),
       customer_last_name: lastName.trim(),
-      customer_phone: customerPhone,
+      customer_phone: trimmedPhone,
       customer_address: customerAddress,
       customer_latitude: customerLatitude ? parseFloat(customerLatitude) : null,
       customer_longitude: customerLongitude ? parseFloat(customerLongitude) : null,
@@ -754,6 +802,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       sales_contact_id: salesContactId,
     };
 
+    setIsSavingLead(true);
     try {
       let response;
       if (editingLead) {
@@ -780,6 +829,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     } catch (err: any) {
       console.error('Error saving lead', err);
       alert('Error saving lead: ' + (err.message || err));
+    } finally {
+      setIsSavingLead(false);
     }
   };
 
@@ -837,7 +888,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       setCustomerLongitude(lngStr);
       setSmartInput(latStr && lngStr ? `${latStr}, ${lngStr}` : lead.map_url || '');
       setMapUrl(lead.map_url || '');
-      setJobType(lead.job_type);
+      setJobType(lead.job_type || 'Renovate Service');
       setStatus(lead.status);
       setSiteCoordinatorName(lead.coordinator_name || '');
       setSiteCoordinatorPhone(lead.coordinator_phone || '');
@@ -1602,8 +1653,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           style={{ padding: '0.55rem 1rem 0.55rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
         >
           <option value="All">ประเภทงานทั้งหมด</option>
-          <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
           <option value="Renovate Service">Renovate Service (งานรีโนเวท)</option>
+          <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
           <option value="MA Service">MA Service (งานซ่อมบำรุง)</option>
         </select>
       </div>
@@ -2333,7 +2384,16 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                     <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>วันที่นัดหมาย (DD/MM/YYYY)</label>
                     <CustomDateInput 
                       value={appointmentDate}
-                      onChange={e => setAppointmentDate(e.target.value)}
+                      min={getTodayDateString()}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val && isDateInPast(val)) {
+                          alert('⚠️ ไม่สามารถเลือกวันนัดหมายย้อนหลังได้ กรุณาเลือกวันปัจจุบันหรือวันล่วงหน้า');
+                          setAppointmentDate(getTodayDateString());
+                          return;
+                        }
+                        setAppointmentDate(val);
+                      }}
                       style={{ padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
                     />
                   </div>
@@ -3309,10 +3369,24 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                 {(!editingLead || editingLead.status !== 'Converted' || isPrivilegedUser) && (
                   <button
                     type="submit"
-                    style={{ padding: '0.55rem 1.5rem', borderRadius: 'var(--radius-md)', background: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
+                    disabled={isSavingLead}
+                    style={{
+                      padding: '0.55rem 1.5rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: isSavingLead ? '#9ca3af' : '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      cursor: isSavingLead ? 'not-allowed' : 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem'
+                    }}
                     className="hover-lift"
                   >
-                    บันทึกข้อมูลลูกค้า
+                    {isSavingLead ? <><RefreshCw size={14} className="spin-slow" /> กำลังบันทึก...</> : 'บันทึกข้อมูลลูกค้า'}
                   </button>
                 )}
               </div>

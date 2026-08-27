@@ -49,8 +49,18 @@ Tasks can be organized into hierarchy levels to track milestone completion:
     *งานหลัก*: ตัวแทนเป้าหมายสำคัญ (Milestones) หรือหัวข้อหลักของงานที่จะควบคุมงบประมาณเวลา
 *   **Subtask / งานย่อย**: Smaller, actionable tasks created under a Main Task.
     *งานย่อย (Subtasks)*: รายการงานย่อยที่แบ่งออกจากงานหลัก เพื่อให้เห็นรายละเอียดการปฏิบัติงานได้ชัดเจน
-*   **Progress Rollup / การคำนวณความคืบหน้าแบบเชื่อมโยง**: If a Main Task has subtasks, its progress percentage is calculated purely based on the ratio of completed (Done) subtasks (e.g., 2 of 4 subtasks completed = 50% progress for the Main Task).
-    *การรวมผลความคืบหน้า*: งานหลักที่มีงานย่อย ความคืบหน้าจะคำนวณจากเปอร์เซ็นต์ของจำนวนงานย่อยที่เสร็จสิ้น (Done) เท่านั้น
+*   **Progress Calculation & Rollup / การคำนวณความคืบหน้า**:
+    *   **Milestone with Subtasks**: Calculated automatically as `(Completed Subtasks with status 'Done' / Total Subtasks) * 100%`.
+        *สำหรับงานหลักที่มีงานย่อย*: คำนวณจากสัดส่วนของงานย่อยที่เสร็จสมบูรณ์ `(จำนวน Subtask สถานะ Done / จำนวน Subtask ทั้งหมด) * 100%`
+    *   **Milestone without Subtasks**: Determined directly by the Milestone's status (`To Do = 0%`, `In Progress = 50%`, `Review = 90%`, `Done = 100%`).
+        *สำหรับงานหลักที่ไม่มีงานย่อย*: คำนวณตามสถานะของงานหลักโดยตรง (`To Do = 0%`, `In Progress = 50%`, `Review = 90%`, `Done = 100%`)
+    *   **Overall Project Progress (% Done)**: Mathematical average of all Main Milestones progress in the project: `Sum(Milestone Progress) / Total Milestones`.
+        *ความก้าวหน้าภาพรวมโครงการ*: คำนวณจากค่าเฉลี่ยของ % Progress ของทุก Milestone หลักในโครงการ
+*   **How to Update Progress / ช่องทางการอัปเดตความก้าวหน้า**:
+    1.  *Project Plan & Gantt (แผนงาน / Gantt)*: Click the edit button (✏️) on any milestone/subtask in the table and change its status.
+    2.  *Tasks & QC (ขั้นตอนงาน & QC)*: Complete inspection checklists and advance task statuses to `Done`.
+    3.  *Project Board (Kanban)*: Drag and drop task cards to `In Progress`, `Review`, or `Done` columns.
+    4.  *Site Logs & Check-In (บันทึกหน้างาน / เช็คอินช่าง)*: Technicians submit daily site reports and PMs verify and complete steps.
 *   **Hour Budgeting Limits / การจำกัดชั่วโมงงาน**: The sum of all subtasks' estimated hours cannot exceed the parent Main Task's budgeted estimated hours.
     *การควบคุมงบประมาณชั่วโมงงาน*: ผลรวมชั่วโมงประมาณการของงานย่อยทั้งหมดจะต้องไม่เกินจำนวนชั่วโมงประมาณการของงานหลัก
 

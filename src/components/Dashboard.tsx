@@ -408,25 +408,18 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
             count: filteredProjects.filter(p => ['To Do', 'Todo', 'Planning', 'Draft', 'todo'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
           },
           { 
-            label: 'Survey (สำรวจ)', 
-            icon: FileText, 
-            color: '#0ea5e9', 
-            bg: 'rgba(14, 165, 233, 0.15)', 
-            count: filteredProjects.filter(p => ['Buy-Survey', 'Survey', 'ซื้อสำรวจ', 'QC (สำรวจ)'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
-          },
-          { 
-            label: 'Design & ชำระเงิน', 
-            icon: CheckCircle2, 
+            label: 'Assign ช่าง', 
+            icon: Users, 
             color: '#8b5cf6', 
             bg: 'rgba(139, 92, 246, 0.15)', 
-            count: filteredProjects.filter(p => ['Design', 'ออกแบบ', 'สร้างใบเสนอราคา', 'ชำระเงิน', 'ลูกค้ายืนยัน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
+            count: filteredProjects.filter(p => ['Assign ช่าง', 'assign', 'จ่ายงาน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
           },
           { 
-            label: 'Assign ช่าง & หน้างาน', 
+            label: 'Check-in & Check-out (หน้างาน)', 
             icon: Clock, 
             color: '#f59e0b', 
             bg: 'rgba(245, 158, 11, 0.15)', 
-            count: filteredProjects.filter(p => ['Assign ช่าง', 'Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
+            count: filteredProjects.filter(p => ['Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
           },
           { 
             label: 'QC, Aftersale & Close', 

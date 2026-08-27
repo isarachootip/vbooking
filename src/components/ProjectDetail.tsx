@@ -9,9 +9,10 @@ import {
   AlertCircle, MessageSquare, Award, ShieldCheck
 } from 'lucide-react';
 import type { Project, User, Task, ProjectWorkflow, TimesheetEntry } from '../types';
-import { formatToDDMMYYYY } from '../utils';
+import { formatToDDMMYYYY, canOperateProject } from '../utils';
 import { STAGE_CONFIG } from '../config/workflows';
 import { QCHandoverModal } from './QCHandoverModal';
+import { ProjectChat } from './ProjectChat';
 
 interface ProjectDetailProps {
   projects: Project[];
@@ -23,6 +24,7 @@ interface ProjectDetailProps {
   projectWorkflows?: ProjectWorkflow[];
   timesheets?: TimesheetEntry[];
   setTimesheets?: React.Dispatch<React.SetStateAction<TimesheetEntry[]>>;
+  systemSettings?: Record<string, any>;
 }
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({
@@ -35,6 +37,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   projectWorkflows = [],
   timesheets = [],
   setTimesheets,
+  systemSettings,
 }) => {
 
   const { id } = useParams<{ id: string }>();
@@ -43,12 +46,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   // Find target project or fallback to first project
   const project = projects.find(p => p.id === id) || projects[0];
 
+  // Check operator permissions: Admin, PM, or Responsible Branch QC
+  const operatorPermission = canOperateProject(currentUser, project);
+
   const [notes, setNotes] = useState(project?.extraDetails?.notes || 'ลูกค้าต้องการรีโนเวทบางส่วน เน้นความสวยงามและฟังก์ชันการใช้งาน งบประมาณเบื้องต้น 1,000 บาท');
   const [attachments, setAttachments] = useState<Array<{ name: string; size: string; date: string }>>([]);
   const [selectedHistoryFilter, setSelectedHistoryFilter] = useState('All');
 
   // Tab Navigation State
-  const [activeTab, setActiveTab] = useState<'overview' | 'workflow' | 'quotations'>('workflow');
+  const [activeTab, setActiveTab] = useState<'overview' | 'workflow' | 'quotations' | 'chat'>('workflow');
 
   // Quotations & Price Book State
   const [priceBook, setPriceBook] = useState<any[]>([]);
@@ -128,6 +134,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   // Safe helper to update the project's lifecycle flow state and persist it to PostgreSQL
   const updateFlowState = (updatedFields: Partial<typeof flowState>) => {
     if (!setProjects || !project) return;
+    if (!operatorPermission.allowed) {
+      alert(`⚠️ ไม่สามารถดำเนินการได้:\n${operatorPermission.reason}`);
+      return;
+    }
     const newExtra = {
       ...(project.extraDetails || {}),
       lifecycle: {
@@ -173,6 +183,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const handleFlowCheckIn = (role: 'surveyor' | 'technician' | 'qc_inspector') => {
     if (!setTimesheets || !project) return;
+    if (!operatorPermission.allowed) {
+      alert(`⚠️ ไม่สามารถดำเนินการ Check-In ได้:\n${operatorPermission.reason}`);
+      return;
+    }
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const dateStr = now.toISOString().split('T')[0];
@@ -221,6 +235,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const handleFlowCheckOut = (role: 'surveyor' | 'technician' | 'qc_inspector', customProof?: string) => {
     if (!setTimesheets || !project) return;
+    if (!operatorPermission.allowed) {
+      alert(`⚠️ ไม่สามารถดำเนินการ Check-Out ได้:\n${operatorPermission.reason}`);
+      return;
+    }
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const dateStr = now.toISOString().split('T')[0];
@@ -264,6 +282,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         step: 'lead_record_updated'
       });
     } else if (role === 'technician') {
+      const projTasks = (tasks || []).filter(t => t.projectId === project.id);
+      const pending = projTasks.filter(t => t.status !== 'Done' && (t.progress_percent || 0) < 100 && ((t as any).progressPercent || 0) < 100);
+      
+      if (projTasks.length > 0 && pending.length > 0) {
+        const confirmMsg = `⚠️ โครงการนี้มีแผนงาน WBS ทั้งหมด ${projTasks.length} รายการ\nโดยยังมี ${pending.length} งานที่ยังไม่เสร็จสิ้น:\n${pending.map(t => '• ' + t.title).join('\n')}\n\nคุณต้องการบันทึก Check-Out เพื่อบันทึกเวลาประจำวันเท่านั้น (ยังไม่ปิดจบงานทั้งโครงการ) ใช่หรือไม่?`;
+        const proceedDailyOnly = window.confirm(confirmMsg);
+        if (!proceedDailyOnly) return;
+
+        alert(`บันทึก Check-Out ประจำวันสำเร็จ! (${hoursDiff} ชม.)\nสถานะงานย่อยยังรอการดำเนินงานต่อในเมนู "แผนงาน / Gantt"`);
+        return;
+      }
+
       updateFlowState({
         work_finished: true
       });
@@ -281,6 +311,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const handleApproveQuotation = (quo: any) => {
     if (!setProjects || !project) return;
+    if (!operatorPermission.allowed) {
+      alert(`⚠️ ไม่สามารถอนุมัติใบเสนอราคาได้:\n${operatorPermission.reason}`);
+      return;
+    }
     
     fetch(`/api/quotations`, {
       method: 'POST',
@@ -489,6 +523,45 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <FileText size={12} /> Lead Ref: {project.leadId}
                 </span>
               )}
+
+              {/* Permission Badge */}
+              {operatorPermission.allowed ? (
+                <span 
+                  style={{ 
+                    fontSize: '0.75rem', 
+                    padding: '0.2rem 0.65rem', 
+                    borderRadius: 'var(--radius-full)', 
+                    background: 'rgba(16, 185, 129, 0.12)', 
+                    color: '#34d399', 
+                    fontWeight: 700, 
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                  title="คุณมีสิทธิ์ดำเนินการโครงการนี้"
+                >
+                  <ShieldCheck size={13} /> {operatorPermission.roleDescription}
+                </span>
+              ) : (
+                <span 
+                  style={{ 
+                    fontSize: '0.75rem', 
+                    padding: '0.2rem 0.65rem', 
+                    borderRadius: 'var(--radius-full)', 
+                    background: 'rgba(239, 68, 68, 0.12)', 
+                    color: '#f87171', 
+                    fontWeight: 700, 
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                  title={operatorPermission.reason}
+                >
+                  <AlertTriangle size={13} /> โหมดดูข้อมูล (Read-Only)
+                </span>
+              )}
             </div>
             <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
               {project.name}
@@ -537,7 +610,33 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </button>
 
           <button 
-            onClick={() => setIsQCHandoverModalOpen(true)}
+            onClick={() => setActiveTab('chat')}
+            style={{ 
+              background: activeTab === 'chat' ? 'var(--accent-primary)' : 'rgba(59, 130, 246, 0.12)', 
+              color: activeTab === 'chat' ? 'white' : 'var(--accent-primary)', 
+              border: '1px solid rgba(59, 130, 246, 0.3)', 
+              padding: '0.5rem 0.9rem', 
+              borderRadius: 'var(--radius-md)', 
+              fontSize: '0.85rem', 
+              fontWeight: 700, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem'
+            }}
+            className="hover-lift"
+          >
+            <MessageSquare size={16} /> 💬 แชทติดต่อช่าง
+          </button>
+
+          <button 
+            onClick={() => {
+              if (!operatorPermission.allowed) {
+                alert(`⚠️ ไม่สามารถเปิดบันทึก QC & ส่งมอบงานได้:\n${operatorPermission.reason}`);
+                return;
+              }
+              setIsQCHandoverModalOpen(true);
+            }}
             style={{ 
               background: 'linear-gradient(135deg, #4338ca, #059669)', 
               color: 'white', 
@@ -580,7 +679,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       </div>
 
       {/* ── TAB NAVIGATION ── */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', gap: '1.5rem', marginBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', gap: '1.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
         <button 
           onClick={() => setActiveTab('overview')}
           style={{
@@ -634,6 +733,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           }}
         >
           <FileText size={16} /> ใบเสนอราคา & BOQ
+        </button>
+        <button 
+          onClick={() => setActiveTab('chat')}
+          style={{
+            padding: '0.75rem 0.5rem',
+            background: 'transparent',
+            border: 'none',
+            color: activeTab === 'chat' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'chat' ? '3px solid var(--accent-primary)' : '3px solid transparent',
+            fontWeight: activeTab === 'chat' ? 700 : 500,
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem'
+          }}
+        >
+          <MessageSquare size={16} /> แชทติดต่อช่าง
         </button>
       </div>
 
@@ -1010,6 +1127,26 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {activeTab === 'workflow' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem', paddingBottom: '3rem' }}>
           
+          {/* Read-Only Mode Notification Banner for Unauthorized Users */}
+          {!operatorPermission.allowed && (
+            <div style={{ 
+              padding: '0.85rem 1.25rem', 
+              background: 'rgba(239, 68, 68, 0.08)', 
+              border: '1px solid rgba(239, 68, 68, 0.25)', 
+              borderRadius: 'var(--radius-md)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem',
+              color: '#fca5a5',
+              fontSize: '0.85rem'
+            }}>
+              <AlertTriangle size={20} color="#ef4444" style={{ flexShrink: 0 }} />
+              <div>
+                <strong>โหมดดูข้อมูลเท่านั้น (Read-Only):</strong> บัญชีปัจจุบันไม่มีสิทธิ์บันทึก/แก้ไขสถานะโครงการนี้ ({operatorPermission.reason})
+              </div>
+            </div>
+          )}
+
           {/* ── VISUAL STEPPER ── */}
           <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1709,6 +1846,63 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                     <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>📱 Step 8 & 9: เช็คอินช่างและบันทึก Timesheet (Check-In / Out)</div>
                     
+                    {/* WBS Tasks Guard & Progress Widget */}
+                    {(() => {
+                      const projTasks = (tasks || []).filter(t => t.projectId === project?.id);
+                      const completedProjTasks = projTasks.filter(t => t.status === 'Done' || t.progress_percent === 100 || (t as any).progressPercent === 100);
+                      const pendingProjTasks = projTasks.filter(t => t.status !== 'Done' && (t.progress_percent || 0) < 100 && ((t as any).progressPercent || 0) < 100);
+                      const hasWbs = projTasks.length > 0;
+                      const pct = hasWbs ? Math.round((completedProjTasks.length / projTasks.length) * 100) : 100;
+
+                      if (!hasWbs) return null;
+
+                      return (
+                        <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                              📋 ความคืบหน้าแผนงานย่อย (WBS Tasks): {completedProjTasks.length} / {projTasks.length} งานเสร็จสิ้น
+                            </span>
+                            <span style={{ fontWeight: 800, color: pct === 100 ? '#10b981' : 'var(--accent-primary)' }}>{pct}%</span>
+                          </div>
+
+                          <div style={{ width: '100%', height: '8px', background: 'var(--bg-secondary)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#10b981' : 'var(--accent-primary)', transition: 'width 0.3s ease' }} />
+                          </div>
+
+                          {pendingProjTasks.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.25rem' }}>
+                              <div style={{ fontSize: '0.75rem', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <AlertTriangle size={14} /> โครงการนี้มี {projTasks.length} งานย่อย — ช่างต้องดำเนินงานและ Check-In/Out ทีละ Task ในแผนงาน
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>งานที่รอดำเนินการ:</span>
+                                {pendingProjTasks.slice(0, 3).map((t, idx) => (
+                                  <span key={idx} style={{ fontSize: '0.7rem', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                    {t.title}
+                                  </span>
+                                ))}
+                                {pendingProjTasks.length > 3 && (
+                                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>+{pendingProjTasks.length - 3} งาน</span>
+                                )}
+                              </div>
+                              <div style={{ marginTop: '0.35rem' }}>
+                                <Link 
+                                  to={`/project-plan/${project?.id}`}
+                                  style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                >
+                                  📊 เปิดดูและอัปเดตงานในเมนู "แผนงาน / Gantt" →
+                                </Link>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.2rem' }}>
+                              ✓ งานย่อยทุกรายการเสร็จสิ้น 100% พร้อมส่งมอบให้ QC ตรวจรับงาน
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                       <button 
                         onClick={() => handleFlowCheckIn('technician')}
@@ -1765,23 +1959,32 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
                     <button 
                       onClick={() => {
-                        if (!flowState.work_finished) {
+                        const projTasks = (tasks || []).filter(t => t.projectId === project?.id);
+                        const pendingProjTasks = projTasks.filter(t => t.status !== 'Done' && (t.progress_percent || 0) < 100 && ((t as any).progressPercent || 0) < 100);
+
+                        if (projTasks.length > 0 && pendingProjTasks.length > 0) {
+                          alert(`⚠️ ยังไม่สามารถส่งมอบงานเข้าตรวจ QC ได้!\n\nโครงการนี้มีงานย่อยที่ยังไม่เสร็จสิ้นอีก ${pendingProjTasks.length} รายการ:\n${pendingProjTasks.map(t => '• ' + t.title).join('\n')}\n\nกรุณาให้ช่างดำเนินงานในเมนู "แผนงาน / Gantt" หรือ "ขั้นตอนงาน" ให้ครบ 100% ก่อนส่งมอบ`);
+                          return;
+                        }
+
+                        if (!flowState.work_finished && projTasks.length === 0) {
                           alert('กรุณาทำการเช็คเอาท์ (Check-Out) และบันทึก Timesheet เพื่อส่งมอบผลงานก่อนเข้าตรวจ QC');
                           return;
                         }
+
                         updateFlowState({
                           phase: 'PHASE_04_QC_HANDOVER_AFTERSALES',
                           step: 'qc_inspection'
                         });
                       }}
                       style={{
-                        background: flowState.work_finished ? 'var(--accent-primary)' : 'var(--bg-secondary)',
-                        color: flowState.work_finished ? 'white' : 'var(--text-muted)',
+                        background: (flowState.work_finished || ((tasks || []).filter(t => t.projectId === project?.id).length > 0 && (tasks || []).filter(t => t.projectId === project?.id && t.status !== 'Done' && (t.progress_percent || 0) < 100).length === 0)) ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                        color: (flowState.work_finished || ((tasks || []).filter(t => t.projectId === project?.id).length > 0 && (tasks || []).filter(t => t.projectId === project?.id && t.status !== 'Done' && (t.progress_percent || 0) < 100).length === 0)) ? 'white' : 'var(--text-muted)',
                         padding: '0.6rem 1.5rem',
                         border: 'none',
                         borderRadius: '6px',
                         fontWeight: 700,
-                        cursor: flowState.work_finished ? 'pointer' : 'not-allowed',
+                        cursor: (flowState.work_finished || ((tasks || []).filter(t => t.projectId === project?.id).length > 0 && (tasks || []).filter(t => t.projectId === project?.id && t.status !== 'Done' && (t.progress_percent || 0) < 100).length === 0)) ? 'pointer' : 'not-allowed',
                         fontSize: '0.85rem'
                       }}
                     >
@@ -2408,7 +2611,19 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
-
+      {/* ── TAB 4: แชทติดต่อช่าง (PROJECT CHAT) ── */}
+      {activeTab === 'chat' && project && (
+        <div style={{ height: '680px', display: 'flex', flexDirection: 'column' }}>
+          <ProjectChat
+            projects={projects}
+            users={users}
+            currentUser={currentUser}
+            systemSettings={systemSettings}
+            defaultProjectId={project.id}
+            hideSidebar={true}
+          />
+        </div>
+      )}
 
       {/* PHASE 04: QC INSPECTION, HANDOVER & SETTLEMENT MODAL */}
       <QCHandoverModal

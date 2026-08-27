@@ -540,13 +540,13 @@ export const MasterManagement = ({
                 <span style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Zap size={16} /> Quick Service Flow
                 </span>
-                <span style={{ fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.2)', color: '#d97706', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>8 ขั้นตอน</span>
+                <span style={{ fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.2)', color: '#d97706', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>7 ขั้นตอน</span>
               </div>
               <p style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', margin: 0 }}>
                 สำหรับงานบริการด่วนและแก้ไขซ่อมแซมเร่งด่วน โดยข้ามขั้นตอนสำรวจและออกแบบ
               </p>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '6px', lineHeight: 1.6, wordBreak: 'break-word' }}>
-                To Do ➔ ชำระเงิน ➔ Assign ช่าง ➔ Check-in ➔ Check-out ➔ QC ➔ Aftersale ➔ Close
+                To Do ➔ Assign ช่าง ➔ Check-in ➔ Check-out ➔ QC ➔ Aftersale ➔ Close
               </div>
             </div>
 
@@ -555,13 +555,13 @@ export const MasterManagement = ({
                 <span style={{ fontWeight: 700, color: '#2563eb', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Wrench size={16} /> Installer &amp; MA Flow
                 </span>
-                <span style={{ fontSize: '0.75rem', background: 'rgba(37, 99, 235, 0.2)', color: '#2563eb', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>10 ขั้นตอน</span>
+                <span style={{ fontSize: '0.75rem', background: 'rgba(37, 99, 235, 0.2)', color: '#2563eb', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>7 ขั้นตอน</span>
               </div>
               <p style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', margin: 0 }}>
-                สำหรับงานติดตั้งอุปกรณ์และสัญญาซ่อมบำรุง MA มีขั้นตอนซื้อสำรวจและสำรวจหน้างาน
+                สำหรับงานติดตั้งอุปกรณ์และสัญญาซ่อมบำรุง MA ดำเนินการปฏิบัติงานตามขั้นตอนมาตรฐาน
               </p>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '6px', lineHeight: 1.6, wordBreak: 'break-word' }}>
-                To Do ➔ Buy-Survey ➔ Survey ➔ ชำระเงิน ➔ Assign ช่าง ➔ Check-in ➔ Check-out ➔ QC ➔ Aftersale ➔ Close
+                To Do ➔ Assign ช่าง ➔ Check-in ➔ Check-out ➔ QC ➔ Aftersale ➔ Close
               </div>
             </div>
 
@@ -570,13 +570,13 @@ export const MasterManagement = ({
                 <span style={{ fontWeight: 700, color: '#8b5cf6', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Home size={16} /> Renovate, Build-In &amp; New House
                 </span>
-                <span style={{ fontSize: '0.75rem', background: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>11 ขั้นตอน</span>
+                <span style={{ fontSize: '0.75rem', background: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>7 ขั้นตอน</span>
               </div>
               <p style={{ fontSize: '0.775rem', color: 'var(--text-secondary)', margin: 0 }}>
-                สำหรับงานรีโนเวท บิวท์อิน และสร้างบ้านใหม่ มีกระบวนการสำรวจ ออกแบบ 3D และก่อสร้างครบวงจร
+                สำหรับงานรีโนเวท บิวท์อิน และสร้างบ้านใหม่ ดำเนินการก่อสร้างและส่งมอบครบวงจร
               </p>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '6px', lineHeight: 1.6, wordBreak: 'break-word' }}>
-                To Do ➔ Buy-Survey ➔ Survey ➔ Design ➔ ชำระเงิน ➔ Assign ช่าง ➔ Check-in ➔ Check-out ➔ QC ➔ Aftersale ➔ Close
+                To Do ➔ Assign ช่าง ➔ Check-in ➔ Check-out ➔ QC ➔ Aftersale ➔ Close
               </div>
             </div>
           </div>

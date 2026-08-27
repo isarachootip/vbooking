@@ -1737,25 +1737,21 @@ export const Settings = ({
                     🏠 งานรีโนเวท & ตกแต่งบ้าน (Home Renovation)
                   </div>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-                    8 ขั้นตอนมาตรฐานสำหรับการรีโนเวทบ้านเดี่ยว คอนโด และตกแต่งภายใน
+                    6 ขั้นตอนมาตรฐานสำหรับการรีโนเวทบ้านเดี่ยว คอนโด และตกแต่งภายใน
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={async () => {
                     const renovationTemplates: TaskTemplate[] = [
-                      { id: 'tpl_ren_1', title: 'สำรวจหน้างานและวัดพื้นที่จริง', description: 'เข้าสำรวจโครงสร้าง ตรวจสอบตำแหน่งน้ำ/ไฟ', priority: 'High', startPercent: 0, endPercent: 10, estimatedHours: 8, projectTemplateName: 'งานรีโนเวทบ้าน' },
-                      { id: 'tpl_ren_checkin', title: 'Check-in bar', description: 'เช็คอินเข้าปฏิบัติงานสำรวจหน้างาน', priority: 'High', startPercent: 10, endPercent: 11, estimatedHours: 1, projectTemplateName: 'งานรีโนเวทบ้าน' },
-                      { id: 'tpl_ren_checkout', title: 'Check-out bar', description: 'เช็คเอาท์และบันทึกผลงานสำรวจหน้างาน', priority: 'High', startPercent: 11, endPercent: 12, estimatedHours: 1, projectTemplateName: 'งานรีโนเวทบ้าน' },
-                      { id: 'tpl_ren_2', title: 'ออกแบบ 3D & เลือกวัสดุ', description: 'ทำแบบจำลอง 3D สเปกกระเบื้อง และสุขภัณฑ์', priority: 'High', startPercent: 12, endPercent: 25, estimatedHours: 16, projectTemplateName: 'งานรีโนเวทบ้าน' },
-                      { id: 'tpl_ren_3', title: 'งานรื้อถอนและเตรียมพื้นผิว', description: 'รื้อถอนวัสดุเดิม สกัดกระเบื้อง ขนย้ายขยะ', priority: 'Medium', startPercent: 25, endPercent: 40, estimatedHours: 16, projectTemplateName: 'งานรีโนเวทบ้าน' },
-                      { id: 'tpl_ren_4', title: 'งานเดินระบบไฟฟ้า & ประปา', description: 'เดินสายไฟฝังผนัง วางระบบท่อน้ำดีและน้ำทิ้ง', priority: 'High', startPercent: 40, endPercent: 55, estimatedHours: 24, projectTemplateName: 'งานรีโนเวทบ้าน' },
-                      { id: 'tpl_ren_5', title: 'งานปูกระเบื้อง & งานโครงสร้าง', description: 'ฉาบปูน ปูกระเบื้องพื้นและผนังตามแบบ', priority: 'Medium', startPercent: 55, endPercent: 75, estimatedHours: 32, projectTemplateName: 'งานรีโนเวทบ้าน' },
-                      { id: 'tpl_ren_6', title: 'งานติดตั้งเฟอร์นิเจอร์บิวท์อิน', description: 'ประกอบตู้แขวน เคาน์เตอร์ และชั้นวาง', priority: 'High', startPercent: 75, endPercent: 90, estimatedHours: 24, projectTemplateName: 'งานรีโนเวทบ้าน' },
-                      { id: 'tpl_ren_7', title: 'งานติดตั้งสุขภัณฑ์ & อุปกรณ์', description: 'ติดตั้งอ่างล้างจาน โคมไฟ และสวิตช์ปลั๊ก', priority: 'Urgent', startPercent: 90, endPercent: 98, estimatedHours: 12, projectTemplateName: 'งานรีโนเวทบ้าน' },
-                      { id: 'tpl_ren_8', title: 'ทำความสะอาด & ตรวจส่งมอบงาน (QC)', description: 'ทำความสะอาดไซต์ และส่งมอบงานลูกค้า', priority: 'High', startPercent: 98, endPercent: 100, estimatedHours: 4, projectTemplateName: 'งานรีโนเวทบ้าน' }
+                      { id: 'tpl_ren_3', title: 'งานรื้อถอนและเตรียมพื้นผิว', description: 'รื้อถอนวัสดุเดิม สกัดกระเบื้อง ขนย้ายขยะ', priority: 'Medium', startPercent: 0, endPercent: 20, estimatedHours: 16, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_4', title: 'งานเดินระบบไฟฟ้า & ประปา', description: 'เดินสายไฟฝังผนัง วางระบบท่อน้ำดีและน้ำทิ้ง', priority: 'High', startPercent: 20, endPercent: 40, estimatedHours: 24, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_5', title: 'งานปูกระเบื้อง & งานโครงสร้าง', description: 'ฉาบปูน ปูกระเบื้องพื้นและผนังตามแบบ', priority: 'Medium', startPercent: 40, endPercent: 65, estimatedHours: 32, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_6', title: 'งานติดตั้งเฟอร์นิเจอร์บิวท์อิน', description: 'ประกอบตู้แขวน เคาน์เตอร์ และชั้นวาง', priority: 'High', startPercent: 65, endPercent: 80, estimatedHours: 24, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_7', title: 'งานติดตั้งสุขภัณฑ์ & อุปกรณ์', description: 'ติดตั้งอ่างล้างจาน โคมไฟ และสวิตช์ปลั๊ก', priority: 'Urgent', startPercent: 80, endPercent: 92, estimatedHours: 12, projectTemplateName: 'งานรีโนเวทบ้าน' },
+                      { id: 'tpl_ren_8', title: 'ทำความสะอาด & ตรวจส่งมอบงาน (QC)', description: 'ทำความสะอาดไซต์ และส่งมอบงานลูกค้า', priority: 'High', startPercent: 92, endPercent: 100, estimatedHours: 4, projectTemplateName: 'งานรีโนเวทบ้าน' }
                     ];
- 
+
                     try {
                       await fetch('/api/task-templates/bulk', {
                         method: 'POST',
@@ -1763,18 +1759,18 @@ export const Settings = ({
                         body: JSON.stringify({ templates: renovationTemplates })
                       });
                     } catch (err) {}
- 
+
                     if (setTaskTemplates) setTaskTemplates(prev => [...prev, ...renovationTemplates]);
-                    alert('นำเข้าแม่แบบ "งานรีโนเวทบ้าน" สำเร็จ 10 ขั้นตอน!');
+                    alert('นำเข้าแม่แบบ "งานรีโนเวทบ้าน" สำเร็จ 6 ขั้นตอน!');
                     setIsPresetModalOpen(false);
                   }}
                   style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.55rem', borderRadius: 'var(--radius-md)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
                   className="hover-lift"
                 >
-                  ⚡ นำเข้าแม่แบบรีโนเวทบ้าน (10 ขั้นตอน)
+                  ⚡ นำเข้าแม่แบบรีโนเวทบ้าน (6 ขั้นตอน)
                 </button>
               </div>
- 
+
               {/* Preset 2: Electrical & Plumbing */}
               <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem' }}>
                 <div>
@@ -1782,23 +1778,20 @@ export const Settings = ({
                     ⚡ งานติดตั้งระบบไฟฟ้า & ประปา (Electrical & Plumbing)
                   </div>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-                    8 ขั้นตอนสำหรับการติดตั้งตู้คอนซูเมอร์ เดินท่อร้อยสายไฟ และงานประปา
+                    5 ขั้นตอนสำหรับการติดตั้งตู้คอนซูเมอร์ เดินท่อร้อยสายไฟ และงานประปา
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={async () => {
                     const elecTemplates: TaskTemplate[] = [
-                      { id: 'tpl_elec_1', title: 'สำรวจระบบและวางผังตู้ไฟ/ท่อประปา', description: 'ตรวจสอบโหลดไฟฟ้า และทิศทางการเดินท่อ', priority: 'High', startPercent: 0, endPercent: 15, estimatedHours: 6, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
-                      { id: 'tpl_elec_checkin', title: 'Check-in bar', description: 'เช็คอินเข้าปฏิบัติงานสำรวจระบบ', priority: 'High', startPercent: 15, endPercent: 16, estimatedHours: 1, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
-                      { id: 'tpl_elec_checkout', title: 'Check-out bar', description: 'เช็คเอาท์และบันทึกผลงานสำรวจระบบ', priority: 'High', startPercent: 16, endPercent: 17, estimatedHours: 1, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
-                      { id: 'tpl_elec_2', title: 'เดินสาย main และติดตั้งตู้คอนซูเมอร์', description: 'เดินสายไฟเมนเข้าตู้เบรกเกอร์', priority: 'High', startPercent: 17, endPercent: 40, estimatedHours: 16, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
-                      { id: 'tpl_elec_3', title: 'เดินท่อร้อยสายไฟ & ท่อน้ำ', description: 'สกัดผนัง เดินท่อร้อยสายไฟสีเหลืองและท่อน้ำดี', priority: 'Medium', startPercent: 40, endPercent: 70, estimatedHours: 24, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
-                      { id: 'tpl_elec_4', title: 'ติดตั้งดวงโคม สวิตช์ ปลั๊ก และก๊อกน้ำ', description: 'ประกอบอุปกรณ์ปลายทาง ปลั๊กไฟ ก๊อกน้ำ', priority: 'Medium', startPercent: 70, endPercent: 88, estimatedHours: 16, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
-                      { id: 'tpl_elec_5', title: 'ทดสอบแรงดันน้ำ & ทดสอบโหลดไฟฟ้า', description: 'เช็กไฟรั่ว เช็กแรงดันน้ำและรอยรั่ว', priority: 'Urgent', startPercent: 88, endPercent: 96, estimatedHours: 8, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
-                      { id: 'tpl_elec_6', title: 'ส่งมอบงานและรับประกันบริการ', description: 'ติดป้ายวงจรตู้ไฟ และส่งมอบใบรับประกัน', priority: 'High', startPercent: 96, endPercent: 100, estimatedHours: 4, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' }
+                      { id: 'tpl_elec_2', title: 'เดินสาย main และติดตั้งตู้คอนซูเมอร์', description: 'เดินสายไฟเมนเข้าตู้เบรกเกอร์', priority: 'High', startPercent: 0, endPercent: 25, estimatedHours: 16, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
+                      { id: 'tpl_elec_3', title: 'เดินท่อร้อยสายไฟ & ท่อน้ำ', description: 'สกัดผนัง เดินท่อร้อยสายไฟสีเหลืองและท่อน้ำดี', priority: 'Medium', startPercent: 25, endPercent: 55, estimatedHours: 24, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
+                      { id: 'tpl_elec_4', title: 'ติดตั้งดวงโคม สวิตช์ ปลั๊ก และก๊อกน้ำ', description: 'ประกอบอุปกรณ์ปลายทาง ปลั๊กไฟ ก๊อกน้ำ', priority: 'Medium', startPercent: 55, endPercent: 75, estimatedHours: 16, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
+                      { id: 'tpl_elec_5', title: 'ทดสอบแรงดันน้ำ & ทดสอบโหลดไฟฟ้า', description: 'เช็กไฟรั่ว เช็กแรงดันน้ำและรอยรั่ว', priority: 'Urgent', startPercent: 75, endPercent: 90, estimatedHours: 8, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' },
+                      { id: 'tpl_elec_6', title: 'ส่งมอบงานและรับประกันบริการ', description: 'ติดป้ายวงจรตู้ไฟ และส่งมอบใบรับประกัน', priority: 'High', startPercent: 90, endPercent: 100, estimatedHours: 4, projectTemplateName: 'งานระบบไฟฟ้า-ประปา' }
                     ];
- 
+
                     try {
                       await fetch('/api/task-templates/bulk', {
                         method: 'POST',
@@ -1806,15 +1799,15 @@ export const Settings = ({
                         body: JSON.stringify({ templates: elecTemplates })
                       });
                     } catch (err) {}
- 
+
                     if (setTaskTemplates) setTaskTemplates(prev => [...prev, ...elecTemplates]);
-                    alert('นำเข้าแม่แบบ "งานระบบไฟฟ้า-ประปา" สำเร็จ 8 ขั้นตอน!');
+                    alert('นำเข้าแม่แบบ "งานระบบไฟฟ้า-ประปา" สำเร็จ 5 ขั้นตอน!');
                     setIsPresetModalOpen(false);
                   }}
                   style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.55rem', borderRadius: 'var(--radius-md)', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
                   className="hover-lift"
                 >
-                  ⚡ นำเข้าแม่แบบระบบไฟฟ้า-ประปา (6 ขั้นตอน)
+                  ⚡ นำเข้าแม่แบบระบบไฟฟ้า-ประปา (5 ขั้นตอน)
                 </button>
               </div>
 

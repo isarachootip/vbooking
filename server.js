@@ -1204,11 +1204,11 @@ const initDB = async () => {
     if (parseInt(masterTypeCount.rows[0].count) === 0) {
       console.log('Seeding Master Project Types...');
       const defaultMasterTypes = [
-        { id: 'mpt_1', name: 'Quick Service', description: 'งานบริการด่วนและแก้ไขซ่อมแซมเร่งด่วน', default_columns: '["To Do", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
-        { id: 'mpt_2', name: 'Installation', description: 'งานติดตั้งอุปกรณ์และประกอบระบบ', default_columns: '["To Do", "Buy-Survey", "Survey", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
-        { id: 'mpt_3', name: 'Renovate', description: 'งานปรับปรุงบ้านและตกแต่งครบวงจร', default_columns: '["To Do", "Buy-Survey", "Survey", "Design", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
-        { id: 'mpt_4', name: 'New Home', description: 'งานก่อสร้างบ้านใหม่ตั้งแต่ต้นจนจบ', default_columns: '["To Do", "Buy-Survey", "Survey", "Design", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
-        { id: 'mpt_5', name: 'Maintenance', description: 'งานดูแลรักษาและซ่อมบำรุงตามสัญญา MA', default_columns: '["To Do", "Buy-Survey", "Survey", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' }
+        { id: 'mpt_1', name: 'Quick Service', description: 'งานบริการด่วนและแก้ไขซ่อมแซมเร่งด่วน', default_columns: '["To Do", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
+        { id: 'mpt_2', name: 'Installation', description: 'งานติดตั้งอุปกรณ์และประกอบระบบ', default_columns: '["To Do", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
+        { id: 'mpt_3', name: 'Renovate', description: 'งานปรับปรุงบ้านและตกแต่งครบวงจร', default_columns: '["To Do", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
+        { id: 'mpt_4', name: 'New Home', description: 'งานก่อสร้างบ้านใหม่ตั้งแต่ต้นจนจบ', default_columns: '["To Do", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' },
+        { id: 'mpt_5', name: 'Maintenance', description: 'งานดูแลรักษาและซ่อมบำรุงตามสัญญา MA', default_columns: '["To Do", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]' }
       ];
       for (const mt of defaultMasterTypes) {
         await client.query(
@@ -1250,16 +1250,12 @@ const initDB = async () => {
     if (parseInt(kitchenTemplateCount.rows[0].count) === 0) {
       console.log('Seeding Kitchen Renovation task templates...');
       const kitchenTemplates = [
-        { id: 'tpl_k1', title: 'สำรวจหน้างานและวัดพื้นที่จริง (Kitchen Survey)', description: 'สำรวจโครงสร้างเดิม วัดขนาดพื้นที่ ผนัง ตำแหน่งท่อน้ำ ท่อระบายน้ำ และปลั๊กไฟเดิม', priority: 'High', start_percent: 0, end_percent: 5, estimated_hours: 8, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k_checkin', title: 'Check-in bar', description: 'เช็คอินเข้าปฏิบัติงานสำรวจหน้างาน', priority: 'High', start_percent: 5, end_percent: 6, estimated_hours: 1, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k_checkout', title: 'Check-out bar', description: 'เช็คเอาท์และบันทึกผลงานสำรวจหน้างาน', priority: 'High', start_percent: 6, end_percent: 7, estimated_hours: 1, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k2', title: 'ออกแบบแปลนและ 3D Perspective (Kitchen 3D Design)', description: 'วางแปลนจัดสรรพื้นที่ (Work Triangle: ตู้เย็น อ่างล้างจาน เตา) ออกแบบภาพ 3D และเลือกวัสดุ', priority: 'High', start_percent: 7, end_percent: 20, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k3', title: 'รื้อถอนเคาน์เตอร์และระบบเดิม (Demolition)', description: 'รื้อถอนตู้บิวท์อิน เคาน์เตอร์ปูน กระเบื้องผนังเดิม และขนย้ายเศษวัสดุไปทิ้ง', priority: 'High', start_percent: 20, end_percent: 35, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k4', title: 'เดินระบบไฟฟ้าและประปาใหม่ (Electrical & Plumbing)', description: 'เดินท่อน้ำดี ท่อน้ำทิ้ง ท่อแก๊ส/เครื่องดูดควัน และเดินสายไฟปลั๊กไฟสำหรับเครื่องใช้ไฟฟ้า', priority: 'High', start_percent: 35, end_percent: 50, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k5', title: 'หล่อเคาน์เตอร์ปูนและงานปูกระเบื้อง (Masonry & Tiling)', description: 'ก่อโครงสร้างเคาน์เตอร์ปูน ฉาบเรียบ ปูกระเบื้องพื้นและกระเบื้องผนังกันเปื้อน (Backsplash)', priority: 'High', start_percent: 50, end_percent: 70, estimated_hours: 24, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k6', title: 'ติดตั้งท็อปเคาน์เตอร์และตู้บิวท์อิน (Countertop & Cabinets)', description: 'ติดตั้งท็อปหินสังเคราะห์/หินแกรนิต ติดตั้งตู้แขวน บิวท์อินตู้ใต้เคาน์เตอร์ และหน้าบาน', priority: 'High', start_percent: 70, end_percent: 85, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k7', title: 'ติดตั้งซิงค์ อุปกรณ์ไฟฟ้า และฟิตติ้ง (Sink & Appliances)', description: 'ติดตั้งอ่างล้างจาน ก๊อกน้ำ เตาไฟฟ้า เครื่องดูดควัน โคมไฟ และอุปกรณ์ฟิตติ้ง', priority: 'Medium', start_percent: 85, end_percent: 95, estimated_hours: 12, project_template_name: 'Kitchen Renovation' },
-        { id: 'tpl_k8', title: 'ทำความสะอาด ตรวจรับงานและส่งมอบ (Final Cleaning & Handover)', description: 'เก็บงานทาสี ทำความสะอาดคราบปูนคราบกาว ตรวจสอบระบบน้ำ/ไฟ และส่งมอบงานให้ลูกค้า', priority: 'Urgent', start_percent: 95, end_percent: 100, estimated_hours: 8, project_template_name: 'Kitchen Renovation' }
+        { id: 'tpl_k3', title: 'รื้อถอนเคาน์เตอร์และระบบเดิม (Demolition)', description: 'รื้อถอนตู้บิวท์อิน เคาน์เตอร์ปูน กระเบื้องผนังเดิม และขนย้ายเศษวัสดุไปทิ้ง', priority: 'High', start_percent: 0, end_percent: 20, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k4', title: 'เดินระบบไฟฟ้าและประปาใหม่ (Electrical & Plumbing)', description: 'เดินท่อน้ำดี ท่อน้ำทิ้ง ท่อแก๊ส/เครื่องดูดควัน และเดินสายไฟปลั๊กไฟสำหรับเครื่องใช้ไฟฟ้า', priority: 'High', start_percent: 20, end_percent: 40, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k5', title: 'หล่อเคาน์เตอร์ปูนและงานปูกระเบื้อง (Masonry & Tiling)', description: 'ก่อโครงสร้างเคาน์เตอร์ปูน ฉาบเรียบ ปูกระเบื้องพื้นและกระเบื้องผนังกันเปื้อน (Backsplash)', priority: 'High', start_percent: 40, end_percent: 65, estimated_hours: 24, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k6', title: 'ติดตั้งท็อปเคาน์เตอร์และตู้บิวท์อิน (Countertop & Cabinets)', description: 'ติดตั้งท็อปหินสังเคราะห์/หินแกรนิต ติดตั้งตู้แขวน บิวท์อินตู้ใต้เคาน์เตอร์ และหน้าบาน', priority: 'High', start_percent: 65, end_percent: 80, estimated_hours: 16, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k7', title: 'ติดตั้งซิงค์ อุปกรณ์ไฟฟ้า และฟิตติ้ง (Sink & Appliances)', description: 'ติดตั้งอ่างล้างจาน ก๊อกน้ำ เตาไฟฟ้า เครื่องดูดควัน โคมไฟ และอุปกรณ์ฟิตติ้ง', priority: 'Medium', start_percent: 80, end_percent: 92, estimated_hours: 12, project_template_name: 'Kitchen Renovation' },
+        { id: 'tpl_k8', title: 'ทำความสะอาด ตรวจรับงานและส่งมอบ (Final Cleaning & Handover)', description: 'เก็บงานทาสี ทำความสะอาดคราบปูนคราบกาว ตรวจสอบระบบน้ำ/ไฟ และส่งมอบงานให้ลูกค้า', priority: 'Urgent', start_percent: 92, end_percent: 100, estimated_hours: 8, project_template_name: 'Kitchen Renovation' }
       ];
       for (const tpl of kitchenTemplates) {
         await client.query(
@@ -1275,11 +1271,8 @@ const initDB = async () => {
     if (parseInt(quickTemplateCount.rows[0].count) === 0) {
       console.log('Seeding Quick Service task templates...');
       const quickTemplates = [
-        { id: 'tpl_q1', title: 'สำรวจและประเมินงานหน้างาน (Survey)', description: 'ตรวจสอบปัญหาหน้างานและประเมินแนวทางแก้ไข', priority: 'High', start_percent: 0, end_percent: 20, estimated_hours: 1, project_template_name: 'Quick Service' },
-        { id: 'tpl_q_checkin', title: 'Check-in bar', description: 'เช็คอินเข้าปฏิบัติงานสำรวจและประเมินงาน', priority: 'High', start_percent: 20, end_percent: 21, estimated_hours: 1, project_template_name: 'Quick Service' },
-        { id: 'tpl_q_checkout', title: 'Check-out bar', description: 'เช็คเอาท์และบันทึกผลงานสำรวจและประเมินงาน', priority: 'High', start_percent: 21, end_percent: 22, estimated_hours: 1, project_template_name: 'Quick Service' },
-        { id: 'tpl_q2', title: 'ดำเนินการแก้ไข/ซ่อมแซม (Execution)', description: 'ดำเนินการแก้ไขปัญหาตามที่ประเมินไว้', priority: 'Urgent', start_percent: 22, end_percent: 80, estimated_hours: 3, project_template_name: 'Quick Service' },
-        { id: 'tpl_q3', title: 'ตรวจสอบและส่งมอบงาน (QA & Handover)', description: 'ตรวจสอบความเรียบร้อย and ส่งมอบงานให้ลูกค้า', priority: 'High', start_percent: 80, end_percent: 100, estimated_hours: 1, project_template_name: 'Quick Service' }
+        { id: 'tpl_q2', title: 'ดำเนินการแก้ไข/ซ่อมแซม (Execution)', description: 'ดำเนินการแก้ไขปัญหาตามที่ประเมินไว้', priority: 'Urgent', start_percent: 0, end_percent: 75, estimated_hours: 3, project_template_name: 'Quick Service' },
+        { id: 'tpl_q3', title: 'ตรวจสอบและส่งมอบงาน (QA & Handover)', description: 'ตรวจสอบความเรียบร้อย and ส่งมอบงานให้ลูกค้า', priority: 'High', start_percent: 75, end_percent: 100, estimated_hours: 1, project_template_name: 'Quick Service' }
       ];
       for (const tpl of quickTemplates) {
         await client.query(
@@ -1564,6 +1557,208 @@ const initDB = async () => {
       console.log('✅ One-time migration: seeded master_project_types in system_settings.');
     }
 
+    // ONE-TIME: Remove Buy-Survey and Survey from all system templates, master project types, workflows, and task templates
+    const migRemoveSurvey = 'remove_survey_from_all_templates_v1';
+    const migRemoveSurveyDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migRemoveSurvey]);
+    if (migRemoveSurveyDone.rows.length === 0) {
+      console.log('Running migration: removing Buy-Survey and Survey from all templates and workflows...');
+      
+      // 1. Update master_project_types
+      await client.query(`
+        UPDATE master_project_types 
+        SET default_columns = '["To Do", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]'::jsonb
+        WHERE id = 'mpt_1' OR id = 'mpt_2' OR id = 'mpt_5' OR LOWER(name) LIKE '%quick%' OR LOWER(name) LIKE '%install%' OR LOWER(name) LIKE '%mainten%'
+      `);
+      await client.query(`
+        UPDATE master_project_types 
+        SET default_columns = '["To Do", "Design", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]'::jsonb
+        WHERE id = 'mpt_3' OR id = 'mpt_4' OR LOWER(name) LIKE '%renovate%' OR LOWER(name) LIKE '%build%' OR LOWER(name) LIKE '%home%' OR LOWER(name) LIKE '%house%'
+      `);
+
+      // 2. Delete survey tasks and checkin/checkout bars from task_templates
+      await client.query(`
+        DELETE FROM task_templates 
+        WHERE title ILIKE '%survey%' 
+           OR title ILIKE '%สำรวจ%' 
+           OR title = 'Check-in bar' 
+           OR title = 'Check-out bar' 
+           OR id IN ('tpl_k1', 'tpl_q1', 'tpl_ci_Kitchen_Renovation_c505', 'tpl_co_Kitchen_Renovation_poxk', 'tpl_ci_Quick_Service_efq3', 'tpl_co_Quick_Service_1s52')
+      `);
+
+      // Rescale start_percent and end_percent for task_templates
+      const allTpls = await client.query('SELECT * FROM task_templates ORDER BY project_template_name, start_percent ASC');
+      const groupedTpls = {};
+      for (const row of allTpls.rows) {
+        const grp = row.project_template_name || 'General';
+        if (!groupedTpls[grp]) groupedTpls[grp] = [];
+        groupedTpls[grp].push(row);
+      }
+      for (const grp of Object.keys(groupedTpls)) {
+        const tasks = groupedTpls[grp];
+        if (tasks.length > 0) {
+          const firstStart = parseFloat(tasks[0].start_percent);
+          if (firstStart > 0) {
+            const shift = firstStart;
+            for (const t of tasks) {
+              const newStart = Math.max(0, parseFloat(t.start_percent) - shift);
+              const newEnd = Math.max(newStart, parseFloat(t.end_percent) - shift);
+              await client.query('UPDATE task_templates SET start_percent = $1, end_percent = $2 WHERE id = $3', [newStart, newEnd, t.id]);
+            }
+          }
+        }
+      }
+
+      // 3. Update project_workflows to remove Buy-Survey & Survey
+      const workflowsRes = await client.query('SELECT * FROM project_workflows');
+      for (const wf of workflowsRes.rows) {
+        let statuses = wf.statuses;
+        if (typeof statuses === 'string') {
+          try { statuses = JSON.parse(statuses); } catch (e) { statuses = []; }
+        }
+        if (Array.isArray(statuses)) {
+          const cleaned = statuses.filter(s => !['buy-survey', 'survey', 'ซื้อสำรวจ', 'qc (สำรวจ)'].includes((s || '').trim().toLowerCase()));
+          await client.query('UPDATE project_workflows SET statuses = $1 WHERE project_id = $2', [JSON.stringify(cleaned), wf.project_id]);
+        }
+      }
+
+      // 4. Update projects.custom_columns
+      const projectsRes = await client.query('SELECT id, custom_columns FROM projects WHERE custom_columns IS NOT NULL');
+      for (const p of projectsRes.rows) {
+        let cols = p.custom_columns;
+        if (typeof cols === 'string') {
+          try { cols = JSON.parse(cols); } catch (e) { cols = []; }
+        }
+        if (Array.isArray(cols)) {
+          const cleaned = cols.filter(s => !['buy-survey', 'survey', 'ซื้อสำรวจ', 'qc (สำรวจ)'].includes((s || '').trim().toLowerCase()));
+          await client.query('UPDATE projects SET custom_columns = $1 WHERE id = $2', [JSON.stringify(cleaned), p.id]);
+        }
+      }
+
+      await client.query('INSERT INTO migrations (id) VALUES ($1)', [migRemoveSurvey]);
+      console.log('✅ One-time migration: removed Buy-Survey and Survey from all system templates and workflows.');
+    }
+
+    // ONE-TIME: Remove payment ('ชำระเงิน') from all system templates, master project types, and workflows
+    const migRemovePayment = 'remove_payment_from_all_templates_v1';
+    const migRemovePaymentDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migRemovePayment]);
+    if (migRemovePaymentDone.rows.length === 0) {
+      console.log('Running migration: removing payment from all templates and workflows...');
+      
+      // 1. Update master_project_types
+      await client.query(`
+        UPDATE master_project_types 
+        SET default_columns = '["To Do", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]'::jsonb
+        WHERE id = 'mpt_1' OR id = 'mpt_2' OR id = 'mpt_5' OR LOWER(name) LIKE '%quick%' OR LOWER(name) LIKE '%install%' OR LOWER(name) LIKE '%mainten%'
+      `);
+      await client.query(`
+        UPDATE master_project_types 
+        SET default_columns = '["To Do", "Design", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]'::jsonb
+        WHERE id = 'mpt_3' OR id = 'mpt_4' OR LOWER(name) LIKE '%renovate%' OR LOWER(name) LIKE '%build%' OR LOWER(name) LIKE '%home%' OR LOWER(name) LIKE '%house%'
+      `);
+
+      // 2. Update project_workflows to remove 'ชำระเงิน' and 'payment'
+      const workflowsRes = await client.query('SELECT * FROM project_workflows');
+      for (const wf of workflowsRes.rows) {
+        let statuses = wf.statuses;
+        if (typeof statuses === 'string') {
+          try { statuses = JSON.parse(statuses); } catch (e) { statuses = []; }
+        }
+        if (Array.isArray(statuses)) {
+          const cleaned = statuses.filter(s => !['ชำระเงิน', 'payment', 'ลูกค้ายืนยัน', 'ลูกค้ายืนยันดำเนินการ', 'ยืนยันราคา/ใบดำเนินการ'].includes((s || '').trim().toLowerCase()));
+          await client.query('UPDATE project_workflows SET statuses = $1 WHERE project_id = $2', [JSON.stringify(cleaned), wf.project_id]);
+        }
+      }
+
+      // 3. Update projects.custom_columns
+      const projectsRes = await client.query('SELECT id, custom_columns FROM projects WHERE custom_columns IS NOT NULL');
+      for (const p of projectsRes.rows) {
+        let cols = p.custom_columns;
+        if (typeof cols === 'string') {
+          try { cols = JSON.parse(cols); } catch (e) { cols = []; }
+        }
+        if (Array.isArray(cols)) {
+          const cleaned = cols.filter(s => !['ชำระเงิน', 'payment', 'ลูกค้ายืนยัน', 'ลูกค้ายืนยันดำเนินการ', 'ยืนยันราคา/ใบดำเนินการ'].includes((s || '').trim().toLowerCase()));
+          await client.query('UPDATE projects SET custom_columns = $1 WHERE id = $2', [JSON.stringify(cleaned), p.id]);
+        }
+      }
+
+      await client.query('INSERT INTO migrations (id) VALUES ($1)', [migRemovePayment]);
+      console.log('✅ One-time migration: removed payment step from all system templates and workflows.');
+    }
+
+    // ONE-TIME: Remove Design from all system templates, master project types, task templates, and workflows
+    const migRemoveDesign = 'remove_design_from_all_templates_v1';
+    const migRemoveDesignDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migRemoveDesign]);
+    if (migRemoveDesignDone.rows.length === 0) {
+      console.log('Running migration: removing Design from all templates, task templates, and workflows...');
+      
+      // 1. Update master_project_types
+      await client.query(`
+        UPDATE master_project_types 
+        SET default_columns = '["To Do", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"]'::jsonb
+      `);
+
+      // 2. Delete Design tasks from task_templates
+      await client.query(`
+        DELETE FROM task_templates 
+        WHERE title ILIKE '%design%' 
+           OR title ILIKE '%ออกแบบ%' 
+           OR id IN ('tpl_k2', 'tpl_4')
+      `);
+
+      // Rescale start_percent and end_percent for task_templates
+      const allTpls = await client.query('SELECT * FROM task_templates ORDER BY project_template_name, start_percent ASC');
+      const groupedTpls = {};
+      for (const row of allTpls.rows) {
+        const grp = row.project_template_name || 'General';
+        if (!groupedTpls[grp]) groupedTpls[grp] = [];
+        groupedTpls[grp].push(row);
+      }
+      for (const grp of Object.keys(groupedTpls)) {
+        const tasks = groupedTpls[grp];
+        if (tasks.length > 0) {
+          const firstStart = parseFloat(tasks[0].start_percent);
+          if (firstStart > 0) {
+            const shift = firstStart;
+            for (const t of tasks) {
+              const newStart = Math.max(0, parseFloat(t.start_percent) - shift);
+              const newEnd = Math.max(newStart, parseFloat(t.end_percent) - shift);
+              await client.query('UPDATE task_templates SET start_percent = $1, end_percent = $2 WHERE id = $3', [newStart, newEnd, t.id]);
+            }
+          }
+        }
+      }
+
+      // 3. Update project_workflows to remove 'Design'
+      const workflowsRes = await client.query('SELECT * FROM project_workflows');
+      for (const wf of workflowsRes.rows) {
+        let statuses = wf.statuses;
+        if (typeof statuses === 'string') {
+          try { statuses = JSON.parse(statuses); } catch (e) { statuses = []; }
+        }
+        if (Array.isArray(statuses)) {
+          const cleaned = statuses.filter(s => !['design', 'ออกแบบ', 'สร้างใบเสนอราคา'].includes((s || '').trim().toLowerCase()));
+          await client.query('UPDATE project_workflows SET statuses = $1 WHERE project_id = $2', [JSON.stringify(cleaned), wf.project_id]);
+        }
+      }
+
+      // 4. Update projects.custom_columns
+      const projectsRes = await client.query('SELECT id, custom_columns FROM projects WHERE custom_columns IS NOT NULL');
+      for (const p of projectsRes.rows) {
+        let cols = p.custom_columns;
+        if (typeof cols === 'string') {
+          try { cols = JSON.parse(cols); } catch (e) { cols = []; }
+        }
+        if (Array.isArray(cols)) {
+          const cleaned = cols.filter(s => !['design', 'ออกแบบ', 'สร้างใบเสนอราคา'].includes((s || '').trim().toLowerCase()));
+          await client.query('UPDATE projects SET custom_columns = $1 WHERE id = $2', [JSON.stringify(cleaned), p.id]);
+        }
+      }
+
+      await client.query('INSERT INTO migrations (id) VALUES ($1)', [migRemoveDesign]);
+      console.log('✅ One-time migration: removed Design from all system templates and workflows.');
+    }
+
     // Auto-create initial plan baseline for existing projects with tasks
     const projectsWithTasksRes = await client.query(`
       SELECT DISTINCT p.id, p.name FROM projects p 
@@ -1594,6 +1789,99 @@ const initDB = async () => {
           [snapId, baselineId, t.id, t.title, t.description || '', t.status, t.priority, t.estimated_hours || 0, t.start_date, t.end_date, t.story_points || 0, t.assignee_id, t.parent_id, t.sprint_id, t.release_id]
         );
       }
+    }
+
+    // ONE-TIME: Replace legacy software development templates with real Renovate Service & Construction templates
+    const migRenovateTpls = 'replace_it_templates_with_renovate_v2';
+    const migRenovateTplsDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migRenovateTpls]);
+    if (migRenovateTplsDone.rows.length === 0) {
+      console.log('Running migration: replacing IT templates with Renovate & Home Improvement templates...');
+      
+      // 1. Delete old software IT templates from task_templates
+      await client.query(`
+        DELETE FROM task_templates 
+        WHERE title IN (
+          'Kick off Meeting', 'SOW & Contract Sign off', 'Get Requirements & User Stories',
+          'UX/UI Design & Prototyping', 'Setup Cloud Infrastructure & Environments',
+          'API Contract & Backend Architecture Setup', 'Core Backend & Frontend Development',
+          'Data Migration & Seeding', 'SIT (System Integration Testing)',
+          'UAT (User Acceptance Testing)', 'Production Release & Handover'
+        ) OR project_template_name = 'General'
+      `);
+
+      // 2. Insert standard Renovate Service templates
+      const renovateTpls = [
+        { id: 'tpl_r1', title: 'งานเตรียมพื้นที่ & กั้นโซนป้องกันฝุ่น (Site Prep & Dust Protection)', description: 'ตรวจสอบความพร้อมหน้างาน กั้นโซนพลาสติกป้องกันฝุ่น ปูแผ่นกันรอยพื้นทางเดิน', priority: 'High', start_percent: 0, end_percent: 10, estimated_hours: 8 },
+        { id: 'tpl_r2', title: 'งานรื้อถอนโครงสร้างเดิม & เคลียร์เศษวัสดุ (Demolition & Disposal)', description: 'รื้อถอนกระเบื้อง ผนังเดิม สุขภัณฑ์ ฝ้าเพดานเดิม และขนเศษวัสดุก่อสร้างไปทิ้ง', priority: 'High', start_percent: 10, end_percent: 25, estimated_hours: 16 },
+        { id: 'tpl_r3', title: 'งานเดินระบบประปา & ท่อน้ำทิ้ง (Plumbing Rough-in)', description: 'วางแนวท่อน้ำดี PPR/PVC ท่อน้ำทิ้ง ท่อดักกลิ่น และทดสอบแรงดันน้ำ', priority: 'High', start_percent: 25, end_percent: 40, estimated_hours: 16 },
+        { id: 'tpl_r4', title: 'งานระบบไฟฟ้า & กรีดท่อร้อยสาย (Electrical Rough-in)', description: 'กรีดผนังฝังท่อร้อยสายไฟ เดินสายไฟเมน ปลั๊ก สวิตช์ และติดตั้งตู้ Consumer Unit', priority: 'High', start_percent: 40, end_percent: 55, estimated_hours: 20 },
+        { id: 'tpl_r5', title: 'งานโครงสร้างฝ้าเพดาน & ผนังเบา (Ceiling & Drywall)', description: 'ติดตั้งโครงคร่าว C-Line ยิงแผ่นยิปซัม/สมาร์ทบอร์ด และฉาบรอยต่อ', priority: 'High', start_percent: 55, end_percent: 70, estimated_hours: 24 },
+        { id: 'tpl_r6', title: 'งานปรับระดับพื้น & ปูกระเบื้อง (Flooring & Tiling)', description: 'เทปูนปรับระดับพื้น ทากันซึม ปูกระเบื้องพื้นและกระเบื้องผนังพร้อมยาแนว', priority: 'High', start_percent: 70, end_percent: 85, estimated_hours: 32 },
+        { id: 'tpl_r7', title: 'งานฉาบเรียบ & งานทาสี (Plastering & Painting)', description: 'เก็บรอยต่อ ฉาบสกิมโค้ท ทาสีรองพื้นปูนเก่า/ใหม่ และทาสีจริง 2 เที่ยว', priority: 'Medium', start_percent: 85, end_percent: 92, estimated_hours: 16 },
+        { id: 'tpl_r8', title: 'ติดตั้งสุขภัณฑ์ ดวงโคมไฟฟ้า & ฟิตติ้ง (Fixtures & Fittings)', description: 'ติดตั้งสุขภัณฑ์ห้องน้ำ อ่างล้างหน้า ก๊อกน้ำ โคมไฟ สวิตช์ ปลั๊ก และอุปกรณ์ตกแต่ง', priority: 'Medium', start_percent: 92, end_percent: 97, estimated_hours: 12 },
+        { id: 'tpl_r9', title: 'ทำความสะอาด เคลียร์พื้นที่ & ตรวจรับส่งมอบ (Final Clean & Handover)', description: 'ทำความสะอาดเก็บงาน เก็บฝุ่น ตรวจสอบระบบร่วมกับ QC และส่งมอบงานให้ลูกค้า', priority: 'Urgent', start_percent: 97, end_percent: 100, estimated_hours: 8 }
+      ];
+
+      const templateGroups = ['Renovate Service', 'Renovation', 'รีโนเวท', 'General'];
+      for (const grp of templateGroups) {
+        for (let i = 0; i < renovateTpls.length; i++) {
+          const tpl = renovateTpls[i];
+          const tplId = `tpl_${grp.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${i + 1}`;
+          await client.query(
+            `INSERT INTO task_templates (id, title, description, priority, start_percent, end_percent, estimated_hours, project_template_name)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             ON CONFLICT (id) DO UPDATE SET
+               title = EXCLUDED.title, description = EXCLUDED.description, priority = EXCLUDED.priority,
+               start_percent = EXCLUDED.start_percent, end_percent = EXCLUDED.end_percent,
+               estimated_hours = EXCLUDED.estimated_hours, project_template_name = EXCLUDED.project_template_name`,
+            [tplId, tpl.title, tpl.description, tpl.priority, tpl.start_percent, tpl.end_percent, tpl.estimated_hours, grp]
+          );
+        }
+      }
+
+      // 3. For any existing project that has old IT tasks, replace them with Renovate tasks
+      const itProjects = await client.query(`
+        SELECT DISTINCT project_id FROM tasks 
+        WHERE title IN (
+          'Kick off Meeting', 'SOW & Contract Sign off', 'Get Requirements & User Stories',
+          'UX/UI Design & Prototyping', 'Setup Cloud Infrastructure & Environments',
+          'API Contract & Backend Architecture Setup', 'Core Backend & Frontend Development',
+          'Data Migration & Seeding', 'SIT (System Integration Testing)',
+          'UAT (User Acceptance Testing)', 'Production Release & Handover'
+        )
+      `);
+
+      for (const row of itProjects.rows) {
+        const pId = row.project_id;
+        const pRes = await client.query('SELECT * FROM projects WHERE id = $1', [pId]);
+        if (pRes.rows.length === 0) continue;
+        const p = pRes.rows[0];
+
+        // Delete old IT tasks from tasks and task_snapshots
+        await client.query('DELETE FROM task_snapshots WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)', [pId]);
+        await client.query('DELETE FROM tasks WHERE project_id = $1', [pId]);
+
+        const startD = p.start_date ? new Date(p.start_date) : new Date();
+        const endD = p.end_date ? new Date(p.end_date) : new Date(startD.getTime() + 7 * 86400000);
+        const totalMs = Math.max(86400000, endD.getTime() - startD.getTime());
+        const nowStr = new Date().toISOString();
+
+        for (let i = 0; i < renovateTpls.length; i++) {
+          const tpl = renovateTpls[i];
+          const taskId = `t_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`;
+          const tStart = new Date(startD.getTime() + (totalMs * tpl.start_percent / 100)).toISOString().split('T')[0];
+          const tEnd = new Date(startD.getTime() + (totalMs * tpl.end_percent / 100)).toISOString().split('T')[0];
+
+          await client.query(
+            `INSERT INTO tasks (id, project_id, title, description, status, priority, estimated_hours, progress_percent, start_date, end_date, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+            [taskId, pId, tpl.title, tpl.description, 'To Do', tpl.priority, tpl.estimated_hours, 0, tStart, tEnd, nowStr]
+          );
+        }
+      }
+
+      await client.query('INSERT INTO migrations (id) VALUES ($1)', [migRenovateTpls]);
+      console.log('✅ One-time migration: updated Renovate Service templates and refreshed existing project tasks.');
     }
 
     client.release();
@@ -3204,32 +3492,12 @@ app.post('/api/projects', async (req, res) => {
       const type = (projectType || '').toLowerCase().trim();
       
       const commonStages = ["To Do"];
-      const buySurveyStages = ["Buy-Survey", "Survey"];
-      const designStages = ["Design"];
-      const executionStages = ["ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
-
-      if (type === 'quick' || type === 'quick_service' || type === 'quick service' || type === 'pq' || type.startsWith('quick')) {
-        cols = [...commonStages, ...executionStages];
-      } else if (
-        type === 'install' || 
-        type === 'installer' || 
-        type === 'installer service' || 
-        type === 'installation' || 
-        type === 'pi' || 
-        type === 'ma' || 
-        type === 'maintenance' || 
-        type === 'ma service' || 
-        type === 'support' ||
-        type === 'pm'
-      ) {
-        cols = [...commonStages, ...buySurveyStages, ...executionStages];
-      } else {
-        cols = [...commonStages, ...buySurveyStages, ...designStages, ...executionStages];
-      }
+      const executionStages = ["Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
+      cols = [...commonStages, ...executionStages];
     }
     
     if (!cols || cols.length === 0) {
-      cols = ["To Do", "Buy-Survey", "Survey", "Design", "ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
+      cols = ["To Do", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
     }
 
     await pool.query(
@@ -4716,28 +4984,9 @@ app.post('/api/leads/:id/convert', async (req, res) => {
     }
     const membersJson = JSON.stringify(initialMembers);
 
-    const jobType = (lead.job_type || '').toLowerCase().trim();
     const commonStages = ["To Do"];
-    const buySurveyStages = ["Buy-Survey", "Survey"];
-    const designStages = ["Design"];
-    const executionStages = ["ชำระเงิน", "Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
-    let cols;
-    if (jobType === 'quick' || jobType === 'quick_service' || jobType === 'quick service' || jobType.startsWith('quick')) {
-      cols = [...commonStages, ...executionStages];
-    } else if (
-      jobType === 'install' || 
-      jobType === 'installer' || 
-      jobType === 'installer service' || 
-      jobType === 'installation' || 
-      jobType === 'pi' || 
-      jobType === 'ma' || 
-      jobType === 'maintenance' || 
-      jobType === 'ma service'
-    ) {
-      cols = [...commonStages, ...buySurveyStages, ...executionStages];
-    } else {
-      cols = [...commonStages, ...buySurveyStages, ...designStages, ...executionStages];
-    }
+    const executionStages = ["Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
+    let cols = [...commonStages, ...executionStages];
 
     // Build initial lifecycle state — starts at Phase 3 (Execution) since
     // Phase 1 (Lead & Survey) and Phase 2 (Design & Quote) were completed in the Lead flow.
@@ -4827,13 +5076,19 @@ app.post('/api/leads/:id/convert', async (req, res) => {
         tpls = genResult.rows;
     }
 
+    const startD = new Date(now);
+    const endD = new Date(endDateStr);
+    const totalMs = Math.max(86400000, endD.getTime() - startD.getTime());
+
     for (let i = 0; i < tpls.length; i++) {
         const tpl = tpls[i];
         const taskId = `t_${Date.now()}_${i}`;
+        const tStart = new Date(startD.getTime() + (totalMs * (parseFloat(tpl.start_percent) || 0) / 100)).toISOString().split('T')[0];
+        const tEnd = new Date(startD.getTime() + (totalMs * (parseFloat(tpl.end_percent) || 100) / 100)).toISOString().split('T')[0];
         await pool.query(
-            `INSERT INTO tasks (id, project_id, title, description, status, priority, estimated_hours, progress_percent, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [taskId, projectId, tpl.title, tpl.description, 'To Do', tpl.priority, tpl.estimated_hours, 0, now]
+            `INSERT INTO tasks (id, project_id, title, description, status, priority, estimated_hours, progress_percent, start_date, end_date, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+            [taskId, projectId, tpl.title, tpl.description, 'To Do', tpl.priority, tpl.estimated_hours, 0, tStart, tEnd, now]
         );
     }
 

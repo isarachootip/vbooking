@@ -199,6 +199,8 @@ export interface Task {
   storyPoints?: number;
   issueType?: 'Bug' | 'Story' | 'Task' | 'Sub-task';
   attachments?: string[];
+  progressPercent?: number;
+  progress_percent?: number;
   updatedAt?: string;
 }
 

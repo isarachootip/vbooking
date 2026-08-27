@@ -1,27 +1,94 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Hash, MessageSquare, Clock, User as UserIcon, Paperclip, FileText, Download, X as XIcon } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { 
+  Send, Hash, MessageSquare, Clock, User as UserIcon, Paperclip, FileText, 
+  Download, X as XIcon, Search, Users, Wrench, ShieldCheck, MapPin, Tag
+} from 'lucide-react';
 import type { Project, User, ChatMessage } from '../types';
 
-interface ProjectChatProps {
+export interface ProjectChatProps {
   projects: Project[];
   users: User[];
-  currentUser: User;
+  currentUser?: User | null;
   systemSettings?: Record<string, any>;
+  defaultProjectId?: string;
+  hideSidebar?: boolean;
 }
 
-export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, currentUser, systemSettings }) => {
-  const myProjects = projects.filter(p => 
-    currentUser.globalRole === 'Admin' || currentUser.globalRole === 'Manager' || p.members.some(m => m.userId === currentUser.id)
-  );
+export const ProjectChat: React.FC<ProjectChatProps> = ({ 
+  projects, 
+  users, 
+  currentUser, 
+  systemSettings, 
+  defaultProjectId,
+  hideSidebar = false
+}) => {
+  // Normalize user branches for intelligent matching
+  const userBranches = useMemo(() => {
+    if (!currentUser) return [];
+    return [
+      ...(currentUser.assignedBranches || []),
+      ...(currentUser.serviceZones || []),
+      currentUser.department,
+      currentUser.name
+    ].filter(Boolean).map(s => String(s).toLowerCase());
+  }, [currentUser]);
+
+  // Check if project is relevant to current user
+  const isRelevantProject = (p: Project) => {
+    if (!currentUser) return true;
+    if (currentUser.globalRole === 'Admin' || currentUser.globalRole === 'Manager') return true;
+
+    // 1. Direct project member
+    if (p.members && p.members.some(m => m.userId === currentUser.id || (m as any).id === currentUser.id)) {
+      return true;
+    }
+
+    // 2. PIC / Surveyor / Inspector
+    if (p.extraDetails?.picUser === currentUser.id || p.extraDetails?.picUser === currentUser.name) return true;
+    if (p.extraDetails?.surveyInspectorId === currentUser.id) return true;
+
+    // 3. Branch matching (e.g. บางนา, สุขาภิบาล, พระราม 2, etc.)
+    const projBranch = (p.extraDetails?.branch || '').toLowerCase();
+    const projAddress = (p.address || '').toLowerCase();
+    const projName = (p.name || '').toLowerCase();
+
+    for (const ub of userBranches) {
+      // Remove common non-identifying prefix words
+      const cleaned = ub.replace(/bnacs|\(|\)|สาขา|สำนักงาน|hq/gi, '').trim();
+      if (cleaned.length >= 2) {
+        if (projBranch.includes(cleaned) || projAddress.includes(cleaned) || projName.includes(cleaned)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const relevantProjects = useMemo(() => {
+    return projects.filter(isRelevantProject);
+  }, [projects, currentUser, userBranches]);
+
+  const [sidebarFilter, setSidebarFilter] = useState<'relevant' | 'all'>(() => {
+    return relevantProjects.length > 0 ? 'relevant' : 'all';
+  });
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>(() => {
+    if (defaultProjectId) return defaultProjectId;
     const params = new URLSearchParams(window.location.search);
     const queryProjId = params.get('projectId');
-    if (queryProjId && myProjects.some(p => p.id === queryProjId)) {
+    if (queryProjId && projects.some(p => p.id === queryProjId)) {
       return queryProjId;
     }
-    return myProjects[0]?.id || '';
+    return relevantProjects[0]?.id || projects[0]?.id || '';
   });
+
+  useEffect(() => {
+    if (defaultProjectId) {
+      setSelectedProjectId(defaultProjectId);
+    }
+  }, [defaultProjectId]);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,6 +107,7 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   const fetchNotifications = async () => {
+    if (!currentUser?.id) return;
     try {
       const res = await fetch(`/api/users/${currentUser.id}/chat-notifications`);
       if (res.ok) {
@@ -52,6 +120,7 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
   };
 
   const markNotificationsAsRead = async (projectId: string) => {
+    if (!currentUser?.id || !projectId) return;
     try {
       await fetch(`/api/users/${currentUser.id}/projects/${projectId}/chat-notifications/read`, {
         method: 'POST'
@@ -66,7 +135,7 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 5000);
     return () => clearInterval(interval);
-  }, [currentUser.id]);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -103,13 +172,61 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const projectMembers = selectedProject 
-    ? users.filter(u => selectedProject.members.some(m => m.userId === u.id)) 
-    : [];
+  // Find all team members and technicians in this selected project
+  const projectMembers = useMemo(() => {
+    if (!selectedProject) return [];
+    const memberUserIds = new Set<string>();
+    
+    // Project members
+    if (selectedProject.members) {
+      selectedProject.members.forEach(m => {
+        if (m.userId) memberUserIds.add(m.userId);
+        if ((m as any).id) memberUserIds.add((m as any).id);
+      });
+    }
 
-  const filteredMentionUsers = projectMembers.filter(u => 
-    u.name.toLowerCase().includes(mentionSearchQuery.toLowerCase())
-  );
+    // Inspector / Surveyor / PIC
+    if (selectedProject.extraDetails?.surveyInspectorId) {
+      memberUserIds.add(selectedProject.extraDetails.surveyInspectorId);
+    }
+
+    // Match users list
+    const foundMembers = users.filter(u => memberUserIds.has(u.id));
+
+    // Also include technicians specifically in this project's lifecycle flow if names match
+    const flowTechs = selectedProject.extraDetails?.lifecycle?.technicians;
+    if (Array.isArray(flowTechs) && flowTechs.length > 0) {
+      users.forEach(u => {
+        if (flowTechs.some((t: any) => typeof t === 'string' ? t.includes(u.name) : t.name === u.name || t.id === u.id)) {
+          if (!foundMembers.some(fm => fm.id === u.id)) {
+            foundMembers.push(u);
+          }
+        }
+      });
+    }
+
+    return foundMembers;
+  }, [selectedProject, users]);
+
+  // Mentionable users: Project members first, then technicians & all other users
+  const mentionableUsers = useMemo(() => {
+    if (!selectedProject) return users;
+    const pmSet = new Set(projectMembers.map(u => u.id));
+    const technicians = users.filter(u => 
+      !pmSet.has(u.id) && 
+      (u.department?.toLowerCase().includes('tech') || u.globalRole === 'QC' || (u.skills && u.skills.length > 0))
+    );
+    const others = users.filter(u => !pmSet.has(u.id) && !technicians.some(t => t.id === u.id));
+    return [...projectMembers, ...technicians, ...others];
+  }, [projectMembers, users, selectedProject]);
+
+  const filteredMentionUsers = useMemo(() => {
+    if (!mentionSearchQuery.trim()) return mentionableUsers.slice(0, 10);
+    return mentionableUsers.filter(u => 
+      u.name.toLowerCase().includes(mentionSearchQuery.toLowerCase()) ||
+      (u.department && u.department.toLowerCase().includes(mentionSearchQuery.toLowerCase()))
+    ).slice(0, 10);
+  }, [mentionableUsers, mentionSearchQuery]);
 
   const selectMentionUser = (user: User) => {
     const textBeforeMention = inputValue.slice(0, mentionTriggerIndex);
@@ -125,6 +242,15 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
         inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
       }
     }, 0);
+  };
+
+  const handleTagUserFromChip = (user: User) => {
+    const spacePrefix = inputValue.length > 0 && !inputValue.endsWith(' ') ? ' ' : '';
+    const newText = `${inputValue}${spacePrefix}@${user.name} `;
+    setInputValue(newText);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,7 +327,7 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
                 color: isMine ? '#ffffff' : 'var(--accent-primary, #3b82f6)', 
                 fontWeight: 600, 
                 background: isMine ? 'rgba(255, 255, 255, 0.22)' : 'rgba(59, 130, 246, 0.15)',
-                padding: '0.1rem 0.3rem',
+                padding: '0.1rem 0.35rem',
                 borderRadius: '4px',
                 border: isMine ? '1px solid rgba(255, 255, 255, 0.35)' : '1px solid rgba(59, 130, 246, 0.25)',
                 display: 'inline-block'
@@ -260,16 +386,17 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
       } catch (err) {
         console.error('File upload failed', err);
         setUploading(false);
-        return; // Stop if file upload fails
+        return;
       }
       setUploading(false);
     }
 
     const tempId = 'temp_' + Date.now();
+    const currentUserId = currentUser?.id || 'anonymous';
     const newMsg: ChatMessage = {
       id: tempId,
       projectId: selectedProjectId,
-      userId: currentUser.id,
+      userId: currentUserId,
       text: inputValue,
       timestamp: new Date().toISOString(),
       attachments: attachmentData ? [attachmentData] : []
@@ -282,7 +409,7 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
 
     // Identify mentioned users
     const mentionedUserIds: string[] = [];
-    projectMembers.forEach(u => {
+    mentionableUsers.forEach(u => {
       if (newMsg.text.includes(`@${u.name}`)) {
         mentionedUserIds.push(u.id);
       }
@@ -293,8 +420,8 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: currentUser.id,
-          text: newMsg.text || ' ', // Backend requires text, so if only file, send a space
+          userId: currentUserId,
+          text: newMsg.text || ' ',
           attachments: newMsg.attachments,
           mentionedUserIds
         })
@@ -312,7 +439,7 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
   };
 
   const getUserDetails = (userId: string) => {
-    return users.find(u => u.id === userId) || { name: 'Unknown User', avatar: '' };
+    return users.find(u => u.id === userId) || { name: 'ผู้ใช้งาน', avatar: '', department: '' };
   };
 
   const formatTime = (isoString: string) => {
@@ -334,119 +461,301 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
     groupedMessages[d].push(m);
   });
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '1rem' }}>
-      <div>
-        <h1 className="text-gradient" style={{ marginBottom: '0.5rem' }}>Team Chat</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Collaborate and discuss with your project members.</p>
-      </div>
+  // Filter projects in sidebar based on filter toggle & search
+  const displayedProjects = useMemo(() => {
+    const baseList = (sidebarFilter === 'relevant' && relevantProjects.length > 0) ? relevantProjects : projects;
+    if (!searchQuery.trim()) return baseList;
+    const q = searchQuery.toLowerCase();
+    return baseList.filter(p => 
+      p.name?.toLowerCase().includes(q) ||
+      p.id?.toLowerCase().includes(q) ||
+      p.customerName?.toLowerCase().includes(q) ||
+      p.extraDetails?.branch?.toLowerCase().includes(q) ||
+      p.extraDetails?.surveyTicketNo?.toLowerCase().includes(q)
+    );
+  }, [sidebarFilter, relevantProjects, projects, searchQuery]);
 
-      <div className="glass-panel" style={{ display: 'flex', flex: 1, overflow: 'hidden', padding: 0 }}>
-        
-        {/* Left Sidebar */}
-        <div style={{ width: '280px', borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', background: 'rgba(0,0,0,0.2)' }}>
-          <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <MessageSquare size={18} color="var(--accent-primary)" />
-              Your Projects
-            </h3>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: hideSidebar ? '0' : '1rem' }}>
+      {!hideSidebar && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 className="text-gradient" style={{ marginBottom: '0.25rem', fontSize: '1.75rem' }}>แชทติดต่อช่าง (Team Chat)</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              สื่อสาร ประสานงาน และติดตามความคืบหน้ากับทีมช่างและทีมงานในโครงการ
+            </p>
           </div>
-          
-          <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem' }}>
-            {myProjects.length === 0 ? (
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>
-                You are not part of any projects.
+          {currentUser && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.04)', padding: '0.4rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <UserIcon size={16} color="var(--accent-primary)" />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{currentUser.name}</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({currentUser.department || currentUser.globalRole})</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="glass-panel" style={{ display: 'flex', flex: 1, overflow: 'hidden', padding: 0, height: hideSidebar ? '100%' : 'auto', minHeight: '520px' }}>
+        
+        {/* Left Sidebar (Shown only when not in single-project mode) */}
+        {!hideSidebar && (
+          <div style={{ width: '310px', borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', background: 'rgba(0,0,0,0.2)' }}>
+            
+            {/* Header & Filter Toggle */}
+            <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                  <MessageSquare size={17} color="var(--accent-primary)" />
+                  โครงการ (Projects)
+                </h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{displayedProjects.length} รายการ</span>
               </div>
-            ) : (
-              myProjects.map(p => {
-                const projectUnreadCount = notifications.filter(n => !n.isRead && n.projectId === p.id).length;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedProjectId(p.id)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.75rem 1rem',
-                      background: selectedProjectId === p.id ? 'var(--bg-tertiary)' : 'transparent',
-                      border: 'none',
-                      borderRadius: 'var(--radius-md)',
-                      color: selectedProjectId === p.id ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.2s',
-                      marginBottom: '0.25rem'
-                    }}
-                    className="hover-lift"
-                  >
-                    <Hash size={16} color={selectedProjectId === p.id ? 'var(--accent-primary)' : 'currentColor'} />
-                    <span style={{ fontWeight: selectedProjectId === p.id ? 600 : 400, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {p.name}
-                    </span>
-                    {projectUnreadCount > 0 && (
-                      <span 
+
+              {/* View filter buttons */}
+              <div style={{ display: 'flex', background: 'rgba(0,0,0,0.25)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                <button
+                  type="button"
+                  onClick={() => setSidebarFilter('relevant')}
+                  style={{
+                    flex: 1,
+                    padding: '0.35rem 0.5rem',
+                    fontSize: '0.75rem',
+                    fontWeight: sidebarFilter === 'relevant' ? 600 : 400,
+                    color: sidebarFilter === 'relevant' ? 'white' : 'var(--text-muted)',
+                    background: sidebarFilter === 'relevant' ? 'var(--accent-primary)' : 'transparent',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  โครงการของฉัน ({relevantProjects.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSidebarFilter('all')}
+                  style={{
+                    flex: 1,
+                    padding: '0.35rem 0.5rem',
+                    fontSize: '0.75rem',
+                    fontWeight: sidebarFilter === 'all' ? 600 : 400,
+                    color: sidebarFilter === 'all' ? 'white' : 'var(--text-muted)',
+                    background: sidebarFilter === 'all' ? 'var(--accent-primary)' : 'transparent',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  ทั้งหมด ({projects.length})
+                </button>
+              </div>
+
+              {/* Search Box */}
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={14} style={{ position: 'absolute', left: '0.65rem', color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="ค้นหาชื่อโครงการ, รหัส, สาขา..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.4rem 0.65rem 0.4rem 2rem',
+                    fontSize: '0.8rem',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    color: 'var(--text-primary)',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+            </div>
+            
+            {/* Project List */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem' }}>
+              {displayedProjects.length === 0 ? (
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem', padding: '0 1rem' }}>
+                  {sidebarFilter === 'relevant' ? (
+                    <div>
+                      <p>ไม่พบโครงการที่ผูกกับสาขาหรือชื่อของคุณ</p>
+                      <button
+                        onClick={() => setSidebarFilter('all')}
                         style={{
-                          background: 'var(--accent-danger, #ef4444)',
-                          color: 'white',
-                          fontSize: '0.7rem',
-                          fontWeight: 700,
-                          padding: '0.1rem 0.4rem',
-                          borderRadius: '10px',
-                          minWidth: '18px',
-                          textAlign: 'center'
+                          marginTop: '0.5rem',
+                          background: 'rgba(59, 130, 246, 0.15)',
+                          color: 'var(--accent-primary)',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer'
                         }}
                       >
-                        {projectUnreadCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
+                        ดูโครงการทั้งหมด
+                      </button>
+                    </div>
+                  ) : (
+                    <p>ไม่พบโครงการที่ค้นหา</p>
+                  )}
+                </div>
+              ) : (
+                displayedProjects.map(p => {
+                  const projectUnreadCount = notifications.filter(n => !n.isRead && n.projectId === p.id).length;
+                  const isSelected = selectedProjectId === p.id;
+                  const branchName = p.extraDetails?.branch || '';
+
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setSelectedProjectId(p.id)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.25rem',
+                        padding: '0.65rem 0.85rem',
+                        background: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                        border: isSelected ? '1px solid rgba(59, 130, 246, 0.35)' : '1px solid transparent',
+                        borderRadius: 'var(--radius-md)',
+                        color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s',
+                        marginBottom: '0.35rem'
+                      }}
+                      className="hover-lift"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
+                        <Hash size={15} color={isSelected ? 'var(--accent-primary)' : 'currentColor'} style={{ flexShrink: 0 }} />
+                        <span style={{ fontWeight: isSelected ? 600 : 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.85rem', color: isSelected ? 'var(--text-primary)' : 'inherit' }}>
+                          {p.name}
+                        </span>
+                        {projectUnreadCount > 0 && (
+                          <span 
+                            style={{
+                              background: 'var(--accent-danger, #ef4444)',
+                              color: 'white',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '10px',
+                              minWidth: '18px',
+                              textAlign: 'center'
+                            }}
+                          >
+                            {projectUnreadCount}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Sub-info: Branch, Member count, Status */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', paddingLeft: '1.4rem' }}>
+                        <span>{branchName ? `📍 ${branchName}` : (p.id || '')}</span>
+                        <span>{p.members?.length || 0} สมาชิก</span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Right Chat Area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'transparent' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'transparent', overflow: 'hidden' }}>
           {selectedProject ? (
             <>
-              <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}>
-                    <Hash size={20} color="var(--accent-primary)" />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '1.1rem', margin: 0 }}>{selectedProject.name}</h2>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                      {selectedProject.members.length} members
+              {/* Chat Header & Technicians Bar */}
+              <div style={{ padding: '0.9rem 1.25rem', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.65rem', background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}>
+                      <Hash size={20} color="var(--accent-primary)" />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <h2 style={{ fontSize: '1.05rem', margin: 0, fontWeight: 700 }}>{selectedProject.name}</h2>
+                        {selectedProject.extraDetails?.branch && (
+                          <span style={{ fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--accent-primary)', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+                            📍 {selectedProject.extraDetails.branch}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span>รหัส: <strong>{selectedProject.id}</strong></span>
+                        {selectedProject.customerName && <span>ลูกค้า: {selectedProject.customerName}</span>}
+                        <span>สมาชิก: {projectMembers.length} ท่าน</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Quick Technician & Member Chips */}
+                {projectMembers.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '0.25rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Users size={13} /> กดเพื่อแท็ก (@):
+                    </span>
+                    {projectMembers.map(member => {
+                      const isTech = member.department?.toLowerCase().includes('tech') || member.globalRole === 'QC' || (member.skills && member.skills.length > 0);
+                      return (
+                        <button
+                          key={member.id}
+                          type="button"
+                          onClick={() => handleTagUserFromChip(member)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            padding: '0.2rem 0.55rem',
+                            background: isTech ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.06)',
+                            border: isTech ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-color)',
+                            borderRadius: '12px',
+                            color: isTech ? '#34d399' : 'var(--text-primary)',
+                            fontSize: '0.72rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                          className="hover-lift"
+                          title={`คลิกเพื่อแท็ก @${member.name}`}
+                        >
+                          {isTech ? <Wrench size={11} /> : <UserIcon size={11} />}
+                          <span>@{member.name}</span>
+                          <span style={{ fontSize: '0.65rem', opacity: 0.75 }}>
+                            ({member.department || member.globalRole || 'ทีม'})
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Message List */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {loading && messages.length === 0 ? (
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                    Loading messages...
+                    กำลังโหลดข้อความ...
                   </div>
                 ) : messages.length === 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)', gap: '1rem' }}>
-                    <MessageSquare size={48} opacity={0.2} />
-                    <p>No messages yet. Start the conversation!</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)', gap: '0.75rem' }}>
+                    <MessageSquare size={44} opacity={0.25} />
+                    <p style={{ margin: 0, fontSize: '0.9rem' }}>ยังไม่มีข้อความในโครงการนี้</p>
+                    <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.75 }}>เริ่มพิมพ์ข้อความหรือแท็ก @ช่าง เพื่อประสานงานได้เลยครับ</p>
                   </div>
                 ) : (
                   Object.keys(groupedMessages).map(date => (
-                    <div key={date} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1rem 0' }}>
+                    <div key={date} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '0.5rem 0' }}>
                         <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{date}</span>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{date}</span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
                       </div>
 
                       {groupedMessages[date].map((msg, index) => {
-                        const isMine = msg.userId === currentUser.id;
+                        const isMine = !!currentUser && msg.userId === currentUser.id;
                         const user = getUserDetails(msg.userId);
                         const prevMsg = groupedMessages[date][index - 1];
                         const showAvatar = !prevMsg || prevMsg.userId !== msg.userId;
@@ -454,61 +763,69 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
                         return (
                           <div key={msg.id} style={{ 
                             display: 'flex', 
-                            gap: '1rem', 
+                            gap: '0.75rem', 
                             alignItems: 'flex-start',
                             flexDirection: isMine ? 'row-reverse' : 'row',
-                            marginTop: showAvatar ? '0.5rem' : '0'
+                            marginTop: showAvatar ? '0.35rem' : '0'
                           }}>
-                            <div style={{ width: '36px', height: '36px', opacity: showAvatar ? 1 : 0 }}>
+                            <div style={{ width: '34px', height: '34px', opacity: showAvatar ? 1 : 0, flexShrink: 0 }}>
                               {showAvatar && (
                                 user.avatar ? (
                                   <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                                 ) : (
                                   <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <UserIcon size={18} color="var(--text-muted)" />
+                                    <UserIcon size={16} color="var(--text-muted)" />
                                   </div>
                                 )
                               )}
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start', maxWidth: '75%' }}>
                               {showAvatar && (
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{isMine ? 'You' : user.name}</span>
-                                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{formatTime(msg.timestamp)}</span>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                    {isMine ? 'คุณ (You)' : user.name}
+                                  </span>
+                                  {user.department && (
+                                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                                      ({user.department})
+                                    </span>
+                                  )}
+                                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{formatTime(msg.timestamp)}</span>
                                 </div>
                               )}
                               <div style={{
-                                padding: '0.75rem 1rem',
+                                padding: '0.65rem 0.95rem',
                                 background: isMine ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
                                 color: isMine ? '#fff' : 'var(--text-primary)',
                                 borderRadius: isMine ? '1rem 0.2rem 1rem 1rem' : '0.2rem 1rem 1rem 1rem',
-                                fontSize: '0.9rem',
+                                fontSize: '0.88rem',
                                 lineHeight: '1.5',
                                 boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                                whiteSpace: 'pre-wrap'
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word'
                               }}>
                                 {msg.text.trim() ? renderMessageText(msg.text, isMine) : ''}
                                 {msg.attachments && msg.attachments.length > 0 && (
-                                  <div style={{ marginTop: msg.text.trim() ? '0.75rem' : '0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  <div style={{ marginTop: msg.text.trim() ? '0.65rem' : '0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     {msg.attachments.map((att, i) => {
-                                      const isImage = att.type.startsWith('image/');
+                                      const isImage = att.type && att.type.startsWith('image/');
                                       if (isImage) {
                                         return (
-                                          <a key={i} href={att.url} download={att.name} style={{ display: 'block' }}>
-                                            <img src={att.url} alt={att.name} style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '0.5rem' }} />
+                                          <a key={i} href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
+                                            <img src={att.url} alt={att.name} style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.1)' }} />
                                           </a>
                                         );
                                       } else {
                                         return (
                                           <a key={i} href={att.url} download={att.name} style={{
                                             display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                            padding: '0.5rem', background: 'rgba(0,0,0,0.1)', borderRadius: '0.5rem',
-                                            color: 'inherit', textDecoration: 'none'
+                                            padding: '0.45rem 0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem',
+                                            color: 'inherit', textDecoration: 'none', fontSize: '0.8rem'
                                           }}>
-                                            <FileText size={20} />
+                                            <FileText size={18} />
                                             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</span>
-                                            <Download size={16} />
+                                            <Download size={15} />
                                           </a>
                                         );
                                       }
@@ -526,26 +843,32 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
                 <div ref={messagesEndRef} />
               </div>
 
-              <div style={{ padding: '1.25rem', borderTop: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)', position: 'relative' }}>
+              {/* Chat Input & Mentions Area */}
+              <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)', position: 'relative' }}>
+                
+                {/* Mentions Dropdown */}
                 {showMentionsDropdown && filteredMentionUsers.length > 0 && (
                   <div 
                     style={{
                       position: 'absolute',
                       bottom: '100%',
                       left: '1.25rem',
-                      width: '260px',
-                      background: 'rgba(20, 20, 25, 0.95)',
+                      width: '280px',
+                      background: 'rgba(20, 20, 25, 0.96)',
                       backdropFilter: 'blur(10px)',
                       border: '1px solid var(--border-color)',
                       borderRadius: 'var(--radius-md)',
                       boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
                       zIndex: 100,
-                      maxHeight: '200px',
+                      maxHeight: '220px',
                       overflowY: 'auto',
                       marginBottom: '0.5rem',
-                      padding: '0.25rem 0'
+                      padding: '0.35rem 0'
                     }}
                   >
+                    <div style={{ padding: '0.3rem 0.75rem', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      เลือกสมาชิก / ช่างที่ต้องการแท็ก:
+                    </div>
                     {filteredMentionUsers.map((user, idx) => (
                       <div
                         key={user.id}
@@ -554,8 +877,8 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.5rem 1rem',
+                          gap: '0.65rem',
+                          padding: '0.45rem 0.85rem',
                           cursor: 'pointer',
                           background: idx === selectedMentionUserIndex ? 'var(--accent-primary)' : 'transparent',
                           color: idx === selectedMentionUserIndex ? 'white' : 'var(--text-primary)',
@@ -563,25 +886,32 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
                         }}
                       >
                         {user.avatar ? (
-                          <img src={user.avatar} alt={user.name} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                          <img src={user.avatar} alt={user.name} style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
                         ) : (
-                          <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
+                          <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem' }}>
                             {user.name.charAt(0)}
                           </div>
                         )}
-                        <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>{user.name}</span>
+                        <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 500 }}>{user.name}</span>
+                          <span style={{ fontSize: '0.7rem', opacity: 0.75, marginLeft: '0.35rem' }}>({user.department || user.globalRole})</span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
+
+                {/* Selected File Preview */}
                 {selectedFile && (
-                  <div style={{ alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', padding: '0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', display: 'inline-flex' }}>
-                    <FileText size={16} />
-                    <span style={{ fontSize: '0.85rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedFile.name}</span>
-                    <button onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--text-muted)' }}><XIcon size={16} /></button>
+                  <div style={{ alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', padding: '0.4rem 0.75rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', display: 'inline-flex' }}>
+                    <FileText size={15} />
+                    <span style={{ fontSize: '0.8rem', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedFile.name}</span>
+                    <button onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', color: 'var(--text-muted)' }}><XIcon size={15} /></button>
                   </div>
                 )}
-                <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+
+                {/* Input Form */}
+                <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -589,9 +919,9 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         const file = e.target.files[0];
-                        const maxMb = parseFloat(systemSettings?.max_upload_mb || '1');
+                        const maxMb = parseFloat(systemSettings?.max_upload_mb || '5');
                         if (file.size > maxMb * 1024 * 1024) {
-                          alert(`File size cannot exceed ${maxMb}MB`);
+                          alert(`ขนาดไฟล์ต้องไม่เกิน ${maxMb}MB`);
                           e.target.value = '';
                           return;
                         }
@@ -613,25 +943,26 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
                       padding: '0.5rem'
                     }}
                     className="hover-lift"
+                    title="แนบรูปภาพหรือไฟล์เอกสาร"
                   >
-                    <Paperclip size={20} />
+                    <Paperclip size={19} />
                   </button>
-                  <div style={{ flex: 1, background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', transition: 'all 0.2s' }} className="focus-within-ring">
+                  <div style={{ flex: 1, background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', padding: '0.35rem 0.85rem', transition: 'all 0.2s' }} className="focus-within-ring">
                     <input
                       type="text"
                       ref={inputRef}
                       value={inputValue}
                       onChange={handleInputChange}
                       onKeyDown={handleKeyDown}
-                      placeholder={`Message #${selectedProject.name}...`}
+                      placeholder={`พิมพ์ข้อความถึงทีมช่าง... (พิมพ์ @ เพื่อระบุชื่อ)`}
                       style={{
                         flex: 1,
                         background: 'transparent',
                         border: 'none',
                         color: 'var(--text-primary)',
-                        fontSize: '0.95rem',
+                        fontSize: '0.9rem',
                         outline: 'none',
-                        padding: '0.5rem 0'
+                        padding: '0.4rem 0'
                       }}
                     />
                   </div>
@@ -643,8 +974,8 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
                       color: (inputValue.trim() || selectedFile) ? 'white' : 'var(--text-muted)',
                       border: 'none',
                       borderRadius: 'var(--radius-md)',
-                      width: '46px',
-                      height: '46px',
+                      width: '42px',
+                      height: '42px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -653,17 +984,18 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({ projects, users, curre
                       opacity: uploading ? 0.7 : 1
                     }}
                     className={(inputValue.trim() || selectedFile) && !uploading ? "hover-lift" : ""}
+                    title="ส่งข้อความ"
                   >
-                    {uploading ? <Clock size={18} className="spin" /> : <Send size={18} />}
+                    {uploading ? <Clock size={17} className="spin" /> : <Send size={17} />}
                   </button>
                 </form>
               </div>
             </>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
-              <MessageSquare size={48} opacity={0.2} style={{ marginBottom: '1rem' }} />
-              <h3>Select a project</h3>
-              <p>Choose a project from the sidebar to start chatting.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)', gap: '0.75rem', padding: '2rem' }}>
+              <MessageSquare size={48} opacity={0.2} />
+              <h3 style={{ margin: 0, fontSize: '1.1rem' }}>เลือกโครงการเพื่อเริ่มแชท</h3>
+              <p style={{ margin: 0, fontSize: '0.85rem' }}>คลิกเลือกโครงการจากแถบด้านซ้ายเพื่อพูดคุยและประสานงานกับทีมช่าง</p>
             </div>
           )}
         </div>

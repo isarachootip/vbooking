@@ -66,6 +66,88 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
           )
         },
         {
+          id: 'q_project_progress_calculation',
+          question: 'How is Project & Milestone Progress (% Done) calculated and updated?',
+          icon: BarChart3,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>The system calculates and updates progress dynamically across multiple levels:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>1. Individual Milestone Progress (Gantt Progress Bar):</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><strong>With Subtasks:</strong> Progress is calculated automatically as the ratio of completed subtasks: <code>(Done Subtasks / Total Subtasks) &times; 100%</code>.</li>
+                    <li><strong>Without Subtasks:</strong> Progress is determined directly by the milestone's status: <code>To Do = 0%</code>, <code>In Progress = 50%</code>, <code>Review = 90%</code>, <code>Done = 100%</code>.</li>
+                  </ul>
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>2. Overall Project Progress (e.g. 42% Done Header Card):</strong>
+                  <div style={{ marginTop: '0.25rem' }}>
+                    Calculated as the mathematical <strong>average percentage of all Main Milestones</strong> in the project: <code>Sum(Milestone Progress) / Total Milestones</code>.
+                  </div>
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>3. Four Ways to Update Progress:</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><strong>Project Plan & Gantt:</strong> Click the edit (✏️) button on any milestone or subtask in the table and change its <em>Status</em>.</li>
+                    <li><strong>Tasks & QC (ขั้นตอนงาน & QC):</strong> Technicians or QC inspectors complete check items and advance the status to <em>Done</em>.</li>
+                    <li><strong>Project Board (Kanban):</strong> Drag and drop task cards to <em>In Progress</em>, <em>Review</em>, or <em>Done</em> columns.</li>
+                    <li><strong>Site Logs & Check-In/Out:</strong> Site technicians upload daily progress reports and photos for PM verification.</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_project_chat',
+          question: 'How do I chat with technicians and collaborate in Project Chat?',
+          icon: MessageSquare,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>The <strong>Project Chat & Technician Collaboration</strong> module enables real-time messaging between PMs, QC inspectors, technicians, and sales reps:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Branch-Aware Filtering:</strong> When branch staff open the Chat menu, the sidebar automatically filters and presents projects belonging to their branch. Users can toggle between <strong>[ My Branch Projects ]</strong> and <strong>[ All Projects ]</strong> or search by project name.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Quick Technician Tagging Chips (<code>@</code>):</strong> Click on the technician chips displayed at the top of the chat box (e.g. <code>@TechnicianSomchai</code>) to instantly insert their mention into your message.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>Embedded Chat in Project Detail:</strong> Access the dedicated project chat room directly under the <strong>"💬 Technician Chat"</strong> tab or via the quick header button in Project Detail.
+                </li>
+                <li>
+                  <strong>Photo & File Sharing:</strong> Attach site progress photos, delivery slips, or blueprint files directly in the chat thread.
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_project_operation_permissions',
+          question: 'Who has permissions to execute project operations (Check-In/Out, Step Advancement, QC Handover)?',
+          icon: ShieldCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>Project operational actions (such as Check-In/Out, advancing workflow steps, dragging Kanban cards, approving quotations, and submitting QC handover) are strictly restricted by our <strong>Role & Branch Matrix</strong>:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>👑 Admin:</strong> Full operational permissions across all projects in the system.
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>👨‍💼 PM (Project Manager / PIC):</strong> Full operational permissions on projects where they are assigned as PM, Team Lead, or Person-In-Charge (PIC).
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>👷‍♂️ QC Responsible for Branch:</strong> Full operational permissions if their assigned branch/zone matches the project's branch or if they are assigned as the inspector.
+                </li>
+                <li>
+                  <strong>👥 Other Users / Cross-Branch QCs:</strong> Rendered in <strong>Read-Only mode</strong>. They can view project details and chat, but mutation and advancement buttons are locked with descriptive alerts.
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
           id: 'q_site_visit_result',
           question: 'How do I record and view Site Visit Results & Next Actions?',
           icon: ClipboardCheck,
@@ -113,7 +195,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                   <strong>Smart QC Dispatch Engine:</strong> When an appointment datetime is selected, the system filters for personnel with <code>QC</code> skills and calculates real-time availability within a &plusmn;3-hour non-overlapping window.
                 </li>
                 <li>
-                  <strong>Project Pipeline Transition:</strong> Converting a qualified lead automatically generates a Smart Project ID and sets up initial workflow stages (<code>Buy-Survey</code> &rarr; <code>Survey</code>) ready for Step 3 (Survey QC Inspection).
+                  <strong>Project Pipeline Transition:</strong> Converting a qualified lead automatically generates a Smart Project ID and sets up initial workflow stages ready for Project Execution.
                 </li>
               </ul>
             </div>
@@ -160,9 +242,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.35rem' }}>
                   <strong>Dynamic Kanban Workflow Stages (3 Core Active Types):</strong>
                   <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
-                    <li><em>⚡ Quick service (8 stages):</em> <code>To Do</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
-                    <li><em>🔧 MA Service (10 stages):</em> <code>To Do</code> &rarr; <code>Buy-Survey</code> &rarr; <code>Survey</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
-                    <li><em>🏡 Renovate Service (11 stages):</em> <code>To Do</code> &rarr; <code>Buy-Survey</code> &rarr; <code>Survey</code> &rarr; <code>Design</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>⚡ Quick service (7 stages):</em> <code>To Do</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>🔧 MA Service (7 stages):</em> <code>To Do</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>🏡 Renovate Service (7 stages):</em> <code>To Do</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
                   </ul>
                 </li>
                 <li>
@@ -658,6 +740,88 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
           )
         },
         {
+          id: 'q_project_progress_calculation',
+          question: 'การบริหารโครงการ: ระบบคำนวณและอัปเดตเปอร์เซ็นต์ความก้าวหน้า (Project & Milestone Progress) อย่างไร?',
+          icon: BarChart3,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ระบบ <strong>NexTime / BuildFlow</strong> มีการคำนวณและอัปเดตความก้าวหน้า (Progress) แบบอัตโนมัติ (Dynamic Calculation) 2 ระดับ:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>1. ระดับ Milestone แต่ละงาน (Progress บนแถบ Gantt Timeline):</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><strong>กรณีมีงานย่อย (Subtasks):</strong> คำนวณจากสัดส่วนของงานย่อยที่เสร็จสมบูรณ์: <code>(จำนวน Subtask ที่สถานะ 'Done' &divide; จำนวน Subtask ทั้งหมด) &times; 100%</code></li>
+                    <li><strong>กรณีไม่มีงานย่อย (No Subtasks):</strong> คำนวณจากสถานะ (Status) ของ Milestone นั้นโดยตรง: <code>To Do = 0%</code>, <code>In Progress = 50%</code>, <code>Review = 90%</code>, <code>Done = 100%</code></li>
+                  </ul>
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>2. ระดับภาพรวมโครงการ (Milestones Progress Card ด้านบน - เช่น 42% Done):</strong>
+                  <div style={{ marginTop: '0.25rem' }}>
+                    คำนวณจาก <strong>ค่าเฉลี่ยของ % Progress ของทุก Milestone หลัก (Main Tasks)</strong> ในโครงการ: <code>(ผลรวม % Progress ของทุก Milestone) &divide; จำนวน Milestone ทั้งหมด</code>
+                  </div>
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>3. ช่องทางการอัปเดตความก้าวหน้า (4 ช่องทาง):</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><strong>หน้าแผนงาน / Gantt (Project Plan):</strong> กดปุ่มดินสอ (✏️ Edit) ท้ายรายการ Milestone หรือ Subtask ในตารางด้านล่าง แล้วเปลี่ยนสถานะ (Status) เช่น จาก To Do &rarr; In Progress หรือ Done จากนั้นกด Save</li>
+                    <li><strong>หน้าขั้นตอนงาน & QC (Tasks):</strong> ช่างหรือเจ้าหน้าที่ QC บันทึกผลการตรวจและเปลี่ยนสถานะงานย่อยเป็น Done</li>
+                    <li><strong>หน้าโปรเจกต์บอร์ด (Project Board / Kanban):</strong> ลากวางการ์ดงาน (Drag & Drop) ข้ามคอลัมน์จาก To Do &rarr; In Progress &rarr; Review &rarr; Done</li>
+                    <li><strong>หน้าบันทึกหน้างาน / เช็คอินช่าง (Site Logs):</strong> ช่างส่งภาพถ่ายรายงานประจำวัน และ PM ตรวจรับงานเพื่ออนุมัติเสร็จสิ้นขั้นตอน</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_project_chat',
+          question: 'การแชทติดต่อช่างและการประสานงานในโครงการ (Project Chat) ใช้งานอย่างไร?',
+          icon: MessageSquare,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ระบบ <strong>แชทติดต่อช่างประจำโครงการ (Project Chat)</strong> ช่วยให้ PM, QC, ช่างติดตั้ง และฝ่ายขาย สื่อสารประสานงานกันได้สะดวกรวดเร็ว:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ระบบกรองโครงการตามสาขาอัตโนมัติ (Branch-Aware Filtering):</strong> พนักงานประจำสาขา (เช่น สาขาบางนา) เมื่อเปิดเข้าเมนูแชท ระบบจะคัดกรองเฉพาะโครงการของสาขาตนเองขึ้นมาให้ทันที พร้อมปุ่มสลับ <strong>[ โครงการของฉัน / สาขา ]</strong> และ <strong>[ ทั้งหมด ]</strong>
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ชิปแท็กช่างด่วน (Quick Technician Chips <code>@</code>):</strong> แถบชิปรายชื่อช่างและสมาชิกด้านบนกล่องแชท คลิกเพียง 1 ครั้งเพื่อแท็ก <code>@ชื่อช่าง</code> ลงในข้อความได้ทันที
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>แท็บแชทในหน้ารายละเอียดโครงการ:</strong> สามารถเปิดคุยกับช่างได้โดยตรงจากแท็บ <strong>"💬 แชทติดต่อช่าง"</strong> หรือปุ่มลัดด้านบนในหน้า Project Detail
+                </li>
+                <li>
+                  <strong>การส่งไฟล์และรูปภาพหน้างาน:</strong> รองรับการแนบภาพความคืบหน้าหน้างาน ภาพถ่ายปัญหา และเอกสารประกอบ
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'q_project_operation_permissions',
+          question: 'ใครบ้างที่มีสิทธิ์ดำเนินการโครงการ (Check-In/Out, เลื่อนสถานะงาน, บันทึกผล QC และส่งมอบงาน)?',
+          icon: ShieldCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>การดำเนินการโครงการ (เช่น Check-In/Out หน้างาน, เลื่อนสเต็ปงานใน Stepper, ย้ายการ์ด Kanban, อนุมัติใบเสนอราคา, บันทึกผล QC และปิดโครงการส่งมอบงาน) ถูกจำกัดสิทธิ์ความปลอดภัยตาม <strong>Role & Branch Matrix</strong> ดังนี้:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>👑 Admin (ผู้ดูแลระบบ):</strong> มีสิทธิ์ดำเนินการได้ทุกโครงการในระบบ
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>👨‍💼 PM (ผู้จัดการโครงการ / PIC):</strong> มีสิทธิ์ดำเนินการเฉพาะโครงการที่ตนได้รับมอบหมายเป็น PM / Team Lead / PIC
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>👷‍♂️ QC ที่รับผิดชอบสาขานั้นๆ (Branch Responsible QC):</strong> มีสิทธิ์ดำเนินการเฉพาะโครงการที่อยู่ในเขตสาขาที่ตนรับผิดชอบ (เช่น QC สาขาบางนา ดูแลโครงการสาขาบางนา) หรือได้รับมอบหมายเป็นผู้ตรวจโครงการนั้น
+                </li>
+                <li>
+                  <strong>👥 พนักงานทั่วไป หรือ QC ต่างสาขา:</strong> จะอยู่ใน <strong>"โหมดดูข้อมูลเท่านั้น (Read-Only)"</strong> โดยระบบจะแสดงป้ายเตือนและบล็อกการแก้ไขสถานะโครงการเพื่อความปลอดภัย
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
           id: 'q_site_visit_result',
           question: 'การบันทึกผลการเข้า Visit Site ลูกค้า (Site Visit Results & Next Actions) ทำอย่างไร?',
           icon: ClipboardCheck,
@@ -705,7 +869,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                   <strong>ระบบเลือกช่าง QC อัตโนมัติ (Smart QC Dispatch Engine):</strong> เมื่อเลือกวัน-เวลาเข้าสำรวจ ระบบจะค้นหาเฉพาะผู้ใช้ที่มีทักษะ <code>QC</code> และคำนวณคิวว่างจริงในรัศมี &plusmn;3 ชั่วโมงเพื่อป้องกันงานซ้อนทับ
                 </li>
                 <li>
-                  <strong>การส่งต่องานเข้าสู่โปรเจกต์ (Pipeline Transition):</strong> เมื่อกดแปลงเป็นโปรเจกต์ ระบบจะสร้าง Smart Project ID พร้อมเปิดคอลัมน์ขั้นตอน <code>Buy-Survey</code> &rarr; <code>Survey</code> เพื่อส่งต่อให้ช่าง QC เข้าทำขั้นตอนที่ 3 (Survey QC Inspection) ทันที
+                  <strong>การส่งต่องานเข้าสู่โปรเจกต์ (Pipeline Transition):</strong> เมื่อกดแปลงเป็นโปรเจกต์ ระบบจะสร้าง Smart Project ID พร้อมเปิดคอลัมน์ขั้นตอนการดำเนินงานโครงการบน Kanban บอร์ดอัตโนมัติ
                 </li>
               </ul>
             </div>
@@ -752,9 +916,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
                 <li style={{ marginBottom: '0.35rem' }}>
                   <strong>การสร้างคอลัมน์ขั้นตอน Kanban อัตโนมัติ (3 กลุ่มหลักที่ Active):</strong>
                   <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
-                    <li><em>⚡ Quick service (8 ขั้นตอน):</em> <code>To Do</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
-                    <li><em>🔧 MA Service (10 ขั้นตอน):</em> <code>To Do</code> &rarr; <code>Buy-Survey</code> &rarr; <code>Survey</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
-                    <li><em>🏡 Renovate Service (11 ขั้นตอน):</em> <code>To Do</code> &rarr; <code>Buy-Survey</code> &rarr; <code>Survey</code> &rarr; <code>Design</code> &rarr; <code>ชำระเงิน</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>⚡ Quick service (7 ขั้นตอน):</em> <code>To Do</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>🔧 MA Service (7 ขั้นตอน):</em> <code>To Do</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
+                    <li><em>🏡 Renovate Service (7 ขั้นตอน):</em> <code>To Do</code> &rarr; <code>Assign ช่าง</code> &rarr; <code>Check-in</code> &rarr; <code>Check-out</code> &rarr; <code>QC</code> &rarr; <code>Aftersale</code> &rarr; <code>Close</code></li>
                   </ul>
                 </li>
                 <li>
@@ -1233,6 +1397,33 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
       subtitle: "Detailed guides for administrators on baseline management and advanced concepts.",
       features: [
         {
+          id: 'f_project_chat_and_permissions',
+          question: 'Technician Chat & Project Operational Permissions (Role & Branch Matrix)',
+          icon: ShieldCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>Detailed guide on the Technician Collaboration & Operational Access Control architecture:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <strong>Technician Project Chat:</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><em>Branch-Aware Project List:</em> Automatically detects user branch (e.g. Bangna) and prioritizes branch projects in the chat directory.</li>
+                    <li><em>Quick Tagging Chips:</em> Clickable chips to mention technicians with <code>@Name</code>.</li>
+                    <li><em>Embedded View:</em> Direct access inside Project Detail via dedicated Chat tab.</li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>Project Operational Security (Role & Branch Matrix):</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><em>Authorized Operators:</em> Only <strong>Admins</strong>, <strong>Assigned PMs</strong>, and <strong>Branch Responsible QCs</strong> can mutate workflow states, perform GPS Check-in/out, drag Kanban cards, or execute QC handover settlements.</li>
+                    <li><em>Read-Only Enforcement:</em> Non-operators are gracefully placed in Read-Only mode with visual status chips and notification banners.</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
           id: 'f1',
           question: 'What is the difference between Active Plan and Current Live Plan?',
           icon: CalendarRange,
@@ -1383,7 +1574,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Smart Dispatch Algorithm:</strong> Evaluates appointments using <code>/api/users/available-surveyors</code>, querying only users with <code>QC</code> skills and verifying that no overlapping survey appointments exist within a &plusmn;3-hour window.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Interactive DMS / GPS Mapping:</strong> Auto-parses coordinates in Degree Minute Seconds (DMS) or decimal degrees, generating direct navigation links and an embedded Google Maps preview for surveyor logistics.</li>
-                <li style={{ marginBottom: '0.25rem' }}><strong>Pipeline Workflow Injection:</strong> Converts qualified leads into projects with dynamic <code>Buy-Survey</code> and <code>Survey</code> Kanban stages, linking the assigned QC inspector directly to the project team.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Pipeline Workflow Injection:</strong> Converts qualified leads into projects with dynamic Kanban stages (7-8 stages depending on project type), linking the assigned personnel directly to the project team.</li>
               </ul>
             </div>
           )
@@ -1398,7 +1589,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Smart Project ID Numbering:</strong> Standardized ID format (<code>PR&lt;BRANCH&gt;&lt;YYMMDD&gt;&lt;SEQ&gt;</code>) created atomically in PostgreSQL transactions.</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>Geofence Coordinates:</strong> Inherits site latitude, longitude, and 500m radius into the <code>projects</code> table for GPS-verified Check-in/Out.</li>
-                <li style={{ marginBottom: '0.25rem' }}><strong>3 Active Macro Pipelines:</strong> Dynamically provisions Kanban stages for <code>Quick Service (8 stages)</code>, <code>MA Service (10 stages)</code>, and <code>Renovate Service (11 stages)</code>.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>3 Active Macro Pipelines:</strong> Dynamically provisions Kanban stages for <code>Quick Service (7 stages)</code>, <code>MA Service (7 stages)</code>, and <code>Renovate Service (7 stages)</code>.</li>
                 <li><strong>Dynamic Reactivation:</strong> Other types (Installer, Build-in, New house) can be toggled Active in Maintain Master without schema changes.</li>
               </ul>
             </div>
@@ -1426,6 +1617,33 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
       title: "คู่มือฟีเจอร์และการจัดการระบบ (Admin Only)",
       subtitle: "คู่มือฟีเจอร์พิเศษสำหรับการวางแผนและตั้งค่าสำหรับผู้ดูแลระบบเท่านั้น",
       features: [
+        {
+          id: 'f_project_chat_and_permissions',
+          question: 'ระบบแชทติดต่อช่างรายสาขา และระบบควบคุมสิทธิ์การดำเนินการโครงการ (Role & Branch Matrix)',
+          icon: ShieldCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>คู่มือสถาปัตยกรรมระบบแชทติดต่อช่าง และการควบคุมสิทธิ์ดำเนินงานโครงการ:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.5rem' }}>
+                  <strong>ระบบแชทติดต่อช่าง (Technician Project Chat):</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><em>กรองโครงการตามสาขาอัตโนมัติ:</em> ตรวจจับสาขาของพนักงาน (เช่น สาขาบางนา) และแสดงเฉพาะโครงการในสาขาเพื่อความสะดวกและรวดเร็ว</li>
+                    <li><em>ชิปแท็กช่างด่วน:</em> ชิปคลิกครั้งเดียวเพื่อใส่แท็ก <code>@ชื่อช่าง</code> ลงในข้อความ</li>
+                    <li><em>หน้าจอแชทแบบฝังตัว:</em> สามารถคุยแชทกับช่างได้โดยตรงจากแท็บในหน้ารายละเอียดโครงการ</li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>ระบบความปลอดภัยสิทธิ์การดำเนินงาน (Role & Branch Matrix):</strong>
+                  <ul style={{ listStyleType: 'circle', paddingLeft: '1.25rem', marginTop: '0.25rem' }}>
+                    <li><em>ผู้มีสิทธิ์ดำเนินการ:</em> อนุญาตเฉพาะ <strong>Admin</strong>, <strong>PM ผู้รับผิดชอบ</strong>, และ <strong>QC ประจำสาขานั้นๆ</strong> ในการ Check-In/Out, เลื่อนสเต็ปงาน, ย้ายการ์ด Kanban, บันทึกผล QC และส่งมอบงานปิดโครงการ</li>
+                    <li><em>โหมดดูข้อมูลเท่านั้น (Read-Only):</em> ผู้ใช้ที่ไม่มีสิทธิ์จะอยู่ในโหมด Read-Only โดยอัตโนมัติ พร้อมแสดงป้ายและแจ้งเตือนเหตุผลชัดเจน</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          )
+        },
         {
           id: 'f1',
           question: 'Active Plan กับ Current Live Plan แตกต่างกันอย่างไร?',
@@ -1577,7 +1795,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
                 <li style={{ marginBottom: '0.25rem' }}><strong>ตรรกะ Smart Dispatch:</strong> เมื่อเลือกวัน-เวลาเข้าสำรวจ ระบบจะค้นหาเฉพาะผู้ใช้งานที่มีทักษะ <code>QC</code> ผ่าน API <code>/api/users/available-surveyors</code> พร้อมตรวจเช็คว่าไม่มีคิวนัดหมายอื่นซ้อนทับในรัศมีเวลา &plusmn;3 ชั่วโมง</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>ระบบแปลงพิกัดและแสดงแผนที่ (DMS / Live Maps):</strong> แปลงพิกัดแผนที่ทั้งแบบทศนิยมและองศาลิปดา (DMS) พร้อมแสดง iframe แผนที่จริงแบบ Live Preview ป้องกันการเข้าพื้นที่ผิดจุด</li>
-                <li style={{ marginBottom: '0.25rem' }}><strong>การเชื่อมโยงเข้าสู่ Kanban Pipeline:</strong> เมื่อกด Convert Lead ระบบจะสร้าง Smart Project ID (เช่น <code>PRBNA2608170001</code>) และเปิดคอลัมน์ขั้นตอน <code>Buy-Survey</code> และ <code>Survey</code> บนบอร์ด Kanban โดยอัตโนมัติ เพื่อให้ช่าง QC เข้าทำขั้นตอนที่ 3 (Survey QC Inspection)</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>การเชื่อมโยงเข้าสู่ Kanban Pipeline:</strong> เมื่อกด Convert Lead ระบบจะสร้าง Smart Project ID (เช่น <code>PRBNA2608170001</code>) และเปิดคอลัมน์ขั้นตอนการปฏิบัติงาน (7-8 ขั้นตอน) บนบอร์ด Kanban โดยอัตโนมัติ</li>
               </ul>
             </div>
           )
@@ -1592,7 +1810,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
                 <li style={{ marginBottom: '0.25rem' }}><strong>การออกรหัส Smart Project ID:</strong> รันรหัสมาตรฐาน <code>PR&lt;BRANCH&gt;&lt;YYMMDD&gt;&lt;SEQ&gt;</code> แบบ Atomic Transaction ป้องกันรหัสซ้ำ</li>
                 <li style={{ marginBottom: '0.25rem' }}><strong>การสืบทอดพิกัด Geofence:</strong> ถ่ายโอนค่า Latitude, Longitude และรัศมีตรวจจับ 500 เมตร สู่ Entity <code>projects</code> สำหรับระบบ GPS Check-in/Out</li>
-                <li style={{ marginBottom: '0.25rem' }}><strong>3 กลุ่มกระบวนการหลักที่ Active:</strong> กำหนดสเตจคอลัมน์ให้อัตโนมัติ: <code>Quick service (8 สเตจ)</code>, <code>MA Service (10 สเตจ)</code> และ <code>Renovate Service (11 สเตจ)</code></li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>3 กลุ่มกระบวนการหลักที่ Active:</strong> กำหนดสเตจคอลัมน์ให้อัตโนมัติ: <code>Quick service (7 สเตจ)</code>, <code>MA Service (7 สเตจ)</code> และ <code>Renovate Service (7 สเตจ)</code></li>
                 <li><strong>ความยืดหยุ่นในการเปิดใช้งานอนาคต (Configuration):</strong> กลุ่มงานอื่นๆ (Installer, Build-in, New house) ถูกบันทึกไว้ในระบบ สามารถกดเปิดใช้งานหรือเพิ่มประเภทใหม่ได้ทันทีผ่าน Maintain Master โดยไม่ต้องแก้โค้ด</li>
               </ul>
             </div>

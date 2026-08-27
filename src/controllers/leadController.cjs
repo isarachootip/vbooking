@@ -70,8 +70,26 @@ exports.createLead = async (req, res) => {
     const fullName = (customer_name || `${fName} ${lName}` || 'ลูกค้า').trim();
 
     // Auto-link or auto-create Customer Master if needed
-    let finalCustId = customer_id || null;
-    let finalSiteId = customer_site_id || null;
+    let finalCustId = (customer_id && typeof customer_id === 'string' && customer_id.trim()) ? customer_id.trim() : null;
+    let finalSiteId = (customer_site_id && typeof customer_site_id === 'string' && customer_site_id.trim()) ? customer_site_id.trim() : null;
+
+    if (finalCustId) {
+      try {
+        const custCheck = await pool.query('SELECT id FROM customers WHERE id = $1 LIMIT 1', [finalCustId]);
+        if (custCheck.rows.length === 0) finalCustId = null;
+      } catch (e) {
+        finalCustId = null;
+      }
+    }
+
+    if (finalSiteId) {
+      try {
+        const siteCheck = await pool.query('SELECT id FROM customer_sites WHERE id = $1 LIMIT 1', [finalSiteId]);
+        if (siteCheck.rows.length === 0) finalSiteId = null;
+      } catch (e) {
+        finalSiteId = null;
+      }
+    }
 
     if (!finalCustId && (fullName || customer_phone)) {
       try {
@@ -166,6 +184,27 @@ exports.updateLead = async (req, res) => {
     const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');
     const fullName = customer_name || `${fName} ${lName}`.trim();
 
+    let finalCustId = (customer_id && typeof customer_id === 'string' && customer_id.trim()) ? customer_id.trim() : null;
+    let finalSiteId = (customer_site_id && typeof customer_site_id === 'string' && customer_site_id.trim()) ? customer_site_id.trim() : null;
+
+    if (finalCustId) {
+      try {
+        const custCheck = await pool.query('SELECT id FROM customers WHERE id = $1 LIMIT 1', [finalCustId]);
+        if (custCheck.rows.length === 0) finalCustId = null;
+      } catch (e) {
+        finalCustId = null;
+      }
+    }
+
+    if (finalSiteId) {
+      try {
+        const siteCheck = await pool.query('SELECT id FROM customer_sites WHERE id = $1 LIMIT 1', [finalSiteId]);
+        if (siteCheck.rows.length === 0) finalSiteId = null;
+      } catch (e) {
+        finalSiteId = null;
+      }
+    }
+
     const result = await pool.query(
       `UPDATE leads 
        SET customer_name = $1, customer_first_name = $2, customer_last_name = $3, customer_phone = $4, 
@@ -174,7 +213,7 @@ exports.updateLead = async (req, res) => {
            appointment_assignee = $13, notes = $14, updated_at = $15, project_id = COALESCE($16, project_id), 
            coordinator_name = $17, coordinator_phone = $18, coordinator_line_id = $19, 
            surveyor_id = $20, survey_date = $21, sales_contact_id = COALESCE($23, sales_contact_id),
-           customer_id = COALESCE($24, customer_id), customer_site_id = COALESCE($25, customer_site_id)
+           customer_id = $24, customer_site_id = $25
        WHERE id = $22 RETURNING *`,
       [
         fullName, fName, lName, customer_phone, customer_address, 
@@ -182,7 +221,7 @@ exports.updateLead = async (req, res) => {
         job_type, status, appointment_date || null, appointment_type || null, 
         appointment_assignee || null, notes, now, project_id, coordinator_name || null, 
         coordinator_phone || null, coordinator_line_id || null, surveyor_id || null, 
-        survey_date || null, id, sales_contact_id || null, customer_id || null, customer_site_id || null
+        survey_date || null, id, sales_contact_id || null, finalCustId, finalSiteId
       ]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });
@@ -212,6 +251,20 @@ exports.addFollowup = async (req, res) => {
       site_coordinator_name, site_coordinator_phone, site_coordinator_line_id, site_map_url,
       notes, new_status, created_by, surveyor_id, survey_date
     } = req.body;
+
+    if (appointment_date) {
+      const datePart = appointment_date.trim().split(' ')[0].split('T')[0];
+      let isoDate = datePart;
+      if (datePart.includes('/')) {
+        const parts = datePart.split('/');
+        if (parts.length === 3) isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+      const bangkokDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+      if (isoDate < bangkokDate) {
+        return res.status(400).json({ error: 'ไม่สามารถบันทึกนัดหมายวันย้อนหลังได้ กรุณาเลือกวันปัจจุบันหรือวันล่วงหน้า' });
+      }
+    }
+
     const followupId = `flw_${Date.now()}`;
     const now = new Date().toISOString();
 
