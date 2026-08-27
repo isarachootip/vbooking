@@ -627,6 +627,10 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const userParam = params.get('user');
+    const tokenParam = params.get('token');
+    if (tokenParam) {
+      localStorage.setItem('auth_token', tokenParam);
+    }
     if (userParam) {
       try {
         const userObj = JSON.parse(decodeURIComponent(userParam));
@@ -647,6 +651,10 @@ function App() {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
+    const authToken = localStorage.getItem('auth_token');
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
     const storedUserStr = localStorage.getItem('nt_current_user');
     if (storedUserStr) {
       try {
@@ -1125,6 +1133,8 @@ function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('nt_current_user');
     setCurrentUser(null);
   };
 

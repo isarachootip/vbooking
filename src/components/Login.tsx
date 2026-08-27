@@ -33,7 +33,10 @@ export const Login = ({ onLogin, availableUsers }: LoginProps) => {
       if (!res.ok) {
         setLoginError(data.error || 'การเข้าสู่ระบบล้มเหลว / Login failed');
       } else {
-        onLogin(data);
+        if (data.token) {
+          localStorage.setItem('auth_token', data.token);
+        }
+        onLogin(data.user || data);
       }
     } catch (err) {
       console.error(err);
