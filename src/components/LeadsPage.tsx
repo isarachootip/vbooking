@@ -865,6 +865,19 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       return;
     }
     
+    const autoAggregatedWorkTypes = Array.from(
+      new Set(
+        leadRoomDetails.flatMap(r => {
+          const list = [...r.work_types];
+          if (list.includes('งานอื่นๆ') && r.custom_work_type) {
+            const idx = list.indexOf('งานอื่นๆ');
+            list[idx] = `งานอื่นๆ: ${r.custom_work_type}`;
+          }
+          return list;
+        })
+      )
+    );
+
     const extraDetails = {
       buildingType: buildingType === 'อื่นๆ' && customBuildingType ? `อื่นๆ: ${customBuildingType}` : buildingType,
       customBuildingType,
@@ -873,7 +886,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       paymentMethod,
       workAreas,
       roomDetails: leadRoomDetails,
-      requiredWorkTypes: requiredWorkTypes.map(t => t === 'งานอื่นๆ' && customRequiredWorkType ? `งานอื่นๆ: ${customRequiredWorkType}` : t),
+      requiredWorkTypes: autoAggregatedWorkTypes.length > 0 ? autoAggregatedWorkTypes : requiredWorkTypes,
       customRequiredWorkType,
       branch
     };
@@ -3742,37 +3755,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                       </div>
                     )}
 
-                    {/* ประเภทงานที่ต้องการ Checkboxes Panel WITH CUSTOM INPUT */}
-                    <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.75rem', background: 'var(--bg-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>ประเภทงานที่ต้องการ</span>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
-                        {[
-                          'งานไฟฟ้า & แสงสว่าง', 'งานปูน & ก่อฉาบ', 'งานกระเบื้อง & ปูพื้น',
-                          'งานประปา & สุขภัณฑ์', 'งานฝ้า & ทาสี', 'งานป้องกัน & กันซึม',
-                          'งานประตู-หน้าต่าง & กระจก', 'งานบิวท์อิน & ตกแต่ง', 'งานออกแบบ 2D/3D',
-                          'งานติดตั้ง', 'งานอื่นๆ'
-                        ].map((type) => (
-                          <label key={type} style={{ fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                            <input 
-                              type="checkbox"
-                              checked={requiredWorkTypes.includes(type) || (type === 'งานอื่นๆ' && requiredWorkTypes.includes('งานอื่นๆ')) || (type === 'งานไฟฟ้า & แสงสว่าง' && requiredWorkTypes.includes('งานไฟฟ้า')) || (type === 'งานประปา & สุขภัณฑ์' && requiredWorkTypes.includes('งานประปา')) || (type === 'งานป้องกัน & กันซึม' && requiredWorkTypes.includes('งานป้องกัน')) || (type === 'งานออกแบบ 2D/3D' && requiredWorkTypes.includes('งานออกแบบ'))}
-                              onChange={() => toggleRequiredWorkType(type)}
-                            />
-                            {type}
-                          </label>
-                        ))}
-                      </div>
-                      {/* CUSTOM REQUIRED WORK TYPE INPUT */}
-                      {(requiredWorkTypes.includes('งานอื่นๆ') || requiredWorkTypes.some(t => t.startsWith('งานอื่นๆ'))) && (
-                        <input 
-                          type="text"
-                          value={customRequiredWorkType}
-                          onChange={e => setCustomRequiredWorkType(e.target.value)}
-                          placeholder="ระบุประเภทงานอื่นๆ เช่น งานฉีดปลวก, งานหลังคา..."
-                          style={{ marginTop: '0.4rem', width: '100%', padding: '0.35rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.8rem', color: 'var(--text-primary)' }}
-                        />
-                      )}
-                    </div>
+
 
                   </div>
 
