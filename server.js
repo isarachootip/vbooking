@@ -918,7 +918,6 @@ const initDB = async () => {
             lead.coordinator_line_id || null
           ]);
         }
-
         // Link all matching leads to this customer
         await client.query(`
           UPDATE leads SET customer_id = $1, customer_site_id = COALESCE($2, customer_site_id)
@@ -928,6 +927,17 @@ const initDB = async () => {
         seq++;
       }
       console.log(`Migrated ${seq - 1} customers into Customer Master.`);
+    }
+
+    // Auto-repair customer_code format (e.g. CUST-YYYYMM-XXXX -> CUST-YYYYMMDD-XXXX)
+    try {
+      await client.query(`
+        UPDATE customers
+        SET customer_code = 'CUST-' || TO_CHAR(COALESCE(created_at, NOW()), 'YYYYMMDD') || '-' || LPAD(SUBSTRING(customer_code FROM '[0-9]+$'), 4, '0')
+        WHERE customer_code ~ '^CUST-[0-9]{6}-[0-9]+$';
+      `);
+    } catch (codeMigErr) {
+      console.warn('Notice: customer_code migration:', codeMigErr.message);
     }
 
     // Seed MA Checklist Templates if empty

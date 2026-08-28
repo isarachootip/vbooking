@@ -109,7 +109,21 @@ exports.createLead = async (req, res) => {
         } else {
           // Create new customer
           const newCustId = `cust_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-          const custCode = `CUST-${dateStr}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+          const codePrefix = `CUST-${dateStr}-`;
+          const countRes = await pool.query(
+            `SELECT customer_code FROM customers WHERE customer_code LIKE $1`,
+            [`${codePrefix}%`]
+          );
+          let maxNum = 0;
+          for (const row of countRes.rows) {
+            if (row.customer_code) {
+              const numPart = parseInt(row.customer_code.replace(codePrefix, ''), 10);
+              if (!isNaN(numPart) && numPart > maxNum) {
+                maxNum = numPart;
+              }
+            }
+          }
+          const custCode = `${codePrefix}${String(maxNum + 1).padStart(4, '0')}`;
           await pool.query(
             `INSERT INTO customers (id, customer_code, customer_type, first_name, last_name, customer_name, phone, created_at, updated_at)
              VALUES ($1, $2, 'individual', $3, $4, $5, $6, NOW(), NOW())`,

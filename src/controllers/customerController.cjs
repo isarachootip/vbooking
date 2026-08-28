@@ -168,12 +168,13 @@ exports.createCustomer = async (req, res) => {
     const lName = (last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '') || '').trim();
     const fullName = customer_name ? customer_name.trim() : `${fName} ${lName}`.trim();
 
-    // Generate Customer Code (e.g. CUST-YYYYMM-0001)
+    // Generate Customer Code (Standard: CUST-YYYYMMDD-0001)
     const now = new Date();
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const ymStr = `${yyyy}${mm}`;
-    const codePrefix = `CUST-${ymStr}-`;
+    const dd = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}${mm}${dd}`;
+    const codePrefix = `CUST-${dateStr}-`;
 
     const countRes = await pool.query(
       `SELECT customer_code FROM customers WHERE customer_code LIKE $1`,
