@@ -646,6 +646,31 @@ function App() {
     }
   }, []);
 
+  // Unified Auth Headers Helper (handles JWT token and multi-storage fallback)
+  const getAuthHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    let userId = currentUser?.id;
+    if (!userId && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('nt_current_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.id) userId = parsed.id;
+        }
+      } catch {}
+    }
+    if (userId) {
+      headers['X-User-Id'] = userId;
+    }
+    return headers;
+  };
+
   // Fetch initial data from PostgreSQL
   const fetchInitialData = () => {
     const headers: Record<string, string> = {
@@ -739,7 +764,7 @@ function App() {
   const handleSetUsers: React.Dispatch<React.SetStateAction<User[]>> = (value) => {
     setUsers(prev => {
       const nextUsers = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
       if (nextUsers.length < prev.length) {
         const deletedUser = prev.find(pUser => !nextUsers.some(nUser => nUser.id === pUser.id));
         if (deletedUser) {
@@ -777,7 +802,7 @@ function App() {
   const handleSetProjects: React.Dispatch<React.SetStateAction<Project[]>> = (value) => {
     setProjects(prev => {
       const nextProjects = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
 
       // Detect deleted projects
       if (nextProjects.length < prev.length) {
@@ -818,7 +843,7 @@ function App() {
   const handleSetTasks: React.Dispatch<React.SetStateAction<Task[]>> = (value) => {
     setTasks(prev => {
       const nextTasks = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
       if (nextTasks.length < prev.length) {
         const deletedTask = prev.find(pTask => !nextTasks.some(nTask => nTask.id === pTask.id));
         if (deletedTask) {
@@ -865,7 +890,7 @@ function App() {
   const handleSetTimesheets: React.Dispatch<React.SetStateAction<TimesheetEntry[]>> = (value) => {
     setTimesheets(prev => {
       const nextTimesheets = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
       if (nextTimesheets.length < prev.length) {
         const deletedTs = prev.find(pTs => !nextTimesheets.some(nTs => nTs.id === pTs.id));
         if (deletedTs) {
@@ -903,7 +928,7 @@ function App() {
   const handleSetTaskTemplates: React.Dispatch<React.SetStateAction<TaskTemplate[]>> = (value) => {
     setTaskTemplates(prev => {
       const nextTpl = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
       if (nextTpl.length < prev.length) {
         const deletedTpl = prev.find(p => !nextTpl.some(n => n.id === p.id));
         if (deletedTpl) {
@@ -943,7 +968,7 @@ function App() {
       const nextTypes = typeof value === 'function' ? value(prev) : value;
       fetch('/api/system-settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ master_project_types: JSON.stringify(nextTypes) })
       }).catch(err => {
         console.error('Failed to save master project types to system settings', err);
@@ -955,7 +980,7 @@ function App() {
   const handleSetSprints: React.Dispatch<React.SetStateAction<Sprint[]>> = (value) => {
     setSprints(prev => {
       const nextSprints = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
       if (nextSprints.length < prev.length) {
         const deletedSprint = prev.find(p => !nextSprints.some(n => n.id === p.id));
         if (deletedSprint) {
@@ -993,7 +1018,7 @@ function App() {
   const handleSetReleases: React.Dispatch<React.SetStateAction<Release[]>> = (value) => {
     setReleases(prev => {
       const nextReleases = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
       if (nextReleases.length < prev.length) {
         const deletedRelease = prev.find(p => !nextReleases.some(n => n.id === p.id));
         if (deletedRelease) {
@@ -1031,7 +1056,7 @@ function App() {
   const handleSetPermissionSchemes: React.Dispatch<React.SetStateAction<PermissionScheme[]>> = (value) => {
     setPermissionSchemes(prev => {
       const nextSchemes = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
       if (nextSchemes.length < prev.length) {
         const deletedScheme = prev.find(p => !nextSchemes.some(n => n.id === p.id));
         if (deletedScheme) {
@@ -1069,7 +1094,7 @@ function App() {
   const handleSetProjectWorkflows: React.Dispatch<React.SetStateAction<ProjectWorkflow[]>> = (value) => {
     setProjectWorkflows(prev => {
       const nextWorkflows = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
       nextWorkflows.forEach(n => {
         const prevWf = prev.find(p => p.projectId === n.projectId);
         if (JSON.stringify(prevWf) !== JSON.stringify(n)) {
@@ -1093,7 +1118,7 @@ function App() {
   const handleSetCostRates: React.Dispatch<React.SetStateAction<CostRate[]>> = (value) => {
     setCostRates(prev => {
       const nextRates = typeof value === 'function' ? value(prev) : value;
-      const headers = { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' };
+      const headers = getAuthHeaders();
       if (nextRates.length < prev.length) {
         const deletedRate = prev.find(p => !nextRates.some(n => n.id === p.id));
         if (deletedRate) {
