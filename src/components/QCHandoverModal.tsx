@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { User, Project } from '../types';
 import { canOperateProject } from '../utils';
+import { CustomDateInput } from './CustomDateInput';
 import {
   X, CheckCircle2, AlertCircle, ShieldCheck, Star,
   FileCheck, DollarSign, Upload, Trash2, RefreshCw,
@@ -485,7 +486,7 @@ export const QCHandoverModal: React.FC<QCHandoverModalProps> = ({
                 </div>
                 <div>
                   <label style={lbl}>วันที่ตรวจประเมิน *</label>
-                  <input type="date" value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} style={inp} required />
+                  <CustomDateInput value={inspectionDate} onChange={e => setInspectionDate(e.target.value)} style={inp} required />
                 </div>
               </div>
 
@@ -681,7 +682,7 @@ export const QCHandoverModal: React.FC<QCHandoverModalProps> = ({
                 </div>
                 <div>
                   <label style={lbl}>วันเริ่มต้นรับประกัน</label>
-                  <input type="date" value={handoverDate} onChange={e => setHandoverDate(e.target.value)} style={inp} />
+                  <CustomDateInput value={handoverDate} onChange={e => setHandoverDate(e.target.value)} style={inp} />
                 </div>
               </div>
 

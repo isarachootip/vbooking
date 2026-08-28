@@ -6,6 +6,7 @@ import {
   Boxes, Wrench, FileSpreadsheet, FileImage
 } from 'lucide-react';
 import type { Project, User } from '../types';
+import { CustomDateInput } from './CustomDateInput';
 
 export interface ScannedBoqItem {
   id: string;
@@ -704,8 +705,7 @@ export const QuotationScanModal: React.FC<QuotationScanModalProps> = ({
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
                     วันที่ออกเอกสาร
                   </label>
-                  <input
-                    type="date"
+                  <CustomDateInput
                     value={issueDate}
                     onChange={e => setIssueDate(e.target.value)}
                     style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.85rem' }}

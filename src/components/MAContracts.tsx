@@ -4,6 +4,7 @@ import { useRef } from "react";
 import type { User } from "../types";
 import { useNavigate } from "react-router-dom";
 import { CustomDateInput } from "./CustomDateInput";
+import { formatToDDMMYYYY } from "../utils";
 
 interface MAContractsProps {
   currentUser: User | null;
@@ -30,7 +31,7 @@ const addMonths = (dateStr: string, months: number): string => {
 
 const formatDate = (s?: string) => {
   if (!s) return "—";
-  try { return new Date(s).toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "numeric" }); } catch { return s; }
+  try { return formatToDDMMYYYY(s) || s; } catch { return s; }
 };
 
 const iStyle = { background: "var(--bg-tertiary)", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "0.55rem 0.75rem", color: "var(--text-primary)", outline: "none", fontSize: "0.875rem", width: "100%", boxSizing: "border-box" as const };
