@@ -337,3 +337,122 @@ exports.convertToProject = async (req, res) => {
     res.status(500).json({ error: 'Failed to convert quotation' });
   }
 };
+
+// ==========================================
+// Public Quotation Review & E-Signature Endpoints (No Auth Required)
+// ==========================================
+
+exports.getPublicQuotation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const quoResult = await pool.query(`
+      SELECT q.*, 
+             COALESCE(q.customer_name, c.customer_name, l.customer_name, p.customer_name, 'ลูกค้าทั่วไป') AS customer_name,
+             COALESCE(q.customer_phone, c.phone, l.customer_phone, p.customer_phone, '') AS customer_phone,
+             COALESCE(q.customer_address, l.customer_address, '') AS customer_address,
+             c.customer_code,
+             l.job_type AS lead_job_type,
+             p.name AS project_name
+      FROM quotations q
+      LEFT JOIN customers c ON q.customer_id = c.id
+      LEFT JOIN leads l ON q.lead_id = l.id
+      LEFT JOIN projects p ON q.project_id = p.id
+      WHERE q.id = $1 OR q.quotation_number = $1
+    `, [id]);
+    
+    if (quoResult.rows.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบเอกสารใบเสนอราคา (Quotation not found)' });
+    }
+    
+    const quotation = quoResult.rows[0];
+    const itemsResult = await pool.query(
+      'SELECT * FROM quotation_items WHERE quotation_id = $1 ORDER BY sort_order ASC, id ASC',
+      [quotation.id]
+    );
+    
+    quotation.items = itemsResult.rows;
+
+    const companyInfo = {
+      companyName: 'PMT DESIGN & RENOVATION',
+      subTitle: 'บริษัท พีเอ็มที บิลด์โฟลว์ แมเนจเม้นท์ จำกัด (สำนักงานใหญ่)',
+      taxId: '0105567012345',
+      phone: '02-123-4567, 081-999-8888',
+      email: 'contact@pmt-buildflow.com',
+      website: 'www.pmt-buildflow.com',
+      address: 'กรุงเทพมหานคร'
+    };
+
+    res.json({ quotation, items: itemsResult.rows, companyInfo });
+  } catch (err) {
+    console.error('Error fetching public quotation:', err);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการโหลดใบเสนอราคา' });
+  }
+};
+
+exports.signPublicQuotation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { signature, signed_by_name, signed_phone, remarks } = req.body;
+
+    if (!signature) {
+      return res.status(400).json({ error: 'กรุณาวาดลายเซ็นต์เพื่อยืนยันการอนุมัติ (Signature required)' });
+    }
+    if (!signed_by_name || !signed_by_name.trim()) {
+      return res.status(400).json({ error: 'กรุณาระบุชื่อ-นามสกุล ผู้มีอำนาจลงนาม (Signer name required)' });
+    }
+
+    const quoCheck = await pool.query('SELECT * FROM quotations WHERE id = $1 OR quotation_number = $1', [id]);
+    if (quoCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'ไม่พบเอกสารใบเสนอราคา' });
+    }
+    const quotation = quoCheck.rows[0];
+
+    const now = new Date().toISOString();
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'online';
+
+    // Update quotation status and customer signature
+    const updateRes = await pool.query(`
+      UPDATE quotations
+      SET customer_signature = $1,
+          customer_signed_at = $2,
+          customer_signed_name = $3,
+          customer_signed_ip = $4,
+          status = 'Accepted',
+          updated_at = $2
+      WHERE id = $5
+      RETURNING *
+    `, [signature, now, signed_by_name.trim(), String(clientIp), quotation.id]);
+
+    // If linked to lead, record followup milestone
+    if (quotation.lead_id) {
+      try {
+        await pool.query(
+          "UPDATE leads SET status = 'Quote Accepted', updated_at = $1 WHERE id = $2",
+          [now, quotation.lead_id]
+        );
+        const flwId = `flw_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        await pool.query(`
+          INSERT INTO lead_followups (id, lead_id, activity_type, notes, created_at, created_by)
+          VALUES ($1, $2, 'ลูกค้าลงนามอนุมัติใบเสนอราคาออนไลน์', $3, $4, $5)
+        `, [
+          flwId,
+          quotation.lead_id,
+          `ลูกค้า (${signed_by_name.trim()}) ได้ลงนามอนุมัติใบเสนอราคาเลขที่ ${quotation.quotation_number} ยอดเงินรวม ฿${Number(quotation.grand_total).toLocaleString()} เรียบร้อยแล้ว`,
+          now,
+          'ระบบเซ็นต์ออนไลน์ (E-Sign Portal)'
+        ]);
+      } catch (leadErr) {
+        console.warn('Notice: updating lead on quotation sign:', leadErr.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'ลงนามอนุมัติใบเสนอราคาและสั่งจ้างสำเร็จเรียบร้อยแล้ว',
+      quotation: updateRes.rows[0]
+    });
+  } catch (err) {
+    console.error('Error signing quotation:', err);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกลายเซ็นต์' });
+  }
+};

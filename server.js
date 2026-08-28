@@ -84,7 +84,8 @@ const requireAuth = async (req, res, next) => {
     '/db-status',
     '/webhooks/github',
     '/webhooks/gitlab',
-    '/chat'
+    '/chat',
+    '/quotations/public'
   ];
   
   if (publicPaths.some(p => req.path === p || req.path.startsWith(p))) {
@@ -658,6 +659,11 @@ const initDB = async () => {
       ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);
       ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(50);
       ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_address TEXT;
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_signature TEXT;
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_signed_at VARCHAR(50);
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_signed_name VARCHAR(255);
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS customer_signed_ip VARCHAR(100);
+      ALTER TABLE quotations ADD COLUMN IF NOT EXISTS public_token VARCHAR(100);
 
       CREATE TABLE IF NOT EXISTS quotation_items (
         id                  VARCHAR(50) PRIMARY KEY,

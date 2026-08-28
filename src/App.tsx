@@ -27,6 +27,7 @@ import { LeadsPage } from './components/LeadsPage';
 import { QuotationManager } from './components/QuotationManager';
 import { CustomerMasterManager } from './components/CustomerMasterManager';
 import { MAContracts } from './components/MAContracts';
+import { PublicQuotationSign } from './components/PublicQuotationSign';
 
 
 import { mockUsers, mockProjects, mockTasks, mockTimesheets } from './data/mockData';
@@ -1164,12 +1165,24 @@ function App() {
   };
 
   const isWidgetRoute = window.location.pathname === '/widget-iframe';
+  const isPublicQuotationRoute = window.location.pathname.startsWith('/q/') || window.location.pathname.startsWith('/quotation-sign/');
 
   if (isWidgetRoute) {
     return (
       <Router>
         <Routes>
           <Route path="/widget-iframe" element={<ChatWidget />} />
+        </Routes>
+      </Router>
+    );
+  }
+
+  if (isPublicQuotationRoute) {
+    return (
+      <Router>
+        <Routes>
+          <Route path="/q/:id" element={<PublicQuotationSign />} />
+          <Route path="/quotation-sign/:id" element={<PublicQuotationSign />} />
         </Routes>
       </Router>
     );

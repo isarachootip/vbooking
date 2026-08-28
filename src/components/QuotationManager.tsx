@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileText, Plus, Search, Trash2, Printer, Save, CheckCircle, 
   ArrowUpRight, Eye, RefreshCw, DollarSign, Calendar, User as UserIcon, 
-  Building, Phone, MapPin, Tag, ListPlus, X, Check, FileCheck, Layers, Sparkles, Upload
+  Building, Phone, MapPin, Tag, ListPlus, X, Check, FileCheck, Layers, Sparkles, Upload, 
+  Link2, Share2, Send, ExternalLink, ShieldCheck
 } from 'lucide-react';
 import { QuotationScanModal } from './QuotationScanModal';
 import { CustomDateInput } from './CustomDateInput';
+import { formatToDDMMYYYY } from '../utils';
 import type { ServicePriceItem, User } from '../types';
 
 interface QuotationManagerProps {
@@ -45,6 +47,10 @@ interface Quotation {
   created_at: string;
   created_by?: string;
   items?: QuotationItem[];
+  customer_signature?: string | null;
+  customer_signed_at?: string | null;
+  customer_signed_name?: string | null;
+  customer_signed_ip?: string | null;
 }
 
 const DEFAULT_TERMS_PRESETS = [
@@ -72,6 +78,24 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [previewQuotation, setPreviewQuotation] = useState<Quotation | null>(null);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+
+  const handleCopySignLink = (quo: any) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const url = `${origin}/q/${quo.id}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+    }
+    setCopiedLinkId(quo.id);
+    setTimeout(() => setCopiedLinkId(null), 2500);
+  };
+
+  const handleShareLine = (quo: any) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const url = `${origin}/q/${quo.id}`;
+    const text = `เรียน คุณ ${quo.customer_name || 'ลูกค้า'}\nเอกสารใบเสนอราคาเลขที่ ${quo.quotation_number} ยอดรวม ฿${Number(quo.grand_total || 0).toLocaleString()}\nสามารถตรวจสอบรายละเอียดและลงนามอนุมัติสั่งจ้างออนไลน์ได้ที่:\n${url}`;
+    window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank');
+  };
 
   // Form States
   const [customerSource, setCustomerSource] = useState<'custom' | 'lead' | 'project' | 'customer'>('lead');
@@ -742,16 +766,24 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                     </span>
                   </td>
                   <td style={{ padding: '1rem' }}>
-                    <span style={{ 
-                      padding: '0.25rem 0.75rem', 
-                      borderRadius: '12px', 
-                      fontSize: '0.75rem', 
-                      fontWeight: 700,
-                      background: quo.status === 'Converted' ? 'rgba(139, 92, 246, 0.12)' : quo.status === 'Approved' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                      color: quo.status === 'Converted' ? '#8b5cf6' : quo.status === 'Approved' ? '#10b981' : '#f59e0b'
-                    }}>
-                      {quo.status === 'Draft' ? 'ร่างบิล' : quo.status === 'Pending' ? 'รอลูกค้า' : quo.status === 'Approved' ? 'อนุมัติแล้ว' : quo.status === 'Converted' ? 'แปลงเป็นโปรเจกต์' : quo.status}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ 
+                        padding: '0.25rem 0.65rem', 
+                        borderRadius: '12px', 
+                        fontSize: '0.75rem', 
+                        fontWeight: 700,
+                        textAlign: 'center',
+                        background: quo.status === 'Converted' ? 'rgba(139, 92, 246, 0.12)' : (quo.status === 'Approved' || quo.status === 'Accepted') ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                        color: quo.status === 'Converted' ? '#8b5cf6' : (quo.status === 'Approved' || quo.status === 'Accepted') ? '#10b981' : '#f59e0b'
+                      }}>
+                        {quo.status === 'Draft' ? 'ร่างบิล' : quo.status === 'Pending' ? 'รอลูกค้า' : (quo.status === 'Approved' || quo.status === 'Accepted') ? 'อนุมัติแล้ว' : quo.status === 'Converted' ? 'แปลงเป็นโปรเจกต์' : quo.status}
+                      </span>
+                      {(quo.customer_signature || quo.status === 'Accepted') && (
+                        <span style={{ fontSize: '0.7rem', color: '#059669', background: 'rgba(16, 185, 129, 0.08)', padding: '0.1rem 0.4rem', borderRadius: '4px', textAlign: 'center', fontWeight: 600 }}>
+                          ✍️ เซ็นต์แล้ว
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', alignItems: 'center' }}>
@@ -762,6 +794,29 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                         title="ดูตัวอย่าง / พิมพ์เอกสาร"
                       >
                         <Printer size={14} /> พิมพ์
+                      </button>
+
+                      <button 
+                        onClick={() => handleCopySignLink(quo)}
+                        className="hover-lift"
+                        style={{
+                          background: copiedLinkId === quo.id ? '#10b981' : 'rgba(59, 130, 246, 0.1)',
+                          color: copiedLinkId === quo.id ? '#ffffff' : '#2563eb',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                          padding: '0.35rem 0.6rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          transition: 'all 0.2s'
+                        }}
+                        title="คัดลอกลิงก์ให้ลูกค้าเปิดดูและเซ็นต์ออนไลน์"
+                      >
+                        {copiedLinkId === quo.id ? <Check size={14} /> : <Link2 size={14} />}
+                        {copiedLinkId === quo.id ? 'คัดลอกแล้ว!' : 'Link เซ็นต์'}
                       </button>
 
                       {quo.status !== 'Approved' && quo.status !== 'Converted' && (
@@ -1308,16 +1363,79 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
               <div style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Printer size={16} /> ตัวอย่างเอกสารใบเสนอราคา (Official Print Preview)
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => handleCopySignLink(previewQuotation)}
+                  style={{
+                    background: copiedLinkId === previewQuotation.id ? '#10b981' : '#2563eb',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    boxShadow: '0 2px 8px rgba(37,99,235,0.3)'
+                  }}
+                  title="คัดลอกลิงก์สำหรับส่งให้ลูกค้าเปิดดูและเซ็นต์อนุมัติออนไลน์"
+                >
+                  {copiedLinkId === previewQuotation.id ? <Check size={14} /> : <Link2 size={14} />}
+                  {copiedLinkId === previewQuotation.id ? '✓ คัดลอก Link แล้ว!' : '🔗 คัดลอก Link ให้ลูกค้าเซ็นต์'}
+                </button>
+
+                <button 
+                  onClick={() => handleShareLine(previewQuotation)}
+                  style={{
+                    background: '#06c755',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                  title="แชร์ลิงก์ใบเสนอราคาเข้าแอปพลิเคชัน LINE เพื่อให้ลูกค้าเปิดดู"
+                >
+                  <Send size={14} /> ส่งทาง LINE
+                </button>
+
+                <button 
+                  onClick={() => window.open(`/q/${previewQuotation.id}`, '_blank')}
+                  style={{
+                    background: 'rgba(255,255,255,0.12)',
+                    color: 'white',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                  title="เปิดหน้าเซ็นต์ออนไลน์ของลูกค้าในแท็บใหม่"
+                >
+                  <ExternalLink size={13} /> หน้าเซ็นต์
+                </button>
+
                 <button 
                   onClick={() => window.print()} 
-                  style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.35rem 1rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                  style={{ background: '#059669', color: 'white', border: 'none', padding: '0.35rem 0.85rem', borderRadius: '5px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                 >
                   <Printer size={14} /> พิมพ์ / PDF
                 </button>
+
                 <button 
                   onClick={() => setPreviewQuotation(null)} 
-                  style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem' }}
+                  style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '5px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem' }}
                 >
                   ปิด
                 </button>
@@ -1450,10 +1568,29 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                 </div>
 
                 <div>
-                  <div style={{ borderBottom: '1px solid #94a3b8', width: '80%', margin: '0 auto 0.5rem' }}></div>
-                  <div style={{ fontWeight: 700 }}>({previewQuotation.customer_name || 'ลูกค้าผู้สั่งจ้าง'})</div>
-                  <div style={{ color: '#64748b' }}>ผู้อนุมัติสั่งจ้าง / Customer Acceptance</div>
-                  <div style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: '0.2rem' }}>วันที่: ____/____/________</div>
+                  {(previewQuotation.customer_signature || previewQuotation.status === 'Accepted') ? (
+                    <div>
+                      <div style={{ height: '55px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {previewQuotation.customer_signature ? (
+                          <img src={previewQuotation.customer_signature} alt="ลายเซ็นต์ลูกค้า" style={{ maxHeight: '50px', maxWidth: '180px', objectFit: 'contain' }} />
+                        ) : (
+                          <span style={{ color: '#10b981', fontWeight: 800 }}>✓ ลงนามออนไลน์เรียบร้อย</span>
+                        )}
+                      </div>
+                      <div style={{ borderBottom: '1px solid #94a3b8', width: '80%', margin: '0 auto 0.5rem' }}></div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>({previewQuotation.customer_signed_name || previewQuotation.customer_name || 'ลูกค้าผู้สั่งจ้าง'})</div>
+                      <div style={{ color: '#059669', fontWeight: 700 }}>ผู้อนุมัติสั่งจ้าง / Customer Acceptance (เซ็นต์ออนไลน์)</div>
+                      <div style={{ color: '#64748b', fontSize: '0.72rem', marginTop: '0.2rem' }}>วันที่: {formatToDDMMYYYY(previewQuotation.customer_signed_at || previewQuotation.issue_date)}</div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ height: '55px' }}></div>
+                      <div style={{ borderBottom: '1px solid #94a3b8', width: '80%', margin: '0 auto 0.5rem' }}></div>
+                      <div style={{ fontWeight: 700 }}>({previewQuotation.customer_name || 'ลูกค้าผู้สั่งจ้าง'})</div>
+                      <div style={{ color: '#64748b' }}>ผู้อนุมัติสั่งจ้าง / Customer Acceptance</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: '0.2rem' }}>วันที่: ____/____/________</div>
+                    </div>
+                  )}
                 </div>
               </div>
 
