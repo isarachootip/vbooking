@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useCallback } from "react";
-import { Plus, X, ChevronDown, ChevronRight, ClipboardList, Calendar, RefreshCw, CheckCircle2, Clock, Wrench, ExternalLink } from "lucide-react";
+import { Plus, X, ChevronDown, ChevronRight, ClipboardList, Calendar, RefreshCw, CheckCircle2, Clock, Wrench, ExternalLink, Search, UserCheck, MapPin } from "lucide-react";
+import { useRef } from "react";
 import type { User } from "../types";
 import { useNavigate } from "react-router-dom";
 
@@ -10,7 +11,14 @@ interface MAContractsProps {
 const getUserId = () => {
   try { const u = JSON.parse(localStorage.getItem("nt_current_user") || "{}"); return u?.id || ""; } catch { return ""; }
 };
-const authHeaders = () => ({ "Content-Type": "application/json", "x-user-id": getUserId() });
+const authHeaders = () => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const uid = getUserId();
+  if (uid) headers["x-user-id"] = uid;
+  return headers;
+};
 
 const addMonths = (dateStr: string, months: number): string => {
   if (!dateStr) return "";
@@ -48,6 +56,110 @@ export const MAContracts = ({ currentUser }: MAContractsProps) => {
   const [formNotes, setFormNotes] = useState("");
   const [formItems, setFormItems] = useState<any[]>([{ id: "si_1", name: "เครื่องที่ 1", brand: "", btu: "", location: "" }]);
   const [saving, setSaving] = useState(false);
+
+  // Customer Master Auto-fill & Search states
+  const [customersMaster, setCustomersMaster] = useState<any[]>([]);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [customerSites, setCustomerSites] = useState<any[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState("");
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target as Node)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsCustomerDropdownOpen(false);
+    };
+    if (isCustomerDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCustomerDropdownOpen]);
+
+  const fetchCustomersMaster = async () => {
+    try {
+      const res = await fetch("/api/customers", { headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        setCustomersMaster(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.warn("Notice: fetch customers master:", err);
+    }
+  };
+
+  const fetchCustomerSites = async (customerId: string) => {
+    try {
+      const res = await fetch(`/api/customers/${customerId}/sites`, { headers: authHeaders() });
+      if (res.ok) {
+        const sites = await res.json();
+        setCustomerSites(Array.isArray(sites) ? sites : []);
+        return sites;
+      }
+    } catch (err) {
+      console.warn("Notice: fetch customer sites:", err);
+    }
+    return [];
+  };
+
+  const handleSelectCustomerFromMaster = (cust: any) => {
+    setIsCustomerDropdownOpen(false);
+    setSelectedCustomerId(cust.id || "");
+
+    let fName = cust.firstName || cust.first_name || "";
+    let lName = cust.lastName || cust.last_name || "";
+    if (!fName && (cust.companyName || cust.company_name)) {
+      fName = cust.companyName || cust.company_name;
+    } else if (!fName && (cust.customerName || cust.customer_name)) {
+      const parts = (cust.customerName || cust.customer_name).split(" ");
+      fName = parts[0];
+      if (!lName && parts.length > 1) lName = parts.slice(1).join(" ");
+    }
+    const fullName = (cust.customerName || cust.customer_name || `${fName} ${lName}`).trim() || "ลูกค้า";
+
+    setFormCustomerName(fullName);
+
+    const rawPhone = cust.phone || "";
+    const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
+    setFormCustomerPhone(cleanPhone);
+
+    const displayName = (cust.companyName || cust.company_name) || fullName;
+    setCustomerSearchQuery(displayName);
+
+    const siteAddr = cust.defaultSiteAddress || cust.default_site_address || cust.address || "";
+    if (siteAddr) setFormSiteAddress(siteAddr);
+
+    const sName = cust.defaultSiteName || cust.default_site_name || cust.siteName || "สถานที่หลัก";
+    setFormSiteName(sName);
+
+    if (cust.id) {
+      fetchCustomerSites(cust.id).then(sites => {
+        if (sites && sites.length > 0) {
+          const defaultSite = sites.find((s: any) => s.isDefault || s.is_default) || sites[0];
+          setSelectedSiteId(defaultSite.id);
+          if (defaultSite.address) setFormSiteAddress(defaultSite.address);
+          if (defaultSite.siteName || defaultSite.site_name) setFormSiteName(defaultSite.siteName || defaultSite.site_name);
+        }
+      }).catch(() => {});
+    }
+  };
+
+  const handleSelectSite = (site: any) => {
+    setSelectedSiteId(site.id);
+    if (site.siteName || site.site_name) setFormSiteName(site.siteName || site.site_name);
+    if (site.address) setFormSiteAddress(site.address);
+  };
 
   const SERVICE_TYPES = ["ล้างแอร์", "ตรวจระบบไฟฟ้า", "ตรวจระบบประปา", "ตรวจ CCTV", "PM ลิฟต์", "อื่นๆ"];
 
@@ -111,7 +223,7 @@ export const MAContracts = ({ currentUser }: MAContractsProps) => {
         await fetch("/api/ma-rounds", { method: "POST", headers: authHeaders(), body: JSON.stringify({ contract_id: saved.id, round_number: r, scheduled_date: addMonths(formStartDate, formFrequency * (r - 1)), status: "Scheduled" }) });
       }
       setShowModal(false);
-      setFormCustomerName(""); setFormCustomerPhone(""); setFormSiteName(""); setFormSiteAddress(""); setFormServiceType("ล้างแอร์"); setFormFrequency(3); setFormTotalRounds(4); setFormStartDate(""); setFormContractValue(""); setFormNotes("");
+      setSelectedCustomerId(""); setCustomerSites([]); setSelectedSiteId(""); setCustomerSearchQuery(""); setFormCustomerName(""); setFormCustomerPhone(""); setFormSiteName(""); setFormSiteAddress(""); setFormServiceType("ล้างแอร์"); setFormFrequency(3); setFormTotalRounds(4); setFormStartDate(""); setFormContractValue(""); setFormNotes("");
       setFormItems([{ id: "si_1", name: "เครื่องที่ 1", brand: "", btu: "", location: "" }]);
       await fetchAll();
     } catch(e) { console.error(e); alert("เกิดข้อผิดพลาด"); }
@@ -282,7 +394,176 @@ export const MAContracts = ({ currentUser }: MAContractsProps) => {
             </div>
             <form onSubmit={handleSave}>
               <div style={{ marginBottom: "0.85rem", padding: "0.85rem", background: "var(--bg-tertiary)", borderRadius: 10 }}>
-                <div style={{ fontSize: "0.73rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.5rem", textTransform: "uppercase" }}>ข้อมูลลูกค้า</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                  <div style={{ fontSize: "0.73rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                    <UserCheck size={14} color="#3b82f6" /> ข้อมูลลูกค้า (Customer & Site)
+                  </div>
+                  {selectedCustomerId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCustomerId("");
+                        setCustomerSites([]);
+                        setSelectedSiteId("");
+                        setCustomerSearchQuery("");
+                        setFormCustomerName("");
+                        setFormCustomerPhone("");
+                        setFormSiteName("");
+                        setFormSiteAddress("");
+                      }}
+                      style={{ background: "none", border: "none", color: "#ef4444", fontSize: "0.72rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px", fontWeight: 600 }}
+                    >
+                      <X size={12} /> ล้างการเลือก Master
+                    </button>
+                  )}
+                </div>
+
+                {/* ── Search & Auto-Fill from Customer Master ── */}
+                <div ref={customerDropdownRef} style={{ position: "relative", marginBottom: "0.75rem" }}>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type="text"
+                      placeholder="🔍 ค้นหาชื่อลูกค้า, บริษัท, เบอร์โทร เพื่อดึงข้อมูลเดิมอัตโนมัติ..."
+                      value={customerSearchQuery}
+                      onChange={(e) => {
+                        setCustomerSearchQuery(e.target.value);
+                        setIsCustomerDropdownOpen(true);
+                      }}
+                      onFocus={() => {
+                        fetchCustomersMaster();
+                        setIsCustomerDropdownOpen(true);
+                      }}
+                      style={{
+                        ...iStyle,
+                        paddingLeft: "2.2rem",
+                        borderColor: isCustomerDropdownOpen ? "#3b82f6" : "var(--border-color)",
+                        background: "var(--bg-secondary)"
+                      }}
+                    />
+                    <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                    {isCustomerDropdownOpen && (
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomerDropdownOpen(false)}
+                        style={{
+                          position: "absolute",
+                          right: "8px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          background: "rgba(239, 68, 68, 0.12)",
+                          border: "1px solid rgba(239, 68, 68, 0.3)",
+                          borderRadius: "4px",
+                          color: "#ef4444",
+                          fontSize: "0.7rem",
+                          fontWeight: 700,
+                          padding: "0.15rem 0.45rem",
+                          cursor: "pointer"
+                        }}
+                      >
+                        ✕ หุบรายการ
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown Results */}
+                  {isCustomerDropdownOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 4px)",
+                        left: 0,
+                        right: 0,
+                        background: "var(--bg-secondary)",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+                        maxHeight: "220px",
+                        overflowY: "auto",
+                        zIndex: 100
+                      }}
+                    >
+                      {(() => {
+                        const q = customerSearchQuery.trim().toLowerCase();
+                        const filtered = customersMaster.filter((c: any) => {
+                          if (!q) return true;
+                          const cName = (c.customerName || c.customer_name || "").toLowerCase();
+                          const fName = (c.firstName || c.first_name || "").toLowerCase();
+                          const lName = (c.lastName || c.last_name || "").toLowerCase();
+                          const compName = (c.companyName || c.company_name || "").toLowerCase();
+                          const phone = (c.phone || "").toLowerCase();
+                          const code = (c.customerCode || c.customer_code || "").toLowerCase();
+                          return cName.includes(q) || fName.includes(q) || lName.includes(q) || compName.includes(q) || phone.includes(q) || code.includes(q);
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div style={{ padding: "0.75rem", textAlign: "center", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                              {q ? `ไม่พบข้อมูลลูกค้าที่ตรงกับ "${customerSearchQuery}"` : "ยังไม่มีข้อมูลลูกค้าใน Master"}
+                            </div>
+                          );
+                        }
+
+                        return filtered.slice(0, 10).map((c: any) => {
+                          const displayName = ((c.customerType === "corporate" || c.customer_type === "corporate") && (c.companyName || c.company_name))
+                            ? (c.companyName || c.company_name)
+                            : (c.customerName || c.customer_name || `${c.firstName || c.first_name || ""} ${c.lastName || c.last_name || ""}`.trim());
+                          const displayCode = c.customerCode || c.customer_code || "CUST";
+                          return (
+                            <div
+                              key={c.id}
+                              onClick={() => handleSelectCustomerFromMaster(c)}
+                              style={{
+                                padding: "0.6rem 0.75rem",
+                                borderBottom: "1px solid var(--border-color)",
+                                cursor: "pointer",
+                                fontSize: "0.8rem",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: "0.5rem"
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-tertiary)")}
+                              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                            >
+                              <div>
+                                <strong style={{ color: "var(--text-primary)" }}>{displayName}</strong>
+                                <span style={{ marginLeft: "0.4rem", fontSize: "0.72rem", color: "#3b82f6", background: "rgba(59,130,246,0.1)", padding: "0.1rem 0.35rem", borderRadius: "4px" }}>
+                                  {displayCode}
+                                </span>
+                                {c.phone && <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>📞 {c.phone}</div>}
+                              </div>
+                              <span style={{ fontSize: "0.72rem", color: "#10b981", fontWeight: 700 }}>เลือก ➔</span>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Multiple Sites Selector if Customer has > 1 site */}
+                {customerSites.length > 1 && (
+                  <div style={{ marginBottom: "0.6rem", padding: "0.5rem 0.65rem", background: "rgba(59,130,246,0.08)", borderRadius: "6px", border: "1px solid rgba(59,130,246,0.2)" }}>
+                    <label style={{ fontSize: "0.74rem", fontWeight: 700, color: "#2563eb", display: "flex", alignItems: "center", gap: "0.25rem", marginBottom: "0.25rem" }}>
+                      <MapPin size={12} /> เลือกลงสัญญาที่ Site งานของลูกค้า ({customerSites.length} ไซต์):
+                    </label>
+                    <select
+                      value={selectedSiteId}
+                      onChange={(e) => {
+                        const site = customerSites.find((s: any) => s.id === e.target.value);
+                        if (site) handleSelectSite(site);
+                      }}
+                      style={{ ...iStyle, fontSize: "0.8rem", padding: "0.35rem 0.6rem", background: "var(--bg-secondary)" }}
+                    >
+                      {customerSites.map((s: any) => (
+                        <option key={s.id} value={s.id}>
+                          {s.siteName || s.site_name || "สถานที่"} — {s.address || "ไม่ระบุที่อยู่"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
                   <div><label style={{ fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>ชื่อลูกค้า *</label><input value={formCustomerName} onChange={e => setFormCustomerName(e.target.value)} placeholder="เช่น คุณสมชาย" style={iStyle} required /></div>
                   <div><label style={{ fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>เบอร์โทร</label><input value={formCustomerPhone} onChange={e => setFormCustomerPhone(e.target.value)} placeholder="08X-XXX-XXXX" style={iStyle} /></div>
