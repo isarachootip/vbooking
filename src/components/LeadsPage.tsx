@@ -261,44 +261,61 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [surveyorId, setSurveyorId] = useState('');
   const [salesContactId, setSalesContactId] = useState(currentUser?.id || '');
   const [availableSurveyors, setAvailableSurveyors] = useState<any[]>([]);
-
   const fetchCustomersMaster = async () => {
     try {
       const authUserId = currentUser?.id || (typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '');
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      if (authUserId) headers['X-User-Id'] = authUserId;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       const res = await fetch('/api/customers', {
-        headers: authUserId ? { 'X-User-Id': authUserId } : {}
+        headers,
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         setCustomersMaster(Array.isArray(data) ? data : []);
       }
     } catch (err) {
-      console.error('Error fetching customers master:', err);
+      console.warn('Notice: customers master fetch:', err);
     }
   };
 
   const fetchCustomerSites = async (customerId: string) => {
     try {
       const authUserId = currentUser?.id || (typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '');
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      if (authUserId) headers['X-User-Id'] = authUserId;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       const res = await fetch(`/api/customers/${customerId}/sites`, {
-        headers: authUserId ? { 'X-User-Id': authUserId } : {}
+        headers,
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const sites: CustomerSite[] = await res.json();
         setCustomerSites(Array.isArray(sites) ? sites : []);
         return sites;
       }
     } catch (err) {
-      console.error('Error fetching customer sites:', err);
+      console.warn('Notice: customer sites fetch:', err);
     }
     return [];
   };
 
-  const handleSelectCustomerFromMaster = async (cust: Customer) => {
+  const handleSelectCustomerFromMaster = (cust: Customer) => {
     const c = cust as any;
+    setIsCustomerDropdownOpen(false);
     setSelectedCustomerId(c.id || '');
     
-    // For corporate or individual, determine first and last name properly
     let fName = c.firstName || c.first_name || '';
     let lName = c.lastName || c.last_name || '';
     if (!fName && (c.companyName || c.company_name)) {
@@ -313,35 +330,33 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     setFirstName(fName);
     setLastName(lName);
 
-    // Clean phone number to digits only (max 10 digits) so HTML5 pattern="[0-9]*" always passes
     const rawPhone = c.phone || '';
     const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
     setCustomerPhone(cleanPhone);
 
     const displayName = c.companyName || c.company_name || c.customerName || c.customer_name || `${fName} ${lName}`.trim();
     setCustomerSearchQuery(displayName);
-    setIsCustomerDropdownOpen(false);
 
-    try {
-      const sites = await fetchCustomerSites(c.id);
-      if (sites && sites.length > 0) {
-        const defaultSite = sites.find((s: any) => s.isDefault || s.is_default) || sites[0];
-        handleSelectSite(defaultSite);
-      } else {
-        setSelectedSiteId('');
-        if (c.defaultSiteAddress || c.default_site_address || c.address) {
-          setCustomerAddress(c.defaultSiteAddress || c.default_site_address || c.address || '');
+    if (c.defaultSiteAddress || c.default_site_address || c.address) {
+      setCustomerAddress(c.defaultSiteAddress || c.default_site_address || c.address || '');
+    }
+    if (c.defaultSiteLat || c.default_site_lat || c.latitude) {
+      setCustomerLatitude(String(c.defaultSiteLat || c.default_site_lat || c.latitude));
+    }
+    if (c.defaultSiteLng || c.default_site_lng || c.longitude) {
+      setCustomerLongitude(String(c.defaultSiteLng || c.default_site_lng || c.longitude));
+    }
+    if (c.defaultSiteId || c.default_site_id) {
+      setSelectedSiteId(c.defaultSiteId || c.default_site_id);
+    }
+
+    if (c.id) {
+      fetchCustomerSites(c.id).then(sites => {
+        if (sites && sites.length > 0) {
+          const defaultSite = sites.find((s: any) => s.isDefault || s.is_default) || sites[0];
+          handleSelectSite(defaultSite);
         }
-        if (c.defaultSiteLat || c.default_site_lat || c.latitude) {
-          setCustomerLatitude(String(c.defaultSiteLat || c.default_site_lat || c.latitude));
-        }
-        if (c.defaultSiteLng || c.default_site_lng || c.longitude) {
-          setCustomerLongitude(String(c.defaultSiteLng || c.default_site_lng || c.longitude));
-        }
-      }
-    } catch (e) {
-      console.error('Error fetching sites during customer select:', e);
-      setSelectedSiteId('');
+      }).catch(() => {});
     }
   };
 
@@ -401,7 +416,13 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const fetchLeads = async (page = 1) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/leads?page=${page}&limit=20`, { headers: { 'X-User-Id': currentUser?.id || '' } });
+      const authUserId = currentUser?.id || (typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '');
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      if (authUserId) headers['X-User-Id'] = authUserId;
+
+      const response = await fetch(`/api/leads?page=${page}&limit=20`, { headers });
       if (response.ok) {
         const result = await response.json();
         if (result.data && result.pagination) {
@@ -422,7 +443,13 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
 
   const fetchAvailableSurveyors = async (dateStr: string) => {
     try {
-      const response = await fetch(`/api/users/available-surveyors?date=${encodeURIComponent(dateStr)}`);
+      const authUserId = currentUser?.id || (typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '');
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      const headers: Record<string, string> = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      if (authUserId) headers['X-User-Id'] = authUserId;
+
+      const response = await fetch(`/api/users/available-surveyors?date=${encodeURIComponent(dateStr)}`, { headers });
       if (response.ok) {
         const data = await response.json();
         setAvailableSurveyors(data);
@@ -434,7 +461,6 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       console.error('Error fetching surveyors:', err);
     }
   };
-
   useEffect(() => {
     if (surveyDate) {
       fetchAvailableSurveyors(surveyDate);

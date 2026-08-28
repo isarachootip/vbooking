@@ -63,10 +63,29 @@ export const LeadTimelineModal: React.FC<LeadTimelineModalProps> = ({
   const fetchTimeline = async (leadId: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/leads/${leadId}/timeline`);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      const storedUserStr = typeof window !== 'undefined' ? localStorage.getItem('nt_current_user') : null;
+      if (storedUserStr) {
+        try {
+          const storedUser = JSON.parse(storedUserStr);
+          if (storedUser && storedUser.id) {
+            headers['X-User-Id'] = storedUser.id;
+          }
+        } catch {}
+      }
+
+      const res = await fetch(`/api/leads/${leadId}/timeline`, { headers });
       if (res.ok) {
         const json = await res.json();
         setData(json);
+      } else {
+        console.error('Timeline API error status:', res.status);
       }
     } catch (err) {
       console.error('Failed to fetch lead timeline:', err);
