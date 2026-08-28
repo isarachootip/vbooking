@@ -5,6 +5,7 @@ import {
   Building, Phone, MapPin, Tag, ListPlus, X, Check, FileCheck, Layers, Sparkles, Upload
 } from 'lucide-react';
 import { QuotationScanModal } from './QuotationScanModal';
+import { CustomDateInput } from './CustomDateInput';
 import type { ServicePriceItem, User } from '../types';
 
 interface QuotationManagerProps {
@@ -957,11 +958,11 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>วันที่ออกเอกสาร</label>
-                    <input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} style={{ width: '100%', padding: '0.45rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
+                    <CustomDateInput value={issueDate} onChange={e => setIssueDate(e.target.value)} style={{ width: '100%', padding: '0.45rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>กำหนดยืนราคาถึง</label>
-                    <input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} style={{ width: '100%', padding: '0.45rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
+                    <CustomDateInput value={validUntil} onChange={e => setValidUntil(e.target.value)} style={{ width: '100%', padding: '0.45rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>รูปแบบภาษี (VAT)</label>

@@ -13,6 +13,7 @@ import { formatToDDMMYYYY, canOperateProject } from '../utils';
 import { STAGE_CONFIG } from '../config/workflows';
 import { QCHandoverModal } from './QCHandoverModal';
 import { ProjectChat } from './ProjectChat';
+import { CustomDateInput } from './CustomDateInput';
 
 interface ProjectDetailProps {
   projects: Project[];
@@ -2407,7 +2408,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     <div style={{ display: 'flex', gap: '1rem' }}>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>วันที่เสนอราคา</label>
-                        <input type="date" value={quoteIssueDate} onChange={e => setQuoteIssueDate(e.target.value)} style={{ width: '100%', padding: '0.45rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
+                        <CustomDateInput value={quoteIssueDate} onChange={e => setQuoteIssueDate(e.target.value)} style={{ width: '100%', padding: '0.45rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>ประเภทภาษี (VAT)</label>

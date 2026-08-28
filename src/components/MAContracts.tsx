@@ -1,8 +1,9 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, X, ChevronDown, ChevronRight, ClipboardList, Calendar, RefreshCw, CheckCircle2, Clock, Wrench, ExternalLink, Search, UserCheck, MapPin } from "lucide-react";
 import { useRef } from "react";
 import type { User } from "../types";
 import { useNavigate } from "react-router-dom";
+import { CustomDateInput } from "./CustomDateInput";
 
 interface MAContractsProps {
   currentUser: User | null;
@@ -577,7 +578,7 @@ export const MAContracts = ({ currentUser }: MAContractsProps) => {
                   <div><label style={{ fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>ประเภทงาน *</label><select value={formServiceType} onChange={e => setFormServiceType(e.target.value)} style={iStyle} required>{SERVICE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
                   <div><label style={{ fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>ทุกกี่เดือน</label><input type="number" min={1} max={24} value={formFrequency} onChange={e => setFormFrequency(parseInt(e.target.value))} style={iStyle} /></div>
                   <div><label style={{ fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>จำนวนรอบ</label><input type="number" min={1} max={52} value={formTotalRounds} onChange={e => setFormTotalRounds(parseInt(e.target.value))} style={iStyle} /></div>
-                  <div><label style={{ fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>วันเริ่มต้น *</label><input type="date" value={formStartDate} onChange={e => setFormStartDate(e.target.value)} style={iStyle} required /></div>
+                  <div><label style={{ fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>วันเริ่มต้น *</label><CustomDateInput value={formStartDate} onChange={e => setFormStartDate(e.target.value)} style={iStyle} required /></div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
                   <div><label style={{ fontSize: "0.78rem", color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>วันสิ้นสุด (คำนวณอัตโนมัติ)</label><input value={formStartDate ? formatDate(addMonths(formStartDate, formFrequency * formTotalRounds)) : "—"} readOnly style={{ ...iStyle, color: "var(--text-muted)", background: "var(--bg-secondary)" }} /></div>
