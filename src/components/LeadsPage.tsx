@@ -1500,7 +1500,16 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     const matchesSearch = l.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (l.customer_phone && l.customer_phone.includes(searchTerm)) ||
                           (l.customer_address && l.customer_address.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'All' || l.status === statusFilter;
+    let matchesStatus = true;
+    if (statusFilter === 'All') {
+      matchesStatus = true;
+    } else if (statusFilter === 'Survey_Group') {
+      matchesStatus = l.status === 'Qualified' || l.status === 'Contacted';
+    } else if (statusFilter === 'Quote_Payment_Group') {
+      matchesStatus = ['Pending Quote', 'Design Approved', 'Payment Verified', 'Interested', 'Ready To Close', 'Design Review', 'Design Revision'].includes(l.status);
+    } else {
+      matchesStatus = l.status === statusFilter;
+    }
     const matchesJobType = jobTypeFilter === 'All' || l.job_type === jobTypeFilter;
     return matchesSearch && matchesStatus && matchesJobType;
   });
@@ -1798,93 +1807,252 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         </div>
       </div>
 
-      {/* ── SUMMARY STATS BAR ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-        <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid var(--accent-primary)', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
+      {/* ── INTERACTIVE 5-STAGE SALES PIPELINE SUMMARY CARDS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.85rem', marginBottom: '1rem' }}>
+        {/* Card 1: ทั้งหมด */}
+        <div 
+          onClick={() => setStatusFilter('All')}
+          className="glass-panel hover-lift" 
+          style={{ 
+            padding: '1.1rem 1.25rem', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.4rem', 
+            borderTop: '4px solid var(--accent-primary)', 
+            cursor: 'pointer',
+            background: statusFilter === 'All' ? 'rgba(139, 0, 0, 0.08)' : 'var(--bg-secondary)',
+            outline: statusFilter === 'All' ? '2px solid var(--accent-primary)' : 'none',
+            boxShadow: statusFilter === 'All' ? '0 6px 20px rgba(139,0,0,0.15)' : '0 4px 20px -2px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>LEADS ทั้งหมด</span>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(139, 0, 0, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users size={20} color="var(--accent-primary)" />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>LEADS ทั้งหมด</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(139, 0, 0, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users size={18} color="var(--accent-primary)" />
             </div>
           </div>
-          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {leads.length} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
+          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+            {leads.length} <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+            {statusFilter === 'All' ? '✓ กำลังแสดงทั้งหมด' : 'คลิกเพื่อดูทั้งหมด'}
           </div>
         </div>
 
-        <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid #3b82f6', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
+        {/* Card 2: ลูกค้าใหม่ */}
+        <div 
+          onClick={() => setStatusFilter('New')}
+          className="glass-panel hover-lift" 
+          style={{ 
+            padding: '1.1rem 1.25rem', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.4rem', 
+            borderTop: '4px solid #3b82f6', 
+            cursor: 'pointer',
+            background: statusFilter === 'New' ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg-secondary)',
+            outline: statusFilter === 'New' ? '2px solid #3b82f6' : 'none',
+            boxShadow: statusFilter === 'New' ? '0 6px 20px rgba(59, 130, 246, 0.15)' : '0 4px 20px -2px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ลูกค้าใหม่ (NEW)</span>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FileText size={20} color="#3b82f6" />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>ลูกค้าใหม่ (NEW)</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileText size={18} color="#3b82f6" />
             </div>
           </div>
-          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#3b82f6', lineHeight: 1.1 }}>
-            {leads.filter(l => l.status === 'New').length} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
+          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#3b82f6', lineHeight: 1.1 }}>
+            {leads.filter(l => l.status === 'New').length} <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+            {statusFilter === 'New' ? '✓ กำลังกรองสถานะนี้' : 'รอติดต่อครั้งแรก'}
           </div>
         </div>
 
-        <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid #9333ea', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
+        {/* Card 3: นัดสำรวจ/ยืนยัน */}
+        <div 
+          onClick={() => setStatusFilter(statusFilter === 'Survey_Group' ? 'All' : 'Survey_Group')}
+          className="glass-panel hover-lift" 
+          style={{ 
+            padding: '1.1rem 1.25rem', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.4rem', 
+            borderTop: '4px solid #9333ea', 
+            cursor: 'pointer',
+            background: (statusFilter === 'Survey_Group' || statusFilter === 'Qualified' || statusFilter === 'Contacted') ? 'rgba(147, 51, 234, 0.08)' : 'var(--bg-secondary)',
+            outline: (statusFilter === 'Survey_Group' || statusFilter === 'Qualified' || statusFilter === 'Contacted') ? '2px solid #9333ea' : 'none',
+            boxShadow: (statusFilter === 'Survey_Group' || statusFilter === 'Qualified' || statusFilter === 'Contacted') ? '0 6px 20px rgba(147, 51, 234, 0.15)' : '0 4px 20px -2px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>รอสำรวจ/ยืนยัน</span>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(147, 51, 234, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Building size={20} color="#9333ea" />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>นัดสำรวจ / ยืนยัน</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(147, 51, 234, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Building size={18} color="#9333ea" />
             </div>
           </div>
-          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#9333ea', lineHeight: 1.1 }}>
-            {leads.filter(l => l.status === 'Qualified' || l.status === 'Contacted').length} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
+          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#9333ea', lineHeight: 1.1 }}>
+            {leads.filter(l => l.status === 'Qualified' || l.status === 'Contacted').length} <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+            {(statusFilter === 'Survey_Group' || statusFilter === 'Qualified' || statusFilter === 'Contacted') ? '✓ กำลังกรองสถานะนี้' : 'ติดตาม & ออกสำรวจ Site'}
           </div>
         </div>
 
-        <div className="glass-panel hover-lift" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '4px solid #10b981', boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)' }}>
+        {/* Card 4: รอเสนอราคา & มัดจำ */}
+        <div 
+          onClick={() => setStatusFilter(statusFilter === 'Quote_Payment_Group' ? 'All' : 'Quote_Payment_Group')}
+          className="glass-panel hover-lift" 
+          style={{ 
+            padding: '1.1rem 1.25rem', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.4rem', 
+            borderTop: '4px solid #d97706', 
+            cursor: 'pointer',
+            background: (statusFilter === 'Quote_Payment_Group' || ['Pending Quote', 'Design Approved', 'Payment Verified', 'Interested', 'Ready To Close', 'Design Review', 'Design Revision'].includes(statusFilter)) ? 'rgba(217, 119, 6, 0.08)' : 'var(--bg-secondary)',
+            outline: (statusFilter === 'Quote_Payment_Group' || ['Pending Quote', 'Design Approved', 'Payment Verified', 'Interested', 'Ready To Close', 'Design Review', 'Design Revision'].includes(statusFilter)) ? '2px solid #d97706' : 'none',
+            boxShadow: (statusFilter === 'Quote_Payment_Group' || ['Pending Quote', 'Design Approved', 'Payment Verified', 'Interested', 'Ready To Close', 'Design Review', 'Design Revision'].includes(statusFilter)) ? '0 6px 20px rgba(217, 119, 6, 0.15)' : '0 4px 20px -2px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>แปลงเป็นโครงการสำเร็จ</span>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle2 size={20} color="#10b981" />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>รอเสนอราคา & มัดจำ</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(217, 119, 6, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DollarSign size={18} color="#d97706" />
             </div>
           </div>
-          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#10b981', lineHeight: 1.1 }}>
-            {leads.filter(l => l.status === 'Converted').length} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
+          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#d97706', lineHeight: 1.1 }}>
+            {leads.filter(l => ['Pending Quote', 'Design Approved', 'Payment Verified', 'Interested', 'Ready To Close', 'Design Review', 'Design Revision'].includes(l.status)).length} <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+            {(statusFilter === 'Quote_Payment_Group' || ['Pending Quote', 'Design Approved', 'Payment Verified', 'Interested', 'Ready To Close', 'Design Review', 'Design Revision'].includes(statusFilter)) ? '✓ กำลังกรองสถานะนี้' : 'ส่งแบบ, เสนอราคา, รับมัดจำ'}
+          </div>
+        </div>
+
+        {/* Card 5: แปลงเป็นโครงการสำเร็จ */}
+        <div 
+          onClick={() => setStatusFilter(statusFilter === 'Converted' ? 'All' : 'Converted')}
+          className="glass-panel hover-lift" 
+          style={{ 
+            padding: '1.1rem 1.25rem', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.4rem', 
+            borderTop: '4px solid #10b981', 
+            cursor: 'pointer',
+            background: statusFilter === 'Converted' ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-secondary)',
+            outline: statusFilter === 'Converted' ? '2px solid #10b981' : 'none',
+            boxShadow: statusFilter === 'Converted' ? '0 6px 20px rgba(16, 185, 129, 0.15)' : '0 4px 20px -2px rgba(0,0,0,0.05)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>แปลงโครงการสำเร็จ</span>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={18} color="#10b981" />
+            </div>
+          </div>
+          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#10b981', lineHeight: 1.1 }}>
+            {leads.filter(l => l.status === 'Converted').length} <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>ราย</span>
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+            {statusFilter === 'Converted' ? '✓ กำลังกรองสถานะนี้' : 'เปิดโครงการติดตั้งแล้ว'}
           </div>
         </div>
       </div>
 
-      {/* ── FILTER & SEARCH BAR ── */}
-      <div className="glass-panel" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input 
-            type="text" 
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="ค้นหาชื่อลูกค้า, รหัส Lead (LD-...), เบอร์โทร, ที่อยู่, พิกัด..."
-            style={{ width: '100%', padding: '0.55rem 0.75rem 0.55rem 2.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', transition: 'border-color 0.2s' }}
-          />
+      {/* ── QUICK STATUS FILTER PILLS & SEARCH BAR ── */}
+      <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
+        {/* Status Filter Pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 700, marginRight: '0.2rem' }}>
+            🎯 กรองสเตตัส:
+          </span>
+          {[
+            { id: 'All', label: 'ทั้งหมด', count: leads.length, color: 'var(--accent-primary)', bg: 'rgba(139, 0, 0, 0.12)' },
+            { id: 'New', label: 'ลูกค้าใหม่', count: leads.filter(l => l.status === 'New').length, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.12)' },
+            { id: 'Contacted', label: 'ติดตามแล้ว', count: leads.filter(l => l.status === 'Contacted').length, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
+            { id: 'Qualified', label: 'นัดสำรวจ/ยืนยัน', count: leads.filter(l => l.status === 'Qualified').length, color: '#9333ea', bg: 'rgba(147, 51, 234, 0.12)' },
+            { id: 'Pending Quote', label: 'รอเสนอราคา', count: leads.filter(l => l.status === 'Pending Quote').length, color: '#d97706', bg: 'rgba(217, 119, 6, 0.12)' },
+            { id: 'Design Approved', label: 'แบบอนุมัติ', count: leads.filter(l => l.status === 'Design Approved').length, color: '#059669', bg: 'rgba(5, 150, 105, 0.12)' },
+            { id: 'Payment Verified', label: 'มัดจำแล้ว', count: leads.filter(l => l.status === 'Payment Verified').length, color: '#059669', bg: 'rgba(5, 150, 105, 0.15)' },
+            { id: 'Converted', label: 'เปิดโครงการแล้ว', count: leads.filter(l => l.status === 'Converted').length, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
+            { id: 'Lost', label: 'ยกเลิก', count: leads.filter(l => l.status === 'Lost').length, color: '#dc2626', bg: 'rgba(220, 38, 38, 0.12)' },
+          ].map(pill => {
+            const isSelected = statusFilter === pill.id;
+            return (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setStatusFilter(pill.id)}
+                style={{
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.75rem',
+                  fontWeight: isSelected ? 800 : 600,
+                  border: isSelected ? `1.5px solid ${pill.color}` : '1px solid var(--border-color)',
+                  background: isSelected ? pill.bg : 'var(--bg-tertiary)',
+                  color: isSelected ? pill.color : 'var(--text-primary)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: pill.color }} />
+                {pill.label} ({pill.count})
+              </button>
+            );
+          })}
         </div>
 
-        <select 
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          style={{ padding: '0.55rem 1rem 0.55rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
-        >
-          <option value="All">สถานะทั้งหมด</option>
-          <option value="New">New (ใหม่)</option>
-          <option value="Contacted">Contacted (ติดตามแล้ว)</option>
-          <option value="Qualified">Qualified (รอลงสำรวจ)</option>
-          <option value="Converted">Converted (เป็นโปรเจกต์แล้ว)</option>
-          <option value="Lost">Lost (ยกเลิก)</option>
-        </select>
+        {/* Search & Dropdown Filters Row */}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', paddingTop: '0.4rem', borderTop: '1px solid var(--border-color)' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input 
+              type="text" 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="ค้นหาชื่อลูกค้า, รหัส Lead (LD-...), เบอร์โทร, ที่อยู่, พิกัด..."
+              style={{ width: '100%', padding: '0.5rem 0.75rem 0.5rem 2.4rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', transition: 'border-color 0.2s' }}
+            />
+          </div>
 
-        <select 
-          value={jobTypeFilter}
-          onChange={e => setJobTypeFilter(e.target.value)}
-          style={{ padding: '0.55rem 1rem 0.55rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
-        >
-          <option value="All">ประเภทงานทั้งหมด</option>
-          <option value="Renovate Service">Renovate Service (งานรีโนเวท)</option>
-          <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
-          <option value="MA Service">MA Service (งานซ่อมบำรุง)</option>
-        </select>
+          <select 
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            style={{ padding: '0.5rem 1rem 0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+          >
+            <option value="All">สถานะทั้งหมด</option>
+            <option value="Survey_Group">กลุ่มนัดสำรวจ / ยืนยัน</option>
+            <option value="Quote_Payment_Group">กลุ่มรอเสนอราคา & มัดจำ</option>
+            <option value="New">New (ใหม่)</option>
+            <option value="Contacted">Contacted (ติดตามแล้ว)</option>
+            <option value="Qualified">Qualified (รอลงสำรวจ)</option>
+            <option value="Pending Quote">Pending Quote (รอเสนอราคา)</option>
+            <option value="Design Approved">Design Approved (แบบอนุมัติแล้ว)</option>
+            <option value="Payment Verified">Payment Verified (มัดจำแล้ว)</option>
+            <option value="Converted">Converted (เป็นโปรเจกต์แล้ว)</option>
+            <option value="Lost">Lost (ยกเลิก)</option>
+          </select>
+
+          <select 
+            value={jobTypeFilter}
+            onChange={e => setJobTypeFilter(e.target.value)}
+            style={{ padding: '0.5rem 1rem 0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+          >
+            <option value="All">ประเภทงานทั้งหมด</option>
+            <option value="Renovate Service">Renovate Service (งานรีโนเวท)</option>
+            <option value="Quick service">Quick service (งานซ่อมด่วน)</option>
+            <option value="MA Service">MA Service (งานซ่อมบำรุง)</option>
+          </select>
+        </div>
       </div>
 
       {/* ── LEADS TABLE ── */}
