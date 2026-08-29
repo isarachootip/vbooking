@@ -288,42 +288,46 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
           </button>
 
           {/* Mode Switcher */}
-          <div style={{ display: 'flex', background: 'var(--bg-tertiary)', padding: '0.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', background: 'var(--bg-tertiary)', padding: '0.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', gap: '4px' }}>
             <button
               onClick={() => setDashboardView('my')}
               style={{
                 padding: '0.4rem 0.85rem',
                 borderRadius: 'var(--radius-sm)',
-                border: 'none',
-                background: dashboardView === 'my' ? 'var(--accent-primary)' : 'transparent',
-                color: dashboardView === 'my' ? 'white' : 'var(--text-secondary)',
-                fontWeight: 600,
+                border: dashboardView === 'my' ? '1px solid var(--border-color)' : 'none',
+                background: dashboardView === 'my' ? '#ffffff' : 'transparent',
+                color: dashboardView === 'my' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: dashboardView === 'my' ? 700 : 600,
                 fontSize: '0.8rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.35rem'
+                gap: '0.35rem',
+                boxShadow: dashboardView === 'my' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.15s ease'
               }}
             >
-              <Users size={14} /> {lang === 'th' ? 'หน้างานส่วนตัว (My Tasks)' : 'My Tasks'}
+              <Users size={14} color={dashboardView === 'my' ? 'var(--accent-primary)' : 'currentColor'} /> {lang === 'th' ? 'หน้างานส่วนตัว (My Tasks)' : 'My Tasks'}
             </button>
             <button
               onClick={() => setDashboardView('company')}
               style={{
                 padding: '0.4rem 0.85rem',
                 borderRadius: 'var(--radius-sm)',
-                border: 'none',
-                background: dashboardView === 'company' ? 'var(--accent-primary)' : 'transparent',
-                color: dashboardView === 'company' ? 'white' : 'var(--text-secondary)',
-                fontWeight: 600,
+                border: dashboardView === 'company' ? '1px solid var(--border-color)' : 'none',
+                background: dashboardView === 'company' ? '#ffffff' : 'transparent',
+                color: dashboardView === 'company' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: dashboardView === 'company' ? 700 : 600,
                 fontSize: '0.8rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.35rem'
+                gap: '0.35rem',
+                boxShadow: dashboardView === 'company' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.15s ease'
               }}
             >
-              <TrendingUp size={14} /> {lang === 'th' ? 'ภาพรวมบริษัท (Company Dashboard)' : 'Company Dashboard'}
+              <TrendingUp size={14} color={dashboardView === 'company' ? 'var(--accent-primary)' : 'currentColor'} /> {lang === 'th' ? 'ภาพรวมบริษัท (Company Dashboard)' : 'Company Dashboard'}
             </button>
           </div>
         </div>
@@ -362,17 +366,17 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
                 gap: '0.5rem',
                 padding: '0.55rem 1.15rem',
                 borderRadius: 'var(--radius-md)',
-                border: isActive ? `1px solid ${type.color}` : '1px solid transparent',
-                background: isActive ? type.color : 'var(--bg-tertiary)',
-                color: isActive ? 'white' : 'var(--text-secondary)',
-                fontWeight: 600,
+                border: isActive ? '1px solid var(--border-color)' : '1px solid transparent',
+                background: isActive ? '#ffffff' : 'var(--bg-tertiary)',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: isActive ? 700 : 600,
                 fontSize: '0.85rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                boxShadow: isActive ? `0 4px 12px ${type.color}35` : 'none'
+                boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.08)' : 'none'
               }}
             >
-              <Icon size={15} color={isActive ? 'white' : type.color} />
+              <Icon size={15} color={type.color} />
               <span>{lang === 'th' ? type.nameTh : type.nameEn}</span>
             </button>
           );
@@ -472,17 +476,17 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
                 gap: '0.35rem',
                 padding: '0.35rem 0.75rem',
                 fontSize: '0.75rem',
-                fontWeight: 600,
+                fontWeight: 700,
                 borderRadius: '6px',
-                border: 'none',
+                border: stageViewMode === 'list' ? '1px solid var(--border-color)' : 'none',
                 cursor: 'pointer',
-                background: stageViewMode === 'list' ? 'var(--accent-primary)' : 'transparent',
-                color: stageViewMode === 'list' ? '#fff' : 'var(--text-secondary)',
-                boxShadow: stageViewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                background: stageViewMode === 'list' ? '#ffffff' : 'transparent',
+                color: stageViewMode === 'list' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                boxShadow: stageViewMode === 'list' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
-              <List size={14} />
+              <List size={14} color={stageViewMode === 'list' ? 'var(--accent-primary)' : 'currentColor'} />
               <span>มุมมองรายการ (List)</span>
             </button>
             <button
@@ -493,17 +497,17 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
                 gap: '0.35rem',
                 padding: '0.35rem 0.75rem',
                 fontSize: '0.75rem',
-                fontWeight: 600,
+                fontWeight: 700,
                 borderRadius: '6px',
-                border: 'none',
+                border: stageViewMode === 'grid' ? '1px solid var(--border-color)' : 'none',
                 cursor: 'pointer',
-                background: stageViewMode === 'grid' ? 'var(--accent-primary)' : 'transparent',
-                color: stageViewMode === 'grid' ? '#fff' : 'var(--text-secondary)',
-                boxShadow: stageViewMode === 'grid' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                background: stageViewMode === 'grid' ? '#ffffff' : 'transparent',
+                color: stageViewMode === 'grid' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                boxShadow: stageViewMode === 'grid' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
-              <LayoutGrid size={14} />
+              <LayoutGrid size={14} color={stageViewMode === 'grid' ? 'var(--accent-primary)' : 'currentColor'} />
               <span>มุมมองคอลัมน์ (Columns)</span>
             </button>
           </div>
@@ -523,17 +527,25 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
                   padding: '0.35rem 0.7rem',
                   borderRadius: '20px',
                   fontSize: '0.725rem',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: 'pointer',
-                  border: activeStageFilter === 'all' ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                  background: activeStageFilter === 'all' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
-                  color: activeStageFilter === 'all' ? '#fff' : 'var(--text-secondary)',
+                  border: activeStageFilter === 'all' ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                  background: activeStageFilter === 'all' ? '#ffffff' : 'var(--bg-tertiary)',
+                  color: activeStageFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  boxShadow: activeStageFilter === 'all' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
                   whiteSpace: 'nowrap',
                   transition: 'all 0.15s ease'
                 }}
               >
                 <span>ทุกขั้นตอนทั้งหมด</span>
-                <span style={{ fontSize: '0.675rem', background: activeStageFilter === 'all' ? 'rgba(255,255,255,0.25)' : 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '10px' }}>
+                <span style={{ 
+                  fontSize: '0.675rem', 
+                  fontWeight: 800,
+                  background: activeStageFilter === 'all' ? 'rgba(239, 68, 68, 0.12)' : 'var(--bg-secondary)', 
+                  color: activeStageFilter === 'all' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  padding: '0.1rem 0.45rem', 
+                  borderRadius: '10px' 
+                }}>
                   {totalProjectsCount}
                 </span>
               </button>
@@ -551,15 +563,16 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
                       padding: '0.35rem 0.7rem',
                       borderRadius: '20px',
                       fontSize: '0.725rem',
-                      fontWeight: 600,
+                      fontWeight: isActive ? 700 : 600,
                       cursor: 'pointer',
                       border: isActive 
-                        ? '1px solid var(--accent-primary)' 
-                        : (stg.total > 0 ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)'),
+                        ? '1.5px solid var(--accent-primary)' 
+                        : (stg.total > 0 ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid var(--border-color)'),
                       background: isActive 
-                        ? 'var(--accent-primary)' 
-                        : (stg.total > 0 ? 'rgba(239, 68, 68, 0.06)' : 'var(--bg-tertiary)'),
-                      color: isActive ? '#fff' : (stg.total > 0 ? 'var(--text-primary)' : 'var(--text-muted)'),
+                        ? '#ffffff' 
+                        : (stg.total > 0 ? 'rgba(239, 68, 68, 0.04)' : 'var(--bg-tertiary)'),
+                      color: isActive ? 'var(--text-primary)' : (stg.total > 0 ? 'var(--text-primary)' : 'var(--text-muted)'),
+                      boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
                       whiteSpace: 'nowrap',
                       transition: 'all 0.15s ease'
                     }}
@@ -569,8 +582,8 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
                       style={{ 
                         fontSize: '0.675rem', 
                         fontWeight: 700,
-                        background: isActive ? 'rgba(255,255,255,0.25)' : (stg.total > 0 ? 'var(--accent-primary)' : 'var(--border-color)'), 
-                        color: isActive ? '#fff' : (stg.total > 0 ? '#fff' : 'var(--text-muted)'),
+                        background: isActive ? 'rgba(239, 68, 68, 0.12)' : (stg.total > 0 ? 'var(--accent-primary)' : 'var(--border-color)'), 
+                        color: isActive ? 'var(--accent-primary)' : (stg.total > 0 ? '#fff' : 'var(--text-muted)'),
                         padding: '0.1rem 0.45rem', 
                         borderRadius: '10px' 
                       }}
