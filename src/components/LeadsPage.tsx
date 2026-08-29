@@ -139,6 +139,42 @@ export const formatLeadCode = (lead: { id: string; created_at?: string } | null 
   return `LD-${datePart}-${numPart}`;
 };
 
+export const findSalesForBranch = (branchName: string, userList: UserType[]): UserType | null => {
+  if (!branchName || !userList || userList.length === 0) return null;
+  const cleanBranch = branchName.replace(/^สาขา/, '').trim();
+
+  // 1. First priority: Users in Store CS or Sales department matching assigned branch
+  const salesAssigned = userList.find(u => 
+    (u.department === 'Store CS' || u.department === 'Sales') &&
+    u.assignedBranches && Array.isArray(u.assignedBranches) && u.assignedBranches.some(b => b === branchName || b.includes(cleanBranch) || branchName.includes(b))
+  );
+  if (salesAssigned) return salesAssigned;
+
+  // 2. Second priority: Users in Store CS or Sales department with matching name (e.g. PTNCS (สาขาปทุมธานี))
+  const salesName = userList.find(u => 
+    (u.department === 'Store CS' || u.department === 'Sales') &&
+    (u.name.includes(branchName) || (cleanBranch && u.name.includes(cleanBranch)))
+  );
+  if (salesName) return salesName;
+
+  // 3. Non-admin staff assigned specifically to this branch (<10 branches)
+  const specificStaff = userList.find(u => 
+    u.globalRole !== 'Admin' &&
+    u.assignedBranches && Array.isArray(u.assignedBranches) && u.assignedBranches.includes(branchName) &&
+    u.assignedBranches.length < 10
+  );
+  if (specificStaff) return specificStaff;
+
+  // 4. Name match among non-QC users
+  const nonQcNameMatch = userList.find(u => 
+    u.department !== 'QC' &&
+    (u.name.includes(branchName) || (cleanBranch && u.name.includes(cleanBranch)))
+  );
+  if (nonQcNameMatch) return nonQcNameMatch;
+
+  return null;
+};
+
 export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageProps) => {
   const navigate = useNavigate();
   const isPrivilegedUser = Boolean(
@@ -386,6 +422,14 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     }
     return 'สาขาบางนา';
   });
+
+  const handleBranchChange = (newBranchName: string) => {
+    setBranch(newBranchName);
+    const matchedSales = findSalesForBranch(newBranchName, users);
+    if (matchedSales) {
+      setSalesContactId(matchedSales.id);
+    }
+  };
   const [buildingType, setBuildingType] = useState('บ้านเดี่ยว');
   const [customBuildingType, setCustomBuildingType] = useState('');
   const [areaSize, setAreaSize] = useState('');
@@ -1168,7 +1212,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       setStatus('New');
       setSelectedZone('[BKK] กรุงเทพฯ & ปริมณฑล');
       const bkkBranches = branches.filter(b => b.zone === '[BKK] กรุงเทพฯ & ปริมณฑล');
-      setBranch(bkkBranches.length > 0 ? bkkBranches[0].name : (branches.length > 0 ? branches[0].name : 'สาขาบางนา'));
+      const initialBranch = bkkBranches.length > 0 ? bkkBranches[0].name : (branches.length > 0 ? branches[0].name : 'สาขาบางนา');
+      setBranch(initialBranch);
       setBuildingType('บ้านเดี่ยว');
       setCustomBuildingType('');
       setAreaSize('');
@@ -1185,7 +1230,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       setSiteCoordinatorLineId('');
       setSurveyDate('');
       setSurveyorId('');
-      setSalesContactId(currentUser?.id || '');
+      const initialSales = findSalesForBranch(initialBranch, users);
+      setSalesContactId(initialSales ? initialSales.id : (currentUser?.id || ''));
     }
     setIsModalOpen(true);
   };
@@ -3089,7 +3135,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                       <SearchableBranchSelect 
                         branches={branches}
                         value={branch}
-                        onChange={(bName) => setBranch(bName)}
+                        onChange={(bName) => handleBranchChange(bName)}
                         selectedZone={selectedZone}
                         onZoneChange={setSelectedZone}
                         showZoneSelector={true}
@@ -3097,18 +3143,47 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                     </div>
                     
                     <div style={{ marginTop: '0.75rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                        พนักงานขาย (Deal Owner)
-                      </label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                          พนักงานขาย (Deal Owner)
+                        </label>
+                        {branch && (() => {
+                          const branchSales = findSalesForBranch(branch, users);
+                          if (branchSales) {
+                            return (
+                              <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                ✨ ตรงสาขา: {branchSales.name}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
                       <select
                         value={salesContactId}
                         onChange={e => setSalesContactId(e.target.value)}
                         style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
                       >
                         <option value="">- เลือกพนักงานขาย -</option>
-                        {users.map(u => (
-                          <option key={u.id} value={u.id}>{u.name}</option>
-                        ))}
+                        {(() => {
+                          const branchSales = findSalesForBranch(branch, users);
+                          const otherUsers = users.filter(u => !branchSales || u.id !== branchSales.id);
+
+                          return (
+                            <>
+                              {branchSales && (
+                                <optgroup label={`⭐ พนักงานขายประจำสาขา (${branch})`}>
+                                  <option value={branchSales.id}>⭐ {branchSales.name} (ตรงสาขา)</option>
+                                </optgroup>
+                              )}
+                              <optgroup label="👥 รายชื่อทีมงานทั้งหมด">
+                                {otherUsers.map(u => (
+                                  <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                              </optgroup>
+                            </>
+                          );
+                        })()}
                       </select>
                     </div>
 

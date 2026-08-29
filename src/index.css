@@ -531,10 +531,10 @@ input, select, textarea {
   left: 0;
   right: 0;
   height: 64px;
-  background: rgba(22, 26, 34, 0.95);
+  background: var(--bg-glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--border-glass);
+  border-top: 1px solid var(--border-color);
   z-index: 100;
   align-items: center;
   justify-content: space-around;

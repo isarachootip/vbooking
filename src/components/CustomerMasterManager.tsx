@@ -709,7 +709,7 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = ({ cu
                               <div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <strong style={{ fontSize: '0.88rem', color: '#0f172a' }}>{site.siteName}</strong>
+                                    <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary, #0f172a)' }}>{site.siteName}</strong>
                                     {site.isDefault && (
                                       <span style={{ fontSize: '0.68rem', fontWeight: 700, background: '#d1fae5', color: '#065f46', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
                                         ★ ไซต์หลัก
@@ -814,7 +814,7 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = ({ cu
                 background: 'var(--bg-primary, #f8fafc)'
               }}
             >
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary, #0f172a)' }}>
                 <Users size={20} color="#eab308" />
                 {editingCustomer ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มลูกค้าใหม่เข้าสู่ Master'}
               </h3>
@@ -962,7 +962,7 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = ({ cu
               {!editingCustomer && (
                 <div style={{ background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary, #0f172a)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <MapPin size={16} color="#eab308" /> ข้อมูลไซต์งาน / ที่อยู่ติดตั้งเริ่มต้น (Initial Site)
                     </label>
                     <button
@@ -1090,7 +1090,7 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = ({ cu
               }}
             >
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary, #0f172a)' }}>
                   <MapPin size={20} color="#ef4444" />
                   {editingSite ? 'แก้ไขสถานที่ติดตั้ง/ไซต์งาน' : 'เพิ่มไซต์งานใหม่ให้ลูกค้า'}
                 </h3>

@@ -1128,7 +1128,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
+          background: 'rgba(0, 0, 0, 0.65)',
           backdropFilter: 'blur(6px)',
           display: 'flex',
           alignItems: 'center',
@@ -1145,15 +1145,15 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
             display: 'flex', 
             flexDirection: 'column',
             borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--shadow-glass)',
             background: 'var(--bg-secondary)'
           }}>
             {/* Modal Header */}
             <div style={{ 
               padding: '1rem 1.5rem', 
-              background: '#0f172a',
-              borderBottom: '1px solid rgba(255,255,255,0.1)', 
+              background: 'var(--bg-secondary)',
+              borderBottom: '1px solid var(--border-color)', 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center', 
@@ -1173,20 +1173,20 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                 }}>
                   STEP 1 OF 5
                 </span>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  Detail Profile ช่าง <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 400 }}>| Personal Information & Work Settings</span>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  Detail Profile ช่าง <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 400 }}>| Personal Information & Work Settings</span>
                 </h2>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 {/* View Mode Toggle inside modal */}
-                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0.2rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ display: 'flex', background: 'var(--bg-tertiary)', borderRadius: '8px', padding: '0.2rem', border: '1px solid var(--border-color)' }}>
                   <button
                     type="button"
                     onClick={() => setModalViewMode('card')}
                     style={{
                       background: modalViewMode === 'card' ? '#f59e0b' : 'transparent',
-                      color: modalViewMode === 'card' ? '#000' : '#94a3b8',
+                      color: modalViewMode === 'card' ? '#000' : 'var(--text-secondary)',
                       fontWeight: 700,
                       border: 'none',
                       borderRadius: '6px',
@@ -1206,7 +1206,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                     onClick={() => setModalViewMode('list')}
                     style={{
                       background: modalViewMode === 'list' ? '#f59e0b' : 'transparent',
-                      color: modalViewMode === 'list' ? '#000' : '#94a3b8',
+                      color: modalViewMode === 'list' ? '#000' : 'var(--text-secondary)',
                       fontWeight: 700,
                       border: 'none',
                       borderRadius: '6px',
@@ -1225,7 +1225,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
 
                 <button 
                   onClick={() => setIsModalOpen(false)} 
-                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#94a3b8', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                 >
                   <X size={18} />
                 </button>
@@ -1234,33 +1234,33 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
 
             <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
               {/* Scrollable Content */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', background: '#0b0f19' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', background: 'var(--bg-primary)' }}>
                 {modalViewMode === 'card' ? (
                   /* CARD VIEW: 3 Columns Grid */
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
                     
                     {/* Column 1: ข้อมูลส่วนตัวและติดต่อ */}
-                    <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
                         <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#38bdf8', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>1</span>
-                        <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'white', fontWeight: 700 }}>ข้อมูลส่วนตัวและติดต่อ (Personal & Contact Info)</h3>
+                        <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700 }}>ข้อมูลส่วนตัวและติดต่อ (Personal & Contact Info)</h3>
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ชื่อ-นามสกุล ช่าง * (Full Name *)</label>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>ชื่อ-นามสกุล ช่าง * (Full Name *)</label>
                         <input 
                           type="text" 
                           value={name} 
                           onChange={e => setName(e.target.value)} 
                           placeholder="ทีมช่างสมชาย เมธากุล (เทคทีม)"
-                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }}
                           required
                         />
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>เบอร์โทร * (Phone Number *)</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>เบอร์โทร * (Phone Number *)</label>
                           <span style={{ fontSize: '0.7rem', color: '#f59e0b' }}>(เลือกได้มากกว่า 1 เบอร์)</span>
                         </div>
                         {phones.map((phone, idx) => (
@@ -1272,9 +1272,9 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                                 const next = [...phones];
                                 next[idx] = e.target.value;
                                 setPhones(next);
-                              }}
+                              }} 
                               placeholder="082-137-1123"
-                              style={{ flex: 1, background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                              style={{ flex: 1, background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }}
                               required={idx === 0}
                             />
                             {phones.length > 1 && (
@@ -1287,7 +1287,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                         <button
                           type="button"
                           onClick={() => setPhones([...phones, ''])}
-                          style={{ background: '#0f172a', border: '1px dashed #334155', borderRadius: '8px', padding: '0.45rem', color: '#f59e0b', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', marginTop: '0.2rem' }}
+                          style={{ background: 'var(--bg-secondary)', border: '1px dashed var(--border-color)', borderRadius: '8px', padding: '0.45rem', color: '#f59e0b', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', marginTop: '0.2rem' }}
                         >
                           + เพิ่มเบอร์โทรศัพท์
                         </button>
@@ -1295,7 +1295,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
 
                       {/* เลขบัตรประชาชน / เลขผู้เสียภาษี */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>เลขผู้เสียภาษี / ID Card * (13 หลัก)</label>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>เลขผู้เสียภาษี / ID Card * (13 หลัก)</label>
                         <input 
                           type="text" 
                           value={idCardNumber || taxId} 
@@ -1305,24 +1305,24 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                             setTaxId(formatted);
                           }} 
                           placeholder="1-2345-67890-12-3"
-                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 700, outline: 'none' }}
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: '#0284c7', fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 700, outline: 'none' }}
                           required
                         />
                       </div>
 
                       {/* สำเนา/รูปถ่ายบัตรประชาชน Attach ID Card */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                           💳 แนบรูป/สำเนาบัตรประชาชน (Attach ID Card Photo)
                         </label>
                         <label style={{ 
-                          border: '2px dashed #334155', 
+                          border: '2px dashed var(--border-color)', 
                           borderRadius: '8px', 
                           padding: '0.75rem', 
                           textAlign: 'center', 
                           cursor: 'pointer',
-                          background: '#0f172a',
-                          color: '#94a3b8',
+                          background: 'var(--bg-secondary)',
+                          color: 'var(--text-secondary)',
                           fontSize: '0.75rem'
                         }}>
                           📷 คลิกแนบไฟล์บัตรประชาชน หรือลากไฟล์มาวาง
@@ -1343,8 +1343,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                         {idCardFiles.length > 0 && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
                             {idCardFiles.map((file, idx) => (
-                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f172a', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #334155' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#e2e8f0', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: 'var(--text-primary)', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   <input 
                                     type="checkbox" 
                                     checked={file.selected !== false} 
@@ -1352,7 +1352,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                                       const next = [...idCardFiles];
                                       next[idx].selected = e.target.checked;
                                       setIdCardFiles(next);
-                                    }}
+                                    }} 
                                     style={{ accentColor: '#38bdf8' }}
                                   />
                                   <span>💳 {file.name}</span>
@@ -1367,45 +1367,45 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ชื่อบริษัท / ร้าน</label>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>ชื่อบริษัท / ร้าน</label>
                         <input 
                           type="text" 
                           value={companyName} 
                           onChange={e => setCompanyName(e.target.value)} 
                           placeholder="ทีมช่างสมชาย เมธากุล (เทคทีม)"
-                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }}
                         />
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>อีเมล * (Email *)</label>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>อีเมล * (Email *)</label>
                         <input 
                           type="email" 
                           value={email} 
                           onChange={e => setEmail(e.target.value)} 
                           placeholder="somchai@email.com"
-                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }}
                           required
                         />
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>LINE ID</label>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>LINE ID</label>
                         <input 
                           type="text" 
                           value={lineId} 
                           onChange={e => setLineId(e.target.value)} 
                           placeholder="somchai_id"
-                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }}
                         />
                       </div>
 
                       {/* Profile Picture */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>รูปโปรไฟล์ ช่าง (Profile Avatar)</label>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>รูปโปรไฟล์ ช่าง (Profile Avatar)</label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <img src={avatar || `https://i.pravatar.cc/150?u=${name}`} alt="Avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #38bdf8' }} />
-                          <label style={{ background: '#0f172a', border: '1px solid #334155', color: '#cbd5e1', padding: '0.45rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>
+                          <label style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.45rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>
                             📁 เปลี่ยนรูป
                             <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                           </label>
@@ -1414,21 +1414,21 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                     </div>
 
                     {/* Column 2: ข้อมูลทักษะและงาน */}
-                    <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
                         <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#a855f7', color: 'white', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>2</span>
-                        <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'white', fontWeight: 700 }}>ข้อมูลทักษะและงาน (Skills & Services)</h3>
+                        <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700 }}>ข้อมูลทักษะและงาน (Skills & Services)</h3>
                       </div>
 
                       {/* ทักษะและความเชี่ยวชาญ */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ทักษะและความเชี่ยวชาญ *</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>ทักษะและความเชี่ยวชาญ *</label>
                           <span style={{ fontSize: '0.7rem', color: '#a855f7' }}>(เลือกได้มากกว่า 1)</span>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid #334155', minHeight: '44px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', background: 'var(--bg-primary)', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', minHeight: '44px' }}>
                           {(typeof skills === 'string' ? skills.split(',').map(s=>s.trim()).filter(Boolean) : skills).map((sk, idx) => (
-                            <span key={idx} style={{ background: '#334155', color: 'white', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <span key={idx} style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                               {sk}
                               <X size={12} style={{ cursor: 'pointer' }} onClick={() => {
                                 const arr = typeof skills === 'string' ? skills.split(',').map(s=>s.trim()).filter(Boolean) : skills;
@@ -1451,19 +1451,19 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                               }
                             }
                           }}
-                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none' }}
                         />
                       </div>
 
                       {/* ประเภทงานที่รับ */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ประเภทงานที่รับ * (Job Types *)</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>ประเภทงานที่รับ * (Job Types *)</label>
                           <span style={{ fontSize: '0.7rem', color: '#a855f7' }}>(เลือกได้มากกว่า 1)</span>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid #334155', minHeight: '44px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', background: 'var(--bg-primary)', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', minHeight: '44px' }}>
                           {jobTypes.map((jt, idx) => (
-                            <span key={idx} style={{ background: '#334155', color: 'white', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <span key={idx} style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                               {jt}
                               <X size={12} style={{ cursor: 'pointer' }} onClick={() => setJobTypes(jobTypes.filter((_, i) => i !== idx))} />
                             </span>
@@ -1482,19 +1482,19 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                               }
                             }
                           }}
-                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none' }}
                         />
                       </div>
 
                       {/* โซน / จังหวัดที่รับงาน */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>โซน / จังหวัดที่รับงาน * (Service Zones *)</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>โซน / จังหวัดที่รับงาน * (Service Zones *)</label>
                           <span style={{ fontSize: '0.7rem', color: '#a855f7' }}>(เลือกได้มากกว่า 1)</span>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid #334155', minHeight: '44px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', background: 'var(--bg-primary)', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', minHeight: '44px' }}>
                           {serviceZones.map((sz, idx) => (
-                            <span key={idx} style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.4)', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <span key={idx} style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#7c3aed', border: '1px solid rgba(168, 85, 247, 0.35)', fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                               📍 {sz}
                               <X size={12} style={{ cursor: 'pointer' }} onClick={() => setServiceZones(serviceZones.filter((_, i) => i !== idx))} />
                             </span>
@@ -1513,22 +1513,22 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                               }
                             }
                           }}
-                          style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none' }}
                         />
                       </div>
 
                       {/* สาขา & โซนในความรับผิดชอบ (Assigned Branches & Regional Zones for QC / Supervisors) */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', background: '#0f172a', padding: '0.75rem', borderRadius: '10px', border: '1px solid #06b6d4' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: '10px', border: '1.5px solid #06b6d4' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
-                          <label style={{ fontSize: '0.8rem', color: '#22d3ee', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <label style={{ fontSize: '0.8rem', color: '#0891b2', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             🏢 สาขาในความดูแล * (สำหรับ QC / ผู้จัดการ)
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#67e8f9', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 700 }}>
+                          <span style={{ fontSize: '0.7rem', color: '#0891b2', background: 'rgba(6, 182, 212, 0.12)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 700 }}>
                             เลือกแล้ว {assignedBranches.length} สาขา
                           </span>
                         </div>
 
-                        <p style={{ margin: 0, fontSize: '0.72rem', color: '#94a3b8' }}>
+                        <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
                           กดเลือกทั้งโซน/ภาค หรือเลือกรายสาขาเพื่อมอบหมายให้ QC ดูแล
                         </p>
 
@@ -1566,9 +1566,9 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                                 type="button"
                                 onClick={toggleZone}
                                 style={{
-                                  background: isAllSelected ? '#0891b2' : someSelected ? 'rgba(6, 182, 212, 0.2)' : '#1e293b',
-                                  color: isAllSelected ? 'white' : someSelected ? '#67e8f9' : '#94a3b8',
-                                  border: isAllSelected ? '1px solid #22d3ee' : someSelected ? '1px solid #0891b2' : '1px solid #334155',
+                                  background: isAllSelected ? '#0891b2' : someSelected ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-tertiary)',
+                                  color: isAllSelected ? 'white' : someSelected ? '#0891b2' : 'var(--text-primary)',
+                                  border: isAllSelected ? '1px solid #0891b2' : someSelected ? '1px solid #0891b2' : '1px solid var(--border-color)',
                                   padding: '0.2rem 0.5rem',
                                   borderRadius: '6px',
                                   fontSize: '0.72rem',
@@ -1586,14 +1586,14 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                         </div>
 
                         {/* Selected Branches Chips */}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', maxHeight: '110px', overflowY: 'auto', background: '#1e293b', padding: '0.45rem', borderRadius: '6px', border: '1px solid #334155' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', maxHeight: '110px', overflowY: 'auto', background: 'var(--bg-primary)', padding: '0.45rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                           {assignedBranches.length === 0 ? (
-                            <span style={{ fontSize: '0.73rem', color: '#64748b' }}>ยังไม่ได้เลือกสาขา (กดปุ่มโซนด้านบน หรือเลือกจากรายการด้านล่าง)</span>
+                            <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>ยังไม่ได้เลือกสาขา (กดปุ่มโซนด้านบน หรือเลือกจากรายการด้านล่าง)</span>
                           ) : (
                             assignedBranches.map(bId => {
                               const bObj = branches.find(b => b.id === bId);
                               return (
-                                <span key={bId} style={{ background: 'rgba(6, 182, 212, 0.18)', color: '#67e8f9', border: '1px solid rgba(6, 182, 212, 0.35)', fontSize: '0.7rem', padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <span key={bId} style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#0891b2', border: '1px solid rgba(6, 182, 212, 0.35)', fontSize: '0.7rem', padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                   🏢 [{bObj?.code || bId}] {bObj?.name || bId}
                                   <X size={11} style={{ cursor: 'pointer' }} onClick={() => setAssignedBranches(prev => prev.filter(id => id !== bId))} />
                                 </span>
@@ -1618,11 +1618,11 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                             }}
                             style={{
                               flex: 1,
-                              background: '#1e293b',
-                              border: '1px solid #334155',
+                              background: 'var(--input-bg)',
+                              border: '1px solid var(--border-color)',
                               borderRadius: '6px',
                               padding: '0.4rem 0.6rem',
-                              color: 'white',
+                              color: 'var(--text-primary)',
                               fontSize: '0.78rem'
                             }}
                           >
@@ -1638,7 +1638,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                             <button
                               type="button"
                               onClick={() => { setAssignedBranches([]); setAssignedZones([]); }}
-                              style={{ background: 'transparent', border: '1px solid #ef4444', color: '#f87171', fontSize: '0.72rem', padding: '0.35rem 0.55rem', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', fontSize: '0.72rem', padding: '0.35rem 0.55rem', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
                             >
                               ล้างสาขาทั้งหมด
                             </button>
@@ -1649,12 +1649,12 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                       {/* รอบเวลารับงานต่อวัน */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>รอบเวลารับงานต่อวัน * (Slots / Day *)</label>
-                          <span style={{ fontSize: '0.7rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>เพิ่มช่วงเวลาได้อิสระ</span>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>รอบเวลารับงานต่อวัน * (Slots / Day *)</label>
+                          <span style={{ fontSize: '0.7rem', color: '#059669', background: 'rgba(16,185,129,0.12)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>เพิ่มช่วงเวลาได้อิสระ</span>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                           {workSlots.map((slot, idx) => (
-                            <span key={idx} style={{ background: '#0f172a', border: '1px solid #3b82f6', color: '#60a5fa', fontSize: '0.75rem', padding: '0.3rem 0.6rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <span key={idx} style={{ background: 'rgba(59, 130, 246, 0.12)', border: '1px solid #3b82f6', color: '#2563eb', fontSize: '0.75rem', padding: '0.3rem 0.6rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                               ⏰ {slot}
                               <X size={12} style={{ cursor: 'pointer' }} onClick={() => setWorkSlots(workSlots.filter((_, i) => i !== idx))} />
                             </span>
@@ -1666,23 +1666,23 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                     {/* Column 3: เอกสารและประวัติ & เงื่อนไขทางการค้า */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                       {/* Section 3: เอกสารและประวัติ */}
-                      <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+                      <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
                           <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#10b981', color: 'white', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>3</span>
-                          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'white', fontWeight: 700 }}>เอกสารและประวัติ (Availability & Docs)</h3>
+                          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700 }}>เอกสารและประวัติ (Availability & Docs)</h3>
                         </div>
 
                         {/* แนบรูป Certificate */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>แนบรูป Certificate (Attach Certificates)</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>แนบรูป Certificate (Attach Certificates)</label>
                           <label style={{ 
-                            border: '2px dashed #334155', 
+                            border: '2px dashed var(--border-color)', 
                             borderRadius: '8px', 
                             padding: '1rem', 
                             textAlign: 'center', 
                             cursor: 'pointer',
-                            background: '#0f172a',
-                            color: '#94a3b8',
+                            background: 'var(--bg-primary)',
+                            color: 'var(--text-secondary)',
                             fontSize: '0.8rem',
                             display: 'flex',
                             flexDirection: 'column',
@@ -1709,8 +1709,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                           {/* Certificate File List */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                             {certificates.map((cert, idx) => (
-                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f172a', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #334155' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#e2e8f0', cursor: 'pointer' }}>
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-tertiary)', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
                                   <input 
                                     type="checkbox" 
                                     checked={cert.selected !== false} 
@@ -1718,7 +1718,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                                       const next = [...certificates];
                                       next[idx].selected = e.target.checked;
                                       setCertificates(next);
-                                    }}
+                                    }} 
                                     style={{ accentColor: '#3b82f6' }}
                                   />
                                   <span>📄 {cert.name}</span>
@@ -1733,11 +1733,11 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
 
                         {/* ประวัติอาชญากรรม */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ประวัติอาชญากรรม * (Criminal Record *)</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>ประวัติอาชญากรรม * (Criminal Record *)</label>
                           <select 
                             value={criminalRecord} 
                             onChange={e => setCriminalRecord(e.target.value)}
-                            style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                            style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }}
                           >
                             <option value="ไม่มี">ไม่มี (Clean Record)</option>
                             <option value="มี (แนบเอกสารชี้แจง)">มี (แนบเอกสารชี้แจง)</option>
@@ -1747,29 +1747,29 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                       </div>
 
                       {/* Section 5: เงื่อนไขทางการค้าและระดับ */}
-                      <div style={{ background: '#1e293b', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
+                      <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
                           <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#f59e0b', color: '#000', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>5</span>
-                          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'white', fontWeight: 700 }}>เงื่อนไขทางการค้าและระดับ (Financial & Level)</h3>
+                          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700 }}>เงื่อนไขทางการค้าและระดับ (Financial & Level)</h3>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                            <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>Credit Term (วัน) *</label>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>Credit Term (วัน) *</label>
                             <input 
                               type="number" 
                               value={creditTermDays} 
                               onChange={e => setCreditTermDays(parseInt(e.target.value) || 0)} 
-                              style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                              style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }}
                             />
                           </div>
 
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                            <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ระดับช่าง (Level)</label>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>ระดับช่าง (Level)</label>
                             <select 
                               value={technicianLevel} 
                               onChange={e => setTechnicianLevel(e.target.value)}
-                              style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                              style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }}
                             >
                               <option value="Standard">Standard</option>
                               <option value="Silver">Silver</option>
@@ -1787,47 +1787,47 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '900px', margin: '0 auto' }}>
                     
                     {/* List Section 1: ข้อมูลส่วนตัวและติดต่อ */}
-                    <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#38bdf8', fontWeight: 700, borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#0284c7', fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
                         1. ข้อมูลส่วนตัวและติดต่อ (Personal & Contact Info)
                       </h3>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
                         <div>
-                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ชื่อ-นามสกุล ช่าง *</label>
-                          <input type="text" value={name} onChange={e => setName(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ชื่อ-นามสกุล ช่าง *</label>
+                          <input type="text" value={name} onChange={e => setName(e.target.value)} style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>เลขผู้เสียภาษี / ID Card *</label>
-                          <input type="text" value={idCardNumber || taxId} onChange={e => { const f = formatThaiIdCard(e.target.value); setIdCardNumber(f); setTaxId(f); }} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: '#38bdf8', fontWeight: 700, fontSize: '0.85rem' }} />
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>เลขผู้เสียภาษี / ID Card *</label>
+                          <input type="text" value={idCardNumber || taxId} onChange={e => { const f = formatThaiIdCard(e.target.value); setIdCardNumber(f); setTaxId(f); }} style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem', color: '#0284c7', fontWeight: 700, fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>เบอร์โทร *</label>
-                          <input type="text" value={phones[0] || ''} onChange={e => setPhones([e.target.value])} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>เบอร์โทร *</label>
+                          <input type="text" value={phones[0] || ''} onChange={e => setPhones([e.target.value])} style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>อีเมล *</label>
-                          <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>อีเมล *</label>
+                          <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ชื่อบริษัท / ร้าน</label>
-                          <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ชื่อบริษัท / ร้าน</label>
+                          <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>LINE ID</label>
-                          <input type="text" value={lineId} onChange={e => setLineId(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>LINE ID</label>
+                          <input type="text" value={lineId} onChange={e => setLineId(e.target.value)} style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
                         </div>
                       </div>
 
                       {/* ID Card attachments in List view */}
-                      <div style={{ marginTop: '1rem', borderTop: '1px dashed #334155', paddingTop: '0.75rem' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>💳 เอกสาร/สำเนาบัตรประชาชน (ID Card Documents):</label>
+                      <div style={{ marginTop: '1rem', borderTop: '1px dashed var(--border-color)', paddingTop: '0.75rem' }}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>💳 เอกสาร/สำเนาบัตรประชาชน (ID Card Documents):</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.4rem' }}>
                           {idCardFiles.map((f, idx) => (
-                            <span key={idx} style={{ background: '#0f172a', border: '1px solid #38bdf8', color: '#38bdf8', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <span key={idx} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: '#0284c7', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                               💳 {f.name}
                             </span>
                           ))}
-                          <label style={{ background: '#0f172a', border: '1px dashed #334155', color: '#94a3b8', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>
+                          <label style={{ background: 'var(--bg-tertiary)', border: '1px dashed var(--border-color)', color: 'var(--text-secondary)', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}>
                             + เพิ่มสำเนาบัตรประชาชน
                             <input type="file" accept="image/*,.pdf" onChange={e => { if (e.target.files?.[0]) setIdCardFiles([...idCardFiles, { name: e.target.files[0].name, selected: true }]); }} style={{ display: 'none' }} />
                           </label>
@@ -1836,34 +1836,34 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                     </div>
 
                     {/* List Section 2: ข้อมูลทักษะและงาน */}
-                    <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#a855f7', fontWeight: 700, borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#a855f7', fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
                         2. ข้อมูลทักษะและงาน (Skills & Services)
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ทักษะและความเชี่ยวชาญ:</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>ทักษะและความเชี่ยวชาญ:</label>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.25rem' }}>
                             {(typeof skills === 'string' ? skills.split(',').map(s=>s.trim()).filter(Boolean) : skills).map((sk, idx) => (
-                              <span key={idx} style={{ background: '#334155', color: 'white', fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>{sk}</span>
+                              <span key={idx} style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>{sk}</span>
                             ))}
                           </div>
                         </div>
 
                         <div>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ประเภทงานที่รับ:</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>ประเภทงานที่รับ:</label>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.25rem' }}>
                             {jobTypes.map((jt, idx) => (
-                              <span key={idx} style={{ background: '#334155', color: 'white', fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>{jt}</span>
+                              <span key={idx} style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>{jt}</span>
                             ))}
                           </div>
                         </div>
 
                         <div>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>โซน / จังหวัดที่รับงาน:</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>โซน / จังหวัดที่รับงาน:</label>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.25rem' }}>
                             {serviceZones.map((sz, idx) => (
-                              <span key={idx} style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>📍 {sz}</span>
+                              <span key={idx} style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#7c3aed', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>📍 {sz}</span>
                             ))}
                           </div>
                         </div>
@@ -1871,26 +1871,26 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                     </div>
 
                     {/* List Section 3: เอกสารและประวัติ (Availability & Docs) */}
-                    <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#10b981', fontWeight: 700, borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#10b981', fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
                         3. เอกสารและประวัติ (Availability & Docs)
                       </h3>
                       
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {/* Certificate Attachments in List view */}
                         <div>
-                          <label style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>
+                          <label style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>
                             แนบรูป Certificate (Attach Certificates)
                           </label>
                           
                           <label style={{ 
-                            border: '2px dashed #334155', 
+                            border: '2px dashed var(--border-color)', 
                             borderRadius: '8px', 
                             padding: '0.85rem', 
                             textAlign: 'center', 
                             cursor: 'pointer',
-                            background: '#0f172a',
-                            color: '#94a3b8',
+                            background: 'var(--bg-primary)',
+                            color: 'var(--text-secondary)',
                             fontSize: '0.8rem',
                             display: 'block',
                             marginBottom: '0.75rem'
@@ -1913,8 +1913,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
 
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                             {certificates.map((cert, idx) => (
-                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0f172a', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #334155' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#e2e8f0', cursor: 'pointer' }}>
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-tertiary)', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
                                   <input 
                                     type="checkbox" 
                                     checked={cert.selected !== false} 
@@ -1922,7 +1922,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                                       const next = [...certificates];
                                       next[idx].selected = e.target.checked;
                                       setCertificates(next);
-                                    }}
+                                    }} 
                                     style={{ accentColor: '#3b82f6' }}
                                   />
                                   <span>📄 {cert.name}</span>
@@ -1936,11 +1936,11 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600 }}>ประวัติอาชญากรรม * (Criminal Record *)</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>ประวัติอาชญากรรม * (Criminal Record *)</label>
                           <select 
                             value={criminalRecord} 
                             onChange={e => setCriminalRecord(e.target.value)}
-                            style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem' }}
+                            style={{ background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text-primary)', fontSize: '0.85rem' }}
                           >
                             <option value="ไม่มี">ไม่มี (Clean Record)</option>
                             <option value="มี (แนบเอกสารชี้แจง)">มี (แนบเอกสารชี้แจง)</option>
@@ -1951,18 +1951,18 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                     </div>
 
                     {/* List Section 5: เงื่อนไขทางการค้าและระดับ */}
-                    <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#f59e0b', fontWeight: 700, borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#f59e0b', fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
                         5. เงื่อนไขทางการค้าและระดับ (Financial & Level)
                       </h3>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
-                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Credit Term (วัน) *</label>
-                          <input type="number" value={creditTermDays} onChange={e => setCreditTermDays(parseInt(e.target.value) || 0)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }} />
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Credit Term (วัน) *</label>
+                          <input type="number" value={creditTermDays} onChange={e => setCreditTermDays(parseInt(e.target.value) || 0)} style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ระดับช่าง (Level)</label>
-                          <select value={technicianLevel} onChange={e => setTechnicianLevel(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '0.5rem', color: 'white', fontSize: '0.85rem' }}>
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ระดับช่าง (Level)</label>
+                          <select value={technicianLevel} onChange={e => setTechnicianLevel(e.target.value)} style={{ width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.5rem', color: 'var(--text-primary)', fontSize: '0.85rem' }}>
                             <option value="Standard">Standard</option>
                             <option value="Silver">Silver</option>
                             <option value="Gold">Gold</option>
@@ -1979,8 +1979,8 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
               {/* Modal Footer / Save Bar */}
               <div style={{ 
                 padding: '1rem 1.5rem', 
-                background: '#0f172a', 
-                borderTop: '1px solid rgba(255,255,255,0.1)', 
+                background: 'var(--bg-secondary)', 
+                borderTop: '1px solid var(--border-color)', 
                 display: 'flex', 
                 justifyContent: 'flex-end', 
                 gap: '1rem',
@@ -1989,7 +1989,7 @@ export const TeamApprovals = ({ users, setUsers, timesheets, setTimesheets, proj
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)}
-                  style={{ background: 'transparent', border: '1px solid #475569', color: '#94a3b8', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
                 >
                   ยกเลิก / Cancel
                 </button>

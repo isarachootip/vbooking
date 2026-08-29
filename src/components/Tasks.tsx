@@ -482,7 +482,7 @@ function DroppableColumn({
         padding: '1.25rem',
         background: isHighlighted
           ? 'rgba(139, 92, 246, 0.08)'
-          : 'rgba(22, 26, 34, 0.4)',
+          : 'var(--bg-secondary)',
         display: 'flex',
         flexDirection: 'column',
         gap: '1rem',
@@ -491,7 +491,7 @@ function DroppableColumn({
         overflowY: 'hidden',
         border: isHighlighted
           ? '2px solid rgba(139, 92, 246, 0.7)'
-          : '2px solid transparent',
+          : '1px solid var(--border-color)',
         borderRadius: '12px',
         transition: 'border-color 0.15s ease, background 0.15s ease',
       }}
@@ -602,15 +602,18 @@ const getTaskKeyGlobal = (task: Task, projects: Project[]) => {
 const getJiraStatusStyle = (status: TaskStatus) => {
   const s = status.toUpperCase();
   if (s.includes('TO DO') || s.includes('BACKLOG') || s.includes('PLANNED')) {
-    return { bg: '#2d3748', color: '#cbd5e1' }; // dark gray/blue, light text
+    return { bg: 'var(--bg-tertiary, #e2e8f0)', color: 'var(--text-primary, #0f172a)', border: '1px solid var(--border-color, #cbd5e1)' };
   }
   if (s.includes('PROGRESS') || s.includes('DEVELOP') || s.includes('ACTIVE')) {
-    return { bg: '#1e3a8a', color: '#bfdbfe' }; // deep blue
+    return { bg: 'rgba(59, 130, 246, 0.15)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.35)' };
   }
   if (s.includes('DONE') || s.includes('COMPLETED') || s.includes('FINISHED')) {
-    return { bg: '#064e3b', color: '#a7f3d0' }; // dark green
+    return { bg: 'rgba(16, 185, 129, 0.15)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.35)' };
   }
-  return { bg: '#581c87', color: '#f3e8ff' }; // dark purple
+  if (s.includes('REVIEW') || s.includes('QC') || s.includes('TEST')) {
+    return { bg: 'rgba(245, 158, 11, 0.15)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.35)' };
+  }
+  return { bg: 'rgba(168, 85, 247, 0.15)', color: '#7c3aed', border: '1px solid rgba(168, 85, 247, 0.35)' };
 };
 
 const formatDueDate = (dateStr?: string) => {
@@ -741,11 +744,11 @@ function BacklogTaskRow({
           style={{
             background: statusStyle.bg,
             color: statusStyle.color,
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '0.7rem',
+            border: statusStyle.border || '1px solid var(--border-color)',
+            borderRadius: '6px',
+            fontSize: '0.725rem',
             fontWeight: 700,
-            padding: '0.25rem 0.5rem',
+            padding: '0.25rem 0.55rem',
             cursor: 'pointer',
             outline: 'none',
             textTransform: 'uppercase',
@@ -755,7 +758,7 @@ function BacklogTaskRow({
             <option
               key={col}
               value={col}
-              style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+              style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
             >
               {col}
             </option>
@@ -768,11 +771,11 @@ function BacklogTaskRow({
           onChange={(e) => onMoveSprint(task.id, e.target.value || undefined)}
           style={{
             background: 'var(--bg-tertiary)',
-            color: 'var(--text-secondary)',
+            color: 'var(--text-primary)',
             border: '1px solid var(--border-color)',
-            borderRadius: '4px',
+            borderRadius: '6px',
             fontSize: '0.75rem',
-            padding: '0.2rem 0.4rem',
+            padding: '0.25rem 0.5rem',
             cursor: 'pointer',
             outline: 'none',
           }}
@@ -795,10 +798,10 @@ function BacklogTaskRow({
               color:
                 new Date(task.endDate) < new Date() && task.status !== 'Done'
                   ? 'var(--accent-danger)'
-                  : 'var(--text-secondary)',
-              background: 'rgba(255, 255, 255, 0.05)',
-              padding: '0.2rem 0.4rem',
-              borderRadius: '4px',
+                  : 'var(--text-primary)',
+              background: 'var(--bg-tertiary)',
+              padding: '0.25rem 0.5rem',
+              borderRadius: '6px',
               border: '1px solid var(--border-color)',
             }}
             title={`Due date: ${task.endDate}`}
@@ -908,7 +911,7 @@ function DroppableSprintSection({
       className="glass-panel"
       style={{
         padding: '1.25rem',
-        background: isOver ? 'rgba(99, 102, 241, 0.08)' : 'rgba(22, 26, 34, 0.4)',
+        background: isOver ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-secondary)',
         border: isOver ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
         borderRadius: '8px',
         display: 'flex',
@@ -932,11 +935,11 @@ function DroppableSprintSection({
           }}
         >
           {isExpanded ? (
-            <ChevronDown size={16} color="var(--text-secondary)" />
+            <ChevronDown size={16} color="var(--text-primary)" />
           ) : (
-            <ChevronRight size={16} color="var(--text-secondary)" />
+            <ChevronRight size={16} color="var(--text-primary)" />
           )}
-          <span style={{ fontWeight: 600, fontSize: '1rem' }}>{sprintName}</span>
+          <span style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)' }}>{sprintName}</span>
 
           {sprintStatus === 'Active' && (
             <span
@@ -1128,7 +1131,7 @@ function DroppableBacklogSection({
       className="glass-panel"
       style={{
         padding: '1.25rem',
-        background: isOver ? 'rgba(99, 102, 241, 0.08)' : 'rgba(22, 26, 34, 0.4)',
+        background: isOver ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-secondary)',
         border: isOver ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
         borderRadius: '8px',
         display: 'flex',
@@ -1145,12 +1148,12 @@ function DroppableBacklogSection({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {isExpanded ? (
-            <ChevronDown size={16} color="var(--text-secondary)" />
+            <ChevronDown size={16} color="var(--text-primary)" />
           ) : (
-            <ChevronRight size={16} color="var(--text-secondary)" />
+            <ChevronRight size={16} color="var(--text-primary)" />
           )}
-          <span style={{ fontWeight: 600, fontSize: '1rem' }}>Project Backlog</span>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          <span style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)' }}>Project Backlog</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
             ({tasks.length} tasks)
           </span>
         </div>
@@ -2746,7 +2749,7 @@ export const Tasks = ({ tasks, setTasks, projects, users, sprints, setSprints, r
             >
               <div style={{ display: 'flex', minWidth: totalWidth + 260 }}>
                 {/* Left panel: task names */}
-                <div style={{ width: 260, minWidth: 260, borderRight: '1px solid var(--border-color)', background: 'rgba(22, 26, 34, 0.6)', position: 'sticky', left: 0, zIndex: 10 }}>
+                <div style={{ width: 260, minWidth: 260, borderRight: '1px solid var(--border-color)', background: 'var(--bg-secondary)', position: 'sticky', left: 0, zIndex: 10 }}>
                   {/* Header */}
                   <div style={{ height: 40, borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', padding: '0 1rem', fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                     Task
