@@ -796,33 +796,31 @@ const initDB = async () => {
       CREATE INDEX IF NOT EXISTS idx_qc_plan_items_plan_id ON qc_plan_items(plan_id);
 
       -- Ensure existing tables have expanded column lengths
-      await pool.query(`
-        DO $$ 
+      DO $$ 
+      BEGIN
         BEGIN
-          BEGIN
-            ALTER TABLE qc_daily_plans ALTER COLUMN id TYPE VARCHAR(150);
-            ALTER TABLE qc_daily_plans ALTER COLUMN qc_id TYPE VARCHAR(150);
-            ALTER TABLE qc_daily_plans ALTER COLUMN created_by TYPE VARCHAR(150);
-            ALTER TABLE qc_daily_plans ALTER COLUMN status TYPE VARCHAR(100);
+          ALTER TABLE qc_daily_plans ALTER COLUMN id TYPE VARCHAR(150);
+          ALTER TABLE qc_daily_plans ALTER COLUMN qc_id TYPE VARCHAR(150);
+          ALTER TABLE qc_daily_plans ALTER COLUMN created_by TYPE VARCHAR(150);
+          ALTER TABLE qc_daily_plans ALTER COLUMN status TYPE VARCHAR(100);
 
-            ALTER TABLE qc_plan_items ALTER COLUMN id TYPE VARCHAR(150);
-            ALTER TABLE qc_plan_items ALTER COLUMN plan_id TYPE VARCHAR(150);
-            ALTER TABLE qc_plan_items ALTER COLUMN lead_id TYPE VARCHAR(150);
-            ALTER TABLE qc_plan_items ALTER COLUMN project_id TYPE VARCHAR(150);
-            ALTER TABLE qc_plan_items ALTER COLUMN time_slot TYPE VARCHAR(100);
-            ALTER TABLE qc_plan_items ALTER COLUMN site_name TYPE VARCHAR(255);
-            ALTER TABLE qc_plan_items ALTER COLUMN customer_name TYPE VARCHAR(255);
-            ALTER TABLE qc_plan_items ALTER COLUMN customer_phone TYPE VARCHAR(100);
-            ALTER TABLE qc_plan_items ALTER COLUMN status TYPE VARCHAR(100);
-            ALTER TABLE qc_plan_items ALTER COLUMN qc_inspection_id TYPE VARCHAR(150);
-            ALTER TABLE qc_plan_items ALTER COLUMN check_in_time TYPE VARCHAR(100);
-            ALTER TABLE qc_plan_items ALTER COLUMN check_out_time TYPE VARCHAR(100);
-            ALTER TABLE qc_plan_items ALTER COLUMN created_at TYPE VARCHAR(100);
-          EXCEPTION WHEN others THEN
-            -- Ignore if table doesn't exist yet
-          END;
-        END $$;
-      `);
+          ALTER TABLE qc_plan_items ALTER COLUMN id TYPE VARCHAR(150);
+          ALTER TABLE qc_plan_items ALTER COLUMN plan_id TYPE VARCHAR(150);
+          ALTER TABLE qc_plan_items ALTER COLUMN lead_id TYPE VARCHAR(150);
+          ALTER TABLE qc_plan_items ALTER COLUMN project_id TYPE VARCHAR(150);
+          ALTER TABLE qc_plan_items ALTER COLUMN time_slot TYPE VARCHAR(100);
+          ALTER TABLE qc_plan_items ALTER COLUMN site_name TYPE VARCHAR(255);
+          ALTER TABLE qc_plan_items ALTER COLUMN customer_name TYPE VARCHAR(255);
+          ALTER TABLE qc_plan_items ALTER COLUMN customer_phone TYPE VARCHAR(100);
+          ALTER TABLE qc_plan_items ALTER COLUMN status TYPE VARCHAR(100);
+          ALTER TABLE qc_plan_items ALTER COLUMN qc_inspection_id TYPE VARCHAR(150);
+          ALTER TABLE qc_plan_items ALTER COLUMN check_in_time TYPE VARCHAR(100);
+          ALTER TABLE qc_plan_items ALTER COLUMN check_out_time TYPE VARCHAR(100);
+          ALTER TABLE qc_plan_items ALTER COLUMN created_at TYPE VARCHAR(100);
+        EXCEPTION WHEN others THEN
+          -- Ignore if table doesn't exist yet
+        END;
+      END $$;
 
       -- Customers Master Table
       CREATE TABLE IF NOT EXISTS customers (
