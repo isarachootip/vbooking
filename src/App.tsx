@@ -439,7 +439,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           </button>
         </div>
         
-        <nav style={{ padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }} onClick={() => setIsSidebarOpen(false)}>
+        <nav style={{ padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1, overflowY: 'auto' }} onClick={() => setIsSidebarOpen(false)}>
           <SidebarItem icon={Activity} label="Executive Dashboard" path="/exec-dashboard" />
           <SidebarItem icon={LayoutDashboard} label={t.dashboard} path="/" />
           <SidebarItem icon={Users} label={t.leads} path="/leads" />
@@ -464,17 +464,6 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           <SidebarItem icon={SettingsIcon} label={t.settings} path="/settings" />
           <SidebarItem icon={HelpCircle} label={t.help} path="/help" />
         </nav>
-
-        <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
-          <div onClick={() => { onLogout(); setIsSidebarOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', cursor: 'pointer' }} className="hover-lift" title="Log out">
-            <img src={currentUser.avatar} alt="User Profile" style={{ width: '36px', height: '36px', borderRadius: '50%' }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>{currentUser.name}</div>
-              <div style={{ fontSize: '0.75rem' }}>{currentUser.globalRole}</div>
-            </div>
-            <LogOut size={18} color="var(--accent-danger)" />
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
@@ -514,6 +503,52 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
               <SettingsIcon size={18} />
               <span className="hide-mobile" style={{ fontSize: '0.875rem' }}>{t.settings}</span>
             </Link>
+
+            {/* User Profile & Logout */}
+            <div 
+              className="glass-panel"
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem', 
+                padding: '0.3rem 0.55rem 0.3rem 0.65rem',
+                borderRadius: 'var(--radius-lg)',
+                marginLeft: '0.25rem'
+              }}
+            >
+              <img 
+                src={currentUser.avatar} 
+                alt="User Profile" 
+                style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid var(--accent-primary)', objectFit: 'cover' }} 
+              />
+              <div className="hide-mobile" style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{currentUser.name}</span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>{currentUser.globalRole}</span>
+              </div>
+              <button 
+                onClick={onLogout}
+                className="hover-lift"
+                title={lang === 'th' ? 'ออกจากระบบ (Log out)' : 'Log out'}
+                style={{ 
+                  background: 'rgba(239, 68, 68, 0.12)', 
+                  border: '1px solid rgba(239, 68, 68, 0.25)', 
+                  color: 'var(--accent-danger)', 
+                  borderRadius: 'var(--radius-md)', 
+                  padding: '0.35rem 0.55rem', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.3rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  marginLeft: '0.25rem'
+                }}
+              >
+                <LogOut size={15} color="var(--accent-danger)" />
+                <span className="hide-mobile">{lang === 'th' ? 'ออก' : 'Logout'}</span>
+              </button>
+            </div>
           </div>
         </header>
         
