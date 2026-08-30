@@ -674,105 +674,152 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                   ← กลับหน้ารายการ Draft ทั้งหมด
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)' }}>{activeEstimation.title}</span>
-                  <span style={{ background: 'rgba(0, 206, 209, 0.12)', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)', padding: '0.15rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
+                  <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>{activeEstimation.title}</span>
+                  <span style={{ background: 'rgba(0, 206, 209, 0.15)', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)', padding: '0.2rem 0.7rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800 }}>
                     {activeEstimation.estimation_number}
                   </span>
                   <span style={{
-                    padding: '0.15rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700,
-                    background: activeEstimation.status === 'Converted' ? 'rgba(16, 185, 129, 0.2)' : activeEstimation.status === 'Comparing' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                    padding: '0.2rem 0.7rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800,
+                    background: activeEstimation.status === 'Converted' ? 'rgba(16, 185, 129, 0.25)' : activeEstimation.status === 'Comparing' ? 'rgba(59, 130, 246, 0.25)' : 'rgba(245, 158, 11, 0.25)',
                     color: activeEstimation.status === 'Converted' ? '#10b981' : activeEstimation.status === 'Comparing' ? '#60a5fa' : '#f59e0b'
                   }}>
                     ● {activeEstimation.status}
                   </span>
-
-                  {/* Lead Origin Badge */}
-                  {activeEstimation.lead_id ? (
-                    <span 
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.3rem',
-                        background: 'rgba(139, 92, 246, 0.15)',
-                        border: '1px solid rgba(139, 92, 246, 0.35)',
-                        color: '#a78bfa',
-                        padding: '0.15rem 0.65rem',
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700
-                      }}
-                      title={`เชื่อมโยงกับ Lead: ${activeEstimation.lead_id} (${activeEstimation.lead_customer_name || activeEstimation.customer_name})`}
-                    >
-                      <Target size={13} color="#a78bfa" />
-                      มาจาก Lead: {activeEstimation.lead_id}
-                    </span>
-                  ) : (
-                    <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-color)', color: 'var(--text-muted)', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem' }}>
-                      สร้างตรง (Direct)
-                    </span>
-                  )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.45rem', color: 'var(--text-muted)', fontSize: '0.82rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {activeEstimation.lead_id && (
-                    <span style={{ color: '#a78bfa', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <Target size={13} /> <strong>Lead ID:</strong> {activeEstimation.lead_id}
-                    </span>
-                  )}
-                  <span>👤 ลูกค้า: <strong style={{ color: 'var(--text-primary)' }}>{activeEstimation.customer_name || activeEstimation.lead_customer_name || 'ไม่ระบุ'}</strong></span>
-                  <span>📞 เบอร์โทร: {activeEstimation.customer_phone || activeEstimation.lead_customer_phone || '-'}</span>
-                  {activeEstimation.lead_branch && <span>🏢 สาขา: <strong style={{ color: 'var(--text-secondary)' }}>{activeEstimation.lead_branch}</strong></span>}
-                  <span>🏷️ ประเภท: {activeEstimation.project_type || activeEstimation.lead_job_type || 'Renovation'}</span>
-                  {activeEstimation.lead_status && <span>📊 สถานะ Lead: <strong style={{ color: '#38bdf8' }}>{activeEstimation.lead_status}</strong></span>}
-                  <span>📅 วันที่สร้าง: {formatToDDMMYYYY(activeEstimation.created_at)}</span>
-                </div>
+                {/* Primary Customer & Lead Showcase Box */}
+                <div style={{
+                  marginTop: '0.85rem',
+                  padding: '1rem 1.25rem',
+                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(30, 41, 59, 0.8) 100%)',
+                  border: '1.5px solid rgba(0, 206, 209, 0.35)',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.3)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.65rem'
+                }}>
+                  {/* Top Row: Customer Name (Large & Bold), Phone Pill, and Lead ID */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <span style={{ fontSize: '0.95rem', color: 'var(--accent-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          👤 ข้อมูลลูกค้า:
+                        </span>
+                        <span style={{ fontSize: '1.28rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
+                          {activeEstimation.customer_name || activeEstimation.lead_customer_name || 'ไม่ระบุชื่อลูกค้า'}
+                        </span>
+                      </div>
 
-                {/* Lead Information Summary Strip */}
-                {activeEstimation.lead_id && (
+                      {(activeEstimation.customer_phone || activeEstimation.lead_customer_phone) && (
+                        <a 
+                          href={`tel:${activeEstimation.customer_phone || activeEstimation.lead_customer_phone}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            background: 'rgba(16, 185, 129, 0.18)',
+                            border: '1px solid #10b981',
+                            color: '#34d399',
+                            padding: '0.3rem 0.8rem',
+                            borderRadius: '20px',
+                            fontSize: '0.95rem',
+                            fontWeight: 800,
+                            textDecoration: 'none'
+                          }}
+                          title="คลิกเพื่อโทรออก"
+                        >
+                          <Phone size={14} /> {activeEstimation.customer_phone || activeEstimation.lead_customer_phone}
+                        </a>
+                      )}
+
+                      {activeEstimation.lead_id ? (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          background: 'rgba(139, 92, 246, 0.22)',
+                          border: '1.5px solid #a78bfa',
+                          color: '#c4b5fd',
+                          padding: '0.3rem 0.8rem',
+                          borderRadius: '20px',
+                          fontSize: '0.9rem',
+                          fontWeight: 800
+                        }}>
+                          <Target size={14} color="#a78bfa" />
+                          รหัส Lead: <strong>{activeEstimation.lead_id}</strong>
+                        </span>
+                      ) : (
+                        <span style={{
+                          background: 'rgba(255,255,255,0.08)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-muted)',
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '20px',
+                          fontSize: '0.78rem'
+                        }}>
+                          สร้างตรง (Direct Customer)
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Link button to Leads Page */}
+                    {activeEstimation.lead_id && (
+                      <a
+                        href="/leads"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          color: 'var(--accent-primary)',
+                          textDecoration: 'none',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                          padding: '0.35rem 0.85rem',
+                          borderRadius: '8px',
+                          background: 'rgba(0, 206, 209, 0.12)',
+                          border: '1px solid var(--accent-primary)'
+                        }}
+                        title="เปิดดูประวัติและขั้นตอนในหน้า Leads"
+                      >
+                        <ExternalLink size={14} /> เปิดดูในหน้า Leads
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Second Row: Detailed Information Pills */}
                   <div style={{
-                    marginTop: '0.75rem',
-                    padding: '0.6rem 0.9rem',
-                    background: 'rgba(139, 92, 246, 0.08)',
-                    border: '1px solid rgba(139, 92, 246, 0.22)',
-                    borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
+                    gap: '1.25rem',
                     flexWrap: 'wrap',
-                    gap: '0.6rem',
-                    fontSize: '0.8rem'
+                    paddingTop: '0.45rem',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                    fontSize: '0.86rem',
+                    color: '#cbd5e1'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 800, color: '#a78bfa', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <Target size={14} /> ข้อมูล Lead ต้นทาง:
+                    <span>
+                      🏢 สาขา: <strong style={{ color: '#ffffff' }}>{activeEstimation.lead_branch || 'สำนักงานใหญ่ (HQ)'}</strong>
+                    </span>
+                    <span>
+                      🏷️ ประเภทงาน: <strong style={{ color: '#ffffff' }}>{activeEstimation.project_type || activeEstimation.lead_job_type || 'Renovation'}</strong>
+                    </span>
+                    {activeEstimation.lead_status && (
+                      <span>
+                        📊 สถานะ Lead: <span style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 700, fontSize: '0.78rem' }}>{activeEstimation.lead_status}</span>
                       </span>
-                      <span>รหัส: <strong style={{ color: 'var(--text-primary)' }}>{activeEstimation.lead_id}</strong></span>
-                      <span>ผู้ติดต่อ: <strong>{activeEstimation.customer_name || activeEstimation.lead_customer_name}</strong></span>
-                      {activeEstimation.customer_phone && <span>โทร: {activeEstimation.customer_phone}</span>}
-                      {activeEstimation.customer_address && <span>สถานที่: <span style={{ color: 'var(--text-secondary)' }}>{activeEstimation.customer_address}</span></span>}
-                      {activeEstimation.lead_branch && <span>สาขา: <span style={{ color: '#38bdf8' }}>{activeEstimation.lead_branch}</span></span>}
-                    </div>
-                    <a
-                      href="/leads"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.3rem',
-                        color: '#a78bfa',
-                        textDecoration: 'none',
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                        padding: '0.2rem 0.6rem',
-                        borderRadius: '5px',
-                        background: 'rgba(139, 92, 246, 0.15)',
-                        border: '1px solid rgba(139, 92, 246, 0.3)'
-                      }}
-                      title="เปิดดูประวัติและขั้นตอนในหน้า Leads"
-                    >
-                      <ExternalLink size={12} /> ดูข้อมูลในหน้า Leads
-                    </a>
+                    )}
+                    {(activeEstimation.customer_address || activeEstimation.lead_customer_address) && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <MapPin size={13} color="var(--accent-primary)" />
+                        สถานที่: <span style={{ color: '#ffffff' }}>{activeEstimation.customer_address || activeEstimation.lead_customer_address}</span>
+                      </span>
+                    )}
+                    <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: '#94a3b8' }}>
+                      📅 วันที่สร้าง: {formatToDDMMYYYY(activeEstimation.created_at)}
+                    </span>
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Action Buttons on Detail Header */}
