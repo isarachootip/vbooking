@@ -1105,7 +1105,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         fetchLeads();
       } else {
         const errJson = await response.json().catch(() => ({}));
-        alert(errJson.error || 'Failed to save lead');
+        alert(errJson.details ? `${errJson.error || 'Failed to save lead'}: ${errJson.details}` : (errJson.error || 'Failed to save lead'));
       }
     } catch (err: any) {
       console.error('Error saving lead', err);

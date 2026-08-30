@@ -38,7 +38,7 @@ exports.createLead = async (req, res) => {
       id, customer_name, customer_first_name, customer_last_name, customer_phone, 
       customer_address, customer_latitude, customer_longitude, map_url, job_type, 
       notes, sales_contact_id, customer_id, customer_site_id, site_name,
-      coordinator_name, coordinator_phone, coordinator_line_id
+      coordinator_name, coordinator_phone, coordinator_line_id, branch
     } = req.body;
     const now = new Date().toISOString();
     const d = new Date();
