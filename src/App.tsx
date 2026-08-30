@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileSpreadsheet, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, FileSpreadsheet, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText, ClipboardList, Key } from 'lucide-react';
 
 import { PMTBrandLogo } from './components/PMTBrandLogo';
 import { Dashboard } from './components/Dashboard';
@@ -29,6 +29,7 @@ import { DraftEstimationManager } from './components/DraftEstimationManager';
 import { CustomerMasterManager } from './components/CustomerMasterManager';
 import { MAContracts } from './components/MAContracts';
 import { PublicQuotationSign } from './components/PublicQuotationSign';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 
 
 import { mockUsers, mockProjects, mockTasks, mockTimesheets } from './data/mockData';
@@ -379,6 +380,7 @@ const MobileBottomNav = () => {
 
 const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React.ReactNode, currentUser: User, tasks: Task[], onLogout: () => void }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isChangePwModalOpen, setIsChangePwModalOpen] = useState(false);
   const [chatNotifications, setChatNotifications] = useState<any[]>([]);
   const { lang, toggleLang, t } = useLanguage();
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -504,13 +506,13 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
               <span className="hide-mobile" style={{ fontSize: '0.875rem' }}>{t.settings}</span>
             </Link>
 
-            {/* User Profile & Logout */}
+            {/* User Profile, Password & Logout */}
             <div 
               className="glass-panel"
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '0.5rem', 
+                gap: '0.45rem', 
                 padding: '0.3rem 0.55rem 0.3rem 0.65rem',
                 borderRadius: 'var(--radius-lg)',
                 marginLeft: '0.25rem'
@@ -525,6 +527,29 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
                 <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{currentUser.name}</span>
                 <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>{currentUser.globalRole}</span>
               </div>
+              <button 
+                onClick={() => setIsChangePwModalOpen(true)}
+                className="hover-lift"
+                title={lang === 'th' ? 'เปลี่ยนรหัสผ่าน (Change Password)' : 'Change Password'}
+                style={{ 
+                  background: 'rgba(234, 88, 12, 0.12)', 
+                  border: '1px solid rgba(234, 88, 12, 0.3)', 
+                  color: '#ea580c', 
+                  borderRadius: 'var(--radius-md)', 
+                  padding: '0.35rem 0.55rem', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.25rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  marginLeft: '0.25rem'
+                }}
+              >
+                <Key size={14} color="#ea580c" />
+                <span className="hide-mobile">{lang === 'th' ? 'รหัสผ่าน' : 'Password'}</span>
+              </button>
               <button 
                 onClick={onLogout}
                 className="hover-lift"
@@ -542,7 +567,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
                   fontSize: '0.75rem',
                   fontWeight: 600,
                   transition: 'all 0.2s ease',
-                  marginLeft: '0.25rem'
+                  marginLeft: '0.15rem'
                 }}
               >
                 <LogOut size={15} color="var(--accent-danger)" />
@@ -556,6 +581,13 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           {children}
         </div>
       </main>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal 
+        isOpen={isChangePwModalOpen}
+        onClose={() => setIsChangePwModalOpen(false)}
+        currentUser={currentUser}
+      />
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { User, GlobalRole, Project } from '../types';
 import { 
-  Users, UserPlus, Search, Edit3, Trash2, Key, Eye, LayoutGrid, List, 
+  Users, UserPlus, Search, Edit3, Trash2, Key, Eye, EyeOff, LayoutGrid, List, 
   Download, ShieldCheck, Building2, Calendar, Check, X, 
   CheckCircle2, AlertTriangle, Shield, UserCheck, Briefcase, ClipboardCheck,
   Home, MapPin, Navigation
@@ -108,6 +108,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [formLastName, setFormLastName] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formPassword, setFormPassword] = useState('');
+  const [showFormPassword, setShowFormPassword] = useState(false);
   const [formRole, setFormRole] = useState<GlobalRole>('Employee');
   const [formDept, setFormDept] = useState('');
   const [formGender, setFormGender] = useState<'Male' | 'Female' | 'Other' | ''>('');
@@ -1081,19 +1082,45 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   />
                 </div>
 
-                {!editingUser && (
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>รหัสผ่านเริ่มต้น <span style={{ color: 'red' }}>*</span></label>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                    {editingUser ? 'เปลี่ยนรหัสผ่านใหม่ (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)' : 'รหัสผ่านเริ่มต้น'} {!editingUser && <span style={{ color: 'red' }}>*</span>}
+                  </label>
+                  <div style={{ position: 'relative' }}>
                     <input
-                      type="password"
-                      required
+                      type={showFormPassword ? 'text' : 'password'}
+                      required={!editingUser}
                       value={formPassword}
                       onChange={e => setFormPassword(e.target.value)}
-                      placeholder="อย่างน้อย 6 ตัวอักษร"
-                      style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid var(--border-color, #d1d5db)', fontSize: '0.875rem' }}
+                      placeholder={editingUser ? 'พิมพ์รหัสผ่านใหม่เพื่อแก้ไข หรือเว้นว่างไว้...' : 'อย่างน้อย 6 ตัวอักษร'}
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.55rem 2.5rem 0.55rem 0.75rem', 
+                        borderRadius: '8px', 
+                        border: '1px solid var(--border-color, #d1d5db)', 
+                        fontSize: '0.875rem' 
+                      }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowFormPassword(!showFormPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        color: 'var(--text-secondary)',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      {showFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
-                )}
+                </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem' }}>บทบาทในระบบ (Global Role)</label>
