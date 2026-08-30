@@ -4389,10 +4389,11 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           branch: branch,
           zone: selectedZone
         }}
-        onSelectBooking={({ qcName, date, timeSlot, timeOnly }) => {
+        onSelectBooking={({ qcId, qcName, date, timeSlot, timeOnly }) => {
           setAppointmentDate(date);
           setAppointmentTime(timeSlot || timeOnly);
           setAssigneeName(qcName);
+          setSurveyorId(qcId);
           setActivityType('1.2.2 นัดลงพื้นที่ site งาน');
         }}
       />

@@ -322,6 +322,17 @@ exports.addFollowup = async (req, res) => {
       }
     }
 
+    let resolvedSurveyorId = surveyor_id || null;
+    if (!resolvedSurveyorId && assignee_name) {
+      const qcCheck = await pool.query(
+        `SELECT id FROM users WHERE (department ILIKE '%QC%' OR name ILIKE 'QC%') AND (name = $1 OR id = $1) LIMIT 1`,
+        [assignee_name]
+      );
+      if (qcCheck.rows.length > 0) {
+        resolvedSurveyorId = qcCheck.rows[0].id;
+      }
+    }
+
     await pool.query(
       `UPDATE leads 
        SET status = COALESCE($1, status), 
@@ -341,7 +352,7 @@ exports.addFollowup = async (req, res) => {
        WHERE id = $15`,
       [
         new_status || null, fullAppointmentStr, activity_type, assignee_name, now, 
-        surveyor_id || null, survey_date || null, initialApprovalStatus,
+        resolvedSurveyorId, survey_date || null, initialApprovalStatus,
         site_coordinator_name || null, site_coordinator_phone || null, site_coordinator_line_id || null,
         site_map_url || null, lat, lng,
         id
@@ -418,6 +429,15 @@ exports.approveSiteVisit = async (req, res) => {
 
     const newStatus = approval_status === 'Approved' ? 'Qualified' : null;
 
+    const existingLead = await pool.query('SELECT appointment_assignee, surveyor_id FROM leads WHERE id = $1', [id]);
+    let targetAssignee = sales_contact_name || null;
+    if (existingLead.rows.length > 0) {
+      const currAssignee = existingLead.rows[0].appointment_assignee;
+      if (currAssignee && (currAssignee.includes('QC') || currAssignee.startsWith('QC'))) {
+        targetAssignee = currAssignee;
+      }
+    }
+
     const updateResult = await pool.query(
       `UPDATE leads
        SET site_visit_approval_status = $1,
@@ -437,7 +457,7 @@ exports.approveSiteVisit = async (req, res) => {
         now,
         approval_notes || null,
         sales_contact_id || null,
-        sales_contact_name || null,
+        targetAssignee,
         fullAppointmentStr,
         newStatus,
         now,

@@ -698,7 +698,13 @@ exports.getTeamSchedule = async (req, res) => {
       { slot: '16:30 - 18:30 น.', label: 'ช่วงเย็น (16:30 - 18:30)' }
     ];
 
-    // 2. Fetch all daily plan items on targetDate
+    // 2. Fetch all users (for branch/store matching)
+    const allUsersRes = await pool.query(
+      `SELECT id, name, department, global_role, assigned_branches, service_zones FROM users`
+    );
+    const allUsers = allUsersRes.rows;
+
+    // 3. Fetch all daily plan items on targetDate
     const planItemsRes = await pool.query(
       `SELECT i.*, p.qc_id, p.plan_date
        FROM qc_plan_items i
@@ -707,27 +713,112 @@ exports.getTeamSchedule = async (req, res) => {
       [targetDate]
     );
 
-    // 3. Fetch all leads with appointment on targetDate
+    // 4. Fetch all leads with appointment on targetDate
     const leadsRes = await pool.query(
       `SELECT id, customer_name, customer_phone, customer_address, job_type, 
               appointment_date, appointment_type, appointment_assignee, surveyor_id,
-              site_visit_approval_status, status
+              site_visit_approval_status, status, sales_contact_id
        FROM leads
        WHERE (appointment_date LIKE $1 OR survey_date LIKE $1)`,
       [`${targetDate}%`]
     );
 
-    // 4. Map schedule for each QC user
+    // 5. Fetch all followups on targetDate
+    const followupsRes = await pool.query(
+      `SELECT * FROM lead_followups 
+       WHERE (appointment_date LIKE $1 OR created_at LIKE $1)`,
+      [`${targetDate}%`]
+    );
+
+    const getLeadBranchName = (lead) => {
+      if (lead.sales_contact_id) {
+        const u = allUsers.find(x => x.id === lead.sales_contact_id);
+        if (u && u.assigned_branches && u.assigned_branches.length > 0) return u.assigned_branches[0];
+        if (u && u.name) {
+          const m = u.name.match(/\(([^)]+)\)/);
+          if (m) return m[1];
+        }
+      }
+      if (lead.appointment_assignee) {
+        const u = allUsers.find(x => x.name === lead.appointment_assignee || x.id === lead.appointment_assignee);
+        if (u && u.assigned_branches && u.assigned_branches.length > 0) return u.assigned_branches[0];
+        const m = lead.appointment_assignee.match(/\(([^)]+)\)/);
+        if (m) return m[1];
+      }
+      return '';
+    };
+
+    const isLeadMatchedToQc = (lead, qcUser) => {
+      // Direct assignment
+      if (lead.surveyor_id && (lead.surveyor_id === qcUser.id || lead.surveyor_id === qcUser.name)) return true;
+      if (lead.appointment_assignee && (lead.appointment_assignee === qcUser.name || lead.appointment_assignee === qcUser.id)) return true;
+      if (lead.appointment_assignee && qcUser.name && lead.appointment_assignee.startsWith(qcUser.name.split(' ')[0])) return true;
+
+      // Check followups
+      const fws = followupsRes.rows.filter(f => f.lead_id === lead.id);
+      for (const f of fws) {
+        if (f.assignee_name && (f.assignee_name === qcUser.name || f.assignee_name === qcUser.id || f.assignee_name.startsWith(qcUser.name.split(' ')[0]))) return true;
+        if (f.created_by && (f.created_by === qcUser.name || f.created_by.includes(qcUser.name))) return true;
+      }
+
+      // If lead is explicitly assigned to another QC, do NOT match this QC
+      const otherQc = usersRes.rows.find(o => o.id !== qcUser.id && (
+        lead.surveyor_id === o.id || 
+        lead.surveyor_id === o.name || 
+        lead.appointment_assignee === o.name || 
+        (lead.appointment_assignee && lead.appointment_assignee.startsWith(o.name.split(' ')[0]))
+      ));
+      if (otherQc) return false;
+
+      // Branch match
+      const branchName = getLeadBranchName(lead);
+      if (branchName && qcUser.assigned_branches && Array.isArray(qcUser.assigned_branches)) {
+        const cleanBranch = branchName.replace(/^สาขา/, '').trim();
+        const hasBranch = qcUser.assigned_branches.some(b => {
+          const cleanB = b.replace(/^สาขา/, '').trim();
+          return cleanB === cleanBranch || b.includes(cleanBranch) || branchName.includes(cleanB);
+        });
+        if (hasBranch) return true;
+      }
+
+      // Address match
+      if (lead.customer_address && qcUser.assigned_branches) {
+        const addr = lead.customer_address.toLowerCase();
+        const hasAddrMatch = qcUser.assigned_branches.some(b => {
+          const cleanB = b.replace(/^สาขา/, '').trim().toLowerCase();
+          return cleanB.length >= 3 && addr.includes(cleanB);
+        });
+        if (hasAddrMatch) return true;
+      }
+
+      return false;
+    };
+
+    const getSlotIndexFromTimeStr = (timeStr) => {
+      if (!timeStr) return -1;
+      const str = timeStr.trim();
+      if (str.includes('09:00') || str.includes('ช่วงเช้า')) return 0;
+      if (str.includes('11:30') || str.includes('ช่วงเที่ยง')) return 1;
+      if (str.includes('14:00') || str.includes('ช่วงบ่าย')) return 2;
+      if (str.includes('16:30') || str.includes('ช่วงเย็น')) return 3;
+
+      const m = str.match(/(\d{1,2}):(\d{2})/);
+      if (m) {
+        const hour = parseInt(m[1], 10);
+        const min = parseInt(m[2], 10);
+        const totalMin = hour * 60 + min;
+        if (totalMin < 11 * 60) return 0;
+        if (totalMin < 13 * 60 + 45) return 1;
+        if (totalMin < 16 * 60 + 15) return 2;
+        return 3;
+      }
+      return -1;
+    };
+
+    // 6. Map schedule for each QC user
     const teamSchedule = usersRes.rows.map(u => {
-      // Find items in qc_plan_items for this user
       const userPlanItems = planItemsRes.rows.filter(it => it.qc_id === u.id);
-      
-      // Find leads directly assigned to this user
-      const userLeads = leadsRes.rows.filter(l => 
-        l.appointment_assignee === u.name || 
-        l.surveyor_id === u.id || 
-        l.appointment_assignee === u.id
-      );
+      const userLeads = leadsRes.rows.filter(l => isLeadMatchedToQc(l, u));
 
       // Build slot schedule
       const slots = standardSlots.map((s, idx) => {
@@ -739,17 +830,17 @@ exports.getTeamSchedule = async (req, res) => {
 
         // Check if there's an assigned lead matching this time/date
         const matchingLead = userLeads.find(l => {
-          if (!l.appointment_date) return false;
-          const parts = l.appointment_date.split(' ');
-          const timePart = parts[1] || '';
-          if (timePart) {
-            const hour = parseInt(timePart.split(':')[0], 10);
-            if (idx === 0 && hour >= 8 && hour < 11) return true;
-            if (idx === 1 && hour >= 11 && hour < 14) return true;
-            if (idx === 2 && hour >= 14 && hour < 16) return true;
-            if (idx === 3 && hour >= 16) return true;
+          let timeStr = '';
+          if (l.appointment_date) {
+            const parts = l.appointment_date.split(' ');
+            timeStr = parts.slice(1).join(' ');
           }
-          return false;
+          if (!timeStr) {
+            const fw = followupsRes.rows.find(f => f.lead_id === l.id && f.appointment_time);
+            if (fw) timeStr = fw.appointment_time;
+          }
+          const matchedSlotIdx = getSlotIndexFromTimeStr(timeStr);
+          return matchedSlotIdx === idx;
         });
 
         const isBooked = Boolean(matchingPlanItem || matchingLead);
