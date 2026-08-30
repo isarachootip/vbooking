@@ -132,36 +132,63 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
     }
   };
 
-  // Fetch Daily Plan for selected QC and Date
-  const fetchPlan = async () => {
+  // Fetch Daily Plan for selected QC and Date (Auto-pulls customer leads & generates route if not exists)
+  const fetchPlan = async (forceAutoGenerate = false) => {
     if (!selectedQcId || !selectedDate) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/qc-plans/daily?qcId=${selectedQcId}&date=${selectedDate}`, {
-        headers: { 'X-User-Id': currentUser?.id || '' }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setCurrentPlan(data[0]);
-        } else {
-          setCurrentPlan(null);
+      if (!forceAutoGenerate) {
+        const res = await fetch(`/api/qc-plans/daily?qcId=${selectedQcId}&date=${selectedDate}`, {
+          headers: { 'X-User-Id': currentUser?.id || '' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0 && data[0].items && data[0].items.length > 0) {
+            setCurrentPlan(data[0]);
+            setIsLoading(false);
+            return;
+          }
         }
       }
+
+      // If no confirmed plan exists yet for this date, automatically pull customer appointments & generate route!
+      const genRes = await fetch('/api/qc-plans/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': currentUser?.id || ''
+        },
+        body: JSON.stringify({
+          qc_id: selectedQcId,
+          plan_date: selectedDate,
+          auto_fetch_approved: true
+        })
+      });
+
+      if (genRes.ok) {
+        const genData = await genRes.json();
+        setCurrentPlan(genData);
+      } else {
+        setCurrentPlan(null);
+      }
     } catch (err) {
-      console.error('Error fetching QC plan:', err);
-      showToast('ไม่สามารถดึงข้อมูลแผนงาน QC ได้', 'error');
+      console.error('Error fetching/generating QC plan:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    setCurrentPlan(null);
     fetchPlan();
+    fetchTeamSchedule();
+  }, [selectedQcId, selectedDate]);
+
+  useEffect(() => {
     if (viewMode === 'monitor_dashboard') {
       fetchTeamSchedule();
     }
-  }, [selectedQcId, selectedDate, viewMode]);
+  }, [viewMode]);
 
   // Auto Generate & Optimize Route from Home Origin
   const handleAutoGenerate = async () => {

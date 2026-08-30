@@ -350,16 +350,26 @@ exports.generateDailyPlan = async (req, res) => {
         (u.name && u.name.startsWith('QC'))
       );
 
+      let isoDate = targetDate;
+      let ddmmyyyy = targetDate;
+      if (targetDate.includes('-')) {
+        const [y, m, d] = targetDate.split('-');
+        ddmmyyyy = `${d}/${m}/${y}`;
+      } else if (targetDate.includes('/')) {
+        const [d, m, y] = targetDate.split('/');
+        isoDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
+
       const followupsRes = await pool.query(
-        `SELECT * FROM lead_followups WHERE (appointment_date LIKE $1 OR created_at LIKE $1)`,
-        [`${targetDate}%`]
+        `SELECT * FROM lead_followups WHERE (appointment_date LIKE $1 OR appointment_date LIKE $2 OR created_at LIKE $1)`,
+        [`${isoDate}%`, `${ddmmyyyy}%`]
       );
 
-      // Find all leads on targetDate or GM approved leads
+      // Find all leads on targetDate or GM approved leads (matching both ISO and DD/MM/YYYY)
       const allLeadsRes = await pool.query(
         `SELECT * FROM leads 
-         WHERE (appointment_date LIKE $1 OR survey_date LIKE $1 OR (site_visit_approval_status = 'Approved' AND updated_at LIKE $1))`,
-        [`${targetDate}%`]
+         WHERE (appointment_date LIKE $1 OR appointment_date LIKE $2 OR survey_date LIKE $1 OR survey_date LIKE $2 OR (site_visit_approval_status = 'Approved' AND (updated_at LIKE $1 OR created_at LIKE $1)))`,
+        [`${isoDate}%`, `${ddmmyyyy}%`]
       );
 
       const matchedLeads = allLeadsRes.rows.filter(l => isLeadMatchedToQc(l, qcUser, allUsers, followupsRes.rows, allQcUsers));
@@ -824,21 +834,31 @@ exports.getTeamSchedule = async (req, res) => {
       [targetDate]
     );
 
-    // 4. Fetch all leads with appointment on targetDate
+    let schedIsoDate = targetDate;
+    let schedDdmmyyyy = targetDate;
+    if (targetDate.includes('-')) {
+      const [y, m, d] = targetDate.split('-');
+      schedDdmmyyyy = `${d}/${m}/${y}`;
+    } else if (targetDate.includes('/')) {
+      const [d, m, y] = targetDate.split('/');
+      schedIsoDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+
+    // 4. Fetch all leads with appointment on targetDate (matching both ISO and DD/MM/YYYY)
     const leadsRes = await pool.query(
       `SELECT id, customer_name, customer_phone, customer_address, job_type, 
               appointment_date, appointment_type, appointment_assignee, surveyor_id,
               site_visit_approval_status, status, sales_contact_id
        FROM leads
-       WHERE (appointment_date LIKE $1 OR survey_date LIKE $1)`,
-      [`${targetDate}%`]
+       WHERE (appointment_date LIKE $1 OR appointment_date LIKE $2 OR survey_date LIKE $1 OR survey_date LIKE $2)`,
+      [`${schedIsoDate}%`, `${schedDdmmyyyy}%`]
     );
 
     // 5. Fetch all followups on targetDate
     const followupsRes = await pool.query(
       `SELECT * FROM lead_followups 
-       WHERE (appointment_date LIKE $1 OR created_at LIKE $1)`,
-      [`${targetDate}%`]
+       WHERE (appointment_date LIKE $1 OR appointment_date LIKE $2 OR created_at LIKE $1)`,
+      [`${schedIsoDate}%`, `${schedDdmmyyyy}%`]
     );
 
     // 6. Map schedule for each QC user
