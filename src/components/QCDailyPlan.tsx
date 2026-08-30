@@ -23,12 +23,25 @@ interface QCDailyPlanProps {
   branches?: any[];
 }
 
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return isMobile;
+};
+
 export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
   currentUser,
   users = [],
   projects = [],
   branches = []
 }) => {
+  const isMobile = useIsMobile();
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [selectedQcId, setSelectedQcId] = useState<string>(() => {
@@ -503,243 +516,380 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
         </div>
       )}
 
-      {/* HEADER & FILTER BAR */}
-      <div style={{
-        background: 'var(--card-bg, #ffffff)',
-        borderRadius: '16px',
-        border: '1px solid var(--border-color, #e5e7eb)',
-        padding: '1.25rem',
-        marginBottom: '1.25rem',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
-      }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Navigation size={20} />
+      {/* 📱 MOBILE FIELD OPS HEADER (Only on mobile screens) */}
+      {isMobile ? (
+        <div style={{
+          background: 'var(--card-bg, #ffffff)',
+          borderRadius: '14px',
+          border: '1px solid var(--border-color, #e5e7eb)',
+          padding: '0.85rem',
+          marginBottom: '0.85rem',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.65rem'
+        }}>
+          {/* Top Line: Date Navigation Strip */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Navigation size={15} />
               </div>
-              <div>
-                <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                  แผนงานและเส้นทาง QC ประจำวัน (Daily QC Plan)
-                </h1>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  เริ่มเดินทางจากบ้านพนักงาน (Origin) สู่หน้างานตามลำดับเส้นทางที่ประหยัดเวลาที่สุด
-                </p>
-              </div>
+              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                แผนตรวจ QC
+              </span>
             </div>
-          </div>
 
-          {/* CONTROLS: DATE & QC SELECTOR */}
-          <div className="qc-toolbar-controls" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.65rem' }}>
-            {/* ROW 1: VIEW MODE SWITCHER */}
-            <div className="qc-full-mobile" style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+            {/* Date Pills */}
+            <div style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '2px', borderRadius: '8px', gap: '2px' }}>
               <button
                 type="button"
-                onClick={() => setViewMode('route_map')}
+                onClick={() => {
+                  const yest = new Date(selectedDate);
+                  yest.setDate(yest.getDate() - 1);
+                  setSelectedDate(yest.toISOString().split('T')[0]);
+                }}
+                style={{ padding: '4px 8px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.72rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                ◀
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDate(todayStr)}
                 style={{
-                  flex: 1,
-                  padding: '6px 12px',
+                  padding: '4px 10px',
                   borderRadius: '6px',
                   border: 'none',
-                  background: viewMode === 'route_map' ? '#2563eb' : 'transparent',
-                  color: viewMode === 'route_map' ? 'white' : 'var(--text-secondary)',
-                  fontWeight: viewMode === 'route_map' ? 700 : 500,
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '5px'
+                  background: selectedDate === todayStr ? '#2563eb' : 'transparent',
+                  color: selectedDate === todayStr ? 'white' : 'var(--text-primary)',
+                  fontWeight: selectedDate === todayStr ? 700 : 600,
+                  fontSize: '0.75rem',
+                  cursor: 'pointer'
                 }}
               >
-                <Navigation size={13} /> 🗺️ แผนที่เส้นทาง
+                {selectedDate === todayStr ? 'วันนี้' : formatToDDMMYYYY(selectedDate)}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setViewMode('monitor_dashboard');
-                  fetchTeamSchedule();
+                  const tom = new Date(selectedDate);
+                  tom.setDate(tom.getDate() + 1);
+                  setSelectedDate(tom.toISOString().split('T')[0]);
                 }}
-                style={{
-                  flex: 1,
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: viewMode === 'monitor_dashboard' ? '#059669' : 'transparent',
-                  color: viewMode === 'monitor_dashboard' ? 'white' : 'var(--text-secondary)',
-                  fontWeight: viewMode === 'monitor_dashboard' ? 700 : 500,
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '5px'
-                }}
+                style={{ padding: '4px 8px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.72rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
               >
-                <LayoutGrid size={13} /> 📊 Monitor ตารางงาน QC
+                ▶
               </button>
             </div>
+          </div>
 
-            {/* ROW 2: DATE PILLS & DATE PICKER */}
-            <div className="qc-full-mobile" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
-              {/* Quick Date Pills */}
-              <div style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px', flex: 1, minWidth: '180px' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const yest = new Date();
-                    yest.setDate(yest.getDate() - 1);
-                    setSelectedDate(yest.toISOString().split('T')[0]);
-                  }}
-                  style={{ flex: 1, padding: '5px 8px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
-                >
-                  เมื่อวาน
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDate(todayStr)}
-                  style={{
-                    flex: 1,
-                    padding: '5px 10px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    background: selectedDate === todayStr ? '#2563eb' : 'transparent',
-                    color: selectedDate === todayStr ? 'white' : 'var(--text-secondary)',
-                    fontWeight: selectedDate === todayStr ? 700 : 400,
-                    fontSize: '0.75rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  วันนี้
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const tom = new Date();
-                    tom.setDate(tom.getDate() + 1);
-                    setSelectedDate(tom.toISOString().split('T')[0]);
-                  }}
-                  style={{ flex: 1, padding: '5px 8px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
-                >
-                  พรุ่งนี้
-                </button>
-              </div>
-
-              {/* Date Picker Input (DD/MM/YYYY) */}
-              <div style={{ flex: 1, minWidth: '130px' }}>
-                <CustomDateInput
-                  value={selectedDate}
-                  onChange={e => setSelectedDate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.45rem 0.65rem',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-color, #e2e8f0)',
-                    background: 'var(--bg-tertiary, #f8fafc)',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    outline: 'none'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* ROW 3: QC SELECTOR */}
-            <div className="qc-full-mobile" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-tertiary, #f8fafc)', padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
-              <UserIcon size={16} color="#64748b" style={{ flexShrink: 0 }} />
+          {/* QC Selector & Quick Stats */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', background: 'var(--bg-tertiary, #f8fafc)', padding: '0.4rem 0.65rem', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+              <UserIcon size={15} color="#2563eb" style={{ flexShrink: 0 }} />
               <select
                 value={selectedQcId}
                 onChange={e => setSelectedQcId(e.target.value)}
-                style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
+                style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
               >
                 {qcUsers.map(u => (
                   <option key={u.id} value={u.id}>
-                    {u.name} ({u.globalRole || 'QC'})
+                    {u.name}
                   </option>
                 ))}
               </select>
             </div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0d9488', whiteSpace: 'nowrap' }}>
+              🚗 {currentPlan?.items?.length || 0} จุด ({Number(currentPlan?.totalEstimatedKm || 0).toFixed(1)} กม.)
+            </div>
+          </div>
 
-            {/* ROW 4: BOOK QC BUTTON */}
+          {/* Quick Action Bar for Mobile */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.45rem' }}>
             <button
               type="button"
-              onClick={() => setIsBookingModalOpen(true)}
-              className="qc-full-mobile"
+              disabled={isGenerating || isLoading}
+              onClick={handleAutoGenerate}
               style={{
-                padding: '0.6rem 0.95rem',
+                padding: '0.5rem 0.65rem',
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, #059669, #10b981)',
+                background: 'linear-gradient(135deg, #0284c7, #2563eb)',
                 color: 'white',
                 border: 'none',
-                fontSize: '0.85rem',
+                fontSize: '0.78rem',
                 fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
+                gap: '4px',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)'
               }}
             >
-              <Sparkles size={15} /> 🔍 จองคิว QC / ล็อกสล็อต
+              {isGenerating ? <RefreshCw size={13} className="spin" /> : <Sparkles size={13} />}
+              {isGenerating ? 'จัดเส้นทาง...' : '⚡ จัด Route อัตโนมัติ'}
             </button>
-
-            {/* ROW 5: ROUTE ACTIONS GRID */}
-            {viewMode === 'route_map' && (
-              <div className="qc-grid-2-mobile" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
-                <button
-                  type="button"
-                  disabled={isGenerating || isLoading}
-                  onClick={handleAutoGenerate}
-                  style={{
-                    flex: 1,
-                    padding: '0.6rem 0.75rem',
-                    borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #0284c7, #2563eb)',
-                    color: 'white',
-                    border: 'none',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '5px',
-                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-                    opacity: isGenerating ? 0.7 : 1,
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  {isGenerating ? <RefreshCw size={14} className="spin" /> : <Sparkles size={14} />}
-                  {isGenerating ? 'กำลังจัดเส้นทาง...' : '⚡ จัด Route อัตโนมัติ'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAddStopModalOpen(true)}
-                  style={{
-                    padding: '0.6rem 0.75rem',
-                    borderRadius: '8px',
-                    background: 'var(--bg-tertiary, #f1f5f9)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-color, #cbd5e1)',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <Plus size={14} /> เพิ่มจุดตรวจ
-                </button>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => setIsAddStopModalOpen(true)}
+              style={{
+                padding: '0.5rem 0.65rem',
+                borderRadius: '8px',
+                background: 'var(--bg-tertiary, #f1f5f9)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color, #cbd5e1)',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px'
+              }}
+            >
+              <Plus size={13} /> เพิ่มจุดตรวจ
+            </button>
           </div>
         </div>
-      </div>
+      ) : (
+        /* 🖥️ DESKTOP HEADER & FILTER BAR */
+        <div style={{
+          background: 'var(--card-bg, #ffffff)',
+          borderRadius: '16px',
+          border: '1px solid var(--border-color, #e5e7eb)',
+          padding: '1.25rem',
+          marginBottom: '1.25rem',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
+        }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Navigation size={20} />
+                </div>
+                <div>
+                  <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                    แผนงานและเส้นทาง QC ประจำวัน (Daily QC Plan)
+                  </h1>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    เริ่มเดินทางจากบ้านพนักงาน (Origin) สู่หน้างานตามลำดับเส้นทางที่ประหยัดเวลาที่สุด
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* CONTROLS: DATE & QC SELECTOR */}
+            <div className="qc-toolbar-controls" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.65rem' }}>
+              {/* ROW 1: VIEW MODE SWITCHER */}
+              <div className="qc-full-mobile" style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('route_map')}
+                  style={{
+                    flex: 1,
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: viewMode === 'route_map' ? '#2563eb' : 'transparent',
+                    color: viewMode === 'route_map' ? 'white' : 'var(--text-secondary)',
+                    fontWeight: viewMode === 'route_map' ? 700 : 500,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  <Navigation size={13} /> 🗺️ แผนที่เส้นทาง
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewMode('monitor_dashboard');
+                    fetchTeamSchedule();
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: viewMode === 'monitor_dashboard' ? '#059669' : 'transparent',
+                    color: viewMode === 'monitor_dashboard' ? 'white' : 'var(--text-secondary)',
+                    fontWeight: viewMode === 'monitor_dashboard' ? 700 : 500,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  <LayoutGrid size={13} /> 📊 Monitor ตารางงาน QC
+                </button>
+              </div>
+
+              {/* ROW 2: DATE PILLS & DATE PICKER */}
+              <div className="qc-full-mobile" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                {/* Quick Date Pills */}
+                <div style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px', flex: 1, minWidth: '180px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const yest = new Date();
+                      yest.setDate(yest.getDate() - 1);
+                      setSelectedDate(yest.toISOString().split('T')[0]);
+                    }}
+                    style={{ flex: 1, padding: '5px 8px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                  >
+                    เมื่อวาน
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(todayStr)}
+                    style={{
+                      flex: 1,
+                      padding: '5px 10px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: selectedDate === todayStr ? '#2563eb' : 'transparent',
+                      color: selectedDate === todayStr ? 'white' : 'var(--text-secondary)',
+                      fontWeight: selectedDate === todayStr ? 700 : 400,
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    วันนี้
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const tom = new Date();
+                      tom.setDate(tom.getDate() + 1);
+                      setSelectedDate(tom.toISOString().split('T')[0]);
+                    }}
+                    style={{ flex: 1, padding: '5px 8px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                  >
+                    พรุ่งนี้
+                  </button>
+                </div>
+
+                {/* Date Picker Input (DD/MM/YYYY) */}
+                <div style={{ flex: 1, minWidth: '130px' }}>
+                  <CustomDateInput
+                    value={selectedDate}
+                    onChange={e => setSelectedDate(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.45rem 0.65rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color, #e2e8f0)',
+                      background: 'var(--bg-tertiary, #f8fafc)',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* ROW 3: QC SELECTOR */}
+              <div className="qc-full-mobile" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-tertiary, #f8fafc)', padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+                <UserIcon size={16} color="#64748b" style={{ flexShrink: 0 }} />
+                <select
+                  value={selectedQcId}
+                  onChange={e => setSelectedQcId(e.target.value)}
+                  style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
+                >
+                  {qcUsers.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.globalRole || 'QC'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* ROW 4: BOOK QC BUTTON */}
+              <button
+                type="button"
+                onClick={() => setIsBookingModalOpen(true)}
+                className="qc-full-mobile"
+                style={{
+                  padding: '0.6rem 0.95rem',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #059669, #10b981)',
+                  color: 'white',
+                  border: 'none',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
+                }}
+              >
+                <Sparkles size={15} /> 🔍 จองคิว QC / ล็อกสล็อต
+              </button>
+
+              {/* ROW 5: ROUTE ACTIONS GRID */}
+              {viewMode === 'route_map' && (
+                <div className="qc-grid-2-mobile" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
+                  <button
+                    type="button"
+                    disabled={isGenerating || isLoading}
+                    onClick={handleAutoGenerate}
+                    style={{
+                      flex: 1,
+                      padding: '0.6rem 0.75rem',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                      color: 'white',
+                      border: 'none',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px',
+                      boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                      opacity: isGenerating ? 0.7 : 1,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {isGenerating ? <RefreshCw size={14} className="spin" /> : <Sparkles size={14} />}
+                    {isGenerating ? 'กำลังจัดเส้นทาง...' : '⚡ จัด Route อัตโนมัติ'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsAddStopModalOpen(true)}
+                    style={{
+                      padding: '0.6rem 0.75rem',
+                      borderRadius: '8px',
+                      background: 'var(--bg-tertiary, #f1f5f9)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color, #cbd5e1)',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <Plus size={14} /> เพิ่มจุดตรวจ
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {viewMode === 'monitor_dashboard' ? (
         /* QC TEAM SCHEDULE MONITOR DASHBOARD VIEW */
