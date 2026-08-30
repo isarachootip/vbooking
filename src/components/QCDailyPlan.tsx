@@ -530,23 +530,25 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
           </div>
 
           {/* CONTROLS: DATE & QC SELECTOR */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
-            {/* VIEW MODE SWITCHER */}
-            <div style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+          <div className="qc-toolbar-controls" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.65rem' }}>
+            {/* ROW 1: VIEW MODE SWITCHER */}
+            <div className="qc-full-mobile" style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
               <button
                 type="button"
                 onClick={() => setViewMode('route_map')}
                 style={{
-                  padding: '5px 11px',
+                  flex: 1,
+                  padding: '6px 12px',
                   borderRadius: '6px',
                   border: 'none',
                   background: viewMode === 'route_map' ? '#2563eb' : 'transparent',
                   color: viewMode === 'route_map' ? 'white' : 'var(--text-secondary)',
                   fontWeight: viewMode === 'route_map' ? 700 : 500,
-                  fontSize: '0.78rem',
+                  fontSize: '0.8rem',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '5px'
                 }}
               >
@@ -559,16 +561,18 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
                   fetchTeamSchedule();
                 }}
                 style={{
-                  padding: '5px 11px',
+                  flex: 1,
+                  padding: '6px 12px',
                   borderRadius: '6px',
                   border: 'none',
                   background: viewMode === 'monitor_dashboard' ? '#059669' : 'transparent',
                   color: viewMode === 'monitor_dashboard' ? 'white' : 'var(--text-secondary)',
                   fontWeight: viewMode === 'monitor_dashboard' ? 700 : 500,
-                  fontSize: '0.78rem',
+                  fontSize: '0.8rem',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '5px'
                 }}
               >
@@ -576,72 +580,77 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
               </button>
             </div>
 
-            {/* Quick Date Pills */}
-            <div style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  const yest = new Date();
-                  yest.setDate(yest.getDate() - 1);
-                  setSelectedDate(yest.toISOString().split('T')[0]);
-                }}
-                style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
-              >
-                เมื่อวาน
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(todayStr)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: selectedDate === todayStr ? '#2563eb' : 'transparent',
-                  color: selectedDate === todayStr ? 'white' : 'var(--text-secondary)',
-                  fontWeight: selectedDate === todayStr ? 700 : 400,
-                  fontSize: '0.75rem',
-                  cursor: 'pointer'
-                }}
-              >
-                วันนี้
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const tom = new Date();
-                  tom.setDate(tom.getDate() + 1);
-                  setSelectedDate(tom.toISOString().split('T')[0]);
-                }}
-                style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
-              >
-                พรุ่งนี้
-              </button>
+            {/* ROW 2: DATE PILLS & DATE PICKER */}
+            <div className="qc-full-mobile" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+              {/* Quick Date Pills */}
+              <div style={{ display: 'flex', background: 'var(--bg-tertiary, #f1f5f9)', padding: '3px', borderRadius: '8px', flex: 1, minWidth: '180px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const yest = new Date();
+                    yest.setDate(yest.getDate() - 1);
+                    setSelectedDate(yest.toISOString().split('T')[0]);
+                  }}
+                  style={{ flex: 1, padding: '5px 8px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                >
+                  เมื่อวาน
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(todayStr)}
+                  style={{
+                    flex: 1,
+                    padding: '5px 10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: selectedDate === todayStr ? '#2563eb' : 'transparent',
+                    color: selectedDate === todayStr ? 'white' : 'var(--text-secondary)',
+                    fontWeight: selectedDate === todayStr ? 700 : 400,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  วันนี้
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tom = new Date();
+                    tom.setDate(tom.getDate() + 1);
+                    setSelectedDate(tom.toISOString().split('T')[0]);
+                  }}
+                  style={{ flex: 1, padding: '5px 8px', borderRadius: '6px', border: 'none', background: 'transparent', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                >
+                  พรุ่งนี้
+                </button>
+              </div>
+
+              {/* Date Picker Input (DD/MM/YYYY) */}
+              <div style={{ flex: 1, minWidth: '130px' }}>
+                <CustomDateInput
+                  value={selectedDate}
+                  onChange={e => setSelectedDate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.45rem 0.65rem',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color, #e2e8f0)',
+                    background: 'var(--bg-tertiary, #f8fafc)',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    outline: 'none'
+                  }}
+                />
+              </div>
             </div>
 
-            {/* Date Picker Input (DD/MM/YYYY) */}
-            <div style={{ width: '160px' }}>
-              <CustomDateInput
-                value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
-                style={{
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border-color, #e2e8f0)',
-                  background: 'var(--bg-tertiary, #f8fafc)',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  outline: 'none'
-                }}
-              />
-            </div>
-
-            {/* QC Selector (Dropdown) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-tertiary, #f8fafc)', padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
-              <UserIcon size={15} color="#64748b" />
+            {/* ROW 3: QC SELECTOR */}
+            <div className="qc-full-mobile" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-tertiary, #f8fafc)', padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+              <UserIcon size={16} color="#64748b" style={{ flexShrink: 0 }} />
               <select
                 value={selectedQcId}
                 onChange={e => setSelectedQcId(e.target.value)}
-                style={{ border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
+                style={{ width: '100%', border: 'none', background: 'transparent', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', outline: 'none', cursor: 'pointer' }}
               >
                 {qcUsers.map(u => (
                   <option key={u.id} value={u.id}>
@@ -651,12 +660,13 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
               </select>
             </div>
 
-            {/* BOOK QC MODAL BUTTON */}
+            {/* ROW 4: BOOK QC BUTTON */}
             <button
               type="button"
               onClick={() => setIsBookingModalOpen(true)}
+              className="qc-full-mobile"
               style={{
-                padding: '0.55rem 0.95rem',
+                padding: '0.6rem 0.95rem',
                 borderRadius: '8px',
                 background: 'linear-gradient(135deg, #059669, #10b981)',
                 color: 'white',
@@ -666,61 +676,66 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
+                justifyContent: 'center',
+                gap: '6px',
                 boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
               }}
             >
               <Sparkles size={15} /> 🔍 จองคิว QC / ล็อกสล็อต
             </button>
 
-            {/* AUTO OPTIMIZE BUTTON */}
+            {/* ROW 5: ROUTE ACTIONS GRID */}
             {viewMode === 'route_map' && (
-              <button
-                type="button"
-                disabled={isGenerating || isLoading}
-                onClick={handleAutoGenerate}
-                style={{
-                  padding: '0.55rem 1.1rem',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #0284c7, #2563eb)',
-                  color: 'white',
-                  border: 'none',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-                  opacity: isGenerating ? 0.7 : 1
-                }}
-              >
-                {isGenerating ? <RefreshCw size={15} className="spin" /> : <Sparkles size={15} />}
-                {isGenerating ? 'กำลังจัดเส้นทาง...' : '⚡ จัด Route อัตโนมัติ'}
-              </button>
-            )}
+              <div className="qc-grid-2-mobile" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
+                <button
+                  type="button"
+                  disabled={isGenerating || isLoading}
+                  onClick={handleAutoGenerate}
+                  style={{
+                    flex: 1,
+                    padding: '0.6rem 0.75rem',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                    color: 'white',
+                    border: 'none',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '5px',
+                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                    opacity: isGenerating ? 0.7 : 1,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {isGenerating ? <RefreshCw size={14} className="spin" /> : <Sparkles size={14} />}
+                  {isGenerating ? 'กำลังจัดเส้นทาง...' : '⚡ จัด Route อัตโนมัติ'}
+                </button>
 
-            {/* ADD MANUAL STOP BUTTON */}
-            {viewMode === 'route_map' && (
-              <button
-                type="button"
-                onClick={() => setIsAddStopModalOpen(true)}
-                style={{
-                  padding: '0.55rem 0.9rem',
-                  borderRadius: '8px',
-                  background: 'var(--bg-tertiary, #f1f5f9)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-color, #cbd5e1)',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <Plus size={15} /> เพิ่มจุดตรวจ
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddStopModalOpen(true)}
+                  style={{
+                    padding: '0.6rem 0.75rem',
+                    borderRadius: '8px',
+                    background: 'var(--bg-tertiary, #f1f5f9)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color, #cbd5e1)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Plus size={14} /> เพิ่มจุดตรวจ
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -1005,49 +1020,49 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
       ) : (
         /* ROUTE MAP VIEW (ORIGINAL CONTENT) */
         <>
-      {/* ORIGIN BANNER & SUMMARY METRICS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+          {/* ORIGIN BANNER & SUMMARY METRICS */}
+          <div className="qc-summary-grid">
         {/* 🏠 Origin Home Card */}
         <div style={{
           background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.15))',
           border: '1px solid rgba(16, 185, 129, 0.3)',
           borderRadius: '14px',
-          padding: '1rem',
+          padding: '0.85rem 1rem',
           display: 'flex',
           alignItems: 'flex-start',
-          gap: '0.85rem'
+          gap: '0.75rem'
         }}>
           <div style={{
-            width: '44px',
-            height: '44px',
-            borderRadius: '12px',
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
             background: '#10b981',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '22px',
+            fontSize: '20px',
             flexShrink: 0,
             boxShadow: '0 4px 10px rgba(16, 185, 129, 0.35)'
           }}>
             🏠
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                จุดเริ่มต้นประจำวัน (Origin)
+                จุดเริ่มต้นประจำวัน (ORIGIN)
               </span>
               <button
                 onClick={() => setIsOriginPickerOpen(true)}
-                style={{ border: 'none', background: 'transparent', color: '#047857', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                style={{ border: 'none', background: 'transparent', color: '#047857', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap', flexShrink: 0 }}
               >
                 ปรับเปลี่ยนจุด
               </button>
             </div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
+            <div style={{ fontSize: '0.925rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
               {selectedUserObj?.name || 'QC Inspector'}
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.3' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.3' }}>
               {currentPlan?.originAddress || selectedUserObj?.homeAddress || 'ยังไม่ได้ระบุที่อยู่บ้าน (ใช้พิกัดเริ่มต้นศูนย์กลาง กทม.)'}
             </div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.2)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.725rem', color: '#065f46', marginTop: '6px', fontWeight: 600 }}>
@@ -1061,39 +1076,36 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
           background: 'var(--card-bg, #ffffff)',
           border: '1px solid var(--border-color, #e5e7eb)',
           borderRadius: '14px',
-          padding: '1rem',
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'center'
+          padding: '0.85rem 0.5rem',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          alignItems: 'center',
+          textAlign: 'center'
         }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>จำนวนจุดตรวจ</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2563eb', marginTop: '2px' }}>
-              {currentPlan?.items?.length || 0} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>จุด</span>
+          <div style={{ padding: '0 0.25rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>จำนวนจุดตรวจ</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb', marginTop: '2px' }}>
+              {currentPlan?.items?.length || 0} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>จุด</span>
             </div>
-            <div style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 600 }}>
               สำเร็จ {currentPlan?.items?.filter(i => i.status === 'Completed').length || 0} / {currentPlan?.items?.length || 0}
             </div>
           </div>
 
-          <div style={{ width: '1px', height: '40px', background: 'var(--border-color, #e5e7eb)' }} />
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ระยะทางรวม</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0d9488', marginTop: '2px' }}>
-              {currentPlan?.totalEstimatedKm || 0} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)' }}>กม.</span>
+          <div style={{ borderLeft: '1px solid var(--border-color, #e5e7eb)', borderRight: '1px solid var(--border-color, #e5e7eb)', padding: '0 0.25rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ระยะทางรวม</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0d9488', marginTop: '2px' }}>
+              {Number(currentPlan?.totalEstimatedKm || 0).toFixed(1)} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>กม.</span>
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>จากจุด Origin</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>จาก Origin</div>
           </div>
 
-          <div style={{ width: '1px', height: '40px', background: 'var(--border-color, #e5e7eb)' }} />
-
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เวลาประเมินรวม</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f59e0b', marginTop: '2px' }}>
+          <div style={{ padding: '0 0.25rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เวลาประเมินรวม</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b', marginTop: '2px' }}>
               {currentPlan?.totalEstimatedDurationMin ? `~${Math.round(currentPlan.totalEstimatedDurationMin / 60)} ชม.` : '0 ชม.'}
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>เดินทาง + ตรวจงาน</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>เดินทาง+ตรวจ</div>
           </div>
         </div>
 
@@ -1101,26 +1113,26 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
         <div style={{
           background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
           borderRadius: '14px',
-          padding: '1rem',
+          padding: '0.85rem 1rem',
           color: 'white',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center'
         }}>
-          <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>นำทางทั้งวันแบบ Turn-by-Turn</div>
-          <div style={{ fontSize: '1.05rem', fontWeight: 700, margin: '2px 0 8px 0' }}>เปิด Google Maps ทั้ง Route</div>
+          <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>นำทางทั้งวันแบบ Turn-by-Turn</div>
+          <div style={{ fontSize: '0.95rem', fontWeight: 700, margin: '2px 0 6px 0' }}>เปิด Google Maps ทั้ง Route</div>
           <button
             type="button"
             onClick={openFullDayRouteGoogleMaps}
             disabled={!currentPlan?.items || currentPlan.items.length === 0}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.55rem 0.85rem',
               borderRadius: '8px',
               background: 'white',
               color: '#1e40af',
               border: 'none',
               fontWeight: 700,
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               cursor: currentPlan?.items?.length ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
@@ -1129,7 +1141,7 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
               opacity: currentPlan?.items?.length ? 1 : 0.6
             }}
           >
-            <Compass size={16} /> นำทางทั้งวัน (Google Maps)
+            <Compass size={15} /> นำทางทั้งวัน (Google Maps)
           </button>
         </div>
       </div>

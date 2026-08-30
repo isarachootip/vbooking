@@ -401,12 +401,6 @@ input, select, textarea {
     max-height: calc(100vh - 180px) !important;
   }
 
-  /* Grid listings adjustments */
-  div[style*="gridTemplateColumns"] {
-    /* Auto-collapse grid lists that default to wide templates on mobile */
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
-  }
-
   /* Team Directory Card Adjustments on Mobile */
   .team-member-card {
     padding: 1rem !important;
@@ -436,7 +430,8 @@ input, select, textarea {
 
   /* Add bottom padding so content doesn't hide behind bottom nav */
   .content-area {
-    padding-bottom: 5rem !important;
+    padding: 0.75rem !important;
+    padding-bottom: 5.5rem !important;
   }
 
   /* QC Daily Plan Mobile Layout */
@@ -452,7 +447,26 @@ input, select, textarea {
     display: none !important;
   }
   .qc-map-column {
-    height: 460px !important;
+    height: 440px !important;
+  }
+  .qc-toolbar-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+  .qc-full-mobile {
+    width: 100% !important;
+  }
+  .qc-grid-2-mobile {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+  .qc-summary-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
   }
   .header-title {
     font-size: 0.95rem !important;
@@ -467,6 +481,12 @@ input, select, textarea {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) minmax(340px, 1.2fr);
   gap: 1.25rem;
+}
+.qc-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 /* ─── Notification Bell ─── */
