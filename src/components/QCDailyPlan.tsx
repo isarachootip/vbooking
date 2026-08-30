@@ -1582,13 +1582,13 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
                 </div>
 
                 {/* ACTION BUTTONS BAR (MOBILE-OPTIMIZED) */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isCheckedIn ? '1fr 1.2fr 1.2fr' : '1fr 1fr 1fr', gap: '0.5rem' }}>
                   {/* 1. GOOGLE MAPS NAVIGATION */}
                   <button
                     type="button"
                     onClick={() => openGoogleMapsDirections(item, index)}
                     style={{
-                      padding: '0.55rem 0.6rem',
+                      padding: '0.55rem 0.5rem',
                       borderRadius: '8px',
                       background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                       color: 'white',
@@ -1605,35 +1605,59 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
                     <Compass size={14} /> นำทาง (Map)
                   </button>
 
-                  {/* 2. GPS CHECK-IN BUTTON */}
-                  <button
-                    type="button"
-                    disabled={checkingInItemId === item.id || isCompleted}
-                    onClick={() => handleGpsCheckIn(item)}
-                    style={{
-                      padding: '0.55rem 0.6rem',
-                      borderRadius: '8px',
-                      background: isCheckedIn ? '#0891b2' : 'linear-gradient(135deg, #0d9488, #059669)',
-                      color: 'white',
-                      border: 'none',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    {checkingInItemId === item.id ? (
-                      <RefreshCw size={14} className="spin" />
-                    ) : (
-                      <MapPin size={14} />
-                    )}
-                    {isCheckedIn ? 'เช็คอินแล้ว ✓' : 'Check-in (GPS)'}
-                  </button>
+                  {/* 2. GPS CHECK-IN / CHECK-OUT BUTTON */}
+                  {!isCheckedIn ? (
+                    <button
+                      type="button"
+                      disabled={checkingInItemId === item.id || isCompleted}
+                      onClick={() => handleGpsCheckIn(item)}
+                      style={{
+                        padding: '0.55rem 0.5rem',
+                        borderRadius: '8px',
+                        background: isCompleted ? '#e2e8f0' : 'linear-gradient(135deg, #0d9488, #059669)',
+                        color: isCompleted ? '#475569' : 'white',
+                        border: 'none',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: isCompleted ? 'default' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      {checkingInItemId === item.id ? (
+                        <RefreshCw size={14} className="spin" />
+                      ) : (
+                        <MapPin size={14} />
+                      )}
+                      {isCompleted ? 'เสร็จสิ้น ✓' : 'Check-in (GPS)'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateStatus(item, 'Completed')}
+                      style={{
+                        padding: '0.55rem 0.5rem',
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, #059669, #10b981)',
+                        color: 'white',
+                        border: 'none',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                      }}
+                    >
+                      <CheckCircle2 size={14} /> 🚪 Check-Out
+                    </button>
+                  )}
 
-                  {/* 3. QC INSPECTION / STATUS ACTION */}
+                  {/* 3. QC INSPECTION / VISIT RESULT ACTION */}
                   <button
                     type="button"
                     onClick={() => {
@@ -1657,11 +1681,11 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
                       }
                     }}
                     style={{
-                      padding: '0.55rem 0.6rem',
+                      padding: '0.55rem 0.5rem',
                       borderRadius: '8px',
-                      background: isCompleted ? '#e2e8f0' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-                      color: isCompleted ? '#475569' : 'white',
-                      border: 'none',
+                      background: isCompleted ? 'rgba(139, 92, 246, 0.15)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                      color: isCompleted ? '#6d28d9' : 'white',
+                      border: isCompleted ? '1px solid rgba(139, 92, 246, 0.3)' : 'none',
                       fontSize: '0.75rem',
                       fontWeight: 700,
                       cursor: 'pointer',
@@ -1671,7 +1695,7 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
                       gap: '4px'
                     }}
                   >
-                    <CheckSquare size={14} /> {isCompleted ? 'ผล QC ✓' : 'ตรวจ QC'}
+                    <CheckSquare size={14} /> {isCompleted ? 'ดูผล Visit' : '📝 บันทึก Visit'}
                   </button>
                 </div>
 

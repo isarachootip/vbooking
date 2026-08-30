@@ -566,19 +566,30 @@ export const SiteCheckInOut = ({
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1200,
-          padding: '1rem'
+          padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '0.5rem' : '1rem'
         }}>
-          <div className="glass-panel" style={{ padding: '1.75rem 2rem', width: '560px', maxWidth: '95%', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
+          <div className="glass-panel" style={{
+            padding: typeof window !== 'undefined' && window.innerWidth <= 768 ? '1.25rem 1rem' : '1.75rem 2rem',
+            width: typeof window !== 'undefined' && window.innerWidth <= 768 ? '100vw' : '560px',
+            maxWidth: '100%',
+            maxHeight: typeof window !== 'undefined' && window.innerWidth <= 768 ? '96dvh' : '90vh',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.1rem',
+            background: 'var(--bg-secondary)',
+            borderRadius: typeof window !== 'undefined' && window.innerWidth <= 768 ? '14px' : 'var(--radius-lg)'
+          }}>
             
             <div className="flex-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {modalMode === 'checkin' ? '📍 บันทึก Check-In เข้าปฏิบัติงาน' : modalMode === 'checkout' ? '🚪 บันทึก Check-Out ออกจากงาน' : '✏️ แก้ไขข้อมูลเข้า-ออกงาน'}
               </h2>
             </div>
 
             <form onSubmit={handleSaveCheckIn} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth <= 768 ? '1fr' : '1fr 1fr', gap: '0.85rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                   <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ช่าง / พนักงาน *</label>
                   <select
@@ -605,7 +616,7 @@ export const SiteCheckInOut = ({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.85rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth <= 768 ? '1fr' : '1fr 1fr 1fr', gap: '0.85rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                   <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>วันที่ *</label>
                   <CustomDateInput 

@@ -688,9 +688,24 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
   const attachedGeneralCount = photos.filter(Boolean).length;
   const attachedRoomPhotoCount = roomPlans.filter(r => Boolean(r.photo)).length;
   const totalPhotosCount = attachedGeneralCount + attachedRoomPhotoCount;
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1500, padding: '1rem', overflowY: 'auto' }}>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.75)',
+      backdropFilter: 'blur(6px)',
+      display: 'flex',
+      alignItems: isMobile ? 'stretch' : 'flex-start',
+      justifyContent: 'center',
+      zIndex: 1500,
+      padding: isMobile ? 0 : '1rem',
+      overflowY: 'auto'
+    }}>
       {toast && (
         <div style={{ position: 'fixed', top: '1.25rem', right: '1.25rem', zIndex: 2000, background: toast.type === 'success' ? '#10b981' : '#ef4444', color: 'white', padding: '0.75rem 1.25rem', borderRadius: '10px', fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
           {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -753,30 +768,58 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
         </div>
       )}
 
-      <div style={{ background: 'var(--bg-primary)', borderRadius: '16px', border: '1px solid var(--border-color)', width: '840px', maxWidth: '96vw', boxShadow: '0 25px 60px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', margin: 'auto' }}>
+      <div style={{
+        background: 'var(--bg-primary)',
+        borderRadius: isMobile ? '0' : '16px',
+        border: isMobile ? 'none' : '1px solid var(--border-color)',
+        width: isMobile ? '100vw' : '840px',
+        maxWidth: isMobile ? '100vw' : '96vw',
+        height: isMobile ? '100dvh' : 'auto',
+        maxHeight: isMobile ? '100dvh' : '90vh',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
+        display: 'flex',
+        flexDirection: 'column',
+        margin: isMobile ? '0' : 'auto',
+        overflow: 'hidden'
+      }}>
         {/* Header */}
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color)', background: 'linear-gradient(135deg,#1e40af,#7c3aed)', borderRadius: '16px 16px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{
+          padding: isMobile ? '0.75rem 1rem' : '1rem 1.25rem',
+          borderBottom: '1px solid var(--border-color)',
+          background: 'linear-gradient(135deg,#1e40af,#7c3aed)',
+          borderRadius: isMobile ? '0' : '16px 16px 0 0',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexShrink: 0
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <div style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '0.5rem', borderRadius: '8px', display: 'flex' }}><ClipboardCheck size={20} /></div>
+            <div style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '0.45rem', borderRadius: '8px', display: 'flex' }}>
+              <ClipboardCheck size={isMobile ? 18 : 20} />
+            </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'white' }}>บันทึก Visit Plan & ผลสำรวจหน้างานแยกตามห้อง</h3>
-              <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)' }}>
+              <h3 style={{ margin: 0, fontSize: isMobile ? '0.95rem' : '1.05rem', fontWeight: 800, color: 'white' }}>
+                บันทึกผลสำรวจหน้างาน (Visit Record)
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>
                 {lead.customer_name} · {lead.job_type || ''}{lead.branch ? ' · ' + lead.branch : ''}
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', cursor: 'pointer', padding: '0.35rem', borderRadius: '6px', display: 'flex' }}><X size={20} /></button>
+          <button type="button" onClick={onClose} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', padding: '0.4rem', borderRadius: '8px', display: 'flex' }}>
+            <X size={20} />
+          </button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)', flexShrink: 0 }}>
           {([{ k: 'new' as const, l: '+ บันทึก Visit Plan ใหม่' }, { k: 'history' as const, l: `ประวัติการ Visit (${results.length})` }]).map(t => (
-            <button key={t.k} type="button" onClick={() => setTab(t.k)} style={{ flex: 1, padding: '0.75rem 1rem', border: 'none', background: tab === t.k ? 'var(--bg-primary)' : 'transparent', color: tab === t.k ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: tab === t.k ? 700 : 500, fontSize: '0.83rem', cursor: 'pointer', borderBottom: tab === t.k ? '2px solid var(--accent-primary)' : '2px solid transparent' }}>{t.l}</button>
+            <button key={t.k} type="button" onClick={() => setTab(t.k)} style={{ flex: 1, padding: '0.65rem 0.75rem', border: 'none', background: tab === t.k ? 'var(--bg-primary)' : 'transparent', color: tab === t.k ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: tab === t.k ? 700 : 500, fontSize: '0.8rem', cursor: 'pointer', borderBottom: tab === t.k ? '2px solid var(--accent-primary)' : '2px solid transparent' }}>{t.l}</button>
           ))}
         </div>
 
         {/* Body */}
-        <div style={{ padding: '1.25rem', overflowY: 'auto', maxHeight: '75vh' }}>
+        <div style={{ padding: isMobile ? '0.85rem' : '1.25rem', overflowY: 'auto', flex: 1 }}>
           {tab === 'new' && (
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
               {/* SECTION 1: VISIT INFO */}
