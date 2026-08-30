@@ -69,6 +69,98 @@ async function getGoogleDrivingMetrics(originLat, originLng, destLat, destLng) {
   return { distanceKm: fallbackDist, durationMin: estimateDriveTimeMin(fallbackDist), source: 'haversine_fallback' };
 }
 
+// Helper: Extract branch name from lead contact or assignee
+function getLeadBranchName(lead, allUsers) {
+  if (lead.sales_contact_id && allUsers) {
+    const u = allUsers.find(x => x.id === lead.sales_contact_id);
+    if (u && u.assigned_branches && u.assigned_branches.length > 0) return u.assigned_branches[0];
+    if (u && u.name) {
+      const m = u.name.match(/\(([^)]+)\)/);
+      if (m) return m[1];
+    }
+  }
+  if (lead.appointment_assignee && allUsers) {
+    const u = allUsers.find(x => x.name === lead.appointment_assignee || x.id === lead.appointment_assignee);
+    if (u && u.assigned_branches && u.assigned_branches.length > 0) return u.assigned_branches[0];
+    const m = lead.appointment_assignee.match(/\(([^)]+)\)/);
+    if (m) return m[1];
+  }
+  return '';
+}
+
+// Helper: Match lead to a specific QC inspector based on direct assignment, followups, branch, and zone
+function isLeadMatchedToQc(lead, qcUser, allUsers, followups, allQcUsers) {
+  // Direct assignment
+  if (lead.surveyor_id && (lead.surveyor_id === qcUser.id || lead.surveyor_id === qcUser.name)) return true;
+  if (lead.appointment_assignee && (lead.appointment_assignee === qcUser.name || lead.appointment_assignee === qcUser.id)) return true;
+  if (lead.appointment_assignee && qcUser.name && lead.appointment_assignee.startsWith(qcUser.name.split(' ')[0])) return true;
+
+  // Check followups
+  if (followups && Array.isArray(followups)) {
+    const fws = followups.filter(f => f.lead_id === lead.id);
+    for (const f of fws) {
+      if (f.assignee_name && (f.assignee_name === qcUser.name || f.assignee_name === qcUser.id || f.assignee_name.startsWith(qcUser.name.split(' ')[0]))) return true;
+      if (f.created_by && (f.created_by === qcUser.name || f.created_by.includes(qcUser.name))) return true;
+    }
+  }
+
+  // If lead is explicitly assigned to another QC, do NOT match this QC
+  if (allQcUsers && Array.isArray(allQcUsers)) {
+    const otherQc = allQcUsers.find(o => o.id !== qcUser.id && (
+      lead.surveyor_id === o.id || 
+      lead.surveyor_id === o.name || 
+      lead.appointment_assignee === o.name || 
+      (lead.appointment_assignee && lead.appointment_assignee.startsWith(o.name.split(' ')[0]))
+    ));
+    if (otherQc) return false;
+  }
+
+  // Branch match
+  const branchName = getLeadBranchName(lead, allUsers);
+  if (branchName && qcUser.assigned_branches && Array.isArray(qcUser.assigned_branches)) {
+    const cleanBranch = branchName.replace(/^สาขา/, '').trim();
+    const hasBranch = qcUser.assigned_branches.some(b => {
+      const cleanB = b.replace(/^สาขา/, '').trim();
+      return cleanB === cleanBranch || b.includes(cleanBranch) || branchName.includes(cleanB);
+    });
+    if (hasBranch) return true;
+  }
+
+  // Address match
+  if (lead.customer_address && qcUser.assigned_branches && Array.isArray(qcUser.assigned_branches)) {
+    const addr = lead.customer_address.toLowerCase();
+    const hasAddrMatch = qcUser.assigned_branches.some(b => {
+      const cleanB = b.replace(/^สาขา/, '').trim().toLowerCase();
+      return cleanB.length >= 3 && addr.includes(cleanB);
+    });
+    if (hasAddrMatch) return true;
+  }
+
+  return false;
+}
+
+// Helper: Parse time slot index
+function getSlotIndexFromTimeStr(timeStr) {
+  if (!timeStr) return -1;
+  const str = timeStr.trim();
+  if (str.includes('09:00') || str.includes('ช่วงเช้า')) return 0;
+  if (str.includes('11:30') || str.includes('ช่วงเที่ยง')) return 1;
+  if (str.includes('14:00') || str.includes('ช่วงบ่าย')) return 2;
+  if (str.includes('16:30') || str.includes('ช่วงเย็น')) return 3;
+
+  const m = str.match(/(\d{1,2}):(\d{2})/);
+  if (m) {
+    const hour = parseInt(m[1], 10);
+    const min = parseInt(m[2], 10);
+    const totalMin = hour * 60 + min;
+    if (totalMin < 11 * 60) return 0;
+    if (totalMin < 13 * 60 + 45) return 1;
+    if (totalMin < 16 * 60 + 15) return 2;
+    return 3;
+  }
+  return -1;
+}
+
 // 1. Get Daily Plans (with nested items)
 exports.getDailyPlans = async (req, res) => {
   try {
@@ -187,7 +279,13 @@ exports.generateDailyPlan = async (req, res) => {
       return res.status(400).json({ error: 'QC Inspector ID is required' });
     }
 
-    const targetDate = plan_date || new Date().toISOString().split('T')[0];
+    let targetDate = (plan_date || new Date().toISOString().split('T')[0]).trim();
+    if (targetDate.includes('/')) {
+      const parts = targetDate.split('/');
+      if (parts.length === 3) {
+        targetDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+    }
     const now = new Date().toISOString();
 
     // 1. Fetch QC User details for Home Origin
@@ -242,33 +340,46 @@ exports.generateDailyPlan = async (req, res) => {
 
     // Auto-fetch GM approved leads/visits if requested or if candidateSites is empty
     if (auto_fetch_approved !== false) {
-      // Find leads with approved site visits or appointments on targetDate assigned to this QC or unassigned
-      const approvedLeadsRes = await pool.query(
-        `SELECT l.* 
-         FROM leads l
-         WHERE (
-           (l.site_visit_approval_status = 'Approved' OR l.status IN ('Qualified', 'Approved', 'New', 'Contacted'))
-           AND (l.sales_contact_id = $1 OR l.surveyor_id = $1 OR l.appointment_assignee = $2 OR l.sales_contact_id IS NULL)
-           AND (l.appointment_date LIKE $3 OR l.survey_date LIKE $3 OR l.updated_at LIKE $3 OR l.created_at LIKE $3)
-           AND (l.customer_latitude IS NOT NULL AND l.customer_longitude IS NOT NULL)
-         )
-         LIMIT 10`,
-        [qc_id, qcUser.name, `${targetDate}%`]
+      // Fetch all users and followups for matching
+      const allUsersRes = await pool.query('SELECT id, name, department, global_role, assigned_branches, service_zones FROM users');
+      const allUsers = allUsersRes.rows;
+
+      const allQcUsers = allUsers.filter(u => 
+        (u.department && u.department.toLowerCase().includes('qc')) ||
+        (u.global_role && u.global_role.toLowerCase().includes('qc')) ||
+        (u.name && u.name.startsWith('QC'))
       );
 
-      approvedLeadsRes.rows.forEach(l => {
+      const followupsRes = await pool.query(
+        `SELECT * FROM lead_followups WHERE (appointment_date LIKE $1 OR created_at LIKE $1)`,
+        [`${targetDate}%`]
+      );
+
+      // Find all leads on targetDate or GM approved leads
+      const allLeadsRes = await pool.query(
+        `SELECT * FROM leads 
+         WHERE (appointment_date LIKE $1 OR survey_date LIKE $1 OR (site_visit_approval_status = 'Approved' AND updated_at LIKE $1))`,
+        [`${targetDate}%`]
+      );
+
+      const matchedLeads = allLeadsRes.rows.filter(l => isLeadMatchedToQc(l, qcUser, allUsers, followupsRes.rows, allQcUsers));
+
+      matchedLeads.forEach(l => {
         const isDuplicate = candidateSites.some(c => c.leadId === l.id);
-        if (!isDuplicate && l.customer_latitude && l.customer_longitude) {
+        if (!isDuplicate) {
+          const lat = (l.customer_latitude != null && !isNaN(Number(l.customer_latitude))) ? parseFloat(l.customer_latitude) : originLat;
+          const lng = (l.customer_longitude != null && !isNaN(Number(l.customer_longitude))) ? parseFloat(l.customer_longitude) : originLng;
+
           candidateSites.push({
             id: `item_ld_${l.id}`,
             leadId: l.id,
             projectId: l.project_id || null,
-            siteName: `ตรวจหน้างาน: ${l.customer_name}`,
-            customerName: l.customer_name,
+            siteName: `ตรวจหน้างาน: ${l.customer_name || 'ลูกค้า'}`,
+            customerName: l.customer_name || '',
             customerPhone: l.customer_phone || '',
             siteAddress: l.customer_address || '',
-            siteLatitude: parseFloat(l.customer_latitude),
-            siteLongitude: parseFloat(l.customer_longitude),
+            siteLatitude: lat,
+            siteLongitude: lng,
             status: 'Pending',
             notes: l.notes || l.site_visit_approval_notes || ''
           });
@@ -295,8 +406,8 @@ exports.generateDailyPlan = async (req, res) => {
             customerName: p.customer_name || p.name,
             customerPhone: p.customer_phone || '',
             siteAddress: p.address || '',
-            siteLatitude: parseFloat(p.site_latitude),
-            siteLongitude: parseFloat(p.site_longitude),
+            siteLatitude: parseFloat(p.site_latitude) || originLat,
+            siteLongitude: parseFloat(p.site_longitude) || originLng,
             status: 'Pending',
             notes: p.description || ''
           });
@@ -346,7 +457,7 @@ exports.generateDailyPlan = async (req, res) => {
       const actualDistanceKm = drivingMetrics.distanceKm || minDistance;
       totalKm += actualDistanceKm;
 
-      const uniqueItemId = `qcit_${planId}_${nextStop.leadId || nextStop.projectId || 'stop'}_${seq}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+      const uniqueItemId = `qcit_${Date.now().toString(36)}_${seq}_${Math.random().toString(36).substring(2, 7)}`;
 
       optimizedItems.push({
         id: uniqueItemId,
@@ -730,95 +841,10 @@ exports.getTeamSchedule = async (req, res) => {
       [`${targetDate}%`]
     );
 
-    const getLeadBranchName = (lead) => {
-      if (lead.sales_contact_id) {
-        const u = allUsers.find(x => x.id === lead.sales_contact_id);
-        if (u && u.assigned_branches && u.assigned_branches.length > 0) return u.assigned_branches[0];
-        if (u && u.name) {
-          const m = u.name.match(/\(([^)]+)\)/);
-          if (m) return m[1];
-        }
-      }
-      if (lead.appointment_assignee) {
-        const u = allUsers.find(x => x.name === lead.appointment_assignee || x.id === lead.appointment_assignee);
-        if (u && u.assigned_branches && u.assigned_branches.length > 0) return u.assigned_branches[0];
-        const m = lead.appointment_assignee.match(/\(([^)]+)\)/);
-        if (m) return m[1];
-      }
-      return '';
-    };
-
-    const isLeadMatchedToQc = (lead, qcUser) => {
-      // Direct assignment
-      if (lead.surveyor_id && (lead.surveyor_id === qcUser.id || lead.surveyor_id === qcUser.name)) return true;
-      if (lead.appointment_assignee && (lead.appointment_assignee === qcUser.name || lead.appointment_assignee === qcUser.id)) return true;
-      if (lead.appointment_assignee && qcUser.name && lead.appointment_assignee.startsWith(qcUser.name.split(' ')[0])) return true;
-
-      // Check followups
-      const fws = followupsRes.rows.filter(f => f.lead_id === lead.id);
-      for (const f of fws) {
-        if (f.assignee_name && (f.assignee_name === qcUser.name || f.assignee_name === qcUser.id || f.assignee_name.startsWith(qcUser.name.split(' ')[0]))) return true;
-        if (f.created_by && (f.created_by === qcUser.name || f.created_by.includes(qcUser.name))) return true;
-      }
-
-      // If lead is explicitly assigned to another QC, do NOT match this QC
-      const otherQc = usersRes.rows.find(o => o.id !== qcUser.id && (
-        lead.surveyor_id === o.id || 
-        lead.surveyor_id === o.name || 
-        lead.appointment_assignee === o.name || 
-        (lead.appointment_assignee && lead.appointment_assignee.startsWith(o.name.split(' ')[0]))
-      ));
-      if (otherQc) return false;
-
-      // Branch match
-      const branchName = getLeadBranchName(lead);
-      if (branchName && qcUser.assigned_branches && Array.isArray(qcUser.assigned_branches)) {
-        const cleanBranch = branchName.replace(/^สาขา/, '').trim();
-        const hasBranch = qcUser.assigned_branches.some(b => {
-          const cleanB = b.replace(/^สาขา/, '').trim();
-          return cleanB === cleanBranch || b.includes(cleanBranch) || branchName.includes(cleanB);
-        });
-        if (hasBranch) return true;
-      }
-
-      // Address match
-      if (lead.customer_address && qcUser.assigned_branches) {
-        const addr = lead.customer_address.toLowerCase();
-        const hasAddrMatch = qcUser.assigned_branches.some(b => {
-          const cleanB = b.replace(/^สาขา/, '').trim().toLowerCase();
-          return cleanB.length >= 3 && addr.includes(cleanB);
-        });
-        if (hasAddrMatch) return true;
-      }
-
-      return false;
-    };
-
-    const getSlotIndexFromTimeStr = (timeStr) => {
-      if (!timeStr) return -1;
-      const str = timeStr.trim();
-      if (str.includes('09:00') || str.includes('ช่วงเช้า')) return 0;
-      if (str.includes('11:30') || str.includes('ช่วงเที่ยง')) return 1;
-      if (str.includes('14:00') || str.includes('ช่วงบ่าย')) return 2;
-      if (str.includes('16:30') || str.includes('ช่วงเย็น')) return 3;
-
-      const m = str.match(/(\d{1,2}):(\d{2})/);
-      if (m) {
-        const hour = parseInt(m[1], 10);
-        const min = parseInt(m[2], 10);
-        const totalMin = hour * 60 + min;
-        if (totalMin < 11 * 60) return 0;
-        if (totalMin < 13 * 60 + 45) return 1;
-        if (totalMin < 16 * 60 + 15) return 2;
-        return 3;
-      }
-      return -1;
-    };
-
     // 6. Map schedule for each QC user
     const teamSchedule = usersRes.rows.map(u => {
       const userPlanItems = planItemsRes.rows.filter(it => it.qc_id === u.id);
-      const userLeads = leadsRes.rows.filter(l => isLeadMatchedToQc(l, u));
+      const userLeads = leadsRes.rows.filter(l => isLeadMatchedToQc(l, u, allUsers, followupsRes.rows, usersRes.rows));
 
       // Build slot schedule
       const slots = standardSlots.map((s, idx) => {

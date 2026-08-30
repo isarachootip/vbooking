@@ -754,46 +754,75 @@ const initDB = async () => {
 
       -- Phase: QC Daily Planning & Origin Route Optimization
       CREATE TABLE IF NOT EXISTS qc_daily_plans (
-        id                  VARCHAR(50) PRIMARY KEY,
-        qc_id               VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        id                  VARCHAR(150) PRIMARY KEY,
+        qc_id               VARCHAR(150) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         plan_date           VARCHAR(50) NOT NULL,
         origin_latitude     NUMERIC NOT NULL,
         origin_longitude    NUMERIC NOT NULL,
         origin_address      TEXT,
         total_estimated_km  NUMERIC DEFAULT 0,
         total_estimated_duration_min INTEGER DEFAULT 0,
-        status              VARCHAR(50) DEFAULT 'Confirmed',
+        status              VARCHAR(100) DEFAULT 'Confirmed',
         notes               TEXT,
-        created_at          VARCHAR(50) NOT NULL,
-        updated_at          VARCHAR(50) NOT NULL,
-        created_by          VARCHAR(50)
+        created_at          VARCHAR(100) NOT NULL,
+        updated_at          VARCHAR(100) NOT NULL,
+        created_by          VARCHAR(150)
       );
       CREATE INDEX IF NOT EXISTS idx_qc_daily_plans_qc_date ON qc_daily_plans(qc_id, plan_date);
 
       CREATE TABLE IF NOT EXISTS qc_plan_items (
-        id                  VARCHAR(50) PRIMARY KEY,
-        plan_id             VARCHAR(50) NOT NULL REFERENCES qc_daily_plans(id) ON DELETE CASCADE,
-        lead_id             VARCHAR(50) REFERENCES leads(id) ON DELETE SET NULL,
-        project_id          VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL,
+        id                  VARCHAR(150) PRIMARY KEY,
+        plan_id             VARCHAR(150) NOT NULL REFERENCES qc_daily_plans(id) ON DELETE CASCADE,
+        lead_id             VARCHAR(150) REFERENCES leads(id) ON DELETE SET NULL,
+        project_id          VARCHAR(150) REFERENCES projects(id) ON DELETE SET NULL,
         sequence_order      INTEGER NOT NULL DEFAULT 1,
-        time_slot           VARCHAR(50),
-        site_name           VARCHAR(200) NOT NULL,
-        customer_name       VARCHAR(150),
-        customer_phone      VARCHAR(50),
+        time_slot           VARCHAR(100),
+        site_name           VARCHAR(255) NOT NULL,
+        customer_name       VARCHAR(255),
+        customer_phone      VARCHAR(100),
         site_address        TEXT,
         site_latitude       NUMERIC NOT NULL,
         site_longitude      NUMERIC NOT NULL,
         estimated_distance_from_prev_km NUMERIC DEFAULT 0,
-        status              VARCHAR(50) DEFAULT 'Pending',
-        check_in_time       VARCHAR(50),
-        check_out_time      VARCHAR(50),
+        status              VARCHAR(100) DEFAULT 'Pending',
+        check_in_time       VARCHAR(100),
+        check_out_time      VARCHAR(100),
         actual_check_in_lat NUMERIC,
         actual_check_in_lng NUMERIC,
-        qc_inspection_id    VARCHAR(50) REFERENCES project_qc_inspections(id) ON DELETE SET NULL,
+        qc_inspection_id    VARCHAR(150) REFERENCES project_qc_inspections(id) ON DELETE SET NULL,
         notes               TEXT,
-        created_at          VARCHAR(50) NOT NULL
+        created_at          VARCHAR(100) NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_qc_plan_items_plan_id ON qc_plan_items(plan_id);
+
+      -- Ensure existing tables have expanded column lengths
+      await pool.query(`
+        DO $$ 
+        BEGIN
+          BEGIN
+            ALTER TABLE qc_daily_plans ALTER COLUMN id TYPE VARCHAR(150);
+            ALTER TABLE qc_daily_plans ALTER COLUMN qc_id TYPE VARCHAR(150);
+            ALTER TABLE qc_daily_plans ALTER COLUMN created_by TYPE VARCHAR(150);
+            ALTER TABLE qc_daily_plans ALTER COLUMN status TYPE VARCHAR(100);
+
+            ALTER TABLE qc_plan_items ALTER COLUMN id TYPE VARCHAR(150);
+            ALTER TABLE qc_plan_items ALTER COLUMN plan_id TYPE VARCHAR(150);
+            ALTER TABLE qc_plan_items ALTER COLUMN lead_id TYPE VARCHAR(150);
+            ALTER TABLE qc_plan_items ALTER COLUMN project_id TYPE VARCHAR(150);
+            ALTER TABLE qc_plan_items ALTER COLUMN time_slot TYPE VARCHAR(100);
+            ALTER TABLE qc_plan_items ALTER COLUMN site_name TYPE VARCHAR(255);
+            ALTER TABLE qc_plan_items ALTER COLUMN customer_name TYPE VARCHAR(255);
+            ALTER TABLE qc_plan_items ALTER COLUMN customer_phone TYPE VARCHAR(100);
+            ALTER TABLE qc_plan_items ALTER COLUMN status TYPE VARCHAR(100);
+            ALTER TABLE qc_plan_items ALTER COLUMN qc_inspection_id TYPE VARCHAR(150);
+            ALTER TABLE qc_plan_items ALTER COLUMN check_in_time TYPE VARCHAR(100);
+            ALTER TABLE qc_plan_items ALTER COLUMN check_out_time TYPE VARCHAR(100);
+            ALTER TABLE qc_plan_items ALTER COLUMN created_at TYPE VARCHAR(100);
+          EXCEPTION WHEN others THEN
+            -- Ignore if table doesn't exist yet
+          END;
+        END $$;
+      `);
 
       -- Customers Master Table
       CREATE TABLE IF NOT EXISTS customers (
