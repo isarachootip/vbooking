@@ -3,9 +3,10 @@ import {
   FileText, Plus, Search, Trash2, Printer, Save, CheckCircle, 
   ArrowUpRight, Eye, RefreshCw, DollarSign, Calendar, User as UserIcon, 
   Building, Phone, MapPin, Tag, ListPlus, X, Check, FileCheck, Layers, Sparkles, Upload, 
-  Link2, Share2, Send, ExternalLink, ShieldCheck
+  Link2, Share2, Send, ExternalLink, ShieldCheck, MoreHorizontal, ChevronRight, CheckCircle2, Clock
 } from 'lucide-react';
 import { QuotationScanModal } from './QuotationScanModal';
+import { PaymentModal } from './PaymentModal';
 import { CustomDateInput } from './CustomDateInput';
 import { formatToDDMMYYYY } from '../utils';
 import type { ServicePriceItem, User } from '../types';
@@ -34,6 +35,9 @@ interface Quotation {
   customer_phone?: string;
   customer_address?: string;
   lead_job_type?: string;
+  lead_branch?: string;
+  lead_status?: string | null;
+  lead_project_id?: string | null;
   project_name?: string;
   issue_date: string;
   valid_until?: string | null;
@@ -51,6 +55,8 @@ interface Quotation {
   customer_signed_at?: string | null;
   customer_signed_name?: string | null;
   customer_signed_ip?: string | null;
+  payment_count?: number;
+  total_paid?: number;
 }
 
 const DEFAULT_TERMS_PRESETS = [
@@ -74,11 +80,14 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  // Modal States
+  // Modal & Action Menu States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [previewQuotation, setPreviewQuotation] = useState<Quotation | null>(null);
+  const [selectedPaymentQuotation, setSelectedPaymentQuotation] = useState<Quotation | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
 
   const handleCopySignLink = (quo: any) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -451,21 +460,47 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
   };
 
   const handleConvert = async (id: string) => {
-    if (!window.confirm('ระบบจะสร้างโครงการใหม่และสร้าง Tasks จากรายการใบเสนอราคา ยืนยันดำเนินการหรือไม่?')) return;
+    const quo = quotations.find(q => q.id === id);
+    if (!quo) return;
+
+    // Check if quotation is already converted
+    if (quo.status === 'Converted' || quo.project_id) {
+      alert(`ใบเสนอราคานี้ได้ถูกแปลงเป็นโครงการแล้ว (รหัสโครงการ: ${quo.project_id || '-'})`);
+      return;
+    }
+
+    // Check if Lead is already converted via another quotation or lead flow
+    if (quo.lead_project_id || quo.lead_status === 'Converted') {
+      alert(`⚠️ Lead รายนี้ (${quo.customer_name || 'ลูกค้า'}) ได้ถูกแปลงเป็นโครงการไปแล้ว (รหัสโครงการ: ${quo.lead_project_id || '-'}) ไม่สามารถสร้างโครงการซ้ำได้`);
+      return;
+    }
+
+    // Financial Gatekeeper: Check if payment slip has been recorded
+    if (!quo.payment_count || Number(quo.payment_count) === 0) {
+      if (window.confirm('⚠️ ยังไม่มีการบันทึกสลิปและรับชำระเงินมัดจำ (Down Payment)\n\nตามขั้นตอนที่ถูกต้อง คุณต้องบันทึกสลิปโอนเงินมัดจำก่อนแปลงเป็นโครงการติดตั้ง\n\nต้องการเปิดหน้าต่างบันทึกมัดจำและแนบรูปสลิปตอนนี้หรือไม่?')) {
+        setSelectedPaymentQuotation(quo);
+        setIsPaymentModalOpen(true);
+      }
+      return;
+    }
+
+    if (!window.confirm(`ยืนยันการแปลงใบเสนอราคา ${quo.quotation_number} เป็นโครงการติดตั้งใหม่หรือไม่?\n(ยอดชำระมัดจำสะสมแล้ว: ฿${Number(quo.total_paid || 0).toLocaleString()})`)) return;
+
     try {
       const res = await fetch(`/api/quotations/${id}/convert`, {
         method: 'POST'
       });
       if (res.ok) {
         const data = await res.json();
-        alert(`สำเร็จ! สร้างโปรเจกต์ใหม่เรียบร้อยแล้ว รหัสโครงการ: ${data.project_id}`);
+        alert(`🎉 สำเร็จ! สร้างโปรเจกต์ใหม่เรียบร้อยแล้ว\nรหัสโครงการ: ${data.project_id}`);
         fetchAllData();
       } else {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         alert(err.error || 'เกิดข้อผิดพลาดในการแปลงใบเสนอราคา');
       }
     } catch (err) {
       console.error(err);
+      alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์');
     }
   };
 
@@ -506,8 +541,9 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
   // Stats
   const totalCount = quotations.length;
   const totalSum = quotations.reduce((acc, q) => acc + Number(q.grand_total || 0), 0);
-  const pendingCount = quotations.filter(q => q.status === 'Draft' || q.status === 'Pending').length;
-  const approvedCount = quotations.filter(q => q.status === 'Approved').length;
+  const draftCount = quotations.filter(q => q.status === 'Draft').length;
+  const pendingCount = quotations.filter(q => q.status === 'Pending').length;
+  const approvedCount = quotations.filter(q => q.status === 'Approved' || q.status === 'Accepted').length;
   const convertedCount = quotations.filter(q => q.status === 'Converted').length;
 
   return (
@@ -525,7 +561,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                 ระบบออกใบเสนอราคา (Quotation & BOQ)
               </h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
-                ออกใบเสนอราคามาตรฐาน ดึงราคากลาง Price Book จัดการข้อกำหนดแบบ Bullet Points และแปลงเป็นโครงการทันที
+                ควบคุมขั้นตอนตั้งแต่ร่างบิล ส่งลูกค้าเซ็นต์ออนไลน์ อนุมัติ และแปลงเป็นโครงการอัตโนมัติ
               </p>
             </div>
           </div>
@@ -606,7 +642,9 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>มูลค่ารวมทั้งสิ้น</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>฿{totalSum.toLocaleString()}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>
+              ฿{Number(totalSum || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
           </div>
         </div>
 
@@ -615,8 +653,8 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
             <FileCheck size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>รอดำเนินการ / ร่าง</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f59e0b' }}>{pendingCount} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>ฉบับ</span></div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ร่างบิล / รอลูกค้า</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f59e0b' }}>{draftCount + pendingCount} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>ฉบับ</span></div>
           </div>
         </div>
 
@@ -631,28 +669,50 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
         </div>
       </div>
 
-      {/* Filter and Search Controls */}
-      <div className="glass-panel" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {['ALL', 'Draft', 'Pending', 'Approved', 'Converted'].map(st => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              style={{
-                padding: '0.4rem 0.9rem',
-                borderRadius: '6px',
-                border: 'none',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                background: statusFilter === st ? 'var(--accent-primary)' : 'var(--bg-secondary)',
-                color: statusFilter === st ? 'white' : 'var(--text-secondary)',
-                transition: 'all 0.2s'
-              }}
-            >
-              {st === 'ALL' ? 'ทั้งหมด' : st === 'Draft' ? 'ร่างบิล (Draft)' : st === 'Pending' ? 'รอลูกค้า (Pending)' : st === 'Approved' ? 'อนุมัติแล้ว (Approved)' : 'แปลงเป็นโปรเจกต์ (Converted)'}
-            </button>
-          ))}
+      {/* Filter and Search Controls (Pipeline Step Tabs) */}
+      <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {[
+            { key: 'ALL', label: 'ทั้งหมด', count: totalCount },
+            { key: 'Draft', label: '1. ร่างบิล', count: draftCount },
+            { key: 'Pending', label: '2. รอลูกค้า', count: pendingCount },
+            { key: 'Approved', label: '3. อนุมัติแล้ว', count: approvedCount },
+            { key: 'Converted', label: '4. แปลงโปรเจกต์', count: convertedCount }
+          ].map(tab => {
+            const isActive = statusFilter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                style={{
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: '8px',
+                  border: isActive ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                  fontSize: '0.82rem',
+                  fontWeight: isActive ? 700 : 600,
+                  cursor: 'pointer',
+                  background: isActive ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                  color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span>{tab.label}</span>
+                <span style={{
+                  fontSize: '0.72rem',
+                  padding: '0.1rem 0.4rem',
+                  borderRadius: '10px',
+                  background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--bg-tertiary)',
+                  color: isActive ? '#ffffff' : 'var(--text-muted)',
+                  fontWeight: 700
+                }}>
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <div style={{ position: 'relative', width: '280px' }}>
@@ -664,7 +724,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
             onChange={e => setSearchTerm(e.target.value)}
             style={{ 
               width: '100%', 
-              padding: '0.5rem 0.75rem 0.5rem 2.25rem', 
+              padding: '0.45rem 0.75rem 0.45rem 2.25rem', 
               borderRadius: '6px', 
               border: '1px solid var(--border-color)', 
               background: 'var(--bg-secondary)', 
@@ -680,19 +740,17 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--bg-tertiary)' }}>
-              <th style={{ padding: '1rem', fontWeight: 700 }}>เลขที่บิล</th>
-              <th style={{ padding: '1rem', fontWeight: 700 }}>ลูกค้า / โครงการ</th>
-              <th style={{ padding: '1rem', fontWeight: 700 }}>วันที่ออกเอกสาร</th>
-              <th style={{ padding: '1rem', fontWeight: 700 }}>ยอดรวมสุทธิ (Grand Total)</th>
-              <th style={{ padding: '1rem', fontWeight: 700 }}>ภาษี (VAT)</th>
-              <th style={{ padding: '1rem', fontWeight: 700 }}>สถานะ</th>
-              <th style={{ padding: '1rem', fontWeight: 700, textAlign: 'center' }}>การดำเนินการ</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>เลขที่เอกสาร / วันที่</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>ลูกค้า / ข้อมูลติดต่อ</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>ยอดรวมสุทธิ (Grand Total)</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>ขั้นตอน & สถานะ</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700, textAlign: 'right' }}>การดำเนินการ</th>
             </tr>
           </thead>
           <tbody>
             {filteredQuotations.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <td colSpan={5} style={{ padding: '3.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                   <FileText size={40} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />
                   <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>ไม่พบข้อมูลใบเสนอราคา</div>
                   <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0 0 1.25rem 0' }}>คุณสามารถอัปโหลดสแกนไฟล์ใบเสนอราคาเดิม หรือกดสร้างใบใหม่ได้ทันที</p>
@@ -726,10 +784,10 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                         padding: '0.6rem 1.35rem', 
                         borderRadius: '8px', 
                         cursor: 'pointer', 
-                        fontWeight: 700,
+                        fontWeight: 700, 
                         fontSize: '0.9rem',
-                        display: 'flex',
-                        alignItems: 'center',
+                        display: 'flex', 
+                        alignItems: 'center', 
                         gap: '0.45rem',
                         boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
                       }}
@@ -743,110 +801,503 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
             ) : (
               filteredQuotations.map(quo => (
                 <tr key={quo.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s' }} className="table-row-hover">
-                  <td style={{ padding: '1rem', fontWeight: 700, color: 'var(--accent-primary)' }}>
-                    {quo.quotation_number}
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{quo.customer_name || 'ลูกค้าทั่วไป'}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '0.4rem', marginTop: '0.15rem' }}>
-                      {quo.customer_phone && <span>📞 {quo.customer_phone}</span>}
-                      {quo.lead_job_type && <span style={{ background: 'var(--bg-secondary)', padding: '0 0.3rem', borderRadius: '3px' }}>🏷️ {quo.lead_job_type}</span>}
+                  
+                  {/* Col 1: Quotation Number & Dates */}
+                  <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                      <span style={{ 
+                        fontWeight: 800, 
+                        fontFamily: 'ui-monospace, monospace', 
+                        color: 'var(--accent-primary)', 
+                        fontSize: '0.875rem',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {quo.quotation_number}
+                      </span>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                        📅 ออกเมื่อ: {quo.issue_date}
+                        {quo.valid_until && (
+                          <span style={{ color: 'var(--text-muted)', marginLeft: '0.35rem' }}>
+                            (ถึง {quo.valid_until})
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
-                  <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                    <div>{quo.issue_date}</div>
-                    {quo.valid_until && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>ยืนราคาถึง: {quo.valid_until}</div>}
+
+                  {/* Col 2: Customer & Lead */}
+                  <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                      {quo.customer_name || 'ลูกค้าทั่วไป'}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                      {quo.customer_phone && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                          <Phone size={11} /> {quo.customer_phone}
+                        </span>
+                      )}
+                      {quo.lead_job_type && (
+                        <span style={{ fontSize: '0.7rem', background: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                          🏷️ {quo.lead_job_type}
+                        </span>
+                      )}
+                    </div>
                   </td>
-                  <td style={{ padding: '1rem', color: '#10b981', fontWeight: 800, fontSize: '1rem' }}>
-                    ฿{Number(quo.grand_total || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+
+                  {/* Col 3: Grand Total & VAT */}
+                  <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                    <div style={{ color: '#10b981', fontWeight: 800, fontSize: '1.02rem', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+                      ฿{Number(quo.grand_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                      {quo.vat_type === 'Include VAT' ? '• รวม VAT 7% แล้ว' : quo.vat_type === 'Exclude VAT' ? '• ยังไม่รวม VAT 7%' : '• ไม่มี VAT'}
+                    </div>
                   </td>
-                  <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                    <span style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
-                      {quo.vat_type}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ 
-                        padding: '0.25rem 0.65rem', 
-                        borderRadius: '12px', 
-                        fontSize: '0.75rem', 
-                        fontWeight: 700,
-                        textAlign: 'center',
-                        background: quo.status === 'Converted' ? 'rgba(139, 92, 246, 0.12)' : (quo.status === 'Approved' || quo.status === 'Accepted') ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                        color: quo.status === 'Converted' ? '#8b5cf6' : (quo.status === 'Approved' || quo.status === 'Accepted') ? '#10b981' : '#f59e0b'
-                      }}>
-                        {quo.status === 'Draft' ? 'ร่างบิล' : quo.status === 'Pending' ? 'รอลูกค้า' : (quo.status === 'Approved' || quo.status === 'Accepted') ? 'อนุมัติแล้ว' : quo.status === 'Converted' ? 'แปลงเป็นโปรเจกต์' : quo.status}
-                      </span>
+
+                  {/* Col 4: Workflow Step & Status Badge */}
+                  <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                      {quo.status === 'Draft' && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.65rem', borderRadius: '16px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(245, 158, 11, 0.12)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d97706' }}></span>
+                          1. ร่างเอกสาร
+                        </span>
+                      )}
+                      {quo.status === 'Pending' && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.65rem', borderRadius: '16px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2563eb' }}></span>
+                          2. ส่งลูกค้าแล้ว
+                        </span>
+                      )}
+                      {(quo.status === 'Approved' || quo.status === 'Accepted') && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.65rem', borderRadius: '16px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(16, 185, 129, 0.12)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#059669' }}></span>
+                          3. อนุมัติแล้ว
+                        </span>
+                      )}
+                      {quo.status === 'Converted' && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.65rem', borderRadius: '16px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(139, 92, 246, 0.12)', color: '#7c3aed', border: '1px solid rgba(139, 92, 246, 0.25)' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7c3aed' }}></span>
+                          4. เป็นโครงการแล้ว {quo.project_id ? `(${quo.project_id})` : ''}
+                        </span>
+                      )}
+
+                      {/* Lead Already Converted Notice (when this quotation is not converted itself) */}
+                      {(quo.lead_project_id || quo.lead_status === 'Converted') && quo.status !== 'Converted' && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', color: '#7c3aed', background: 'rgba(139, 92, 246, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 700, border: '1px solid rgba(139, 92, 246, 0.3)' }} title={`Lead รายนี้เปิดโครงการแล้ว รหัส: ${quo.lead_project_id || '-'}`}>
+                          🔒 Lead เปิดโครงการแล้ว
+                        </span>
+                      )}
+
+                      {/* Payment Slip Gatekeeper Status Badge */}
+                      {Number(quo.payment_count || 0) > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', color: '#059669', background: 'rgba(16, 185, 129, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.3)' }} title={`มียอดชำระและแนบสลิปมัดจำแล้ว: ฿${Number(quo.total_paid || 0).toLocaleString()}`}>
+                          💰 มัดจำแล้ว ฿{Number(quo.total_paid || 0).toLocaleString()}
+                        </span>
+                      )}
+
                       {(quo.customer_signature || quo.status === 'Accepted') && (
-                        <span style={{ fontSize: '0.7rem', color: '#059669', background: 'rgba(16, 185, 129, 0.08)', padding: '0.1rem 0.4rem', borderRadius: '4px', textAlign: 'center', fontWeight: 600 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', color: '#059669', background: 'rgba(16, 185, 129, 0.1)', padding: '0.15rem 0.45rem', borderRadius: '12px', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.2)' }} title={`ลงนามแล้วโดย: ${quo.customer_signed_name || quo.customer_name || 'ลูกค้า'}`}>
                           ✍️ เซ็นต์แล้ว
                         </span>
                       )}
                     </div>
                   </td>
-                  <td style={{ padding: '1rem' }}>
-                    <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', alignItems: 'center' }}>
-                      <button 
-                        onClick={() => handleOpenPreview(quo)}
-                        className="hover-lift"
-                        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.35rem 0.6rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', fontWeight: 600 }}
-                        title="ดูตัวอย่าง / พิมพ์เอกสาร"
-                      >
-                        <Printer size={14} /> พิมพ์
-                      </button>
 
-                      <button 
-                        onClick={() => handleCopySignLink(quo)}
-                        className="hover-lift"
-                        style={{
-                          background: copiedLinkId === quo.id ? '#10b981' : 'rgba(59, 130, 246, 0.1)',
-                          color: copiedLinkId === quo.id ? '#ffffff' : '#2563eb',
-                          border: '1px solid rgba(59, 130, 246, 0.3)',
-                          padding: '0.35rem 0.6rem',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.3rem',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          transition: 'all 0.2s'
-                        }}
-                        title="คัดลอกลิงก์ให้ลูกค้าเปิดดูและเซ็นต์ออนไลน์"
-                      >
-                        {copiedLinkId === quo.id ? <Check size={14} /> : <Link2 size={14} />}
-                        {copiedLinkId === quo.id ? 'คัดลอกแล้ว!' : 'Link เซ็นต์'}
-                      </button>
-
-                      {quo.status !== 'Approved' && quo.status !== 'Converted' && (
-                        <button 
-                          onClick={() => handleApprove(quo.id)}
-                          style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', padding: '0.35rem 0.6rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                          title="ลูกค้ายืนยันอนุมัติ"
-                        >
-                          <CheckCircle size={14} /> อนุมัติ
-                        </button>
-                      )}
-
-                      {quo.status !== 'Converted' && (
-                        <button 
-                          onClick={() => handleConvert(quo.id)}
-                          style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none', borderRadius: '6px', padding: '0.35rem 0.75rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                          title="สร้างโปรเจกต์และ Tasks งานทันที"
-                        >
-                          <ArrowUpRight size={14} /> แปลงโปรเจกต์
-                        </button>
-                      )}
-
+                  {/* Col 5: Smart Actions & Step Controls */}
+                  <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle', textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', position: 'relative' }}>
+                      
+                      {/* Step Primary Action Button */}
                       {quo.status === 'Draft' && (
                         <button 
-                          onClick={() => handleDelete(quo.id)}
-                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.35rem' }}
-                          title="ลบใบเสนอราคา"
+                          onClick={() => handleOpenPreview(quo)}
+                          className="hover-lift"
+                          style={{
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            padding: '0.4rem 0.75rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap'
+                          }}
+                          title="ดูตัวอย่าง / พิมพ์เอกสาร"
                         >
-                          <Trash2 size={15} />
+                          <Eye size={14} /> ดูเอกสาร
                         </button>
+                      )}
+
+                      {quo.status === 'Pending' && (
+                        <button 
+                          onClick={() => handleCopySignLink(quo)}
+                          className="hover-lift"
+                          style={{
+                            background: copiedLinkId === quo.id ? '#10b981' : 'rgba(59, 130, 246, 0.1)',
+                            color: copiedLinkId === quo.id ? '#ffffff' : '#2563eb',
+                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                            padding: '0.4rem 0.75rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap'
+                          }}
+                          title="คัดลอกลิงก์ให้ลูกค้าเปิดดูและเซ็นต์ออนไลน์"
+                        >
+                          {copiedLinkId === quo.id ? <Check size={14} /> : <Link2 size={14} />}
+                          {copiedLinkId === quo.id ? 'คัดลอกแล้ว!' : 'Link เซ็นต์'}
+                        </button>
+                      )}
+
+                      {/* When Quotation or Lead is already Converted */}
+                      {quo.status === 'Converted' ? (
+                        <button 
+                          onClick={() => handleOpenPreview(quo)}
+                          className="hover-lift"
+                          style={{
+                            background: 'rgba(139, 92, 246, 0.1)',
+                            color: '#7c3aed',
+                            border: '1px solid rgba(139, 92, 246, 0.25)',
+                            padding: '0.4rem 0.75rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap'
+                          }}
+                          title="เปิดดูใบเสนอราคาของโครงการ"
+                        >
+                          <Eye size={14} /> ดูเอกสาร
+                        </button>
+                      ) : (quo.lead_project_id || quo.lead_status === 'Converted') ? (
+                        <span
+                          style={{
+                            background: 'rgba(139, 92, 246, 0.08)',
+                            color: '#7c3aed',
+                            border: '1px solid rgba(139, 92, 246, 0.25)',
+                            padding: '0.4rem 0.65rem',
+                            borderRadius: '6px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap'
+                          }}
+                          title={`Lead รายนี้ได้ถูกแปลงเป็นโครงการแล้ว (${quo.lead_project_id || '-'}) ไม่สามารถสร้างโครงการซ้ำได้`}
+                        >
+                          <ShieldCheck size={13} /> โครงการเปิดแล้ว
+                        </span>
+                      ) : (quo.status === 'Approved' || quo.status === 'Accepted') ? (
+                        // Financial Gatekeeper: If payment slip is not yet recorded, offer Deposit & Slip Entry button
+                        Number(quo.payment_count || 0) === 0 ? (
+                          <button 
+                            onClick={() => {
+                              setSelectedPaymentQuotation(quo);
+                              setIsPaymentModalOpen(true);
+                            }}
+                            className="hover-lift"
+                            style={{
+                              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '0.4rem 0.85rem',
+                              cursor: 'pointer',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)',
+                              whiteSpace: 'nowrap'
+                            }}
+                            title="บันทึกรับเงินมัดจำและแนบสลิปเพื่อปลดล็อกการเปิดโครงการ"
+                          >
+                            <DollarSign size={14} /> บันทึกมัดจำ & สลิป
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleConvert(quo.id)}
+                            className="hover-lift"
+                            style={{
+                              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '0.4rem 0.85rem',
+                              cursor: 'pointer',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                              whiteSpace: 'nowrap'
+                            }}
+                            title="สร้างโปรเจกต์และ Tasks งานทันที"
+                          >
+                            <ArrowUpRight size={14} /> แปลงโปรเจกต์
+                          </button>
+                        )
+                      ) : null}
+
+                      {/* Dropdown Toggle Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenActionMenuId(openActionMenuId === quo.id ? null : quo.id);
+                        }}
+                        style={{
+                          background: openActionMenuId === quo.id ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                          color: openActionMenuId === quo.id ? '#ffffff' : 'var(--text-secondary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          padding: '0.4rem 0.5rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.15s'
+                        }}
+                        title="ตัวเลือกเพิ่มเติมและเปลี่ยนสถานะ"
+                      >
+                        <MoreHorizontal size={16} />
+                      </button>
+
+                      {/* Dropdown Popover */}
+                      {openActionMenuId === quo.id && (
+                        <>
+                          <div 
+                            style={{ position: 'fixed', inset: 0, zIndex: 100 }} 
+                            onClick={(e) => { e.stopPropagation(); setOpenActionMenuId(null); }} 
+                          />
+                          <div 
+                            style={{
+                              position: 'absolute',
+                              right: 0,
+                              top: 'calc(100% + 4px)',
+                              width: '230px',
+                              background: 'var(--bg-primary)',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '8px',
+                              boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.2)',
+                              zIndex: 101,
+                              padding: '0.4rem',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '2px',
+                              textAlign: 'left'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => { handleOpenPreview(quo); setOpenActionMenuId(null); }}
+                              style={{
+                                width: '100%',
+                                padding: '0.45rem 0.65rem',
+                                border: 'none',
+                                background: 'transparent',
+                                borderRadius: '5px',
+                                color: 'var(--text-primary)',
+                                fontSize: '0.8rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                cursor: 'pointer',
+                                textAlign: 'left'
+                              }}
+                              className="table-row-hover"
+                            >
+                              <Printer size={14} color="var(--accent-primary)" /> ดูตัวอย่าง / พิมพ์เอกสาร
+                            </button>
+
+                            <button
+                              onClick={() => { handleCopySignLink(quo); setOpenActionMenuId(null); }}
+                              style={{
+                                width: '100%',
+                                padding: '0.45rem 0.65rem',
+                                border: 'none',
+                                background: 'transparent',
+                                borderRadius: '5px',
+                                color: 'var(--text-primary)',
+                                fontSize: '0.8rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                cursor: 'pointer',
+                                textAlign: 'left'
+                              }}
+                              className="table-row-hover"
+                            >
+                              <Link2 size={14} color="#2563eb" /> คัดลอกลิงก์เซ็นต์ออนไลน์
+                            </button>
+
+                            <button
+                              onClick={() => { handleShareLine(quo); setOpenActionMenuId(null); }}
+                              style={{
+                                width: '100%',
+                                padding: '0.45rem 0.65rem',
+                                border: 'none',
+                                background: 'transparent',
+                                borderRadius: '5px',
+                                color: 'var(--text-primary)',
+                                fontSize: '0.8rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                cursor: 'pointer',
+                                textAlign: 'left'
+                              }}
+                              className="table-row-hover"
+                            >
+                              <Send size={14} color="#06c755" /> แชร์เอกสารทาง LINE
+                            </button>
+
+                            <button
+                              onClick={() => { window.open(`/q/${quo.id}`, '_blank'); setOpenActionMenuId(null); }}
+                              style={{
+                                width: '100%',
+                                padding: '0.45rem 0.65rem',
+                                border: 'none',
+                                background: 'transparent',
+                                borderRadius: '5px',
+                                color: 'var(--text-primary)',
+                                fontSize: '0.8rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                cursor: 'pointer',
+                                textAlign: 'left'
+                              }}
+                              className="table-row-hover"
+                            >
+                              <ExternalLink size={14} color="#6366f1" /> เปิดหน้าเซ็นต์ (New Tab)
+                            </button>
+
+                            {/* Record Down Payment & Slip */}
+                            <button
+                              onClick={() => {
+                                setSelectedPaymentQuotation(quo);
+                                setIsPaymentModalOpen(true);
+                                setOpenActionMenuId(null);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.45rem 0.65rem',
+                                border: 'none',
+                                background: 'transparent',
+                                borderRadius: '5px',
+                                color: '#059669',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                cursor: 'pointer',
+                                textAlign: 'left'
+                              }}
+                              className="table-row-hover"
+                            >
+                              <DollarSign size={14} color="#059669" /> บันทึกมัดจำ / แนบสลิป
+                            </button>
+
+                            {quo.status !== 'Approved' && quo.status !== 'Converted' && (
+                              <button
+                                onClick={() => { handleApprove(quo.id); setOpenActionMenuId(null); }}
+                                style={{
+                                  width: '100%',
+                                  padding: '0.45rem 0.65rem',
+                                  border: 'none',
+                                  background: 'transparent',
+                                  borderRadius: '5px',
+                                  color: '#059669',
+                                  fontWeight: 600,
+                                  fontSize: '0.8rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  cursor: 'pointer',
+                                  textAlign: 'left'
+                                }}
+                                className="table-row-hover"
+                              >
+                                <CheckCircle size={14} color="#059669" /> บันทึกอนุมัติบิล
+                              </button>
+                            )}
+
+                            {/* Convert Action or Converted Notification */}
+                            {quo.status === 'Converted' ? (
+                              <div style={{ padding: '0.4rem 0.65rem', fontSize: '0.75rem', color: '#7c3aed', fontWeight: 600 }}>
+                                ✓ เป็นโครงการแล้ว ({quo.project_id || '-'})
+                              </div>
+                            ) : (quo.lead_project_id || quo.lead_status === 'Converted') ? (
+                              <div style={{ padding: '0.4rem 0.65rem', fontSize: '0.75rem', color: '#7c3aed', fontWeight: 600 }}>
+                                🔒 Lead เปิดโครงการแล้ว ({quo.lead_project_id || '-'})
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => { handleConvert(quo.id); setOpenActionMenuId(null); }}
+                                style={{
+                                  width: '100%',
+                                  padding: '0.45rem 0.65rem',
+                                  border: 'none',
+                                  background: 'transparent',
+                                  borderRadius: '5px',
+                                  color: '#7c3aed',
+                                  fontWeight: 600,
+                                  fontSize: '0.8rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  cursor: 'pointer',
+                                  textAlign: 'left'
+                                }}
+                                className="table-row-hover"
+                              >
+                                <ArrowUpRight size={14} color="#7c3aed" /> แปลงเป็นโครงการงาน
+                              </button>
+                            )}
+
+                            {quo.status === 'Draft' && (
+                              <>
+                                <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.2rem 0' }} />
+                                <button
+                                  onClick={() => { handleDelete(quo.id); setOpenActionMenuId(null); }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.45rem 0.65rem',
+                                    border: 'none',
+                                    background: 'transparent',
+                                    borderRadius: '5px',
+                                    color: '#ef4444',
+                                    fontSize: '0.8rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    textAlign: 'left'
+                                  }}
+                                  className="table-row-hover"
+                                >
+                                  <Trash2 size={14} color="#ef4444" /> ลบใบเสนอราคา
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
                   </td>
@@ -1609,6 +2060,37 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
         leads={leads}
         onSuccess={fetchAllData}
       />
+
+      {/* Down Payment & Slip Gatekeeper Modal */}
+      {isPaymentModalOpen && selectedPaymentQuotation && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => {
+            setIsPaymentModalOpen(false);
+            setSelectedPaymentQuotation(null);
+          }}
+          quotation={selectedPaymentQuotation}
+          lead={selectedPaymentQuotation.lead_id ? {
+            id: selectedPaymentQuotation.lead_id,
+            customer_name: selectedPaymentQuotation.customer_name || 'ลูกค้า',
+            customer_phone: selectedPaymentQuotation.customer_phone,
+            job_type: selectedPaymentQuotation.lead_job_type,
+            branch: selectedPaymentQuotation.lead_branch,
+            initial_budget: selectedPaymentQuotation.grand_total,
+            project_id: selectedPaymentQuotation.lead_project_id,
+            status: selectedPaymentQuotation.lead_status || undefined
+          } : null}
+          currentUser={currentUser || null}
+          onSaved={() => {
+            fetchAllData();
+          }}
+          onConvertToProject={(id) => {
+            setIsPaymentModalOpen(false);
+            fetchAllData();
+            handleConvert(selectedPaymentQuotation.id);
+          }}
+        />
+      )}
 
     </div>
   );

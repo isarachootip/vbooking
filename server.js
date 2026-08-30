@@ -5267,6 +5267,12 @@ app.post('/api/leads/:id/convert', async (req, res) => {
         [projectId, now, id]
     );
 
+    // Synchronize all quotations for this lead to Converted status
+    await pool.query(
+        `UPDATE quotations SET status = 'Converted', project_id = $1, updated_at = $2 WHERE lead_id = $3`,
+        [projectId, now, id]
+    );
+
     res.json({ message: 'Lead converted successfully', project: projResult.rows[0] });
 
   } catch (err) {

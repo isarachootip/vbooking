@@ -119,7 +119,12 @@ exports.getQuotations = async (req, res) => {
              COALESCE(q.customer_address, l.customer_address, '') AS customer_address,
              c.customer_code,
              l.job_type AS lead_job_type,
-             p.name AS project_name
+             l.branch AS lead_branch,
+             l.status AS lead_status,
+             l.project_id AS lead_project_id,
+             p.name AS project_name,
+             (SELECT COUNT(*)::int FROM lead_payments lp WHERE (lp.lead_id = q.lead_id AND q.lead_id IS NOT NULL) OR lp.quotation_id = q.id) AS payment_count,
+             (SELECT COALESCE(SUM(lp.amount), 0)::numeric FROM lead_payments lp WHERE (lp.lead_id = q.lead_id AND q.lead_id IS NOT NULL) OR lp.quotation_id = q.id) AS total_paid
       FROM quotations q
       LEFT JOIN customers c ON q.customer_id = c.id
       LEFT JOIN leads l ON q.lead_id = l.id
@@ -169,7 +174,12 @@ exports.getQuotationById = async (req, res) => {
              COALESCE(q.customer_address, l.customer_address, '') AS customer_address,
              c.customer_code,
              l.job_type AS lead_job_type,
-             p.name AS project_name
+             l.branch AS lead_branch,
+             l.status AS lead_status,
+             l.project_id AS lead_project_id,
+             p.name AS project_name,
+             (SELECT COUNT(*)::int FROM lead_payments lp WHERE (lp.lead_id = q.lead_id AND q.lead_id IS NOT NULL) OR lp.quotation_id = q.id) AS payment_count,
+             (SELECT COALESCE(SUM(lp.amount), 0)::numeric FROM lead_payments lp WHERE (lp.lead_id = q.lead_id AND q.lead_id IS NOT NULL) OR lp.quotation_id = q.id) AS total_paid
       FROM quotations q
       LEFT JOIN customers c ON q.customer_id = c.id
       LEFT JOIN leads l ON q.lead_id = l.id
@@ -252,24 +262,27 @@ exports.convertToProject = async (req, res) => {
     const quotation = quoResult.rows[0];
     
     if (quotation.status === 'Converted' || quotation.project_id) {
-      return res.status(400).json({ error: 'Quotation is already converted' });
+      return res.status(400).json({ error: `ใบเสนอราคานี้ได้ถูกแปลงเป็นโครงการแล้ว (รหัสโครงการ: ${quotation.project_id || '-'})` });
     }
     
-    const itemsResult = await pool.query('SELECT * FROM quotation_items WHERE quotation_id = $1 ORDER BY sort_order ASC', [id]);
-    const items = itemsResult.rows;
-
-    // 2. Get Lead for context (job type, name, phone, branch)
+    // 2. Get Lead context & verify Lead is not already converted
     let jobType = 'Renovation';
     let customerName = quotation.customer_name || 'Customer';
     let customerPhone = quotation.customer_phone || '';
     let customerAddress = quotation.customer_address || '';
     let branch = 'HQ0';
-    let leadId = null;
-    if (quotation.lead_id) {
-      leadId = quotation.lead_id;
-      const leadResult = await pool.query('SELECT * FROM leads WHERE id = $1', [quotation.lead_id]);
+    let leadId = quotation.lead_id || null;
+    let lead = null;
+
+    if (leadId) {
+      const leadResult = await pool.query('SELECT * FROM leads WHERE id = $1', [leadId]);
       if (leadResult.rows.length > 0) {
-        const lead = leadResult.rows[0];
+        lead = leadResult.rows[0];
+        if (lead.project_id || lead.status === 'Converted') {
+          return res.status(400).json({ 
+            error: `Lead รายนี้ (${lead.customer_name || 'ลูกค้า'}) ได้ถูกแปลงเป็นโครงการไปแล้ว (รหัสโครงการ: ${lead.project_id || '-'}) ไม่สามารถสร้างโครงการซ้ำได้` 
+          });
+        }
         jobType = lead.job_type || 'Renovation';
         customerName = lead.customer_name || customerName;
         customerPhone = lead.customer_phone || customerPhone;
@@ -278,7 +291,25 @@ exports.convertToProject = async (req, res) => {
       }
     }
 
-    // 3. Generate Smart Project ID (Logic: P + JobPrefix + Branch + DDMMYYYY + 0001)
+    // 3. Financial Gatekeeper: Verify Down Payment & Slip
+    const pmtRes = await pool.query(
+      `SELECT COUNT(*)::int AS count, COALESCE(SUM(amount), 0)::numeric AS total 
+       FROM lead_payments 
+       WHERE ((lead_id = $1 AND $1 IS NOT NULL) OR quotation_id = $2) 
+         AND status = 'Verified & Received'`,
+      [leadId, id]
+    );
+    const paymentCount = parseInt(pmtRes.rows[0]?.count || '0', 10);
+    if (paymentCount === 0) {
+      return res.status(400).json({ 
+        error: 'กรุณาบันทึกการรับชำระเงินมัดจำและแนบรูปภาพสลิปโอนเงิน (Payment Slip) ให้เรียบร้อยก่อนแปลงเป็นโครงการ' 
+      });
+    }
+
+    const itemsResult = await pool.query('SELECT * FROM quotation_items WHERE quotation_id = $1 ORDER BY sort_order ASC', [id]);
+    const items = itemsResult.rows;
+
+    // 4. Generate Smart Project ID (Logic: P + JobPrefix + Branch + DDMMYYYY + 0001)
     let jobPrefix = 'O';
     const jt = jobType.toLowerCase();
     if (jt.includes('quick')) jobPrefix = 'Q';
@@ -306,18 +337,62 @@ exports.convertToProject = async (req, res) => {
     }
     const projectId = `${prefix}${String(running).padStart(4, '0')}`;
 
-    // 4. Create Project
+    // 5. Create Project
     const now = new Date().toISOString();
     const end = new Date();
     end.setDate(end.getDate() + 30); // Default 1 month
+
+    const commonStages = ["To Do"];
+    const executionStages = ["Assign ช่าง", "Check-in", "Check-out", "QC", "Aftersale", "Close"];
+    const cols = [...commonStages, ...executionStages];
+
+    const initialLifecycle = {
+      phase: 'PHASE_03_PROJECT_EXECUTION',
+      step: 'project_plan_creation',
+      quotation_number: quotation.quotation_number,
+      quotation_approved: 'approved',
+      payment_received: true,
+      payment_slip_url: 'CONVERTED_FROM_QUOTATION',
+      project_plan_created: false,
+      work_started: false,
+      work_finished: false,
+      qc_passed: 'pending'
+    };
     
     await pool.query(
-      `INSERT INTO projects (id, name, description, status, start_date, end_date, budget, project_type, lead_id, customer_name, customer_phone, converted_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-      [projectId, `[${jobType}] ${customerName}`, `Auto-generated from Quotation ${quotation.quotation_number}`, 'Planning', now, end.toISOString(), quotation.grand_total, jobType, leadId, customerName, customerPhone, now]
+      `INSERT INTO projects (
+        id, name, description, status, start_date, end_date, budget, 
+        project_type, lead_id, customer_name, customer_phone, converted_at, 
+        custom_columns, execution_phase, extra_details
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+      [
+        projectId, 
+        `[${jobType}] ${customerName}`, 
+        `Auto-generated from Quotation ${quotation.quotation_number}`, 
+        'To Do', 
+        now, 
+        end.toISOString(), 
+        quotation.grand_total, 
+        jobType, 
+        leadId, 
+        customerName, 
+        customerPhone, 
+        now,
+        JSON.stringify(cols),
+        'Active Execution',
+        JSON.stringify({ lifecycle: initialLifecycle, branch, quotation_id: id })
+      ]
     );
 
-    // 5. Create Tasks from Quotation Items
+    // Insert project workflow
+    await pool.query(
+      `INSERT INTO project_workflows (project_id, statuses, transitions) VALUES ($1, $2, $3)
+       ON CONFLICT (project_id) DO NOTHING`,
+      [projectId, JSON.stringify(cols), JSON.stringify([])]
+    );
+
+    // 6. Create Tasks from Quotation Items
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const taskId = `t_${Date.now()}_${i}`;
@@ -328,8 +403,27 @@ exports.convertToProject = async (req, res) => {
       );
     }
 
-    // 6. Update Quotation status
+    // 7. Update Quotation status
     await pool.query("UPDATE quotations SET status = 'Converted', project_id = $1, updated_at = $2 WHERE id = $3", [projectId, now, id]);
+
+    // 8. Update Lead status and log timeline milestone
+    if (leadId) {
+      await pool.query(
+        "UPDATE leads SET status = 'Converted', project_id = $1, updated_at = $2 WHERE id = $3",
+        [projectId, now, leadId]
+      );
+      const flwId = `flw_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      await pool.query(`
+        INSERT INTO lead_followups (id, lead_id, activity_type, notes, created_at, created_by)
+        VALUES ($1, $2, 'แปลงเป็นโครงการติดตั้งสำเร็จ', $3, $4, $5)
+      `, [
+        flwId,
+        leadId,
+        `แปลงใบเสนอราคา ${quotation.quotation_number} ยอดเงิน ฿${Number(quotation.grand_total).toLocaleString()} เป็นรหัสโครงการ ${projectId} เรียบร้อยแล้ว`,
+        now,
+        'ระบบจัดการใบเสนอราคา (Quotation Manager)'
+      ]);
+    }
 
     res.json({ success: true, project_id: projectId });
   } catch (err) {

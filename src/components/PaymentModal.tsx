@@ -75,17 +75,32 @@ const compressImageFile = (file: File, maxWidth = 1200, maxHeight = 1200, qualit
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  lead: {
+  lead?: {
     id: string;
     customer_name: string;
     customer_phone?: string;
     job_type?: string;
     branch?: string;
     initial_budget?: string | number;
+    project_id?: string | null;
+    status?: string;
+  } | null;
+  quotation?: {
+    id: string;
+    quotation_number: string;
+    customer_name?: string;
+    customer_phone?: string;
+    lead_id?: string | null;
+    lead_job_type?: string;
+    grand_total: number | string;
+    status: string;
+    project_id?: string | null;
+    lead_project_id?: string | null;
+    lead_status?: string | null;
   } | null;
   currentUser: User | null;
   onSaved?: () => void;
-  onConvertToProject?: (leadId: string) => void;
+  onConvertToProject?: (id: string) => void;
 }
 
 const PAYMENT_METHODS = [
@@ -102,7 +117,7 @@ const PAYMENT_TYPES = [
 ];
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
-  isOpen, onClose, lead, currentUser, onSaved, onConvertToProject
+  isOpen, onClose, lead, quotation, currentUser, onSaved, onConvertToProject
 }) => {
   const [payments, setPayments] = useState<LeadPayment[]>([]);
   const [quotations, setQuotations] = useState<any[]>([]);
@@ -130,26 +145,62 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     setTimeout(() => setToast(null), 3500);
   };
 
+  const activeCustomerName = lead?.customer_name || quotation?.customer_name || 'ลูกค้าทั่วไป';
+  const activePhone = lead?.customer_phone || quotation?.customer_phone || '';
+  const activeJobType = lead?.job_type || quotation?.lead_job_type || '';
+  const activeBranch = lead?.branch || '';
+  const isAlreadyConverted = Boolean(
+    lead?.project_id || 
+    lead?.status === 'Converted' || 
+    quotation?.project_id || 
+    quotation?.status === 'Converted' || 
+    quotation?.lead_project_id || 
+    quotation?.lead_status === 'Converted'
+  );
+  const convertedProjectId = lead?.project_id || quotation?.project_id || quotation?.lead_project_id || '';
+
   const fetchPaymentsAndQuotes = async () => {
-    if (!lead) return;
+    if (!lead && !quotation) return;
     setIsLoading(true);
     try {
-      const [pRes, qRes] = await Promise.all([
-        fetch(`/api/leads/${lead.id}/payments`, { headers: { 'X-User-Id': currentUser?.id || '' } }),
-        fetch(`/api/quotations?lead_id=${lead.id}`, { headers: { 'X-User-Id': currentUser?.id || '' } })
-      ]);
+      if (lead) {
+        const [pRes, qRes] = await Promise.all([
+          fetch(`/api/leads/${lead.id}/payments`, { headers: { 'X-User-Id': currentUser?.id || '' } }),
+          fetch(`/api/quotations?lead_id=${lead.id}`, { headers: { 'X-User-Id': currentUser?.id || '' } })
+        ]);
 
-      if (pRes.ok) setPayments(await pRes.json());
-      if (qRes.ok) {
-        const qData = await qRes.json();
-        setQuotations(qData || []);
-        if (qData.length > 0) {
-          setQuotationId(qData[0].id);
-          // Suggest 30% or 50% down payment
-          const qTotal = parseFloat(qData[0].grand_total || '0');
-          if (qTotal > 0) {
-            setAmount(String(Math.round(qTotal * 0.3)));
+        if (pRes.ok) setPayments(await pRes.json());
+        if (qRes.ok) {
+          const qData = await qRes.json();
+          setQuotations(qData || []);
+          if (qData.length > 0) {
+            setQuotationId(qData[0].id);
+            const qTotal = parseFloat(qData[0].grand_total || '0');
+            if (qTotal > 0) {
+              setAmount(String(Math.round(qTotal * 0.3)));
+            }
           }
+        }
+      } else if (quotation) {
+        if (quotation.lead_id) {
+          const [pRes, qRes] = await Promise.all([
+            fetch(`/api/leads/${quotation.lead_id}/payments`, { headers: { 'X-User-Id': currentUser?.id || '' } }),
+            fetch(`/api/quotations?lead_id=${quotation.lead_id}`, { headers: { 'X-User-Id': currentUser?.id || '' } })
+          ]);
+          if (pRes.ok) setPayments(await pRes.json());
+          if (qRes.ok) {
+            const qData = await qRes.json();
+            setQuotations(qData || []);
+          }
+        } else {
+          const pRes = await fetch(`/api/quotations/${quotation.id}/payments`, { headers: { 'X-User-Id': currentUser?.id || '' } });
+          if (pRes.ok) setPayments(await pRes.json());
+          setQuotations([quotation]);
+        }
+        setQuotationId(quotation.id);
+        const qTotal = parseFloat(String(quotation.grand_total || '0'));
+        if (qTotal > 0) {
+          setAmount(String(Math.round(qTotal * 0.3)));
         }
       }
     } catch (err) {
@@ -160,7 +211,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen && lead) {
+    if (isOpen && (lead || quotation)) {
       fetchPaymentsAndQuotes();
       setPaymentMethod(PAYMENT_METHODS[0]);
       setPaymentType('Down Payment');
@@ -171,7 +222,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       setNotes('');
       setActiveTab('form');
     }
-  }, [isOpen, lead?.id]);
+  }, [isOpen, lead?.id, quotation?.id]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -197,17 +248,23 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!lead) return;
+    if (!lead && !quotation) return;
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/leads/${lead.id}/payments`, {
+      const url = lead?.id 
+        ? `/api/leads/${lead.id}/payments` 
+        : quotation?.lead_id 
+          ? `/api/leads/${quotation.lead_id}/payments`
+          : `/api/quotations/${quotation?.id}/payments`;
+
+      const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-User-Id': currentUser?.id || ''
         },
         body: JSON.stringify({
-          quotation_id: quotationId || null,
+          quotation_id: quotationId || quotation?.id || null,
           amount: parseFloat(amount || '0'),
           payment_method: paymentMethod,
           payment_type: paymentType,
@@ -238,7 +295,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     }
   };
 
-  if (!isOpen || !lead) return null;
+  if (!isOpen || (!lead && !quotation)) return null;
 
   const inp: React.CSSProperties = {
     width: '100%', padding: '0.55rem 0.75rem',
@@ -322,7 +379,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 บันทึกการรับชำระเงินมัดจำ & แปลงเป็นโครงการ (Down Payment Entry)
               </h3>
               <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.85)' }}>
-                {lead.customer_name} · {lead.job_type || ''} {lead.branch ? '· ' + lead.branch : ''}
+                {activeCustomerName} {activePhone ? `(${activePhone})` : ''} · {activeJobType || 'Renovation'} {activeBranch ? '· ' + activeBranch : ''}
               </p>
             </div>
           </div>
@@ -584,7 +641,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           {activeTab === 'history' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {/* Convert Banner if payment received */}
-              {totalPaid > 0 && (
+              {isAlreadyConverted ? (
+                <div style={{
+                  background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.3)',
+                  borderRadius: '10px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem'
+                }}>
+                  <ShieldCheck size={22} color="#7c3aed" />
+                  <div>
+                    <div style={{ fontWeight: 800, color: '#7c3aed', fontSize: '0.9rem' }}>
+                      🔒 ลูกค้า / Lead รายนี้ได้เปิดโครงการติดตั้งเรียบร้อยแล้ว
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                      รหัสโครงการ: <strong>{convertedProjectId || 'เปิดโครงการแล้ว'}</strong> · มียอดชำระสะสม: ฿{totalPaid.toLocaleString()} (ไม่อนุญาตให้แปลงโครงการซ้ำ)
+                    </div>
+                  </div>
+                </div>
+              ) : totalPaid > 0 ? (
                 <div style={{
                   background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981',
                   borderRadius: '10px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem'
@@ -601,7 +673,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     type="button"
                     onClick={() => {
                       onClose();
-                      onConvertToProject?.(lead.id);
+                      const targetId = lead?.id || quotation?.id || '';
+                      if (targetId) onConvertToProject?.(targetId);
                     }}
                     style={{
                       background: 'linear-gradient(135deg, #10b981, #059669)',
@@ -613,7 +686,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     🚀 แปลงเป็นโครงการติดตั้ง (Convert to Project)
                   </button>
                 </div>
-              )}
+              ) : null}
 
               {isLoading && <div style={{ textAlign: 'center', padding: '2rem' }}>กำลังโหลดรายการชำระ...</div>}
 
