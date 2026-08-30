@@ -1020,25 +1020,25 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                               key={bid.id}
                               style={{
                                 padding: '0.75rem 1rem', borderLeft: '1px solid rgba(255,255,255,0.06)',
-                                background: isCurrentlySelected ? 'rgba(0, 206, 209, 0.08)' : isLowest ? 'rgba(16, 185, 129, 0.06)' : 'transparent'
+                                background: isCurrentlySelected ? 'rgba(16, 185, 129, 0.12)' : isLowest ? 'rgba(16, 185, 129, 0.04)' : 'transparent'
                               }}
                             >
                               {totalUnit > 0 ? (
                                 <div>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: isLowest ? '#34d399' : 'var(--text-primary)' }}>
+                                    <span style={{ fontWeight: 800, fontSize: '0.96rem', color: isLowest ? '#34d399' : '#f8fafc' }}>
                                       ฿{totalUnit.toLocaleString()}
                                     </span>
                                     {isLowest && (
-                                      <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.2)', color: '#34d399', padding: '0.05rem 0.3rem', borderRadius: '4px', fontWeight: 700 }}>
+                                      <span style={{ fontSize: '0.68rem', background: 'rgba(16,185,129,0.25)', border: '1px solid #10b981', color: '#34d399', padding: '0.08rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>
                                         Best 🟢
                                       </span>
                                     )}
                                   </div>
-                                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                                    ของ: {mat} • แรง: {lab}
+                                  <div style={{ fontSize: '0.74rem', color: '#cbd5e1', marginTop: '0.15rem' }}>
+                                    ของ: <strong style={{ color: '#ffffff' }}>{mat.toLocaleString()}</strong> • แรง: <strong style={{ color: '#ffffff' }}>{lab.toLocaleString()}</strong>
                                   </div>
-                                  <div style={{ marginTop: '0.3rem' }}>
+                                  <div style={{ marginTop: '0.35rem' }}>
                                     <button
                                       onClick={() => {
                                         const currentSelections = (activeEstimation.items || []).map(item => {
@@ -1064,11 +1064,23 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                                         handleApplySelection(currentSelections);
                                       }}
                                       style={{
-                                        padding: '0.15rem 0.4rem', borderRadius: '4px',
-                                        background: isCurrentlySelected ? 'var(--accent-primary)' : 'rgba(255,255,255,0.06)',
-                                        border: isCurrentlySelected ? 'none' : '1px solid rgba(255,255,255,0.12)',
-                                        color: isCurrentlySelected ? 'black' : 'var(--text-secondary)',
-                                        fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer'
+                                        padding: '0.3rem 0.65rem',
+                                        borderRadius: '6px',
+                                        background: isCurrentlySelected 
+                                          ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+                                          : 'rgba(59, 130, 246, 0.15)',
+                                        border: isCurrentlySelected 
+                                          ? '1px solid #10b981' 
+                                          : '1px solid rgba(59, 130, 246, 0.35)',
+                                        color: isCurrentlySelected ? '#ffffff' : '#60a5fa',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 800,
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem',
+                                        boxShadow: isCurrentlySelected ? '0 2px 8px rgba(16, 185, 129, 0.4)' : 'none',
+                                        transition: 'all 0.15s ease'
                                       }}
                                     >
                                       {isCurrentlySelected ? '✓ เลือกเจ้านี้' : 'เลือก'}
