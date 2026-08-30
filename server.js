@@ -521,6 +521,11 @@ const initDB = async () => {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS site_visit_approval_notes TEXT;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_id TEXT;
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS customer_site_id TEXT;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS branch VARCHAR(100);
+
+      UPDATE leads SET 
+        branch = SUBSTRING(notes FROM '"branch":"([^"]+)"') 
+      WHERE (branch IS NULL OR branch = '') AND notes LIKE '%"branch":"%';
 
       UPDATE leads SET 
         customer_first_name = CASE 

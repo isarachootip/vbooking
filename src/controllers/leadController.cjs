@@ -159,20 +159,29 @@ exports.createLead = async (req, res) => {
       }
     }
 
+    let finalBranch = branch;
+    if (!finalBranch && notes && notes.includes('"branch":')) {
+      try {
+        const match = notes.match(/"branch":"([^"]+)"/);
+        if (match) finalBranch = match[1];
+      } catch (e) {}
+    }
+
     const result = await pool.query(
       `INSERT INTO leads (
         id, customer_name, customer_first_name, customer_last_name, customer_phone, 
         customer_address, customer_latitude, customer_longitude, map_url, job_type, 
         status, notes, created_at, updated_at, sales_contact_id, customer_id, customer_site_id,
-        coordinator_name, coordinator_phone, coordinator_line_id
+        coordinator_name, coordinator_phone, coordinator_line_id, branch
       ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) 
       RETURNING *`,
       [
         leadId, fullName, fName, lName, customer_phone, customer_address, 
         customer_latitude || null, customer_longitude || null, map_url || null, 
         job_type, 'New', notes, now, now, sales_contact_id || null, 
-        finalCustId, finalSiteId, coordinator_name || null, coordinator_phone || null, coordinator_line_id || null
+        finalCustId, finalSiteId, coordinator_name || null, coordinator_phone || null, coordinator_line_id || null,
+        finalBranch || null
       ]
     );
     res.json(result.rows[0]);
@@ -190,9 +199,18 @@ exports.updateLead = async (req, res) => {
       customer_address, customer_latitude, customer_longitude, map_url, job_type, 
       status, appointment_date, appointment_type, appointment_assignee, notes, 
       project_id, coordinator_name, coordinator_phone, coordinator_line_id, 
-      surveyor_id, survey_date, sales_contact_id, customer_id, customer_site_id 
+      surveyor_id, survey_date, sales_contact_id, customer_id, customer_site_id,
+      branch
     } = req.body;
     const now = new Date().toISOString();
+
+    let finalBranch = branch;
+    if (!finalBranch && notes && notes.includes('"branch":')) {
+      try {
+        const match = notes.match(/"branch":"([^"]+)"/);
+        if (match) finalBranch = match[1];
+      } catch (e) {}
+    }
 
     const fName = customer_first_name || (customer_name ? customer_name.split(' ')[0] : '');
     const lName = customer_last_name || (customer_name ? customer_name.split(' ').slice(1).join(' ') : '');
@@ -227,7 +245,8 @@ exports.updateLead = async (req, res) => {
            appointment_assignee = $13, notes = $14, updated_at = $15, project_id = COALESCE($16, project_id), 
            coordinator_name = $17, coordinator_phone = $18, coordinator_line_id = $19, 
            surveyor_id = $20, survey_date = $21, sales_contact_id = COALESCE($23, sales_contact_id),
-           customer_id = $24, customer_site_id = $25
+           customer_id = $24, customer_site_id = $25,
+           branch = COALESCE($26, branch)
        WHERE id = $22 RETURNING *`,
       [
         fullName, fName, lName, customer_phone, customer_address, 
@@ -235,7 +254,8 @@ exports.updateLead = async (req, res) => {
         job_type, status, appointment_date || null, appointment_type || null, 
         appointment_assignee || null, notes, now, project_id, coordinator_name || null, 
         coordinator_phone || null, coordinator_line_id || null, surveyor_id || null, 
-        survey_date || null, id, sales_contact_id || null, finalCustId, finalSiteId
+        survey_date || null, id, sales_contact_id || null, finalCustId, finalSiteId,
+        finalBranch || null
       ]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Lead not found' });

@@ -178,6 +178,40 @@ export const findSalesForBranch = (branchName: string, userList: UserType[]): Us
   return null;
 };
 
+export const extractLeadBranch = (
+  lead?: Partial<Lead> | null, 
+  userList?: UserType[], 
+  defaultBranch: string = 'สาขาบางนา'
+): string => {
+  if (!lead) return defaultBranch;
+  if (lead.branch && typeof lead.branch === 'string' && lead.branch.trim()) {
+    return lead.branch.trim();
+  }
+  
+  if (lead.notes && typeof lead.notes === 'string' && lead.notes.includes('[Details]:')) {
+    try {
+      const parts = lead.notes.split('[Details]:');
+      const details = JSON.parse(parts[1]);
+      if (details.branch && typeof details.branch === 'string' && details.branch.trim()) {
+        return details.branch.trim();
+      }
+    } catch {}
+  }
+
+  if (lead.sales_contact_id && userList && userList.length > 0) {
+    const sUser = userList.find(u => u.id === lead.sales_contact_id);
+    if (sUser) {
+      if (sUser.assignedBranches && Array.isArray(sUser.assignedBranches) && sUser.assignedBranches.length > 0) {
+        return sUser.assignedBranches[0];
+      }
+      const match = sUser.name.match(/สาขา([^)]+)/);
+      if (match) return 'สาขา' + match[1].trim();
+    }
+  }
+
+  return defaultBranch;
+};
+
 export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageProps) => {
   const navigate = useNavigate();
   const isPrivilegedUser = Boolean(
@@ -473,10 +507,20 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       if (response.ok) {
         const result = await response.json();
         if (result.data && result.pagination) {
-          setLeads(result.data);
+          const normalized = result.data.map((l: Lead) => ({
+            ...l,
+            branch: extractLeadBranch(l, users, branch)
+          }));
+          setLeads(normalized);
           setCurrentPage(result.pagination.page);
           setTotalPages(result.pagination.totalPages);
           setTotalLeads(result.pagination.total);
+        } else if (Array.isArray(result)) {
+          const normalized = result.map((l: Lead) => ({
+            ...l,
+            branch: extractLeadBranch(l, users, branch)
+          }));
+          setLeads(normalized);
         } else {
           setLeads(result);
         }
@@ -546,17 +590,32 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     }
   };
 
-  const openFollowupModal = (lead: Lead) => {
+  const openFollowupModal = (rawLead: Lead) => {
+    const leadBranch = extractLeadBranch(rawLead, users, branch);
+    const lead: Lead = {
+      ...rawLead,
+      branch: leadBranch
+    };
     setSelectedLeadForFollowup(lead);
     setActivityType('1.2.2 นัดลงพื้นที่ site งาน');
     const existingDate = lead.appointment_date ? lead.appointment_date.split(' ')[0] : '';
     setAppointmentDate(existingDate && !isDateInPast(existingDate) ? existingDate : getTodayDateString());
     setAppointmentTime(lead.appointment_date && lead.appointment_date.includes(' ') ? lead.appointment_date.split(' ')[1] : '10:00');
     
-    // Prioritize branch QC if not previously assigned
-    const leadBranch = lead.branch || branch;
+    // Prioritize branch QC
     const branchQc = findQcForBranch(leadBranch, users);
-    setAssigneeName(lead.appointment_assignee || (branchQc ? branchQc.name : (currentUser?.name || 'แอดมิน')));
+    const isExistingAssigneeQc = lead.appointment_assignee 
+      ? users.some(u => (u.department?.includes('QC') || u.globalRole === 'QC' || u.name.includes('QC')) && u.name === lead.appointment_assignee)
+      : false;
+
+    if (isExistingAssigneeQc && lead.appointment_assignee) {
+      setAssigneeName(lead.appointment_assignee);
+    } else if (branchQc) {
+      setAssigneeName(branchQc.name);
+    } else {
+      const anyQc = users.find(u => u.department?.includes('QC') || u.globalRole === 'QC' || u.name.includes('QC'));
+      setAssigneeName(anyQc ? anyQc.name : (lead.appointment_assignee || ''));
+    }
     
     setFollowupNotes('');
     setFollowupNewStatus(lead.status === 'New' ? 'Contacted' : lead.status);
@@ -1021,6 +1080,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       survey_date: surveyDate,
       surveyor_id: surveyorId,
       sales_contact_id: salesContactId,
+      branch: branch,
     };
 
     setIsSavingLead(true);
@@ -2818,7 +2878,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.15rem' }}>
                       <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ผู้รับผิดชอบ / ช่าง QC</label>
                       {(() => {
-                        const leadBranch = selectedLeadForFollowup?.branch || branch;
+                        const leadBranch = extractLeadBranch(selectedLeadForFollowup, users, branch);
                         const branchQc = findQcForBranch(leadBranch, users);
                         if (branchQc && branchQc.name !== assigneeName) {
                           return (
@@ -2856,7 +2916,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                     />
                     <datalist id="qc-followup-assignee-list">
                       {(() => {
-                        const leadBranch = selectedLeadForFollowup?.branch || branch;
+                        const leadBranch = extractLeadBranch(selectedLeadForFollowup, users, branch);
                         const qcUsers = users.filter(u => u.department?.includes('QC') || u.name.includes('QC') || u.globalRole === 'QC');
                         const { sortedList } = sortQcListByBranch(qcUsers, leadBranch, selectedZone);
                         return sortedList.map(u => (
@@ -4314,14 +4374,14 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         initialDate={appointmentDate}
         currentAssigneeName={assigneeName}
         currentTimeSlot={appointmentTime}
-        branch={selectedLeadForFollowup?.branch || branch}
+        branch={extractLeadBranch(selectedLeadForFollowup, users, branch)}
         leadInfo={selectedLeadForFollowup ? {
           id: selectedLeadForFollowup.id,
           customerName: selectedLeadForFollowup.customer_name,
           customerPhone: selectedLeadForFollowup.customer_phone,
           address: selectedLeadForFollowup.customer_address,
           jobType: selectedLeadForFollowup.job_type,
-          branch: selectedLeadForFollowup.branch || branch,
+          branch: extractLeadBranch(selectedLeadForFollowup, users, branch),
           zone: selectedZone
         } : {
           id: '',
