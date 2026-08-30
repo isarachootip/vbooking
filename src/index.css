@@ -438,6 +438,35 @@ input, select, textarea {
   .content-area {
     padding-bottom: 5rem !important;
   }
+
+  /* QC Daily Plan Mobile Layout */
+  .qc-mobile-view-tabs {
+    display: block !important;
+  }
+  .qc-main-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+  .qc-column-hide-mobile {
+    display: none !important;
+  }
+  .qc-map-column {
+    height: 460px !important;
+  }
+  .header-title {
+    font-size: 0.95rem !important;
+  }
+}
+
+/* QC Daily Plan Desktop Default Layout */
+.qc-mobile-view-tabs {
+  display: none;
+}
+.qc-main-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(340px, 1.2fr);
+  gap: 1.25rem;
 }
 
 /* ─── Notification Bell ─── */

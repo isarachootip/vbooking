@@ -380,7 +380,6 @@ const MobileBottomNav = () => {
 
 const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React.ReactNode, currentUser: User, tasks: Task[], onLogout: () => void }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isChangePwModalOpen, setIsChangePwModalOpen] = useState(false);
   const [chatNotifications, setChatNotifications] = useState<any[]>([]);
   const { lang, toggleLang, t } = useLanguage();
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -466,12 +465,61 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           <SidebarItem icon={SettingsIcon} label={t.settings} path="/settings" />
           <SidebarItem icon={HelpCircle} label={t.help} path="/help" />
         </nav>
+
+        {/* User Profile & Logout Footer inside Sidebar (Available on Mobile & Desktop) */}
+        <div style={{
+          padding: '1rem',
+          borderTop: '1px solid var(--border-color)',
+          background: 'var(--bg-secondary)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <img 
+              src={currentUser.avatar} 
+              alt="User" 
+              style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--accent-primary)', objectFit: 'cover' }} 
+            />
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {currentUser.name}
+              </span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                {currentUser.globalRole}
+              </span>
+            </div>
+          </div>
+
+          <button 
+            onClick={onLogout}
+            className="hover-lift"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              padding: '0.6rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'rgba(239, 68, 68, 0.12)',
+              color: '#ef4444',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              width: '100%'
+            }}
+          >
+            <LogOut size={16} color="#ef4444" />
+            <span>{lang === 'th' ? 'ออกจากระบบ' : 'Log out'}</span>
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
       <main className="main-content">
         <header className="header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button 
               className="mobile-menu-btn"
               onClick={() => setIsSidebarOpen(true)}
@@ -479,14 +527,14 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
             >
               <Menu size={24} />
             </button>
-            <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 500 }}>System Overview</h2>
+            <h2 className="header-title" style={{ fontSize: '1.15rem', margin: 0, fontWeight: 600 }}>System Overview</h2>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'nowrap' }}>
             <button 
               onClick={toggleLang}
               className="glass-panel hover-lift"
               title="Switch Language (TH / EN)"
-              style={{ padding: '0.5rem 0.85rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', outline: 'none', fontSize: '0.85rem', fontWeight: 600 }}
+              style={{ padding: '0.4rem 0.65rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'transparent', outline: 'none', fontSize: '0.8rem', fontWeight: 600 }}
             >
               <span>{lang === 'th' ? '🇹🇭 TH' : '🇬🇧 EN'}</span>
             </button>
@@ -494,62 +542,37 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
               onClick={toggleTheme} 
               className="glass-panel hover-lift" 
               title={theme === 'light' ? 'สลับเป็น Theme มืด (Dark Mode)' : 'สลับเป็น Theme สว่าง (Light Mode)'}
-              style={{ padding: '0.5rem 0.85rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', outline: 'none', fontSize: '0.85rem', fontWeight: 500 }}
+              style={{ padding: '0.4rem 0.65rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'transparent', outline: 'none', fontSize: '0.8rem', fontWeight: 500 }}
             >
-              {theme === 'light' ? <Sun size={18} color="#f59e0b" /> : <Moon size={18} color="#00F5FF" />}
-              <span className="hide-mobile" style={{ fontSize: '0.875rem' }}>{theme === 'light' ? t.themeLight : t.themeDark}</span>
+              {theme === 'light' ? <Sun size={17} color="#f59e0b" /> : <Moon size={17} color="#00F5FF" />}
+              <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>{theme === 'light' ? t.themeLight : t.themeDark}</span>
             </button>
-            <QCPlanQuickButton currentUser={currentUser} />
+            <div className="hide-mobile">
+              <QCPlanQuickButton currentUser={currentUser} />
+            </div>
             <NotificationBell tasks={tasks} currentUser={currentUser} />
-            <Link to="/settings" className="glass-panel hover-lift" style={{ padding: '0.5rem 1rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', outline: 'none', textDecoration: 'none' }}>
-              <SettingsIcon size={18} />
-              <span className="hide-mobile" style={{ fontSize: '0.875rem' }}>{t.settings}</span>
-            </Link>
 
-            {/* User Profile, Password & Logout */}
+            {/* User Profile & Logout */}
             <div 
               className="glass-panel"
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
                 gap: '0.45rem', 
-                padding: '0.3rem 0.55rem 0.3rem 0.65rem',
+                padding: '0.25rem 0.55rem',
                 borderRadius: 'var(--radius-lg)',
-                marginLeft: '0.25rem'
+                marginLeft: '0.15rem'
               }}
             >
               <img 
                 src={currentUser.avatar} 
                 alt="User Profile" 
-                style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid var(--accent-primary)', objectFit: 'cover' }} 
+                style={{ width: '30px', height: '30px', borderRadius: '50%', border: '2px solid var(--accent-primary)', objectFit: 'cover' }} 
               />
               <div className="hide-mobile" style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
                 <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{currentUser.name}</span>
                 <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>{currentUser.globalRole}</span>
               </div>
-              <button 
-                onClick={() => setIsChangePwModalOpen(true)}
-                className="hover-lift"
-                title={lang === 'th' ? 'เปลี่ยนรหัสผ่าน (Change Password)' : 'Change Password'}
-                style={{ 
-                  background: 'rgba(234, 88, 12, 0.12)', 
-                  border: '1px solid rgba(234, 88, 12, 0.3)', 
-                  color: '#ea580c', 
-                  borderRadius: 'var(--radius-md)', 
-                  padding: '0.35rem 0.55rem', 
-                  cursor: 'pointer', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.25rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease',
-                  marginLeft: '0.25rem'
-                }}
-              >
-                <Key size={14} color="#ea580c" />
-                <span className="hide-mobile">{lang === 'th' ? 'รหัสผ่าน' : 'Password'}</span>
-              </button>
               <button 
                 onClick={onLogout}
                 className="hover-lift"
@@ -559,7 +582,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
                   border: '1px solid rgba(239, 68, 68, 0.25)', 
                   color: 'var(--accent-danger)', 
                   borderRadius: 'var(--radius-md)', 
-                  padding: '0.35rem 0.55rem', 
+                  padding: '0.35rem 0.6rem', 
                   cursor: 'pointer', 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -567,10 +590,10 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
                   fontSize: '0.75rem',
                   fontWeight: 600,
                   transition: 'all 0.2s ease',
-                  marginLeft: '0.15rem'
+                  marginLeft: '0.2rem'
                 }}
               >
-                <LogOut size={15} color="var(--accent-danger)" />
+                <LogOut size={14} color="var(--accent-danger)" />
                 <span className="hide-mobile">{lang === 'th' ? 'ออก' : 'Logout'}</span>
               </button>
             </div>
@@ -581,13 +604,6 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           {children}
         </div>
       </main>
-
-      {/* Change Password Modal */}
-      <ChangePasswordModal 
-        isOpen={isChangePwModalOpen}
-        onClose={() => setIsChangePwModalOpen(false)}
-        currentUser={currentUser}
-      />
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />

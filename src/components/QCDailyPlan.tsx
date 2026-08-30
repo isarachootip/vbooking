@@ -72,9 +72,19 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
 
   // View Mode: 'route_map' (Route TSP map) | 'monitor_dashboard' (QC Team Monitor Grid)
   const [viewMode, setViewMode] = useState<'route_map' | 'monitor_dashboard'>('route_map');
+  const [mobileTab, setMobileTab] = useState<'list' | 'map'>('list');
   const [teamSchedule, setTeamSchedule] = useState<any[]>([]);
   const [isScheduleLoading, setIsScheduleLoading] = useState<boolean>(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
+
+  // Invalidate map size on mobile tab switch
+  useEffect(() => {
+    if (mobileTab === 'map' && mapInstanceRef.current) {
+      setTimeout(() => {
+        mapInstanceRef.current?.invalidateSize();
+      }, 150);
+    }
+  }, [mobileTab]);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -1124,19 +1134,77 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
         </div>
       </div>
 
-      {/* MAIN TWO-COLUMN VIEW: MAP ON LEFT/TOP, TIMELINE CARDS ON RIGHT */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(340px, 1.2fr)', gap: '1.25rem' }}>
-        {/* LEFT COLUMN: INTERACTIVE ROUTE MAP */}
+      {/* MOBILE SEGMENTED VIEW SWITCHER (Only visible on mobile screens) */}
+      <div className="qc-mobile-view-tabs" style={{ marginBottom: '1rem' }}>
         <div style={{
-          background: 'var(--card-bg, #ffffff)',
-          borderRadius: '16px',
-          border: '1px solid var(--border-color, #e5e7eb)',
-          padding: '1rem',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '620px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          background: 'var(--bg-tertiary, #e2e8f0)',
+          padding: '4px',
+          borderRadius: '12px',
+          border: '1px solid var(--border-color, #cbd5e1)'
         }}>
+          <button
+            type="button"
+            onClick={() => setMobileTab('list')}
+            style={{
+              padding: '0.65rem 0.5rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: mobileTab === 'list' ? 'var(--card-bg, #ffffff)' : 'transparent',
+              color: mobileTab === 'list' ? '#2563eb' : 'var(--text-secondary)',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              boxShadow: mobileTab === 'list' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            <CheckSquare size={16} /> 📋 รายการตรวจ ({currentPlan?.items?.length || 0})
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('map')}
+            style={{
+              padding: '0.65rem 0.5rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: mobileTab === 'map' ? 'var(--card-bg, #ffffff)' : 'transparent',
+              color: mobileTab === 'map' ? '#2563eb' : 'var(--text-secondary)',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              boxShadow: mobileTab === 'map' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            <Navigation size={16} /> 🗺️ แผนที่เส้นทาง
+          </button>
+        </div>
+      </div>
+
+      {/* MAIN TWO-COLUMN VIEW: MAP ON LEFT/TOP, TIMELINE CARDS ON RIGHT */}
+      <div className="qc-main-grid">
+        {/* LEFT COLUMN: INTERACTIVE ROUTE MAP */}
+        <div 
+          className={`qc-map-column ${mobileTab === 'list' ? 'qc-column-hide-mobile' : ''}`}
+          style={{
+            background: 'var(--card-bg, #ffffff)',
+            borderRadius: '16px',
+            border: '1px solid var(--border-color, #e5e7eb)',
+            padding: '1rem',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '620px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               <Layers size={17} color="#2563eb" /> แผนที่เส้นทางการเดินทาง (Route GIS Map)
@@ -1160,7 +1228,10 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
         </div>
 
         {/* RIGHT COLUMN: SITE STOPS TIMELINE & ACTION CARDS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div 
+          className={`qc-list-column ${mobileTab === 'map' ? 'qc-column-hide-mobile' : ''}`}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
               ลำดับการเข้าตรวจประจำวัน ({currentPlan?.items?.length || 0} รายการ)
@@ -1210,6 +1281,8 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
 
           {/* List of Site Cards */}
           {currentPlan?.items?.map((item, index) => {
+            const nextActiveStopId = currentPlan?.items?.find(it => it.status !== 'Completed')?.id;
+            const isNextActive = item.id === nextActiveStopId && item.status !== 'Completed';
             const isFirst = index === 0;
             const isCompleted = item.status === 'Completed';
             const isCheckedIn = item.status === 'Checked In';
@@ -1231,13 +1304,40 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
                 style={{
                   background: 'var(--card-bg, #ffffff)',
                   borderRadius: '14px',
-                  border: isCheckedIn ? '2px solid #06b6d4' : '1px solid var(--border-color, #e5e7eb)',
+                  border: isNextActive 
+                    ? '2px solid #2563eb' 
+                    : isCheckedIn 
+                      ? '2px solid #06b6d4' 
+                      : '1px solid var(--border-color, #e5e7eb)',
                   padding: '1.15rem',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  boxShadow: isNextActive ? '0 4px 20px rgba(37, 99, 235, 0.15)' : '0 2px 8px rgba(0,0,0,0.03)',
                   position: 'relative',
+                  marginTop: isNextActive ? '0.75rem' : '0',
                   transition: 'all 0.2s ease'
                 }}
               >
+                {/* NEXT STOP ACTIVE BADGE */}
+                {isNextActive && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-11px',
+                    left: '14px',
+                    background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                    color: 'white',
+                    padding: '2px 10px',
+                    borderRadius: '12px',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.3px',
+                    boxShadow: '0 2px 6px rgba(37, 99, 235, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    zIndex: 2
+                  }}>
+                    <Sparkles size={11} /> 🎯 จุดตรวจถัดไป (NEXT STOP)
+                  </div>
+                )}
                 {/* TOP BAR: ORDER BADGE, TIME SLOT, STATUS, DELETE */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
