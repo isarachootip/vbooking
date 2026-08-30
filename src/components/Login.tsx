@@ -139,12 +139,14 @@ export const Login = ({ onLogin, availableUsers }: LoginProps) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <form onSubmit={handlePasswordLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', display: 'block', fontWeight: 500 }}>Email Address</label>
+              <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', display: 'block', fontWeight: 500 }}>
+                อีเมล / รหัสผู้ใช้งาน (เช่น bnagm, nwmgm หรือ Admin)
+              </label>
               <input 
-                type="email" 
+                type="text" 
                 value={email} 
                 onChange={e => setEmail(e.target.value)} 
-                placeholder="name@company.com" 
+                placeholder="เช่น bnagm หรือ isarachootip@gmail.com" 
                 style={{
                   background: 'rgba(255,255,255,0.05)',
                   border: '1px solid var(--border-color)',

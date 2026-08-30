@@ -297,6 +297,24 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [siteCoordinatorLineId, setSiteCoordinatorLineId] = useState('');
   const [siteMapUrl, setSiteMapUrl] = useState('');
 
+  // Permissions
+  const isAdmin = Boolean(
+    (currentUser?.globalRole as string) === 'Admin' || 
+    (currentUser?.globalRole as string) === 'SuperAdmin' || 
+    currentUser?.department === 'Management' || 
+    currentUser?.email === 'isarachootip@gmail.com' ||
+    currentUser?.id === 'u_admin'
+  );
+
+  const isGmStore = Boolean(
+    currentUser?.department?.includes('GM') || 
+    currentUser?.name?.includes('GM') || 
+    currentUser?.globalRole === 'Manager' || 
+    currentUser?.email?.includes('gm')
+  );
+
+  const canApproveSiteVisit = isAdmin || isGmStore;
+
   // Follow-up Modal & History
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
   const [selectedLeadForFollowup, setSelectedLeadForFollowup] = useState<Lead | null>(null);
@@ -1850,9 +1868,9 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
             style={{
               padding: '0.65rem 1.1rem',
               borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-color)',
-              background: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
+              border: canApproveSiteVisit ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--border-color)',
+              background: canApproveSiteVisit ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-secondary)',
+              color: canApproveSiteVisit ? '#059669' : 'var(--text-primary)',
               fontWeight: 700,
               fontSize: '0.85rem',
               display: 'flex',
@@ -1862,8 +1880,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
               boxShadow: 'var(--shadow-sm)'
             }}
           >
-            <ShieldCheck size={16} color="#059669" />
-            อนุมัตินัดหมายออก Site
+            <ShieldCheck size={16} color={canApproveSiteVisit ? '#059669' : '#ca8a04'} />
+            อนุมัตินัดหมายออก Site {isGmStore ? '(GM)' : isAdmin ? '(Admin)' : ''}
           </button>
           
           <button 

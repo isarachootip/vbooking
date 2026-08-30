@@ -420,6 +420,20 @@ exports.approveSiteVisit = async (req, res) => {
       appointment_time
     } = req.body;
 
+    // Check authorization: Only Admin and GM Store can approve/reject site visits
+    const callerId = req.headers['x-user-id'] || '';
+    if (callerId) {
+      const userRes = await pool.query('SELECT id, global_role, department, name, email FROM users WHERE id = $1', [callerId]);
+      const caller = userRes.rows[0];
+      if (caller) {
+        const isAdmin = caller.global_role === 'Admin' || caller.global_role === 'SuperAdmin' || caller.department === 'Management' || caller.email === 'isarachootip@gmail.com' || caller.id === 'u_admin';
+        const isGm = caller.department?.includes('GM') || caller.name?.includes('GM') || caller.global_role === 'Manager' || caller.email?.includes('gm');
+        if (!isAdmin && !isGm) {
+          return res.status(403).json({ error: 'สิทธิ์การอนุมัติสงวนไว้สำหรับผู้ดูแลระบบ (Admin) และผู้จัดการสาขา (GM Store) เท่านั้น' });
+        }
+      }
+    }
+
     const now = new Date().toISOString();
 
     let fullAppointmentStr = null;

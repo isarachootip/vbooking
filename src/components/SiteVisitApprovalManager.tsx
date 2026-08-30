@@ -50,10 +50,36 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
   branches = [],
   onRefreshParent
 }) => {
+  const isAdmin = Boolean(
+    (currentUser?.globalRole as string) === 'Admin' || 
+    (currentUser?.globalRole as string) === 'SuperAdmin' || 
+    currentUser?.department === 'Management' || 
+    currentUser?.email === 'isarachootip@gmail.com' ||
+    currentUser?.id === 'u_admin'
+  );
+
+  const isGmStore = Boolean(
+    currentUser?.department?.includes('GM') || 
+    currentUser?.name?.includes('GM') || 
+    currentUser?.globalRole === 'Manager' || 
+    currentUser?.email?.includes('gm')
+  );
+
+  const canApprove = isAdmin || isGmStore;
+
+  const userAssignedBranch = (currentUser?.assignedBranches && currentUser.assignedBranches.length > 0)
+    ? currentUser.assignedBranches[0]
+    : (currentUser?.name?.match(/\(([^)]+)\)/)?.[1] || '');
+
   const [siteVisits, setSiteVisits] = useState<SiteVisitLead[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>('Pending');
-  const [branchFilter, setBranchFilter] = useState<string>('All');
+  const [branchFilter, setBranchFilter] = useState<string>(() => {
+    if (isGmStore && !isAdmin && userAssignedBranch) {
+      return userAssignedBranch;
+    }
+    return 'All';
+  });
   const [searchQuery, setSearchQuery] = useState<string>('');
   
   // Action states for inline editing/assigning
@@ -120,6 +146,11 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
   }, [statusFilter, branchFilter]);
 
   const handleApproveOrReject = async (leadId: string, approvalStatus: 'Approved' | 'Rejected') => {
+    if (!canApprove) {
+      alert('⚠️ สิทธิ์การอนุมัติสงวนไว้สำหรับผู้ดูแลระบบ (Admin) และผู้จัดการสาขา (GM Store) เท่านั้น');
+      return;
+    }
+
     const salesId = selectedSales[leadId];
     const assignedUser = users.find(u => u.id === salesId);
     const notes = actionNotes[leadId] || '';
@@ -206,6 +237,55 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
         >
           {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {toast.msg}
+        </div>
+      )}
+
+      {/* PERMISSION ROLE NOTICE */}
+      {!canApprove ? (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.08)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          color: '#dc2626',
+          padding: '0.85rem 1.25rem',
+          borderRadius: '10px',
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem'
+        }}>
+          <AlertCircle size={20} color="#dc2626" />
+          <div>
+            <div>⚠️ โหมดดูข้อมูลเท่านั้น (View-Only Mode)</div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+              สิทธิ์การอนุมัตินัดหมายและมอบหมาย Sales สงวนไว้สำหรับผู้ดูแลระบบ (Admin) และผู้จัดการสาขา (GM Store) เท่านั้น
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          background: 'rgba(16, 185, 129, 0.08)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          color: '#059669',
+          padding: '0.75rem 1.25rem',
+          borderRadius: '10px',
+          fontSize: '0.825rem',
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.5rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ShieldCheck size={18} color="#059669" />
+            <span>
+              เข้าใช้งานในฐานะ: <strong>{currentUser?.name}</strong> {isAdmin ? '(🛡️ ผู้ดูแลระบบ Admin)' : `(👔 ผู้จัดการสาขา GM Store ${userAssignedBranch ? `• ${userAssignedBranch}` : ''})`}
+            </span>
+          </div>
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, background: 'rgba(16, 185, 129, 0.15)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+            ✓ มีสิทธิ์อนุมัติรายการนัดหมาย
+          </span>
         </div>
       )}
 
@@ -488,6 +568,7 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
                         เลือก Sales / ผู้เชี่ยวชาญไปพบลูกค้าหน้างาน *
                       </label>
                       <select
+                        disabled={!canApprove}
                         value={selectedSales[lead.id] || lead.sales_contact_id || ''}
                         onChange={e => setSelectedSales(prev => ({ ...prev, [lead.id]: e.target.value }))}
                         style={{
@@ -498,7 +579,9 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
                           borderRadius: '6px',
                           color: 'var(--text-primary)',
                           fontSize: '0.85rem',
-                          fontWeight: 700
+                          fontWeight: 700,
+                          opacity: !canApprove ? 0.7 : 1,
+                          cursor: !canApprove ? 'not-allowed' : 'default'
                         }}
                       >
                         <option value="">- เลือก Sales ที่จะไปพบลูกค้า -</option>
@@ -517,7 +600,8 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
                       </label>
                       <input 
                         type="text"
-                        placeholder="เช่น ให้พกแคตตาล็อกครัวและตัวอย่างกระเบื้องไปด้วย..."
+                        disabled={!canApprove}
+                        placeholder={!canApprove ? 'เฉพาะ Admin และ GM Store เท่านั้น' : 'เช่น ให้พกแคตตาล็อกครัวและตัวอย่างกระเบื้องไปด้วย...'}
                         value={actionNotes[lead.id] !== undefined ? actionNotes[lead.id] : (lead.site_visit_approval_notes || '')}
                         onChange={e => setActionNotes(prev => ({ ...prev, [lead.id]: e.target.value }))}
                         style={{
@@ -527,7 +611,9 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
                           border: '1px solid var(--border-color)',
                           borderRadius: '6px',
                           color: 'var(--text-primary)',
-                          fontSize: '0.825rem'
+                          fontSize: '0.825rem',
+                          opacity: !canApprove ? 0.7 : 1,
+                          cursor: !canApprove ? 'not-allowed' : 'default'
                         }}
                       />
                     </div>
@@ -535,48 +621,52 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
 
                   {/* ACTION BUTTONS */}
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      disabled={isProcessing[lead.id]}
-                      onClick={() => handleApproveOrReject(lead.id, 'Rejected')}
-                      style={{
-                        background: 'transparent',
-                        border: '1px solid #ef4444',
-                        color: '#ef4444',
-                        padding: '0.45rem 1rem',
-                        borderRadius: '6px',
-                        fontSize: '0.825rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.35rem'
-                      }}
-                    >
-                      <X size={15} /> ปฏิเสธนัดหมาย
-                    </button>
+                    {canApprove && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isProcessing[lead.id]}
+                          onClick={() => handleApproveOrReject(lead.id, 'Rejected')}
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid #ef4444',
+                            color: '#ef4444',
+                            padding: '0.45rem 1rem',
+                            borderRadius: '6px',
+                            fontSize: '0.825rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem'
+                          }}
+                        >
+                          <X size={15} /> ปฏิเสธนัดหมาย
+                        </button>
 
-                    <button
-                      type="button"
-                      disabled={isProcessing[lead.id]}
-                      onClick={() => handleApproveOrReject(lead.id, 'Approved')}
-                      style={{
-                        background: 'linear-gradient(135deg, #10b981, #059669)',
-                        border: 'none',
-                        color: 'white',
-                        padding: '0.45rem 1.25rem',
-                        borderRadius: '6px',
-                        fontSize: '0.825rem',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        boxShadow: '0 2px 6px rgba(16, 185, 129, 0.35)'
-                      }}
-                    >
-                      <Check size={16} /> ✅ อนุมัตินัดหมาย & มอบหมาย Sales
-                    </button>
+                        <button
+                          type="button"
+                          disabled={isProcessing[lead.id]}
+                          onClick={() => handleApproveOrReject(lead.id, 'Approved')}
+                          style={{
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            border: 'none',
+                            color: 'white',
+                            padding: '0.45rem 1.25rem',
+                            borderRadius: '6px',
+                            fontSize: '0.825rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.35)'
+                          }}
+                        >
+                          <Check size={16} /> ✅ อนุมัตินัดหมาย & มอบหมาย Sales
+                        </button>
+                      </>
+                    )}
 
                     <button
                       type="button"

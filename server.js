@@ -1574,6 +1574,58 @@ const initDB = async () => {
       console.log('✅ One-time migration: normalized spaces in usernames and messages.');
     }
 
+    // ONE-TIME: Seed GM Store users for all branches (store+"GM", e.g. Bangna = bnagm)
+    const migSeedGm = 'seed_gm_store_users_v2';
+    const migSeedGmDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migSeedGm]);
+    if (migSeedGmDone.rows.length === 0) {
+      console.log('Running migration: seeding GM Store users for all branches...');
+      const storeUsersRes = await client.query("SELECT * FROM users WHERE id LIKE 'usr-store-%' ORDER BY id ASC");
+      const defaultPwHash = crypto.createHash('sha256').update('test123').digest('hex');
+
+      for (const su of storeUsersRes.rows) {
+        const storeCode = su.id.replace('usr-store-', '').toLowerCase();
+        const gmId = `usr-gm-${storeCode}`;
+        
+        let branchName = '';
+        const m = su.name.match(/\(([^)]+)\)/);
+        if (m) {
+          branchName = m[1];
+        } else if (su.assigned_branches && su.assigned_branches.length > 0) {
+          branchName = su.assigned_branches[0];
+        }
+
+        const codeUpper = storeCode.toUpperCase();
+        const gmName = branchName ? `${codeUpper}GM (${branchName})` : `${codeUpper}GM`;
+        const gmEmail = `${storeCode}gm@chg.co.th`;
+        const assignedBranches = branchName ? [branchName] : (su.assigned_branches || []);
+        const serviceZones = su.service_zones || [];
+        const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${gmId}`;
+
+        await client.query(
+          `INSERT INTO users (
+             id, name, email, avatar, global_role, department, password_hash,
+             assigned_branches, service_zones, assigned_zones, skills, job_types
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           ON CONFLICT (id) DO UPDATE SET
+             name = EXCLUDED.name,
+             email = EXCLUDED.email,
+             global_role = EXCLUDED.global_role,
+             department = EXCLUDED.department,
+             assigned_branches = EXCLUDED.assigned_branches,
+             service_zones = EXCLUDED.service_zones,
+             password_hash = COALESCE(users.password_hash, EXCLUDED.password_hash)`,
+          [
+            gmId, gmName, gmEmail, avatar, 'Manager', 'GM Store', defaultPwHash,
+            assignedBranches, serviceZones, assignedBranches, ['GM Approval', 'Site Visit Approval', 'Store Management'],
+            ['Store Management', 'Site Visit Approval']
+          ]
+        );
+      }
+      await client.query('INSERT INTO migrations (id) VALUES ($1)', [migSeedGm]);
+      console.log('✅ One-time migration: seeded GM Store users for all branches.');
+    }
+
     // ONE-TIME: Insert Check-in bar and Check-out bar tasks in all task templates that have a Survey task
     const migCheckinCheckoutSurvey = 'add_checkin_checkout_after_survey_v3';
     const migCheckinCheckoutSurveyDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migCheckinCheckoutSurvey]);
@@ -2274,7 +2326,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// Password Authentication Endpoint
+// Password Authentication Endpoint (supports email, username, or GM/Store code e.g. bnagm, isarachootip)
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -2282,7 +2334,29 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
-    const userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const rawInput = email.trim();
+    const cleanLower = rawInput.toLowerCase();
+    const candidateEmail = cleanLower.includes('@') ? cleanLower : `${cleanLower}@chg.co.th`;
+
+    const userRes = await pool.query(
+      `SELECT * FROM users 
+       WHERE LOWER(email) = $1 
+          OR LOWER(email) = $2 
+          OR LOWER(id) = $1 
+          OR LOWER(id) = $3
+          OR LOWER(name) = $1
+          OR LOWER(name) LIKE $4
+       ORDER BY 
+         CASE 
+           WHEN LOWER(email) = $1 THEN 1 
+           WHEN LOWER(email) = $2 THEN 2 
+           WHEN LOWER(id) = $1 THEN 3 
+           WHEN LOWER(id) = $3 THEN 4 
+           ELSE 5 
+         END ASC
+       LIMIT 1`,
+      [cleanLower, candidateEmail, `usr-gm-${cleanLower}`, `${cleanLower}%`]
+    );
     const user = userRes.rows[0];
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -2295,7 +2369,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
     
     if (!user.password_hash) {
-      if (password === '123456' || password === 'password123') {
+      if (password === '123456' || password === 'test123' || password === 'password123') {
         const defaultHash = crypto.createHash('sha256').update(password).digest('hex');
         await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [defaultHash, user.id]);
       } else {
@@ -2312,7 +2386,9 @@ app.post('/api/auth/login', async (req, res) => {
       department: user.department,
       gender: user.gender || '',
       birthday: user.birthday || '',
-      skills: user.skills || []
+      skills: user.skills || [],
+      assignedBranches: user.assigned_branches || [],
+      serviceZones: user.service_zones || []
     };
 
     res.json(userData);
