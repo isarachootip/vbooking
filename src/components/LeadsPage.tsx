@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, ShieldAlert, Lock, Building2, User } from 'lucide-react';
 import type { User as UserType, Customer, CustomerSite } from '../types';
-import { formatToDDMMYYYY, getTodayDateString, isDateInPast } from '../utils';
+import { 
+  formatToDDMMYYYY, getTodayDateString, isDateInPast,
+  findQcForBranch, sortQcListByBranch 
+} from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { GisMapPickerModal, formatToDMS } from './GisMapPickerModal';
 import { SiteVisitApprovalManager } from './SiteVisitApprovalManager';
@@ -496,9 +499,11 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       const response = await fetch(`/api/users/available-surveyors?date=${encodeURIComponent(dateStr)}`, { headers });
       if (response.ok) {
         const data = await response.json();
-        setAvailableSurveyors(data);
+        const { matchedQcs, sortedList } = sortQcListByBranch(data, branch, selectedZone);
+        setAvailableSurveyors(sortedList);
         if (data.length > 0 && !surveyorId) {
-          setSurveyorId(data[0].id);
+          const topPick = matchedQcs.length > 0 ? matchedQcs[0] : sortedList[0];
+          setSurveyorId(topPick.id || '');
         }
       }
     } catch (err) {
@@ -547,7 +552,12 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     const existingDate = lead.appointment_date ? lead.appointment_date.split(' ')[0] : '';
     setAppointmentDate(existingDate && !isDateInPast(existingDate) ? existingDate : getTodayDateString());
     setAppointmentTime(lead.appointment_date && lead.appointment_date.includes(' ') ? lead.appointment_date.split(' ')[1] : '10:00');
-    setAssigneeName(lead.appointment_assignee || currentUser?.name || 'แอดมิน');
+    
+    // Prioritize branch QC if not previously assigned
+    const leadBranch = lead.branch || branch;
+    const branchQc = findQcForBranch(leadBranch, users);
+    setAssigneeName(lead.appointment_assignee || (branchQc ? branchQc.name : (currentUser?.name || 'แอดมิน')));
+    
     setFollowupNotes('');
     setFollowupNewStatus(lead.status === 'New' ? 'Contacted' : lead.status);
 
@@ -2805,14 +2815,55 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>ผู้รับผิดชอบ / ช่าง QC</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.15rem' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ผู้รับผิดชอบ / ช่าง QC</label>
+                      {(() => {
+                        const leadBranch = selectedLeadForFollowup?.branch || branch;
+                        const branchQc = findQcForBranch(leadBranch, users);
+                        if (branchQc && branchQc.name !== assigneeName) {
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => setAssigneeName(branchQc.name)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#059669',
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.2rem',
+                                padding: 0
+                              }}
+                              title={`คลิกเพื่อเลือก ${branchQc.name} ที่ตรงกับ ${leadBranch}`}
+                            >
+                              ✨ เลือก QC ตรงสาขา
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                     <input 
                       type="text"
+                      list="qc-followup-assignee-list"
                       value={assigneeName}
                       onChange={e => setAssigneeName(e.target.value)}
                       placeholder="ระบุชื่อผู้รับผิดชอบ"
                       style={{ width: '100%', padding: '0.45rem 0.65rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.825rem' }}
                     />
+                    <datalist id="qc-followup-assignee-list">
+                      {(() => {
+                        const leadBranch = selectedLeadForFollowup?.branch || branch;
+                        const qcUsers = users.filter(u => u.department?.includes('QC') || u.name.includes('QC') || u.globalRole === 'QC');
+                        const { sortedList } = sortQcListByBranch(qcUsers, leadBranch, selectedZone);
+                        return sortedList.map(u => (
+                          <option key={u.id} value={u.name} />
+                        ));
+                      })()}
+                    </datalist>
                   </div>
                 </div>
               </div>
@@ -3574,9 +3625,30 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                                 >
                                   {!surveyDate && <option value="">เลือกเวลาเพื่อดึงรายชื่อ...</option>}
                                   {surveyDate && availableSurveyors.length === 0 && <option value="">ไม่มีช่างว่างในช่วงเวลานี้</option>}
-                                  {availableSurveyors.map(u => (
-                                    <option key={u.id} value={u.id}>{u.name} ({u.global_role})</option>
-                                  ))}
+                                  {(() => {
+                                    const { matchedQcs, otherQcs, sortedList } = sortQcListByBranch(availableSurveyors, branch, selectedZone);
+                                    if (matchedQcs.length > 0) {
+                                      return (
+                                        <>
+                                          <optgroup label={`⭐ ช่าง QC ตรงสาขา (${branch})`}>
+                                            {matchedQcs.map(u => (
+                                              <option key={u.id} value={u.id}>⭐ {u.name} (ตรงสาขา)</option>
+                                            ))}
+                                          </optgroup>
+                                          {otherQcs.length > 0 && (
+                                            <optgroup label="👥 ช่าง QC สาขา/โซนอื่นๆ">
+                                              {otherQcs.map(u => (
+                                                <option key={u.id} value={u.id}>{u.name} ({u.global_role || u.globalRole || 'QC'})</option>
+                                              ))}
+                                            </optgroup>
+                                          )}
+                                        </>
+                                      );
+                                    }
+                                    return sortedList.map(u => (
+                                      <option key={u.id} value={u.id}>{u.name} ({u.global_role || u.globalRole || 'QC'})</option>
+                                    ));
+                                  })()}
                                 </select>
                               </div>
                             </div>
@@ -4242,13 +4314,21 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         initialDate={appointmentDate}
         currentAssigneeName={assigneeName}
         currentTimeSlot={appointmentTime}
+        branch={selectedLeadForFollowup?.branch || branch}
         leadInfo={selectedLeadForFollowup ? {
           id: selectedLeadForFollowup.id,
           customerName: selectedLeadForFollowup.customer_name,
           customerPhone: selectedLeadForFollowup.customer_phone,
           address: selectedLeadForFollowup.customer_address,
-          jobType: selectedLeadForFollowup.job_type
-        } : null}
+          jobType: selectedLeadForFollowup.job_type,
+          branch: selectedLeadForFollowup.branch || branch,
+          zone: selectedZone
+        } : {
+          id: '',
+          customerName: '',
+          branch: branch,
+          zone: selectedZone
+        }}
         onSelectBooking={({ qcName, date, timeSlot, timeOnly }) => {
           setAppointmentDate(date);
           setAppointmentTime(timeSlot || timeOnly);

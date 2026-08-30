@@ -4,7 +4,10 @@ import {
   AlertCircle, ShieldCheck, Check, Sparkles, AlertTriangle, 
   ChevronRight, Lock, MapPin, Phone
 } from 'lucide-react';
-import { formatToDDMMYYYY, getTodayDateString, isDateInPast } from '../utils';
+import { 
+  formatToDDMMYYYY, getTodayDateString, isDateInPast,
+  sortQcListByBranch, isQcMatchedForBranch
+} from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 
 export interface QcSlotInfo {
@@ -30,6 +33,9 @@ export interface QcScheduleUser {
   avatar?: string;
   globalRole?: string;
   department?: string;
+  assignedBranches?: string[] | null;
+  serviceZones?: string[] | null;
+  assignedZones?: string[] | null;
   totalBooked: number;
   totalSlots: number;
   isFullyBooked: boolean;
@@ -42,12 +48,15 @@ interface QcBookingModalProps {
   initialDate?: string;
   currentAssigneeName?: string;
   currentTimeSlot?: string;
+  branch?: string;
   leadInfo?: {
     id: string;
     customerName: string;
     customerPhone?: string;
     address?: string;
     jobType?: string;
+    branch?: string;
+    zone?: string;
   } | null;
   onSelectBooking: (booking: {
     qcId: string;
@@ -139,6 +148,7 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
   initialDate,
   currentAssigneeName = '',
   currentTimeSlot = '',
+  branch,
   leadInfo,
   onSelectBooking
 }) => {
@@ -151,6 +161,9 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedQcId, setSelectedQcId] = useState<string>('');
   const [selectedSlot, setSelectedSlot] = useState<string>(currentTimeSlot || '');
+
+  const effectiveBranch = (branch || leadInfo?.branch || '').trim();
+  const effectiveZone = (leadInfo?.zone || '').trim();
 
   // Quick date jump
   const setQuickDate = (offsetDays: number) => {
@@ -171,13 +184,22 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
         if (schedule.length > 0) {
           setTeamSchedule(schedule);
 
-          // Auto select first available QC if none selected
+          const { matchedQcs, sortedList } = sortQcListByBranch(schedule, effectiveBranch, effectiveZone);
+
+          // Auto select logic:
+          // 1. If currently selected valid QC in schedule, keep it
+          // 2. If currentAssigneeName matches someone in schedule, select them
+          // 3. If there are branch matched QCs, select the first available matched QC
+          // 4. Otherwise select first available from sortedList
           if (!selectedQcId || !schedule.some(s => s.qcId === selectedQcId)) {
             const matchExisting = schedule.find(s => s.qcName === currentAssigneeName || s.qcId === currentAssigneeName);
             if (matchExisting) {
               setSelectedQcId(matchExisting.qcId);
+            } else if (matchedQcs.length > 0) {
+              const firstAvailableMatched = matchedQcs.find(s => !s.isFullyBooked) || matchedQcs[0];
+              setSelectedQcId(firstAvailableMatched.qcId);
             } else {
-              const firstAvailable = schedule.find(s => !s.isFullyBooked) || schedule[0];
+              const firstAvailable = sortedList.find(s => !s.isFullyBooked) || sortedList[0];
               setSelectedQcId(firstAvailable.qcId);
             }
           }
@@ -186,14 +208,18 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
       }
       // Fallback
       setTeamSchedule(DEFAULT_QC_LIST);
+      const { matchedQcs, sortedList } = sortQcListByBranch(DEFAULT_QC_LIST, effectiveBranch, effectiveZone);
       if (!selectedQcId) {
-        setSelectedQcId(DEFAULT_QC_LIST[0].qcId);
+        const initialPick = matchedQcs.length > 0 ? matchedQcs[0] : sortedList[0];
+        setSelectedQcId(initialPick.qcId);
       }
     } catch (err) {
       console.error('Error fetching QC schedule:', err);
       setTeamSchedule(DEFAULT_QC_LIST);
+      const { matchedQcs, sortedList } = sortQcListByBranch(DEFAULT_QC_LIST, effectiveBranch, effectiveZone);
       if (!selectedQcId) {
-        setSelectedQcId(DEFAULT_QC_LIST[0].qcId);
+        const initialPick = matchedQcs.length > 0 ? matchedQcs[0] : sortedList[0];
+        setSelectedQcId(initialPick.qcId);
       }
     } finally {
       setIsLoading(false);
@@ -205,9 +231,10 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
       const d = normalizeDateToIso(initialDate);
       const validDate = d && !isDateInPast(d) ? d : todayStr;
       setSelectedDate(validDate);
+      setSelectedSlot(currentTimeSlot || '');
       fetchSchedule(validDate);
     }
-  }, [isOpen, initialDate]);
+  }, [isOpen, initialDate, effectiveBranch]);
 
   useEffect(() => {
     if (isOpen && selectedDate) {
@@ -217,7 +244,8 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentQc = teamSchedule.find(s => s.qcId === selectedQcId) || teamSchedule[0];
+  const { matchedQcs, otherQcs, sortedList } = sortQcListByBranch(teamSchedule, effectiveBranch, effectiveZone);
+  const currentQc = teamSchedule.find(s => s.qcId === selectedQcId) || (matchedQcs.length > 0 ? matchedQcs[0] : teamSchedule[0]);
 
   const handleConfirm = () => {
     if (selectedDate && isDateInPast(selectedDate)) {
@@ -314,11 +342,16 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
           {leadInfo && (
             <div style={{ background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '8px', padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                   <span>🎯 จุดตรวจที่ต้องการจอง:</span>
                   <span style={{ color: 'var(--text-primary)' }}>{leadInfo.customerName}</span>
+                  {effectiveBranch && (
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                      🏢 {effectiveBranch}
+                    </span>
+                  )}
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {leadInfo.customerPhone && <span>📞 {leadInfo.customerPhone}</span>}
                   {leadInfo.address && <span>📍 {leadInfo.address}</span>}
                 </div>
@@ -432,10 +465,17 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
             
             {/* Column 1: QC Officer List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              <span style={{ fontSize: '0.825rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <UserIcon size={16} color="#059669" />
-                1. เลือกเจ้าหน้าที่ QC / ผู้สำรวจ:
-              </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.825rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <UserIcon size={16} color="#059669" />
+                  1. เลือกเจ้าหน้าที่ QC / ผู้สำรวจ:
+                </span>
+                {effectiveBranch && (
+                  <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 700 }}>
+                    🎯 อิงตาม: {effectiveBranch}
+                  </span>
+                )}
+              </div>
 
               {isLoading ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
@@ -446,74 +486,188 @@ export const QcBookingModal: React.FC<QcBookingModalProps> = ({
                   ไม่พบข้อมูลผู้ใช้งาน QC
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '340px', overflowY: 'auto' }}>
-                  {teamSchedule.map(u => {
-                    const isSelected = selectedQcId === u.qcId;
-                    const availableSlots = u.totalSlots - u.totalBooked;
-
-                    return (
-                      <div
-                        key={u.qcId}
-                        onClick={() => {
-                          setSelectedQcId(u.qcId);
-                          // reset slot if current is booked
-                          const slotInfo = u.slots.find(s => s.slot === selectedSlot);
-                          if (slotInfo?.isBooked) {
-                            setSelectedSlot('');
-                          }
-                        }}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          borderRadius: '8px',
-                          border: isSelected ? '2px solid #059669' : '1px solid var(--border-color)',
-                          background: isSelected ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-tertiary)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                          <div style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            background: isSelected ? '#059669' : '#64748b',
-                            color: 'white',
-                            fontWeight: 800,
-                            fontSize: '0.85rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            {u.qcName.slice(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                              {u.qcName}
-                            </div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                              แผนก {u.department || 'QC'} • {u.globalRole || 'Employee'}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Workload badge */}
-                        <div style={{ textAlign: 'right' }}>
-                          {u.isFullyBooked ? (
-                            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#dc2626', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
-                              🔒 เต็มทั้ง 4 คิว
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#059669', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
-                              ว่าง {availableSlots} คิว
-                            </span>
-                          )}
-                        </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '360px', overflowY: 'auto', paddingRight: '0.2rem' }}>
+                  
+                  {/* Section 1: Top Branch-Matched QC (ตรงสาขา อันดับแรก) */}
+                  {matchedQcs.length > 0 && (
+                    <div style={{ marginBottom: '0.15rem' }}>
+                      <div style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 800,
+                        color: '#059669',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        padding: '0.25rem 0.4rem',
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        borderRadius: '4px',
+                        marginBottom: '0.4rem'
+                      }}>
+                        <Sparkles size={13} color="#059669" />
+                        ⭐ เจ้าหน้าที่ QC ตรงสาขา / ดูแลพื้นที่ ({effectiveBranch})
                       </div>
-                    );
-                  })}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                        {matchedQcs.map(u => {
+                          const isSelected = selectedQcId === u.qcId;
+                          const availableSlots = u.totalSlots - u.totalBooked;
+
+                          return (
+                            <div
+                              key={u.qcId}
+                              onClick={() => {
+                                setSelectedQcId(u.qcId);
+                                const slotInfo = u.slots.find(s => s.slot === selectedSlot);
+                                if (slotInfo?.isBooked) {
+                                  setSelectedSlot('');
+                                }
+                              }}
+                              style={{
+                                padding: '0.75rem 1rem',
+                                borderRadius: '8px',
+                                border: isSelected ? '2px solid #059669' : '1.5px solid rgba(16, 185, 129, 0.4)',
+                                background: isSelected ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.03)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                transition: 'all 0.15s ease',
+                                boxShadow: isSelected ? '0 0 0 1px #059669' : 'none'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                                <div style={{
+                                  width: '36px',
+                                  height: '36px',
+                                  borderRadius: '50%',
+                                  background: isSelected ? '#059669' : '#10b981',
+                                  color: 'white',
+                                  fontWeight: 800,
+                                  fontSize: '0.85rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  {u.qcName.slice(0, 2).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <span>{u.qcName}</span>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#059669', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.05rem 0.35rem', borderRadius: '3px' }}>
+                                      ✨ ตรงสาขา
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                    แผนก {u.department || 'QC'} • {u.globalRole || 'Employee'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Workload badge */}
+                              <div style={{ textAlign: 'right' }}>
+                                {u.isFullyBooked ? (
+                                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#dc2626', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                                    🔒 เต็มทั้ง 4 คิว
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#059669', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                                    ว่าง {availableSlots} คิว
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Section 2: Other QC Officers (เจ้าหน้าที่ QC ประจำสาขา/โซนอื่นๆ) */}
+                  <div>
+                    {matchedQcs.length > 0 && (
+                      <div style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: 'var(--text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        marginTop: '0.5rem',
+                        marginBottom: '0.4rem',
+                        paddingTop: '0.4rem',
+                        borderTop: '1px dashed var(--border-color)'
+                      }}>
+                        <UserIcon size={13} /> 👥 เจ้าหน้าที่ QC ประจำสาขา/โซนอื่นๆ
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                      {(matchedQcs.length > 0 ? otherQcs : sortedList).map(u => {
+                        const isSelected = selectedQcId === u.qcId;
+                        const availableSlots = u.totalSlots - u.totalBooked;
+
+                        return (
+                          <div
+                            key={u.qcId}
+                            onClick={() => {
+                              setSelectedQcId(u.qcId);
+                              const slotInfo = u.slots.find(s => s.slot === selectedSlot);
+                              if (slotInfo?.isBooked) {
+                                setSelectedSlot('');
+                              }
+                            }}
+                            style={{
+                              padding: '0.75rem 1rem',
+                              borderRadius: '8px',
+                              border: isSelected ? '2px solid #059669' : '1px solid var(--border-color)',
+                              background: isSelected ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-tertiary)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                              <div style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                background: isSelected ? '#059669' : '#64748b',
+                                color: 'white',
+                                fontWeight: 800,
+                                fontSize: '0.85rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                {u.qcName.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                                  {u.qcName}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                  แผนก {u.department || 'QC'} • {u.globalRole || 'Employee'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Workload badge */}
+                            <div style={{ textAlign: 'right' }}>
+                              {u.isFullyBooked ? (
+                                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#dc2626', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                                  🔒 เต็มทั้ง 4 คิว
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#059669', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                                  ว่าง {availableSlots} คิว
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

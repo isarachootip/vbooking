@@ -877,7 +877,124 @@ const initDB = async () => {
         checklist_items     JSONB DEFAULT '[]',
         created_at          TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
+
+      -- Phase 14: Draft Estimations & Multi-Contractor Bidding
+      CREATE TABLE IF NOT EXISTS contractors (
+        id VARCHAR(50) PRIMARY KEY,
+        name VARCHAR(150) NOT NULL,
+        contact_person VARCHAR(150),
+        phone VARCHAR(50),
+        line_id VARCHAR(100),
+        skills TEXT[] DEFAULT '{}',
+        rating NUMERIC DEFAULT 5.0,
+        completed_jobs INTEGER DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'Active',
+        bank_name VARCHAR(100),
+        bank_account_no VARCHAR(100),
+        bank_account_name VARCHAR(150),
+        notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS draft_estimations (
+        id VARCHAR(50) PRIMARY KEY,
+        estimation_number VARCHAR(100) NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        lead_id VARCHAR(50) REFERENCES leads(id) ON DELETE SET NULL,
+        project_id VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL,
+        customer_id VARCHAR(50) REFERENCES customers(id) ON DELETE SET NULL,
+        customer_name VARCHAR(150),
+        customer_phone VARCHAR(50),
+        customer_address TEXT,
+        project_type VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'Draft',
+        target_margin_percent NUMERIC DEFAULT 30,
+        selected_total_cost NUMERIC DEFAULT 0,
+        proposed_subtotal NUMERIC DEFAULT 0,
+        vat_type VARCHAR(50) DEFAULT 'Exclude VAT',
+        proposed_vat_amount NUMERIC DEFAULT 0,
+        proposed_grand_total NUMERIC DEFAULT 0,
+        notes TEXT,
+        converted_quotation_id VARCHAR(50) REFERENCES quotations(id) ON DELETE SET NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        created_by VARCHAR(150),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS draft_estimation_items (
+        id VARCHAR(50) PRIMARY KEY,
+        draft_estimation_id VARCHAR(50) NOT NULL REFERENCES draft_estimations(id) ON DELETE CASCADE,
+        area_name VARCHAR(150) DEFAULT 'พื้นที่ทั่วไป',
+        trade_category VARCHAR(100) DEFAULT 'งานทั่วไป',
+        item_name VARCHAR(250) NOT NULL,
+        specs_description TEXT,
+        quantity NUMERIC NOT NULL DEFAULT 1,
+        unit VARCHAR(50) DEFAULT 'รายการ',
+        price_book_id VARCHAR(50) REFERENCES service_price_book(id) ON DELETE SET NULL,
+        selected_contractor_id VARCHAR(50) REFERENCES contractors(id) ON DELETE SET NULL,
+        selected_contractor_name VARCHAR(150),
+        selected_material_unit_cost NUMERIC DEFAULT 0,
+        selected_labor_unit_cost NUMERIC DEFAULT 0,
+        selected_unit_cost NUMERIC DEFAULT 0,
+        selected_total_cost NUMERIC DEFAULT 0,
+        customer_unit_price NUMERIC DEFAULT 0,
+        customer_total_price NUMERIC DEFAULT 0,
+        sort_order INTEGER DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS contractor_bids (
+        id VARCHAR(50) PRIMARY KEY,
+        draft_estimation_id VARCHAR(50) NOT NULL REFERENCES draft_estimations(id) ON DELETE CASCADE,
+        contractor_id VARCHAR(50) REFERENCES contractors(id) ON DELETE SET NULL,
+        contractor_name VARCHAR(150) NOT NULL,
+        bid_date VARCHAR(50),
+        total_bid_amount NUMERIC DEFAULT 0,
+        estimated_days INTEGER DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'Submitted',
+        notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS contractor_bid_items (
+        id VARCHAR(50) PRIMARY KEY,
+        bid_id VARCHAR(50) NOT NULL REFERENCES contractor_bids(id) ON DELETE CASCADE,
+        draft_item_id VARCHAR(50) NOT NULL REFERENCES draft_estimation_items(id) ON DELETE CASCADE,
+        material_unit_price NUMERIC DEFAULT 0,
+        labor_unit_price NUMERIC DEFAULT 0,
+        total_unit_price NUMERIC DEFAULT 0,
+        total_amount NUMERIC DEFAULT 0,
+        remark TEXT,
+        is_selected BOOLEAN DEFAULT false
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_draft_estimations_lead ON draft_estimations(lead_id);
+      CREATE INDEX IF NOT EXISTS idx_draft_estimations_project ON draft_estimations(project_id);
+      CREATE INDEX IF NOT EXISTS idx_draft_items_estimation ON draft_estimation_items(draft_estimation_id);
+      CREATE INDEX IF NOT EXISTS idx_contractor_bids_estimation ON contractor_bids(draft_estimation_id);
+      CREATE INDEX IF NOT EXISTS idx_contractor_bid_items_bid ON contractor_bid_items(bid_id);
+      CREATE INDEX IF NOT EXISTS idx_contractor_bid_items_draft_item ON contractor_bid_items(draft_item_id);
     `);
+
+    // Seed default sample contractors if empty
+    const contCount = await client.query('SELECT COUNT(*) FROM contractors');
+    if (parseInt(contCount.rows[0].count, 10) === 0) {
+      const defaultContractors = [
+        { id: 'cont_001', name: 'ทีมช่างเอก (ช่างไฟ & ประปาโปร)', contact_person: 'นายเอกชัย', phone: '081-234-5678', line_id: 'ake_electric', skills: '{งานไฟฟ้า,งานประปา,ระบบสุขาภิบาล}', rating: 4.9, completed_jobs: 38 },
+        { id: 'cont_002', name: 'สมศักดิ์ การช่าง (ฝ้าเพดาน & สี)', contact_person: 'นายสมศักดิ์', phone: '089-987-6543', line_id: 'somsak_build', skills: '{งานฝ้าเพดาน,งานทาสี,งานผนังเบา}', rating: 4.8, completed_jobs: 45 },
+        { id: 'cont_003', name: 'ทีมโปรแอร์ เซอร์วิส', contact_person: 'ช่างวิชัย', phone: '086-555-4321', line_id: 'proair_service', skills: '{งานแอร์,เครื่องปรับอากาศ,งานท่อดักท์}', rating: 4.95, completed_jobs: 62 },
+        { id: 'cont_004', name: 'ช่างชัย บิวท์อิน ดีไซน์', contact_person: 'นายวิชัย', phone: '083-111-2233', line_id: 'chai_builtin', skills: '{งานบิวท์อิน,งานเฟอร์นิเจอร์,งานไม้}', rating: 4.7, completed_jobs: 29 }
+      ];
+      for (const c of defaultContractors) {
+        await client.query(`
+          INSERT INTO contractors (id, name, contact_person, phone, line_id, skills, rating, completed_jobs, status, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Active', NOW(), NOW())
+          ON CONFLICT (id) DO NOTHING
+        `, [c.id, c.name, c.contact_person, c.phone, c.line_id, c.skills, c.rating, c.completed_jobs]);
+      }
+      console.log('Seeded default sample contractors into contractors table.');
+    };
 
     // Auto-migrate existing leads data to customers and customer_sites if customers table is empty
     const custCountRes = await client.query('SELECT COUNT(*) FROM customers');
@@ -2943,6 +3060,7 @@ app.get('/api/initial-data', async (req, res) => {
       updatedAt: ts.updated_at || undefined
     }));
 
+
     const taskTemplates = templatesRes.rows.map(tpl => ({
       id: tpl.id,
       title: tpl.title,
@@ -3381,11 +3499,13 @@ const serviceRoutes = require('./src/routes/serviceRoutes.cjs');
 const quotationRoutes = require('./src/routes/quotationRoutes.cjs');
 const dashboardRoutes = require('./src/routes/dashboardRoutes.cjs');
 const qcHandoverRoutes = require('./src/routes/qcHandoverRoutes.cjs');
+const estimationRoutes = require('./src/routes/estimationRoutes.cjs');
 
 app.use('/api/pricebook', serviceRoutes);
 app.use('/api/quotations', quotationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/projects/:projectId/qc', qcHandoverRoutes);
+app.use('/api/estimations', estimationRoutes);
 
 // Endpoint to download Test Scenarios CSV for Google Sheets / Excel
 app.get('/api/test-scenarios/csv', (req, res) => {

@@ -29,3 +29,7 @@ dist-ssr
 .env.development
 .env.local
 
+# Scratch and temp files
+scratch/
+~$*
+

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, FileSpreadsheet, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText, ClipboardList } from 'lucide-react';
 
 import { PMTBrandLogo } from './components/PMTBrandLogo';
 import { Dashboard } from './components/Dashboard';
@@ -25,6 +25,7 @@ import { ProjectTimeline } from './components/ProjectTimeline';
 import { ProjectDetail } from './components/ProjectDetail';
 import { LeadsPage } from './components/LeadsPage';
 import { QuotationManager } from './components/QuotationManager';
+import { DraftEstimationManager } from './components/DraftEstimationManager';
 import { CustomerMasterManager } from './components/CustomerMasterManager';
 import { MAContracts } from './components/MAContracts';
 import { PublicQuotationSign } from './components/PublicQuotationSign';
@@ -442,6 +443,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           <SidebarItem icon={Activity} label="Executive Dashboard" path="/exec-dashboard" />
           <SidebarItem icon={LayoutDashboard} label={t.dashboard} path="/" />
           <SidebarItem icon={Users} label={t.leads} path="/leads" />
+          <SidebarItem icon={FileSpreadsheet} label={lang === 'th' ? 'Draft & เทียบราคาช่าง' : 'Cost Estimation & Bids'} path="/estimations" />
           <SidebarItem icon={FileText} label={t.quotations} path="/quotations" />
           <SidebarItem icon={Briefcase} label={t.projects} path="/projects" />
           <SidebarItem icon={Kanban} label={t.projectBoard} path="/project-board" />
@@ -1241,6 +1243,7 @@ function App() {
           <Route path="/exec-dashboard" element={<ExecutiveDashboard currentUser={currentUser} />} />
           <Route path="/" element={<Dashboard projects={projects} tasks={tasks} timesheets={timesheets} currentUser={currentUser} />} />
           <Route path="/leads" element={<LeadsPage currentUser={currentUser} branches={branches} users={users} />} />
+          <Route path="/estimations" element={<DraftEstimationManager currentUser={currentUser} />} />
           <Route path="/quotations" element={<QuotationManager currentUser={currentUser} />} />
           <Route path="/projects" element={<Projects projects={projects} setProjects={handleSetProjects} users={users} tasks={tasks} permissionSchemes={permissionSchemes} currentUser={currentUser} projectWorkflows={projectWorkflows} setProjectWorkflows={handleSetProjectWorkflows} taskTemplates={taskTemplates} masterProjectTypes={masterProjectTypes} branches={branches} />} />
           <Route path="/projects/:id" element={<ProjectDetail projects={projects} setProjects={handleSetProjects} users={users} currentUser={currentUser} tasks={tasks} setTasks={handleSetTasks} projectWorkflows={projectWorkflows} timesheets={timesheets} setTimesheets={handleSetTimesheets} systemSettings={systemSettings} />} />

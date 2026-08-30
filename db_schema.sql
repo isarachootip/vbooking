@@ -589,3 +589,109 @@ CREATE TABLE IF NOT EXISTS qc_plan_items (
 CREATE INDEX IF NOT EXISTS idx_qc_daily_plans_qc_date ON qc_daily_plans(qc_id, plan_date);
 CREATE INDEX IF NOT EXISTS idx_qc_plan_items_plan_id ON qc_plan_items(plan_id);
 
+-- ==============================================
+-- Phase 14: Draft Estimation & Multi-Contractor Comparison Matrix
+-- ==============================================
+
+-- 1. Contractors Master Table
+CREATE TABLE IF NOT EXISTS contractors (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    contact_person VARCHAR(150),
+    phone VARCHAR(50),
+    line_id VARCHAR(100),
+    skills TEXT[] DEFAULT '{}',
+    rating NUMERIC DEFAULT 5.0,
+    completed_jobs INTEGER DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'Active',
+    bank_name VARCHAR(100),
+    bank_account_no VARCHAR(100),
+    bank_account_name VARCHAR(150),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2. Draft Estimations Master Table
+CREATE TABLE IF NOT EXISTS draft_estimations (
+    id VARCHAR(50) PRIMARY KEY,
+    estimation_number VARCHAR(100) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    lead_id VARCHAR(50) REFERENCES leads(id) ON DELETE SET NULL,
+    project_id VARCHAR(50) REFERENCES projects(id) ON DELETE SET NULL,
+    customer_id VARCHAR(50) REFERENCES customers(id) ON DELETE SET NULL,
+    customer_name VARCHAR(150),
+    customer_phone VARCHAR(50),
+    customer_address TEXT,
+    project_type VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'Draft', -- 'Draft', 'Comparing', 'Finalized', 'Converted'
+    target_margin_percent NUMERIC DEFAULT 30,
+    selected_total_cost NUMERIC DEFAULT 0,
+    proposed_subtotal NUMERIC DEFAULT 0,
+    vat_type VARCHAR(50) DEFAULT 'Exclude VAT',
+    proposed_vat_amount NUMERIC DEFAULT 0,
+    proposed_grand_total NUMERIC DEFAULT 0,
+    notes TEXT,
+    converted_quotation_id VARCHAR(50) REFERENCES quotations(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_by VARCHAR(150),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. Draft Estimation Items Table
+CREATE TABLE IF NOT EXISTS draft_estimation_items (
+    id VARCHAR(50) PRIMARY KEY,
+    draft_estimation_id VARCHAR(50) NOT NULL REFERENCES draft_estimations(id) ON DELETE CASCADE,
+    area_name VARCHAR(150) DEFAULT 'พื้นที่ทั่วไป',
+    trade_category VARCHAR(100) DEFAULT 'งานทั่วไป',
+    item_name VARCHAR(250) NOT NULL,
+    specs_description TEXT,
+    quantity NUMERIC NOT NULL DEFAULT 1,
+    unit VARCHAR(50) DEFAULT 'รายการ',
+    price_book_id VARCHAR(50) REFERENCES service_price_book(id) ON DELETE SET NULL,
+    selected_contractor_id VARCHAR(50) REFERENCES contractors(id) ON DELETE SET NULL,
+    selected_contractor_name VARCHAR(150),
+    selected_material_unit_cost NUMERIC DEFAULT 0,
+    selected_labor_unit_cost NUMERIC DEFAULT 0,
+    selected_unit_cost NUMERIC DEFAULT 0,
+    selected_total_cost NUMERIC DEFAULT 0,
+    customer_unit_price NUMERIC DEFAULT 0,
+    customer_total_price NUMERIC DEFAULT 0,
+    sort_order INTEGER DEFAULT 0
+);
+
+-- 4. Contractor Bids Master Table
+CREATE TABLE IF NOT EXISTS contractor_bids (
+    id VARCHAR(50) PRIMARY KEY,
+    draft_estimation_id VARCHAR(50) NOT NULL REFERENCES draft_estimations(id) ON DELETE CASCADE,
+    contractor_id VARCHAR(50) REFERENCES contractors(id) ON DELETE SET NULL,
+    contractor_name VARCHAR(150) NOT NULL,
+    bid_date VARCHAR(50),
+    total_bid_amount NUMERIC DEFAULT 0,
+    estimated_days INTEGER DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'Submitted', -- 'Submitted', 'Selected', 'Partial_Selected', 'Rejected'
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 5. Contractor Bid Items Table
+CREATE TABLE IF NOT EXISTS contractor_bid_items (
+    id VARCHAR(50) PRIMARY KEY,
+    bid_id VARCHAR(50) NOT NULL REFERENCES contractor_bids(id) ON DELETE CASCADE,
+    draft_item_id VARCHAR(50) NOT NULL REFERENCES draft_estimation_items(id) ON DELETE CASCADE,
+    material_unit_price NUMERIC DEFAULT 0,
+    labor_unit_price NUMERIC DEFAULT 0,
+    total_unit_price NUMERIC DEFAULT 0,
+    total_amount NUMERIC DEFAULT 0,
+    remark TEXT,
+    is_selected BOOLEAN DEFAULT false
+);
+
+CREATE INDEX IF NOT EXISTS idx_draft_estimations_lead ON draft_estimations(lead_id);
+CREATE INDEX IF NOT EXISTS idx_draft_estimations_project ON draft_estimations(project_id);
+CREATE INDEX IF NOT EXISTS idx_draft_items_estimation ON draft_estimation_items(draft_estimation_id);
+CREATE INDEX IF NOT EXISTS idx_contractor_bids_estimation ON contractor_bids(draft_estimation_id);
+CREATE INDEX IF NOT EXISTS idx_contractor_bid_items_bid ON contractor_bid_items(bid_id);
+CREATE INDEX IF NOT EXISTS idx_contractor_bid_items_draft_item ON contractor_bid_items(draft_item_id);
+

@@ -678,7 +678,8 @@ exports.getTeamSchedule = async (req, res) => {
 
     // 1. Get all QC department users (QC1 - QC10)
     const usersRes = await pool.query(
-      `SELECT id, name, email, avatar, global_role, department, job_types 
+      `SELECT id, name, email, avatar, global_role, department, job_types,
+              assigned_branches, service_zones, assigned_zones, home_address, phones
        FROM users 
        WHERE department ILIKE '%QC%' 
           OR global_role ILIKE '%QC%' 
@@ -788,6 +789,11 @@ exports.getTeamSchedule = async (req, res) => {
         avatar: u.avatar,
         globalRole: u.global_role,
         department: u.department,
+        assignedBranches: u.assigned_branches || [],
+        serviceZones: u.service_zones || [],
+        assignedZones: u.assigned_zones || [],
+        homeAddress: u.home_address || '',
+        phones: u.phones || [],
         totalBooked: bookedCount,
         totalSlots: standardSlots.length,
         isFullyBooked: bookedCount >= standardSlots.length,
