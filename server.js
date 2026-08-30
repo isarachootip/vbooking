@@ -1575,13 +1575,28 @@ const initDB = async () => {
     }
 
     // ONE-TIME: Seed GM Store users for all branches (store+"GM", e.g. Bangna = bnagm)
-    const migSeedGm = 'seed_gm_store_users_v2';
+    const migSeedGm = 'seed_gm_store_users_v3';
     const migSeedGmDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migSeedGm]);
     if (migSeedGmDone.rows.length === 0) {
       console.log('Running migration: seeding GM Store users for all branches...');
       const storeUsersRes = await client.query("SELECT * FROM users WHERE id LIKE 'usr-store-%' ORDER BY id ASC");
+      const branchesRes = await client.query("SELECT * FROM branches ORDER BY name ASC");
       const defaultPwHash = crypto.createHash('sha256').update('test123').digest('hex');
 
+      const branchToCodeMap = {};
+      storeUsersRes.rows.forEach(su => {
+        const code = su.id.replace('usr-store-', '').toLowerCase();
+        let bName = '';
+        const m = su.name.match(/\(([^)]+)\)/);
+        if (m) bName = m[1];
+        else if (su.assigned_branches && su.assigned_branches[0]) bName = su.assigned_branches[0];
+        if (bName) {
+          branchToCodeMap[bName] = code;
+          branchToCodeMap[bName.replace(/^สาขา/, '')] = code;
+        }
+      });
+
+      // 1. Seed from store CS users
       for (const su of storeUsersRes.rows) {
         const storeCode = su.id.replace('usr-store-', '').toLowerCase();
         const gmId = `usr-gm-${storeCode}`;
@@ -1622,6 +1637,42 @@ const initDB = async () => {
           ]
         );
       }
+
+      // 2. Ensure every branch in branches table has a GM
+      for (const b of branchesRes.rows) {
+        let storeCode = branchToCodeMap[b.name] || branchToCodeMap[b.name.replace(/^สาขา/, '')];
+        if (!storeCode) {
+          storeCode = b.code ? `st${b.code}` : b.id.replace('br-st-', '');
+        }
+        const gmId = `usr-gm-${storeCode}`;
+        const codeUpper = storeCode.toUpperCase();
+        const gmName = `${codeUpper}GM (${b.name})`;
+        const gmEmail = `${storeCode}gm@chg.co.th`;
+        const avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${gmId}`;
+
+        await client.query(
+          `INSERT INTO users (
+             id, name, email, avatar, global_role, department, password_hash,
+             assigned_branches, service_zones, assigned_zones, skills, job_types
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           ON CONFLICT (id) DO UPDATE SET
+             name = EXCLUDED.name,
+             email = EXCLUDED.email,
+             global_role = EXCLUDED.global_role,
+             department = EXCLUDED.department,
+             assigned_branches = EXCLUDED.assigned_branches,
+             service_zones = EXCLUDED.service_zones,
+             password_hash = COALESCE(users.password_hash, EXCLUDED.password_hash)`,
+          [
+            gmId, gmName, gmEmail, avatar, 'Manager', 'GM Store', defaultPwHash,
+            [b.name], [b.zone || '[BKK] กรุงเทพฯ & ปริมณฑล'], [b.name],
+            ['GM Approval', 'Site Visit Approval', 'Store Management'],
+            ['Store Management', 'Site Visit Approval']
+          ]
+        );
+      }
+
       await client.query('INSERT INTO migrations (id) VALUES ($1)', [migSeedGm]);
       console.log('✅ One-time migration: seeded GM Store users for all branches.');
     }
