@@ -12,7 +12,17 @@ exports.getEstimations = async (req, res) => {
         e.*,
         COUNT(DISTINCT i.id) as item_count,
         COUNT(DISTINCT b.id) as bid_count,
+        COALESCE(e.customer_name, l.customer_name, 'ลูกค้าทั่วไป') as customer_name,
+        COALESCE(e.customer_phone, l.customer_phone, '') as customer_phone,
+        COALESCE(e.customer_address, l.customer_address, '') as customer_address,
         l.customer_name as lead_customer_name,
+        l.customer_phone as lead_customer_phone,
+        l.customer_address as lead_customer_address,
+        l.job_type as lead_job_type,
+        l.branch as lead_branch,
+        l.status as lead_status,
+        l.source as lead_source,
+        l.project_id as lead_project_id,
         p.name as project_name,
         q.quotation_number as converted_quotation_number
       FROM draft_estimations e
@@ -21,7 +31,7 @@ exports.getEstimations = async (req, res) => {
       LEFT JOIN leads l ON e.lead_id = l.id
       LEFT JOIN projects p ON e.project_id = p.id
       LEFT JOIN quotations q ON e.converted_quotation_id = q.id
-      GROUP BY e.id, l.customer_name, p.name, q.quotation_number
+      GROUP BY e.id, l.customer_name, l.customer_phone, l.customer_address, l.job_type, l.branch, l.status, l.source, l.project_id, p.name, q.quotation_number
       ORDER BY e.created_at DESC
     `;
     const result = await pool.query(query);
@@ -39,7 +49,17 @@ exports.getEstimationById = async (req, res) => {
     const estRes = await pool.query(`
       SELECT 
         e.*,
+        COALESCE(e.customer_name, l.customer_name, 'ลูกค้าทั่วไป') as customer_name,
+        COALESCE(e.customer_phone, l.customer_phone, '') as customer_phone,
+        COALESCE(e.customer_address, l.customer_address, '') as customer_address,
         l.customer_name as lead_customer_name,
+        l.customer_phone as lead_customer_phone,
+        l.customer_address as lead_customer_address,
+        l.job_type as lead_job_type,
+        l.branch as lead_branch,
+        l.status as lead_status,
+        l.source as lead_source,
+        l.project_id as lead_project_id,
         p.name as project_name,
         q.quotation_number as converted_quotation_number
       FROM draft_estimations e

@@ -4,7 +4,8 @@ import {
   ArrowUpRight, Eye, RefreshCw, DollarSign, Calendar, User as UserIcon, 
   Building, Phone, MapPin, Tag, ListPlus, X, Check, FileCheck, Layers, 
   Sparkles, TrendingUp, Award, Zap, ChevronRight, Calculator, CheckSquare, 
-  AlertCircle, ShieldCheck, HardHat, Hammer, Wrench, Users, ArrowRight
+  AlertCircle, ShieldCheck, HardHat, Hammer, Wrench, Users, ArrowRight,
+  Target, ExternalLink, FileText
 } from 'lucide-react';
 import { CustomDateInput } from './CustomDateInput';
 import { formatToDDMMYYYY } from '../utils';
@@ -29,6 +30,7 @@ interface DraftEstimationItem {
   trade_category: string;
   item_name: string;
   specs_description?: string;
+  description?: string;
   quantity: number;
   unit: string;
   price_book_id?: string | null;
@@ -36,21 +38,30 @@ interface DraftEstimationItem {
   selected_contractor_name?: string | null;
   selected_material_unit_cost?: number;
   selected_labor_unit_cost?: number;
+  selected_cost_material?: number;
+  selected_cost_labor?: number;
   selected_unit_cost?: number;
   selected_total_cost?: number;
   customer_unit_price?: number;
   customer_total_price?: number;
+  target_margin_percent?: number;
+  selling_unit_price?: number;
+  selling_total_price?: number;
   sort_order?: number;
 }
 
 interface ContractorBidItem {
   id?: string;
   draft_item_id: string;
-  material_unit_price: number;
-  labor_unit_price: number;
-  total_unit_price: number;
-  total_amount: number;
+  material_unit_price?: number;
+  labor_unit_price?: number;
+  total_unit_price?: number;
+  cost_material?: number;
+  cost_labor?: number;
+  total_unit_cost?: number;
+  total_amount?: number;
   remark?: string;
+  notes?: string;
   is_selected?: boolean;
 }
 
@@ -60,13 +71,14 @@ interface ContractorBid {
   contractor_id?: string | null;
   contractor_name: string;
   bid_date?: string;
-  total_bid_amount: number;
-  estimated_days?: number;
-  status?: string;
-  notes?: string;
   contractor_phone?: string;
   contractor_skills?: string[];
   contractor_rating?: number;
+  total_bid_amount: number;
+  estimated_days?: number;
+  lead_time_days?: number;
+  status?: string;
+  notes?: string;
   items?: ContractorBidItem[];
 }
 
@@ -77,7 +89,7 @@ interface DraftEstimation {
   lead_id?: string | null;
   project_id?: string | null;
   customer_id?: string | null;
-  customer_name?: string;
+  customer_name: string;
   customer_phone?: string;
   customer_address?: string;
   project_type?: string;
@@ -90,6 +102,13 @@ interface DraftEstimation {
   proposed_grand_total: number;
   notes?: string;
   lead_customer_name?: string;
+  lead_customer_phone?: string;
+  lead_customer_address?: string;
+  lead_job_type?: string;
+  lead_branch?: string;
+  lead_status?: string;
+  lead_source?: string;
+  lead_project_id?: string | null;
   converted_quotation_id?: string | null;
   converted_quotation_number?: string | null;
   created_at: string;
@@ -666,13 +685,94 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                   }}>
                     ● {activeEstimation.status}
                   </span>
+
+                  {/* Lead Origin Badge */}
+                  {activeEstimation.lead_id ? (
+                    <span 
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        background: 'rgba(139, 92, 246, 0.15)',
+                        border: '1px solid rgba(139, 92, 246, 0.35)',
+                        color: '#a78bfa',
+                        padding: '0.15rem 0.65rem',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700
+                      }}
+                      title={`เชื่อมโยงกับ Lead: ${activeEstimation.lead_id} (${activeEstimation.lead_customer_name || activeEstimation.customer_name})`}
+                    >
+                      <Target size={13} color="#a78bfa" />
+                      มาจาก Lead: {activeEstimation.lead_id}
+                    </span>
+                  ) : (
+                    <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-color)', color: 'var(--text-muted)', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem' }}>
+                      สร้างตรง (Direct)
+                    </span>
+                  )}
                 </div>
-                <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.4rem', color: 'var(--text-muted)', fontSize: '0.82rem', flexWrap: 'wrap' }}>
-                  <span>👤 ลูกค้า: <strong style={{ color: 'var(--text-primary)' }}>{activeEstimation.customer_name || 'ไม่ระบุ'}</strong></span>
-                  <span>📞 เบอร์โทร: {activeEstimation.customer_phone || '-'}</span>
-                  <span>🏷️ ประเภท: {activeEstimation.project_type || 'Renovate'}</span>
+
+                <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.45rem', color: 'var(--text-muted)', fontSize: '0.82rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {activeEstimation.lead_id && (
+                    <span style={{ color: '#a78bfa', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Target size={13} /> <strong>Lead ID:</strong> {activeEstimation.lead_id}
+                    </span>
+                  )}
+                  <span>👤 ลูกค้า: <strong style={{ color: 'var(--text-primary)' }}>{activeEstimation.customer_name || activeEstimation.lead_customer_name || 'ไม่ระบุ'}</strong></span>
+                  <span>📞 เบอร์โทร: {activeEstimation.customer_phone || activeEstimation.lead_customer_phone || '-'}</span>
+                  {activeEstimation.lead_branch && <span>🏢 สาขา: <strong style={{ color: 'var(--text-secondary)' }}>{activeEstimation.lead_branch}</strong></span>}
+                  <span>🏷️ ประเภท: {activeEstimation.project_type || activeEstimation.lead_job_type || 'Renovation'}</span>
+                  {activeEstimation.lead_status && <span>📊 สถานะ Lead: <strong style={{ color: '#38bdf8' }}>{activeEstimation.lead_status}</strong></span>}
                   <span>📅 วันที่สร้าง: {formatToDDMMYYYY(activeEstimation.created_at)}</span>
                 </div>
+
+                {/* Lead Information Summary Strip */}
+                {activeEstimation.lead_id && (
+                  <div style={{
+                    marginTop: '0.75rem',
+                    padding: '0.6rem 0.9rem',
+                    background: 'rgba(139, 92, 246, 0.08)',
+                    border: '1px solid rgba(139, 92, 246, 0.22)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.6rem',
+                    fontSize: '0.8rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 800, color: '#a78bfa', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <Target size={14} /> ข้อมูล Lead ต้นทาง:
+                      </span>
+                      <span>รหัส: <strong style={{ color: 'var(--text-primary)' }}>{activeEstimation.lead_id}</strong></span>
+                      <span>ผู้ติดต่อ: <strong>{activeEstimation.customer_name || activeEstimation.lead_customer_name}</strong></span>
+                      {activeEstimation.customer_phone && <span>โทร: {activeEstimation.customer_phone}</span>}
+                      {activeEstimation.customer_address && <span>สถานที่: <span style={{ color: 'var(--text-secondary)' }}>{activeEstimation.customer_address}</span></span>}
+                      {activeEstimation.lead_branch && <span>สาขา: <span style={{ color: '#38bdf8' }}>{activeEstimation.lead_branch}</span></span>}
+                    </div>
+                    <a
+                      href="/leads"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        color: '#a78bfa',
+                        textDecoration: 'none',
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '5px',
+                        background: 'rgba(139, 92, 246, 0.15)',
+                        border: '1px solid rgba(139, 92, 246, 0.3)'
+                      }}
+                      title="เปิดดูประวัติและขั้นตอนในหน้า Leads"
+                    >
+                      <ExternalLink size={12} /> ดูข้อมูลในหน้า Leads
+                    </a>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons on Detail Header */}
@@ -1169,8 +1269,25 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                     </h3>
 
                     <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.85rem' }}>
-                      <div>👤 ลูกค้า: <strong style={{ color: 'var(--text-primary)' }}>{est.customer_name || 'ไม่ระบุ'}</strong> {est.customer_phone ? `(${est.customer_phone})` : ''}</div>
-                      {est.lead_customer_name && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🔗 ลิงก์ Lead: {est.lead_customer_name}</div>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                        <span>👤 ลูกค้า: <strong style={{ color: 'var(--text-primary)' }}>{est.customer_name || est.lead_customer_name || 'ไม่ระบุ'}</strong> {est.customer_phone ? `(${est.customer_phone})` : ''}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                        {est.lead_id ? (
+                          <span style={{ fontSize: '0.73rem', color: '#a78bfa', background: 'rgba(139, 92, 246, 0.12)', border: '1px solid rgba(139, 92, 246, 0.25)', padding: '0.1rem 0.45rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
+                            <Target size={11} /> Lead: {est.lead_id}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
+                            Direct
+                          </span>
+                        )}
+                        {est.lead_branch && (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            🏢 {est.lead_branch}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Stats pills */}
