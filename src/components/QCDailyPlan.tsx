@@ -1168,136 +1168,168 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
           </div>
         </div>
       ) : (
-        /* ROUTE MAP VIEW (ORIGINAL CONTENT) */
+        /* ROUTE MAP VIEW */
         <>
-          {/* ORIGIN BANNER & SUMMARY METRICS */}
-          <div className="qc-summary-grid">
-        {/* 🏠 Origin Home Card */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.15))',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
-          borderRadius: '14px',
-          padding: '0.85rem 1rem',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '0.75rem'
-        }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            background: '#10b981',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '20px',
-            flexShrink: 0,
-            boxShadow: '0 4px 10px rgba(16, 185, 129, 0.35)'
-          }}>
-            🏠
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                จุดเริ่มต้นประจำวัน (ORIGIN)
-              </span>
-              <button
-                onClick={() => setIsOriginPickerOpen(true)}
-                style={{ border: 'none', background: 'transparent', color: '#047857', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap', flexShrink: 0 }}
-              >
-                ปรับเปลี่ยนจุด
-              </button>
-            </div>
-            <div style={{ fontSize: '0.925rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
-              {selectedUserObj?.name || 'QC Inspector'}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.3' }}>
-              {currentPlan?.originAddress || selectedUserObj?.homeAddress || 'ยังไม่ได้ระบุที่อยู่บ้าน (ใช้พิกัดเริ่มต้นศูนย์กลาง กทม.)'}
-            </div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.2)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.725rem', color: '#065f46', marginTop: '6px', fontWeight: 600 }}>
-              <MapPin size={11} /> พิกัด: {Number(currentPlan?.originLatitude || selectedUserObj?.homeLatitude || 13.7563).toFixed(4)}, {Number(currentPlan?.originLongitude || selectedUserObj?.homeLongitude || 100.5018).toFixed(4)}
-            </div>
-          </div>
-        </div>
+          {/* DESKTOP ONLY: ORIGIN BANNER & SUMMARY METRICS */}
+          {!isMobile && (
+            <div className="qc-summary-grid">
+              {/* 🏠 Origin Home Card */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.15))',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: '14px',
+                padding: '0.85rem 1rem',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.75rem'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: '#10b981',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                  flexShrink: 0,
+                  boxShadow: '0 4px 10px rgba(16, 185, 129, 0.35)'
+                }}>
+                  🏠
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      จุดเริ่มต้นประจำวัน (ORIGIN)
+                    </span>
+                    <button
+                      onClick={() => setIsOriginPickerOpen(true)}
+                      style={{ border: 'none', background: 'transparent', color: '#047857', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap', flexShrink: 0 }}
+                    >
+                      ปรับเปลี่ยนจุด
+                    </button>
+                  </div>
+                  <div style={{ fontSize: '0.925rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
+                    {selectedUserObj?.name || 'QC Inspector'}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.3' }}>
+                    {currentPlan?.originAddress || selectedUserObj?.homeAddress || 'ยังไม่ได้ระบุที่อยู่บ้าน (ใช้พิกัดเริ่มต้นศูนย์กลาง กทม.)'}
+                  </div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.2)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.725rem', color: '#065f46', marginTop: '6px', fontWeight: 600 }}>
+                    <MapPin size={11} /> พิกัด: {Number(currentPlan?.originLatitude || selectedUserObj?.homeLatitude || 13.7563).toFixed(4)}, {Number(currentPlan?.originLongitude || selectedUserObj?.homeLongitude || 100.5018).toFixed(4)}
+                  </div>
+                </div>
+              </div>
 
-        {/* 📊 Summary Metrics Card */}
-        <div style={{
-          background: 'var(--card-bg, #ffffff)',
-          border: '1px solid var(--border-color, #e5e7eb)',
-          borderRadius: '14px',
-          padding: '0.85rem 0.5rem',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          alignItems: 'center',
-          textAlign: 'center'
-        }}>
-          <div style={{ padding: '0 0.25rem' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>จำนวนจุดตรวจ</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb', marginTop: '2px' }}>
-              {currentPlan?.items?.length || 0} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>จุด</span>
-            </div>
-            <div style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 600 }}>
-              สำเร็จ {currentPlan?.items?.filter(i => i.status === 'Completed').length || 0} / {currentPlan?.items?.length || 0}
-            </div>
-          </div>
+              {/* 📊 Summary Metrics Card */}
+              <div style={{
+                background: 'var(--card-bg, #ffffff)',
+                border: '1px solid var(--border-color, #e5e7eb)',
+                borderRadius: '14px',
+                padding: '0.85rem 0.5rem',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr',
+                alignItems: 'center',
+                textAlign: 'center'
+              }}>
+                <div style={{ padding: '0 0.25rem' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>จำนวนจุดตรวจ</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb', marginTop: '2px' }}>
+                    {currentPlan?.items?.length || 0} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>จุด</span>
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 600 }}>
+                    สำเร็จ {currentPlan?.items?.filter(i => i.status === 'Completed').length || 0} / {currentPlan?.items?.length || 0}
+                  </div>
+                </div>
 
-          <div style={{ borderLeft: '1px solid var(--border-color, #e5e7eb)', borderRight: '1px solid var(--border-color, #e5e7eb)', padding: '0 0.25rem' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ระยะทางรวม</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0d9488', marginTop: '2px' }}>
-              {Number(currentPlan?.totalEstimatedKm || 0).toFixed(1)} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>กม.</span>
-            </div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>จาก Origin</div>
-          </div>
+                <div style={{ borderLeft: '1px solid var(--border-color, #e5e7eb)', borderRight: '1px solid var(--border-color, #e5e7eb)', padding: '0 0.25rem' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>ระยะทางรวม</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0d9488', marginTop: '2px' }}>
+                    {Number(currentPlan?.totalEstimatedKm || 0).toFixed(1)} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>กม.</span>
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>จาก Origin</div>
+                </div>
 
-          <div style={{ padding: '0 0.25rem' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เวลาประเมินรวม</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b', marginTop: '2px' }}>
-              {currentPlan?.totalEstimatedDurationMin ? `~${Math.round(currentPlan.totalEstimatedDurationMin / 60)} ชม.` : '0 ชม.'}
-            </div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>เดินทาง+ตรวจ</div>
-          </div>
-        </div>
+                <div style={{ padding: '0 0.25rem' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เวลาประเมินรวม</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b', marginTop: '2px' }}>
+                    {currentPlan?.totalEstimatedDurationMin ? `~${Math.round(currentPlan.totalEstimatedDurationMin / 60)} ชม.` : '0 ชม.'}
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>เดินทาง+ตรวจ</div>
+                </div>
+              </div>
 
-        {/* 🗺️ Global Navigation Button Card */}
-        <div style={{
-          background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
-          borderRadius: '14px',
-          padding: '0.85rem 1rem',
-          color: 'white',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>นำทางทั้งวันแบบ Turn-by-Turn</div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 700, margin: '2px 0 6px 0' }}>เปิด Google Maps ทั้ง Route</div>
-          <button
-            type="button"
-            onClick={openFullDayRouteGoogleMaps}
-            disabled={!currentPlan?.items || currentPlan.items.length === 0}
-            style={{
-              padding: '0.55rem 0.85rem',
-              borderRadius: '8px',
-              background: 'white',
-              color: '#1e40af',
-              border: 'none',
-              fontWeight: 700,
-              fontSize: '0.8rem',
-              cursor: currentPlan?.items?.length ? 'pointer' : 'not-allowed',
+              {/* 🗺️ Global Navigation Button Card */}
+              <div style={{
+                background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
+                borderRadius: '14px',
+                padding: '0.85rem 1rem',
+                color: 'white',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+              }}>
+                <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>นำทางทั้งวันแบบ Turn-by-Turn</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, margin: '2px 0 6px 0' }}>เปิด Google Maps ทั้ง Route</div>
+                <button
+                  type="button"
+                  onClick={openFullDayRouteGoogleMaps}
+                  disabled={!currentPlan?.items || currentPlan.items.length === 0}
+                  style={{
+                    padding: '0.55rem 0.85rem',
+                    borderRadius: '8px',
+                    background: 'white',
+                    color: '#1e40af',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    cursor: currentPlan?.items?.length ? 'pointer' : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    opacity: currentPlan?.items?.length ? 1 : 0.6
+                  }}
+                >
+                  <Compass size={15} /> นำทางทั้งวัน (Google Maps)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MOBILE ONLY: MINI ORIGIN CAPSULE */}
+          {isMobile && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.12))',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: '10px',
+              padding: '0.5rem 0.75rem',
+              marginBottom: '0.75rem',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              opacity: currentPlan?.items?.length ? 1 : 0.6
-            }}
-          >
-            <Compass size={15} /> นำทางทั้งวัน (Google Maps)
-          </button>
-        </div>
-      </div>
+              justifyContent: 'space-between',
+              gap: '0.5rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#065f46', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span>🏠</span>
+                <strong>จุดเริ่มต้น:</strong>
+                <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {currentPlan?.originAddress || selectedUserObj?.homeAddress || 'บ้านพนักงาน (Origin)'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOriginPickerOpen(true)}
+                style={{ border: 'none', background: 'transparent', color: '#047857', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', whiteSpace: 'nowrap', flexShrink: 0 }}
+              >
+                ปรับเปลี่ยน
+              </button>
+            </div>
+          )}
 
-      {/* MOBILE SEGMENTED VIEW SWITCHER (Only visible on mobile screens) */}
-      <div className="qc-mobile-view-tabs" style={{ marginBottom: '1rem' }}>
+          {/* MOBILE SEGMENTED VIEW SWITCHER (Only visible on mobile screens) */}
+          <div className="qc-mobile-view-tabs" style={{ marginBottom: '0.85rem' }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
@@ -1577,147 +1609,197 @@ export const QCDailyPlanComponent: React.FC<QCDailyPlanProps> = ({
                     {isFirst ? 'ระยะทางจากบ้าน (Origin):' : `ระยะทางจากจุดที่ ${index}:`}
                   </span>
                   <strong style={{ color: '#0d9488', fontWeight: 700 }}>
-                    🚗 {item.estimatedDistanceFromPrevKm || 0} กม. (~{item.estimatedDurationMin || 15} นาที)
+                    🚗 {Number(item.estimatedDistanceFromPrevKm || 0).toFixed(1)} กม. (~{item.estimatedDurationMin || 15} นาที)
                   </strong>
                 </div>
 
-                {/* ACTION BUTTONS BAR (MOBILE-OPTIMIZED) */}
-                <div style={{ display: 'grid', gridTemplateColumns: isCheckedIn ? '1fr 1.2fr 1.2fr' : '1fr 1fr 1fr', gap: '0.5rem' }}>
-                  {/* 1. GOOGLE MAPS NAVIGATION */}
+                {/* ACTION BUTTONS BAR (2-ROW CLEAN MOBILE DESIGN) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  {/* ROW 1: PRIMARY BIG NAVIGATION BUTTON */}
                   <button
                     type="button"
                     onClick={() => openGoogleMapsDirections(item, index)}
                     style={{
-                      padding: '0.55rem 0.5rem',
-                      borderRadius: '8px',
+                      width: '100%',
+                      padding: '0.65rem',
+                      borderRadius: '10px',
                       background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                       color: 'white',
                       border: 'none',
-                      fontSize: '0.75rem',
+                      fontSize: '0.85rem',
                       fontWeight: 700,
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '4px'
+                      gap: '6px',
+                      boxShadow: '0 3px 10px rgba(37, 99, 235, 0.25)'
                     }}
                   >
-                    <Compass size={14} /> นำทาง (Map)
+                    <Compass size={16} /> 🧭 เปิดนำทาง Google Maps ทันที ↗
                   </button>
 
-                  {/* 2. GPS CHECK-IN / CHECK-OUT BUTTON */}
-                  {!isCheckedIn ? (
+                  {/* ROW 2: CHECK-IN / CHECK-OUT + VISIT RESULT */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    {/* CHECK-IN / CHECK-OUT */}
+                    {!isCheckedIn ? (
+                      <button
+                        type="button"
+                        disabled={checkingInItemId === item.id || isCompleted}
+                        onClick={() => handleGpsCheckIn(item)}
+                        style={{
+                          padding: '0.6rem 0.5rem',
+                          borderRadius: '10px',
+                          background: isCompleted ? '#e2e8f0' : 'linear-gradient(135deg, #0d9488, #059669)',
+                          color: isCompleted ? '#475569' : 'white',
+                          border: 'none',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          cursor: isCompleted ? 'default' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px',
+                          boxShadow: isCompleted ? 'none' : '0 2px 8px rgba(13, 148, 136, 0.2)'
+                        }}
+                      >
+                        {checkingInItemId === item.id ? (
+                          <RefreshCw size={14} className="spin" />
+                        ) : (
+                          <MapPin size={15} />
+                        )}
+                        {isCompleted ? 'เสร็จสิ้น ✓' : '📍 เช็คอิน (GPS)'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateStatus(item, 'Completed')}
+                        style={{
+                          padding: '0.6rem 0.5rem',
+                          borderRadius: '10px',
+                          background: 'linear-gradient(135deg, #059669, #10b981)',
+                          color: 'white',
+                          border: 'none',
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px',
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)'
+                        }}
+                      >
+                        <CheckCircle2 size={15} /> 🚪 Check-Out จบงาน
+                      </button>
+                    )}
+
+                    {/* VISIT RESULT */}
                     <button
                       type="button"
-                      disabled={checkingInItemId === item.id || isCompleted}
-                      onClick={() => handleGpsCheckIn(item)}
-                      style={{
-                        padding: '0.55rem 0.5rem',
-                        borderRadius: '8px',
-                        background: isCompleted ? '#e2e8f0' : 'linear-gradient(135deg, #0d9488, #059669)',
-                        color: isCompleted ? '#475569' : 'white',
-                        border: 'none',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        cursor: isCompleted ? 'default' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '4px'
+                      onClick={() => {
+                        if (item.leadId) {
+                          setSelectedLeadForVisit({
+                            id: item.leadId,
+                            customer_name: item.customerName || item.siteName,
+                            customer_phone: item.customerPhone,
+                            customer_address: item.siteAddress
+                          });
+                        } else if (item.projectId) {
+                          const pr = projects.find(p => p.id === item.projectId) || {
+                            id: item.projectId,
+                            name: item.siteName,
+                            customerName: item.customerName,
+                            status: 'QC'
+                          } as any;
+                          setSelectedProjectForHandover(pr);
+                        } else {
+                          handleUpdateStatus(item, item.status === 'Completed' ? 'Pending' : 'Completed');
+                        }
                       }}
-                    >
-                      {checkingInItemId === item.id ? (
-                        <RefreshCw size={14} className="spin" />
-                      ) : (
-                        <MapPin size={14} />
-                      )}
-                      {isCompleted ? 'เสร็จสิ้น ✓' : 'Check-in (GPS)'}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleUpdateStatus(item, 'Completed')}
                       style={{
-                        padding: '0.55rem 0.5rem',
-                        borderRadius: '8px',
-                        background: 'linear-gradient(135deg, #059669, #10b981)',
-                        color: 'white',
-                        border: 'none',
-                        fontSize: '0.75rem',
+                        padding: '0.6rem 0.5rem',
+                        borderRadius: '10px',
+                        background: isCompleted ? 'rgba(139, 92, 246, 0.15)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                        color: isCompleted ? '#7c3aed' : 'white',
+                        border: isCompleted ? '1px solid rgba(139, 92, 246, 0.3)' : 'none',
+                        fontSize: '0.8rem',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '4px',
-                        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                        gap: '5px',
+                        boxShadow: isCompleted ? 'none' : '0 2px 8px rgba(139, 92, 246, 0.2)'
                       }}
                     >
-                      <CheckCircle2 size={14} /> 🚪 Check-Out
+                      <CheckSquare size={15} /> {isCompleted ? 'ดูผล Visit' : '📝 บันทึกผล Visit'}
                     </button>
-                  )}
-
-                  {/* 3. QC INSPECTION / VISIT RESULT ACTION */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (item.leadId) {
-                        setSelectedLeadForVisit({
-                          id: item.leadId,
-                          customer_name: item.customerName || item.siteName,
-                          customer_phone: item.customerPhone,
-                          customer_address: item.siteAddress
-                        });
-                      } else if (item.projectId) {
-                        const pr = projects.find(p => p.id === item.projectId) || {
-                          id: item.projectId,
-                          name: item.siteName,
-                          customerName: item.customerName,
-                          status: 'QC'
-                        } as any;
-                        setSelectedProjectForHandover(pr);
-                      } else {
-                        handleUpdateStatus(item, item.status === 'Completed' ? 'Pending' : 'Completed');
-                      }
-                    }}
-                    style={{
-                      padding: '0.55rem 0.5rem',
-                      borderRadius: '8px',
-                      background: isCompleted ? 'rgba(139, 92, 246, 0.15)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-                      color: isCompleted ? '#6d28d9' : 'white',
-                      border: isCompleted ? '1px solid rgba(139, 92, 246, 0.3)' : 'none',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <CheckSquare size={14} /> {isCompleted ? 'ดูผล Visit' : '📝 บันทึก Visit'}
-                  </button>
+                  </div>
                 </div>
 
-                {/* PHONE CALL SHORTCUT IF AVAILABLE */}
+                {/* PHONE CALL SHORTCUT (1-TAP FULL WIDTH BUTTON) */}
                 {item.customerPhone && (
-                  <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color, #f1f5f9)', paddingTop: '0.5rem' }}>
+                  <div style={{ marginTop: '0.65rem' }}>
                     <a
                       href={`tel:${item.customerPhone}`}
-                      style={{ fontSize: '0.75rem', color: '#2563eb', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
+                      style={{
+                        width: '100%',
+                        padding: '0.55rem',
+                        borderRadius: '8px',
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                        color: '#047857',
+                        fontSize: '0.825rem',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
                     >
-                      <Phone size={13} /> โทรหาลูกค้า: {item.customerPhone}
+                      <Phone size={14} /> 📞 โทรหาลูกค้า ({item.customerPhone})
                     </a>
-                    {item.checkInTime && (
-                      <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 600 }}>
-                        เช็คอินเวลา: {new Date(item.checkInTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
-                      </span>
-                    )}
+                  </div>
+                )}
+
+                {item.checkInTime && (
+                  <div style={{ marginTop: '0.5rem', textAlign: 'right', fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>
+                    ✓ เช็คอินเวลา: {new Date(item.checkInTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
                   </div>
                 )}
               </div>
             );
           })}
+
+          {/* MOBILE ONLY: FULL DAY GOOGLE MAPS NAVIGATION CARD */}
+          {isMobile && currentPlan?.items && currentPlan.items.length > 0 && (
+            <div style={{ marginTop: '0.5rem', marginBottom: '1.5rem' }}>
+              <button
+                type="button"
+                onClick={openFullDayRouteGoogleMaps}
+                style={{
+                  width: '100%',
+                  padding: '0.85rem 1rem',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
+                  color: 'white',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 15px rgba(37, 99, 235, 0.3)'
+                }}
+              >
+                <Compass size={18} /> 🚗 เปิดนำทางทั้งวันทุกจุด (Google Maps Route) ↗
+              </button>
+            </div>
+          )}
         </div>
       </div>
       </>
