@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, FileText, Target, Activity, Users, AlertTriangle } from 'lucide-react';
+import { DollarSign, FileText, Target, Activity, Users, AlertTriangle, Clock, BarChart3 } from 'lucide-react';
+import { PipelinePerformanceDashboard } from './PipelinePerformanceDashboard';
 
 export const ExecutiveDashboard = ({ currentUser }: { currentUser: any }) => {
+  const [activeTab, setActiveTab] = useState<'financial' | 'pipeline'>('pipeline');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,7 +20,7 @@ export const ExecutiveDashboard = ({ currentUser }: { currentUser: any }) => {
       });
   }, []);
 
-  if (currentUser?.global_role !== 'admin' && currentUser?.global_role !== 'manager') {
+  if (currentUser?.global_role !== 'admin' && currentUser?.global_role !== 'manager' && currentUser?.globalRole?.toLowerCase() !== 'admin' && currentUser?.globalRole?.toLowerCase() !== 'manager') {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
         <AlertTriangle size={48} style={{ margin: '0 auto', marginBottom: '1rem', color: '#f59e0b' }} />
@@ -34,13 +36,59 @@ export const ExecutiveDashboard = ({ currentUser }: { currentUser: any }) => {
 
   return (
     <div style={{ padding: '2rem' }}>
-      <div className="flex-between" style={{ marginBottom: '2rem' }}>
+      <div className="flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)' }}>Executive Dashboard</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>ภาพรวมการเงินและการดำเนินงานของบริษัท ประจำปี {data.financial.year}</p>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>ภาพรวมการเงิน การดำเนินงาน และประสิทธิภาพกระบวนการ 12 ขั้นตอน ประจำปี {data.financial.year}</p>
+        </div>
+
+        {/* Tab Switcher */}
+        <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '0.3rem', borderRadius: '10px', border: '1px solid var(--border-color)', gap: '0.25rem' }}>
+          <button
+            onClick={() => setActiveTab('pipeline')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.6rem 1.1rem',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              background: activeTab === 'pipeline' ? 'var(--accent-primary)' : 'transparent',
+              color: activeTab === 'pipeline' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Clock size={16} /> ⏱️ มอนิเตอร์เวลา 12 ขั้นตอน & SLA
+          </button>
+          <button
+            onClick={() => setActiveTab('financial')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.6rem 1.1rem',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              background: activeTab === 'financial' ? 'var(--accent-primary)' : 'transparent',
+              color: activeTab === 'financial' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s'
+            }}
+          >
+            <BarChart3 size={16} /> 📊 ภาพรวมการเงิน & ยอดขาย
+          </button>
         </div>
       </div>
 
+      {activeTab === 'pipeline' ? (
+        <PipelinePerformanceDashboard currentUser={currentUser} />
+      ) : (
+        <>
       {/* 1. Financial Overview Cards */}
       <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <DollarSign size={18} color="#10b981" /> Financial Overview (Yearly)
@@ -133,6 +181,9 @@ export const ExecutiveDashboard = ({ currentUser }: { currentUser: any }) => {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };
+
