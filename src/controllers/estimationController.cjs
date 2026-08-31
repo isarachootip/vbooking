@@ -21,7 +21,6 @@ exports.getEstimations = async (req, res) => {
         l.job_type as lead_job_type,
         l.branch as lead_branch,
         l.status as lead_status,
-        l.source as lead_source,
         l.project_id as lead_project_id,
         p.name as project_name,
         q.quotation_number as converted_quotation_number
@@ -31,7 +30,7 @@ exports.getEstimations = async (req, res) => {
       LEFT JOIN leads l ON e.lead_id = l.id
       LEFT JOIN projects p ON e.project_id = p.id
       LEFT JOIN quotations q ON e.converted_quotation_id = q.id
-      GROUP BY e.id, l.customer_name, l.customer_phone, l.customer_address, l.job_type, l.branch, l.status, l.source, l.project_id, p.name, q.quotation_number
+      GROUP BY e.id, l.customer_name, l.customer_phone, l.customer_address, l.job_type, l.branch, l.status, l.project_id, p.name, q.quotation_number
       ORDER BY e.created_at DESC
     `;
     const result = await pool.query(query);
@@ -58,7 +57,6 @@ exports.getEstimationById = async (req, res) => {
         l.job_type as lead_job_type,
         l.branch as lead_branch,
         l.status as lead_status,
-        l.source as lead_source,
         l.project_id as lead_project_id,
         p.name as project_name,
         q.quotation_number as converted_quotation_number
