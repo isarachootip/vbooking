@@ -4,7 +4,7 @@ import { isQcUser } from '../utils';
 import {
   X, Palette, CheckCircle2, AlertCircle, Clock, Plus,
   FileImage, ExternalLink, RefreshCw, Send, Check, MessageSquare,
-  Layers, Upload, FileText, Trash2, Eye
+  Layers, Upload, FileText, Trash2, Eye, ZoomIn, ZoomOut, RotateCw, Download, Maximize2
 } from 'lucide-react';
 
 interface LeadDesign {
@@ -94,6 +94,75 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
     }
   };
 
+  // Lightbox / Image Viewer state
+  const [lightboxData, setLightboxData] = useState<{ url: string; title: string; version?: string } | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [rotation, setRotation] = useState<number>(0);
+
+  // Helper: Convert Base64 data URL to Blob for safe browser viewing / download
+  const dataUrlToBlob = (dataUrl: string): Blob => {
+    const arr = dataUrl.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  };
+
+  const handleOpenFileSafe = (url: string, title?: string, version?: string) => {
+    const isImg = url.startsWith('data:image') || url.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
+    if (isImg) {
+      setZoomLevel(1);
+      setRotation(0);
+      setLightboxData({ url, title: title || 'แบบแปลน 2D/3D', version });
+      return;
+    }
+
+    if (url.startsWith('data:application/pdf') || url.startsWith('data:')) {
+      try {
+        const blob = dataUrlToBlob(url);
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+        return;
+      } catch (e) {
+        console.error('Error opening blob url:', e);
+      }
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDownloadFile = (url: string, filename: string) => {
+    try {
+      if (url.startsWith('data:')) {
+        const blob = dataUrlToBlob(url);
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename || 'design_plan.jpg';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      } else {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || 'design_plan';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+      window.open(url, '_blank');
+    }
+  };
+
   useEffect(() => {
     if (isOpen && lead) {
       fetchDesigns();
@@ -105,6 +174,7 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
       setFileUrls([]);
       setFileNames({});
       setFileUrlInput('');
+      setLightboxData(null);
     }
   }, [isOpen, lead?.id]);
 
@@ -547,29 +617,163 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
                       </div>
                     )}
 
-                    {/* Files Preview with thumbnails */}
+                    {/* Files Preview with visual thumbnail gallery */}
                     {d.file_urls && d.file_urls.length > 0 && (
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-                        {d.file_urls.map((url, idx) => {
-                          const isImage = url.startsWith('data:image') || url.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
-                          return (
-                            <a
-                              key={idx}
-                              href={url}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-                                background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)',
-                                padding: '0.35rem 0.65rem', borderRadius: '6px', color: '#0284c7', fontSize: '0.75rem', textDecoration: 'none'
-                              }}
-                            >
-                              {isImage ? <FileImage size={14} /> : <FileText size={14} />}
-                              <span>ดูไฟล์แบบ #{idx + 1}</span>
-                              <ExternalLink size={11} />
-                            </a>
-                          );
-                        })}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginTop: '0.35rem' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                          🖼️ ไฟล์แบบแปลนและเอกสารแนบ ({d.file_urls.length} รายการ):
+                        </span>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.65rem' }}>
+                          {d.file_urls.map((url, idx) => {
+                            const isImage = url.startsWith('data:image') || url.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
+                            const fileName = `แบบแปลน_${d.version}_#${idx + 1}`;
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  background: 'var(--bg-tertiary)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '8px',
+                                  overflow: 'hidden',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  transition: 'all 0.2s ease',
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                                }}
+                              >
+                                {isImage ? (
+                                  <div
+                                    onClick={() => handleOpenFileSafe(url, d.title, d.version)}
+                                    style={{
+                                      position: 'relative',
+                                      width: '100%',
+                                      height: '110px',
+                                      cursor: 'pointer',
+                                      background: '#18181b',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      overflow: 'hidden'
+                                    }}
+                                    title="คลิกเพื่อดูรูปภาพแบบแปลนขนาดเต็ม"
+                                  >
+                                    <img
+                                      src={url}
+                                      alt={fileName}
+                                      style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                        transition: 'transform 0.25s ease'
+                                      }}
+                                      onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.06)')}
+                                      onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                                    />
+                                    <div
+                                      style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        background: 'rgba(0,0,0,0.3)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.35rem',
+                                        color: 'white',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        opacity: 0,
+                                        transition: 'opacity 0.2s ease'
+                                      }}
+                                      onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                                      onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+                                    >
+                                      <Eye size={15} /> ดูรูปขนาดเต็ม
+                                    </div>
+                                    <span
+                                      style={{
+                                        position: 'absolute',
+                                        top: '6px',
+                                        left: '6px',
+                                        background: 'rgba(0,0,0,0.65)',
+                                        color: '#38bdf8',
+                                        padding: '0.1rem 0.4rem',
+                                        borderRadius: '4px',
+                                        fontSize: '0.68rem',
+                                        fontWeight: 700
+                                      }}
+                                    >
+                                      #{idx + 1}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div
+                                    onClick={() => handleOpenFileSafe(url, d.title, d.version)}
+                                    style={{
+                                      height: '110px',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      background: 'var(--bg-primary)',
+                                      cursor: 'pointer'
+                                    }}
+                                    title="คลิกเพื่อเปิดเอกสาร"
+                                  >
+                                    <FileText size={32} color="#0284c7" />
+                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                                      เอกสาร PDF/แบบ
+                                    </span>
+                                  </div>
+                                )}
+
+                                <div style={{ padding: '0.4rem 0.55rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)' }}>
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>
+                                    {fileName}
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenFileSafe(url, d.title, d.version)}
+                                      style={{
+                                        background: 'rgba(2, 132, 199, 0.12)',
+                                        border: 'none',
+                                        color: '#0284c7',
+                                        borderRadius: '4px',
+                                        padding: '0.25rem 0.45rem',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.2rem'
+                                      }}
+                                      title="ขยายดูภาพเต็ม"
+                                    >
+                                      <Eye size={12} /> ดูแบบ
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDownloadFile(url, `${fileName}.jpg`)}
+                                      style={{
+                                        background: 'rgba(16, 185, 129, 0.12)',
+                                        border: 'none',
+                                        color: '#10b981',
+                                        borderRadius: '4px',
+                                        padding: '0.25rem 0.4rem',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center'
+                                      }}
+                                      title="ดาวน์โหลดไฟล์แบบ"
+                                    >
+                                      <Download size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
@@ -623,6 +827,216 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* LIGHTBOX / FULL-SCREEN IMAGE & DESIGN VIEWER MODAL                        */}
+      {/* ========================================================================= */}
+      {lightboxData && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.92)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '1rem',
+            animation: 'fadeIn 0.2s ease'
+          }}
+          onClick={() => setLightboxData(null)}
+        >
+          {/* Lightbox Header Bar */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'rgba(24, 24, 27, 0.85)',
+              padding: '0.75rem 1.25rem',
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'white',
+              gap: '1rem',
+              zIndex: 10000
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <Palette size={18} color="#38bdf8" />
+              <div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800 }}>{lightboxData.title}</div>
+                {lightboxData.version && (
+                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700 }}>
+                    เวอร์ชัน: {lightboxData.version}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Lightbox Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.25))}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '0.45rem 0.65rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  fontSize: '0.78rem'
+                }}
+                title="ซูมออก (-)"
+              >
+                <ZoomOut size={15} />
+              </button>
+
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, minWidth: '45px', textAlign: 'center' }}>
+                {Math.round(zoomLevel * 100)}%
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.25))}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '0.45rem 0.65rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  fontSize: '0.78rem'
+                }}
+                title="ซูมเข้า (+)"
+              >
+                <ZoomIn size={15} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRotation(prev => (prev + 90) % 360)}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '0.45rem 0.65rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  fontSize: '0.78rem'
+                }}
+                title="หมุนรูป 90°"
+              >
+                <RotateCw size={15} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setZoomLevel(1);
+                  setRotation(0);
+                }}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  color: 'var(--text-tertiary)',
+                  padding: '0.45rem 0.65rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem'
+                }}
+                title="รีเซ็ตขนาด"
+              >
+                100%
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDownloadFile(lightboxData.url, `${lightboxData.title || 'แบบแปลน'}.jpg`)}
+                style={{
+                  background: 'linear-gradient(135deg, #059669, #10b981)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.78rem'
+                }}
+                title="ดาวน์โหลดไฟล์รูปภาพ"
+              >
+                <Download size={15} /> ดาวน์โหลด
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLightboxData(null)}
+                style={{
+                  background: '#ef4444',
+                  border: 'none',
+                  color: 'white',
+                  padding: '0.45rem 0.65rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                title="ปิดหน้าต่าง (Esc)"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Centered Image Stage */}
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              padding: '1rem',
+              position: 'relative'
+            }}
+          >
+            <img
+              src={lightboxData.url}
+              alt={lightboxData.title}
+              onClick={e => e.stopPropagation()}
+              style={{
+                maxWidth: '92vw',
+                maxHeight: '78vh',
+                objectFit: 'contain',
+                transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
+                transition: 'transform 0.2s ease',
+                borderRadius: '8px',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+                cursor: zoomLevel > 1 ? 'grab' : 'default'
+              }}
+            />
+          </div>
+
+          {/* Lightbox Footer Note */}
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', paddingBottom: '0.5rem' }}>
+            💡 คลิกบริเวณภายนอกรูปภาพ หรือกดปุ่ม <strong>[X]</strong> เพื่อปิดหน้าต่าง
+          </div>
+        </div>
+      )}
     </div>
   );
 };
