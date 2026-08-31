@@ -4,7 +4,7 @@ import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, FileS
 import type { User as UserType, Customer, CustomerSite } from '../types';
 import { 
   formatToDDMMYYYY, getTodayDateString, isDateInPast,
-  findQcForBranch, sortQcListByBranch 
+  findQcForBranch, sortQcListByBranch, isQcUser
 } from '../utils';
 import { CustomDateInput } from './CustomDateInput';
 import { GisMapPickerModal, formatToDMS } from './GisMapPickerModal';
@@ -298,6 +298,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   const [siteMapUrl, setSiteMapUrl] = useState('');
 
   // Permissions
+  const isQc = isQcUser(currentUser);
+
   const isAdmin = Boolean(
     (currentUser?.globalRole as string) === 'Admin' || 
     (currentUser?.globalRole as string) === 'SuperAdmin' || 
@@ -313,7 +315,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     currentUser?.email?.includes('gm')
   );
 
-  const canApproveSiteVisit = isAdmin || isGmStore;
+  const canApproveSiteVisit = (isAdmin || isGmStore) && !isQc;
 
   // Follow-up Modal & History
   const [isFollowupModalOpen, setIsFollowupModalOpen] = useState(false);
@@ -708,6 +710,18 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     return `https://maps.google.com/maps?q=${encodeURIComponent(trimmed)}&z=16&output=embed`;
   };
 
+  const LEAD_STAGE_ORDER: Record<string, number> = {
+    'New': 1,
+    'Contacted': 2,
+    'In Progress': 2,
+    'Qualified': 3,
+    'Pending Quote': 4,
+    'Interested': 4,
+    'Design Approved': 5,
+    'Ready To Close': 6,
+    'Converted': 7,
+  };
+
   const handleSaveFollowup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLeadForFollowup) return;
@@ -715,6 +729,15 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
     if (appointmentDate && isDateInPast(appointmentDate)) {
       alert('⚠️ ไม่สามารถบันทึกนัดหมายวันย้อนหลังได้ กรุณาเลือกวันปัจจุบันหรือวันล่วงหน้า');
       return;
+    }
+
+    if (isQc && selectedLeadForFollowup) {
+      const currentRank = LEAD_STAGE_ORDER[selectedLeadForFollowup.status] || 0;
+      const newRank = LEAD_STAGE_ORDER[followupNewStatus] || 0;
+      if (currentRank > 0 && newRank > 0 && newRank < currentRank) {
+        alert('⚠️ บัญชี QC ไม่มีสิทธิ์ถอยขั้นตอนสถานะของลูกค้า (ถอย Step ได้เฉพาะ Admin หรือ PM/Sales เท่านั้น)');
+        return;
+      }
     }
 
     try {
@@ -1047,6 +1070,15 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
       alert('เบอร์โทรติดต่อต้องเป็นตัวเลขความยาว 9 - 10 หลัก (เช่น 0812345678, 021234567)');
       return;
     }
+
+    if (isQc && editingLead) {
+      const currentRank = LEAD_STAGE_ORDER[editingLead.status] || 0;
+      const newRank = LEAD_STAGE_ORDER[status] || 0;
+      if (currentRank > 0 && newRank > 0 && newRank < currentRank) {
+        alert('⚠️ บัญชี QC ไม่มีสิทธิ์ถอยขั้นตอนสถานะของลูกค้า (ถอย Step ได้เฉพาะ Admin หรือ PM/Sales เท่านั้น)');
+        return;
+      }
+    }
     
     const autoAggregatedWorkTypes = Array.from(
       new Set(
@@ -1134,6 +1166,10 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   };
 
   const handleConvert = async (leadId: string) => {
+    if (isQc) {
+      alert('⚠️ บัญชี QC ไม่มีสิทธิ์กดปุ่มอนุมัติ/แปลงโครงการ');
+      return;
+    }
     const targetLead = leads.find(l => l.id === leadId);
     const targetName = targetLead ? `${targetLead.customer_name} (${targetLead.job_type})` : leadId;
     if (!confirm(`🚀 ยืนยันแปลง Lead "${targetName}" เป็นโครงการติดตั้ง (Active Project)?\n\nระบบจะดำเนินการอัตโนมัติ:\n• สร้าง Smart Project ID\n• สืบทอดพิกัด GPS Geofencing 500 เมตร & ข้อมูลติดต่อ\n• สร้างขั้นตอน Kanban และดึง Tasks แม่แบบเริ่มต้นตามประเภทงาน`)) return;
@@ -1861,28 +1897,30 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button 
-            type="button"
-            onClick={() => setIsSiteVisitModalOpen(true)}
-            className="hover-lift"
-            style={{
-              padding: '0.65rem 1.1rem',
-              borderRadius: 'var(--radius-md)',
-              border: canApproveSiteVisit ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--border-color)',
-              background: canApproveSiteVisit ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-secondary)',
-              color: canApproveSiteVisit ? '#059669' : 'var(--text-primary)',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              cursor: 'pointer',
-              boxShadow: 'var(--shadow-sm)'
-            }}
-          >
-            <ShieldCheck size={16} color={canApproveSiteVisit ? '#059669' : '#ca8a04'} />
-            อนุมัตินัดหมายออก Site {isGmStore ? '(GM)' : isAdmin ? '(Admin)' : ''}
-          </button>
+          {canApproveSiteVisit && (
+            <button 
+              type="button"
+              onClick={() => setIsSiteVisitModalOpen(true)}
+              className="hover-lift"
+              style={{
+                padding: '0.65rem 1.1rem',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                background: 'rgba(16, 185, 129, 0.08)',
+                color: '#059669',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <ShieldCheck size={16} color="#059669" />
+              อนุมัตินัดหมายออก Site {isGmStore ? '(GM)' : isAdmin ? '(Admin)' : ''}
+            </button>
+          )}
           
           <button 
             type="button" 
@@ -2607,7 +2645,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                                 )}
 
                                 {/* 5. Convert to Project */}
-                                {lead.status !== 'Converted' && (
+                                {lead.status !== 'Converted' && !isQc && (
                                   <button
                                     type="button"
                                     onClick={() => {

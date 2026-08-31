@@ -158,6 +158,42 @@ export const canOperateProject = (currentUser?: User | null, project?: Project |
   };
 };
 
+export const isQcUser = (user?: User | null): boolean => {
+  if (!user) return false;
+  return Boolean(
+    user.globalRole === 'QC' ||
+    (user.department && user.department.toUpperCase().includes('QC')) ||
+    (user.name && user.name.toUpperCase().includes('QC')) ||
+    (user.email && user.email.toLowerCase().includes('qc'))
+  );
+};
+
+export const canUserApprove = (user?: User | null): boolean => {
+  if (!user) return false;
+  if (isQcUser(user)) return false;
+  return Boolean(
+    (user.globalRole as string) === 'Admin' ||
+    (user.globalRole as string) === 'SuperAdmin' ||
+    user.globalRole === 'Manager' ||
+    (user.department && (user.department.includes('GM') || user.department.includes('Management') || user.department.includes('PM'))) ||
+    user.email === 'isarachootip@gmail.com' ||
+    user.id === 'u_admin'
+  );
+};
+
+export const canUserRollbackStep = (user?: User | null): boolean => {
+  if (!user) return false;
+  if (isQcUser(user)) return false;
+  return Boolean(
+    (user.globalRole as string) === 'Admin' ||
+    (user.globalRole as string) === 'SuperAdmin' ||
+    user.globalRole === 'Manager' ||
+    (user.department && (user.department.includes('GM') || user.department.includes('Management') || user.department.includes('PM'))) ||
+    user.email === 'isarachootip@gmail.com' ||
+    user.id === 'u_admin'
+  );
+};
+
 export const getTodayDateString = (): string => {
   const now = new Date();
   const year = now.getFullYear();

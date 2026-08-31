@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { User } from '../types';
+import { isQcUser } from '../utils';
 import {
   X, Palette, CheckCircle2, AlertCircle, Clock, Plus,
   FileImage, ExternalLink, RefreshCw, Send, Check, MessageSquare,
@@ -46,6 +47,7 @@ const DESIGN_VERSIONS = ['Rev A', 'Rev B', 'Rev C', 'Rev D', 'Final'];
 export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
   isOpen, onClose, lead, currentUser, users = [], onSaved
 }) => {
+  const isQc = isQcUser(currentUser);
   const [designs, setDesigns] = useState<LeadDesign[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -186,6 +188,10 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
 
   const handleUpdateStatus = async (designId: string, newStatus: 'Approved' | 'Revise Requested') => {
     if (!lead) return;
+    if (newStatus === 'Approved' && isQc) {
+      showToast('⚠️ บัญชี QC ไม่มีสิทธิ์กดปุ่มอนุมัติแบบ (สิทธิ์อนุมัติเฉพาะ Admin หรือ PM/Designer)', 'error');
+      return;
+    }
     const fb = feedbackInput[designId] || '';
     try {
       const res = await fetch(`/api/leads/${lead.id}/designs/${designId}/status`, {
@@ -594,17 +600,19 @@ export const DesignApprovalModal: React.FC<DesignApprovalModalProps> = ({
                           >
                             🔄 ขอแก้ไขแบบ (Revise)
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateStatus(d.id, 'Approved')}
-                            style={{
-                              background: '#10b981', border: 'none', color: 'white',
-                              padding: '0.4rem 1.15rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
-                            }}
-                          >
-                            <Check size={14} /> ✅ ลูกค้าอนุมัติแบบ (Design Approved)
-                          </button>
+                          {!isQc && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStatus(d.id, 'Approved')}
+                              style={{
+                                background: '#10b981', border: 'none', color: 'white',
+                                padding: '0.4rem 1.15rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
+                              }}
+                            >
+                              <Check size={14} /> ✅ ลูกค้าอนุมัติแบบ (Design Approved)
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}

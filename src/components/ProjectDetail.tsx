@@ -9,7 +9,7 @@ import {
   AlertCircle, MessageSquare, Award, ShieldCheck
 } from 'lucide-react';
 import type { Project, User, Task, ProjectWorkflow, TimesheetEntry } from '../types';
-import { formatToDDMMYYYY, canOperateProject } from '../utils';
+import { formatToDDMMYYYY, canOperateProject, isQcUser } from '../utils';
 import { STAGE_CONFIG } from '../config/workflows';
 import { QCHandoverModal } from './QCHandoverModal';
 import { ProjectChat } from './ProjectChat';
@@ -49,6 +49,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   // Check operator permissions: Admin, PM, or Responsible Branch QC
   const operatorPermission = canOperateProject(currentUser, project);
+  const isQc = isQcUser(currentUser);
 
   const [notes, setNotes] = useState(project?.extraDetails?.notes || 'ลูกค้าต้องการรีโนเวทบางส่วน เน้นความสวยงามและฟังก์ชันการใช้งาน งบประมาณเบื้องต้น 1,000 บาท');
   const [attachments, setAttachments] = useState<Array<{ name: string; size: string; date: string }>>([]);
@@ -139,6 +140,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       alert(`⚠️ ไม่สามารถดำเนินการได้:\n${operatorPermission.reason}`);
       return;
     }
+
+    const phaseOrder = ['PHASE_01_LEAD_SURVEY', 'PHASE_02_DESIGN_QUOTE_PAYMENT', 'PHASE_03_PROJECT_EXECUTION', 'PHASE_04_QC_HANDOVER'];
+    if (updatedFields.phase && phaseOrder.indexOf(updatedFields.phase) < phaseOrder.indexOf(flowState.phase)) {
+      if (isQc) {
+        alert('⚠️ บัญชี QC ไม่มีสิทธิ์ถอยขั้นตอนโครงการ (ถอย Step ได้เฉพาะ Admin หรือ PM เท่านั้น)');
+        return;
+      }
+    }
+
     const newExtra = {
       ...(project.extraDetails || {}),
       lifecycle: {
@@ -312,6 +322,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
   const handleApproveQuotation = (quo: any) => {
     if (!setProjects || !project) return;
+    if (isQc) {
+      alert('⚠️ บัญชี QC ไม่มีสิทธิ์กดปุ่มอนุมัติใบเสนอราคา (สิทธิ์อนุมัติเฉพาะ Admin หรือ PM เท่านั้น)');
+      return;
+    }
     if (!operatorPermission.allowed) {
       alert(`⚠️ ไม่สามารถอนุมัติใบเสนอราคาได้:\n${operatorPermission.reason}`);
       return;
@@ -1487,12 +1501,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase' }}>ขั้นตอนออกแบบ เสนอราคา และชำระเงิน</span>
                       <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.2rem 0 0 0', color: 'var(--text-primary)' }}>PHASE 02: Design, Quote & Payment</h2>
                     </div>
-                    <button 
-                      onClick={() => updateFlowState({ phase: 'PHASE_01_LEAD_SURVEY' })}
-                      style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}
-                    >
-                      ← ย้อนกลับ Phase 1
-                    </button>
+                    {!isQc && (
+                      <button 
+                        onClick={() => updateFlowState({ phase: 'PHASE_01_LEAD_SURVEY' })}
+                        style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}
+                      >
+                        ← ย้อนกลับ Phase 1
+                      </button>
+                    )}
                   </div>
 
                   {/* Design Step */}
@@ -1567,26 +1583,28 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                         )}
 
                         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
-                          <button 
-                            onClick={() => {
-                              updateFlowState({ design_approved: 'approved' });
-                              alert('ลูกค้าอนุมัติแบบดีไซน์สำเร็จ!');
-                            }}
-                            disabled={!flowState.design_files || flowState.design_files.length === 0}
-                            style={{
-                              flex: 1,
-                              background: (!flowState.design_files || flowState.design_files.length === 0) ? 'var(--bg-secondary)' : '#10b981',
-                              color: (!flowState.design_files || flowState.design_files.length === 0) ? 'var(--text-muted)' : 'white',
-                              padding: '0.45rem',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: (!flowState.design_files || flowState.design_files.length === 0) ? 'not-allowed' : 'pointer',
-                              fontWeight: 700,
-                              fontSize: '0.775rem'
-                            }}
-                          >
-                            ✓ อนุมัติแบบ (Design Approved)
-                          </button>
+                          {!isQc && (
+                            <button 
+                              onClick={() => {
+                                updateFlowState({ design_approved: 'approved' });
+                                alert('ลูกค้าอนุมัติแบบดีไซน์สำเร็จ!');
+                              }}
+                              disabled={!flowState.design_files || flowState.design_files.length === 0}
+                              style={{
+                                flex: 1,
+                                background: (!flowState.design_files || flowState.design_files.length === 0) ? 'var(--bg-secondary)' : '#10b981',
+                                color: (!flowState.design_files || flowState.design_files.length === 0) ? 'var(--text-muted)' : 'white',
+                                padding: '0.45rem',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: (!flowState.design_files || flowState.design_files.length === 0) ? 'not-allowed' : 'pointer',
+                                fontWeight: 700,
+                                fontSize: '0.775rem'
+                              }}
+                            >
+                              ✓ อนุมัติแบบ (Design Approved)
+                            </button>
+                          )}
                           <button 
                             onClick={() => {
                               updateFlowState({ 
@@ -1657,7 +1675,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                               <span style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)' }}>ยอดรวม: ฿{Number(quo.grand_total).toLocaleString()}</span>
                             </div>
                             <div style={{ display: 'flex', gap: '0.35rem' }}>
-                              {flowState.quotation_approved !== 'approved' && (
+                              {!isQc && flowState.quotation_approved !== 'approved' && (
                                 <button 
                                   onClick={() => handleApproveQuotation(quo)}
                                   style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}
@@ -1776,12 +1794,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase' }}>ขั้นตอนการก่อสร้างและควบคุมงาน</span>
                       <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.2rem 0 0 0', color: 'var(--text-primary)' }}>PHASE 03: Project Execution (INT)</h2>
                     </div>
-                    <button 
-                      onClick={() => updateFlowState({ phase: 'PHASE_02_DESIGN_QUOTE_PAYMENT' })}
-                      style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}
-                    >
-                      ← ย้อนกลับ Phase 2
-                    </button>
+                    {!isQc && (
+                      <button 
+                        onClick={() => updateFlowState({ phase: 'PHASE_02_DESIGN_QUOTE_PAYMENT' })}
+                        style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}
+                      >
+                        ← ย้อนกลับ Phase 2
+                      </button>
+                    )}
                   </div>
 
                   {/* Confirm Plan / INT Integration */}
@@ -2003,12 +2023,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase' }}>ขั้นตอนการตรวจสอบและปิดโครงการ</span>
                       <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0.2rem 0 0 0', color: 'var(--text-primary)' }}>PHASE 04: QC, Handover & After-Sales</h2>
                     </div>
-                    <button 
-                      onClick={() => updateFlowState({ phase: 'PHASE_03_PROJECT_EXECUTION' })}
-                      style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}
-                    >
-                      ← ย้อนกลับ Phase 3
-                    </button>
+                    {!isQc && (
+                      <button 
+                        onClick={() => updateFlowState({ phase: 'PHASE_03_PROJECT_EXECUTION' })}
+                        style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}
+                      >
+                        ← ย้อนกลับ Phase 3
+                      </button>
+                    )}
                   </div>
 
                   {/* QC Inspection Section */}

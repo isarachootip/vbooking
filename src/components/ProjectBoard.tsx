@@ -4,7 +4,7 @@ import {
   Calendar, MapPin, DollarSign, Users, Layers, ArrowRight
 } from 'lucide-react';
 import type { Project, User, Task, ProjectStatus, MasterProjectType } from '../types';
-import { formatToDDMMYYYY, canOperateProject } from '../utils';
+import { formatToDDMMYYYY, canOperateProject, isQcUser } from '../utils';
 import { getWorkflowColumnsForType, STAGE_CONFIG, mapStatusToColumn } from '../config/workflows';
 
 interface ProjectBoardProps {
@@ -90,6 +90,15 @@ export const ProjectBoard = ({
     const perm = canOperateProject(currentUser, targetProject);
     if (!perm.allowed) {
       alert(`⚠️ ไม่สามารถย้ายสถานะโครงการ ${targetProject.name} ได้:\n${perm.reason}`);
+      setDraggedProjectId(null);
+      return;
+    }
+
+    const isQc = isQcUser(currentUser);
+    const currentColIndex = activeColumnKeys.indexOf(targetProject.status as any);
+    const targetColIndex = activeColumnKeys.indexOf(columnId as any);
+    if (isQc && currentColIndex !== -1 && targetColIndex !== -1 && targetColIndex < currentColIndex) {
+      alert(`⚠️ บัญชี QC ไม่มีสิทธิ์ถอยขั้นตอนสถานะโครงการ (ถอย Step ได้เฉพาะ Admin หรือ PM เท่านั้น)`);
       setDraggedProjectId(null);
       return;
     }

@@ -8,7 +8,7 @@ import {
 import { QuotationScanModal } from './QuotationScanModal';
 import { PaymentModal } from './PaymentModal';
 import { CustomDateInput } from './CustomDateInput';
-import { formatToDDMMYYYY } from '../utils';
+import { formatToDDMMYYYY, isQcUser } from '../utils';
 import type { ServicePriceItem, User } from '../types';
 
 interface QuotationManagerProps {
@@ -69,6 +69,7 @@ const DEFAULT_TERMS_PRESETS = [
 ];
 
 export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser }) => {
+  const isQc = isQcUser(currentUser);
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [priceBook, setPriceBook] = useState<ServicePriceItem[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
@@ -430,6 +431,10 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
   };
 
   const handleApprove = async (id: string) => {
+    if (isQc) {
+      alert('⚠️ บัญชี QC ไม่มีสิทธิ์กดปุ่มอนุมัติใบเสนอราคา');
+      return;
+    }
     if (!window.confirm('ยืนยันอนุมัติใบเสนอราคานี้หรือไม่?')) return;
     try {
       const res = await fetch(`/api/quotations/${id}/status`, {
@@ -1214,7 +1219,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                               <DollarSign size={14} color="#059669" /> บันทึกมัดจำ / แนบสลิป
                             </button>
 
-                            {quo.status !== 'Approved' && quo.status !== 'Converted' && (
+                            {!isQc && quo.status !== 'Approved' && quo.status !== 'Converted' && (
                               <button
                                 onClick={() => { handleApprove(quo.id); setOpenActionMenuId(null); }}
                                 style={{

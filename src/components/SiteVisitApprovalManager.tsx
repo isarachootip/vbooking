@@ -5,7 +5,7 @@ import {
   ExternalLink, CheckCircle, AlertCircle, RefreshCw, Calendar, 
   UserCheck, ShieldCheck, ClipboardCheck
 } from 'lucide-react';
-import { formatToDDMMYYYY } from '../utils';
+import { formatToDDMMYYYY, isQcUser } from '../utils';
 import { SiteVisitResultModal } from './SiteVisitResultModal';
 
 interface SiteVisitApprovalManagerProps {
@@ -50,6 +50,8 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
   branches = [],
   onRefreshParent
 }) => {
+  const isQc = isQcUser(currentUser);
+
   const isAdmin = Boolean(
     (currentUser?.globalRole as string) === 'Admin' || 
     (currentUser?.globalRole as string) === 'SuperAdmin' || 
@@ -65,7 +67,7 @@ export const SiteVisitApprovalManager: React.FC<SiteVisitApprovalManagerProps> =
     currentUser?.email?.includes('gm')
   );
 
-  const canApprove = isAdmin || isGmStore;
+  const canApprove = (isAdmin || isGmStore) && !isQc;
 
   const userAssignedBranch = (currentUser?.assignedBranches && currentUser.assignedBranches.length > 0)
     ? currentUser.assignedBranches[0]
