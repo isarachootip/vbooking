@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, ShieldAlert, Lock, Building2, User } from 'lucide-react';
+import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, FileSpreadsheet, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, ShieldAlert, Lock, Building2, User } from 'lucide-react';
 import type { User as UserType, Customer, CustomerSite } from '../types';
 import { 
   formatToDDMMYYYY, getTodayDateString, isDateInPast,
@@ -2522,6 +2522,34 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                                 >
                                   <Palette size={13} /> 3. จัดการแบบแปลน 2D / 3D
+                                </button>
+
+                                {/* 3.5. Cost Estimation Draft */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuLeadId(null);
+                                    navigate(`/estimations?leadId=${lead.id}`);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.45rem 0.85rem',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    color: 'var(--accent-primary, #00ced1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.12s'
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0, 206, 209, 0.08)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <FileSpreadsheet size={13} /> 3.5. ถอดแบบ & สร้าง Draft ประมาณการต้นทุน
                                 </button>
 
                                 {/* 4. Down Payment & Convert */}

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   FileSpreadsheet, Plus, Search, Trash2, Edit3, CheckCircle, 
   ArrowUpRight, Eye, RefreshCw, DollarSign, Calendar, User as UserIcon, 
   Building, Phone, MapPin, Tag, ListPlus, X, Check, FileCheck, Layers, 
   Sparkles, TrendingUp, Award, Zap, ChevronRight, Calculator, CheckSquare, 
   AlertCircle, ShieldCheck, HardHat, Hammer, Wrench, Users, ArrowRight,
-  Target, ExternalLink, FileText
+  Target, ExternalLink, FileText, UserCheck, CheckCircle2, Navigation
 } from 'lucide-react';
 import { CustomDateInput } from './CustomDateInput';
 import { formatToDDMMYYYY } from '../utils';
@@ -121,6 +122,7 @@ interface DraftEstimation {
 
 interface DraftEstimationManagerProps {
   currentUser?: User | null;
+  branches?: any[];
 }
 
 const COMMON_AREAS = [
@@ -133,7 +135,114 @@ const COMMON_TRADES = [
   'งานประปา & สุขาภิบาล', 'งานทาสี', 'งานปูกระเบื้อง & พื้น', 'งานบิวท์อิน & ตกแต่ง', 'งานรื้อถอน & โครงสร้าง'
 ];
 
-export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ currentUser }) => {
+// Helper to extract rooms & work types from Lead notes/work_areas
+const parseLeadRoomsToScopeItems = (lead: any): DraftEstimationItem[] => {
+  const items: DraftEstimationItem[] = [];
+  
+  if (lead && lead.notes) {
+    try {
+      const parsedNotes = typeof lead.notes === 'string' && (lead.notes.startsWith('{') || lead.notes.startsWith('['))
+        ? JSON.parse(lead.notes)
+        : null;
+
+      if (parsedNotes) {
+        if (Array.isArray(parsedNotes.room_details) && parsedNotes.room_details.length > 0) {
+          parsedNotes.room_details.forEach((r: any) => {
+            const rName = r.room_name || 'พื้นที่ทั่วไป';
+            if (Array.isArray(r.work_types) && r.work_types.length > 0) {
+              r.work_types.forEach((wt: string) => {
+                items.push({
+                  area_name: rName,
+                  trade_category: wt || 'งานทั่วไป',
+                  item_name: `งาน${wt} (${rName})`,
+                  specs_description: r.notes || r.custom_work_type || '',
+                  quantity: 1,
+                  unit: 'ชุด',
+                  selected_material_unit_cost: 0,
+                  selected_labor_unit_cost: 0
+                });
+              });
+            } else {
+              items.push({
+                area_name: rName,
+                trade_category: 'งานทั่วไป',
+                item_name: `งานปรับปรุง ${rName}`,
+                specs_description: r.notes || '',
+                quantity: 1,
+                unit: 'ชุด',
+                selected_material_unit_cost: 0,
+                selected_labor_unit_cost: 0
+              });
+            }
+          });
+          if (items.length > 0) return items;
+        }
+
+        if (Array.isArray(parsedNotes.work_areas) && parsedNotes.work_areas.length > 0) {
+          parsedNotes.work_areas.forEach((area: string) => {
+            items.push({
+              area_name: area,
+              trade_category: 'งานทั่วไป',
+              item_name: `งานรีโนเวท/ปรับปรุง (${area})`,
+              specs_description: '',
+              quantity: 1,
+              unit: 'ชุด',
+              selected_material_unit_cost: 0,
+              selected_labor_unit_cost: 0
+            });
+          });
+          if (items.length > 0) return items;
+        }
+      }
+    } catch {
+      // not json
+    }
+  }
+
+  if (lead && Array.isArray(lead.work_areas) && lead.work_areas.length > 0) {
+    lead.work_areas.forEach((area: string) => {
+      items.push({
+        area_name: area,
+        trade_category: 'งานทั่วไป',
+        item_name: `งานรีโนเวท/ปรับปรุง (${area})`,
+        specs_description: '',
+        quantity: 1,
+        unit: 'ชุด',
+        selected_material_unit_cost: 0,
+        selected_labor_unit_cost: 0
+      });
+    });
+    return items;
+  }
+
+  return [
+    {
+      area_name: 'ห้องนั่งเล่น / โถงรับแขก',
+      trade_category: 'งานไฟฟ้า & สื่อสาร',
+      item_name: 'เดินสายไฟร้อยท่อฝังผนังพร้อมติดตั้งเต้ารับ-สวิตช์',
+      specs_description: 'ท่อ UPVC สีขาว, สาย THW 2.5 sq.mm., ปลั๊กคู่มีกราวด์ Panasonic',
+      quantity: 10,
+      unit: 'จุด',
+      selected_material_unit_cost: 200,
+      selected_labor_unit_cost: 150
+    },
+    {
+      area_name: 'ห้องนั่งเล่น / โถงรับแขก',
+      trade_category: 'งานฝ้าเพดาน & ผนังเบา',
+      item_name: 'รื้อฝ้าเดิมและติดตั้งฝ้าฉาบเรียบโครงคร่าว C-Line',
+      specs_description: 'แผ่นยิปซัม 9 มม. ขอบลาด โครงตราช้าง สปริงปรับระดับ',
+      quantity: 25,
+      unit: 'ตร.ม.',
+      selected_material_unit_cost: 180,
+      selected_labor_unit_cost: 200
+    }
+  ];
+};
+
+export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ currentUser, branches = [] }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [estimations, setEstimations] = useState<DraftEstimation[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [priceBook, setPriceBook] = useState<ServicePriceItem[]>([]);
@@ -152,9 +261,12 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
   const [isBidModalOpen, setIsBidModalOpen] = useState(false);
   const [editingBid, setEditingBid] = useState<ContractorBid | null>(null);
 
-  // Create/Edit Draft Form State
+  // Lead-centric Draft Creation Form State
+  const [creationMode, setCreationMode] = useState<'existing_lead' | 'new_lead'>('existing_lead');
+  const [selectedLeadObj, setSelectedLeadObj] = useState<any | null>(null);
+  const [leadSearchFilter, setLeadSearchFilter] = useState('');
+
   const [formTitle, setFormTitle] = useState('');
-  const [selectedCustomerOption, setSelectedCustomerOption] = useState('');
   const [formCustomerId, setFormCustomerId] = useState('');
   const [formCustomerFirstName, setFormCustomerFirstName] = useState('');
   const [formCustomerLastName, setFormCustomerLastName] = useState('');
@@ -162,6 +274,9 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
   const [formCustomerPhone, setFormCustomerPhone] = useState('');
   const [formCustomerAddress, setFormCustomerAddress] = useState('');
   const [formProjectType, setFormProjectType] = useState('Renovate');
+  const [formBranch, setFormBranch] = useState('สำนักงานใหญ่ (HQ)');
+  const [formBuildingType, setFormBuildingType] = useState('บ้านเดี่ยว');
+  const [formInitialBudget, setFormInitialBudget] = useState('');
   const [formTargetMargin, setFormTargetMargin] = useState<number>(35);
   const [formVatType, setFormVatType] = useState('Exclude VAT');
   const [formNotes, setFormNotes] = useState('');
@@ -219,7 +334,10 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
       if (estRes.ok) setEstimations(await estRes.json());
       if (contRes.ok) setContractors(await contRes.json());
       if (pbRes.ok) setPriceBook(await pbRes.json());
-      if (leadsRes.ok) setLeads(await leadsRes.json());
+      if (leadsRes.ok) {
+        const lData = await leadsRes.json();
+        setLeads(Array.isArray(lData) ? lData : (lData.data || []));
+      }
       if (custRes && custRes.ok) {
         const cData = await custRes.json();
         setCustomers(Array.isArray(cData) ? cData : (cData.data || []));
@@ -234,6 +352,20 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Check URL query param ?leadId=... on load
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const leadIdParam = params.get('leadId') || (location.state as any)?.leadId;
+    if (leadIdParam && leads.length > 0) {
+      const found = leads.find(l => String(l.id) === leadIdParam);
+      if (found) {
+        setCreationMode('existing_lead');
+        handleSelectLead(found.id, found);
+        setIsCreateModalOpen(true);
+      }
+    }
+  }, [location.search, location.state, leads]);
 
   // Fetch full details of an active estimation
   const openEstimationDetail = async (estId: string) => {
@@ -250,15 +382,20 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
 
   // Reset Create Form
   const resetCreateForm = () => {
+    setCreationMode('existing_lead');
+    setSelectedLeadObj(null);
+    setLeadSearchFilter('');
     setFormTitle('');
-    setSelectedCustomerOption('');
     setFormCustomerId('');
     setFormCustomerFirstName('');
     setFormCustomerLastName('');
     setFormCustomerName('');
     setFormCustomerPhone('');
     setFormCustomerAddress('');
-    setFormProjectType('Renovate');
+    setFormProjectType('Renovation');
+    setFormBranch(branches.length > 0 ? branches[0].name : 'สำนักงานใหญ่ (HQ)');
+    setFormBuildingType('บ้านเดี่ยว');
+    setFormInitialBudget('');
     setFormTargetMargin(35);
     setFormVatType('Exclude VAT');
     setFormNotes('');
@@ -287,59 +424,48 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
     ]);
   };
 
-  // Handle Pick Existing Customer or Lead
-  const handleSelectCustomer = (val: string) => {
-    setSelectedCustomerOption(val);
-    if (!val) {
-      setFormCustomerId('');
-      setFormLeadId('');
+  // Handle Pick Lead
+  const handleSelectLead = (leadId: string, leadObjPassed?: any) => {
+    setFormLeadId(leadId);
+    if (!leadId) {
+      setSelectedLeadObj(null);
       return;
     }
+    const lead = leadObjPassed || leads.find(l => String(l.id) === leadId);
+    if (!lead) return;
 
-    if (val.startsWith('lead:')) {
-      const lId = val.replace('lead:', '');
-      const lead = leads.find(l => String(l.id) === lId);
-      if (lead) {
-        setFormLeadId(lead.id);
-        setFormCustomerId('');
-        const rawName = (lead.customer_name || lead.name || '').trim();
-        const parts = rawName.split(' ');
-        const fName = parts[0] || '';
-        const lName = parts.slice(1).join(' ') || '';
-        setFormCustomerFirstName(fName);
-        setFormCustomerLastName(lName);
-        setFormCustomerName(rawName);
-        setFormCustomerPhone(lead.customer_phone || lead.phone || '');
-        setFormCustomerAddress(lead.customer_address || lead.address || '');
-        if (!formTitle) {
-          setFormTitle(`ประมาณการงาน ${rawName} (${lead.job_type || 'Renovate'})`);
-        }
-      }
-    } else if (val.startsWith('cust:')) {
-      const cId = val.replace('cust:', '');
-      const cust = customers.find(c => String(c.id || c.customerId) === cId);
-      if (cust) {
-        setFormCustomerId(cust.id || cust.customerId);
-        setFormLeadId('');
-        const fName = cust.first_name || cust.firstName || '';
-        const lName = cust.last_name || cust.lastName || '';
-        const rawName = (cust.customer_name || cust.customerName || `${fName} ${lName}`).trim();
-        
-        if (fName || lName) {
-          setFormCustomerFirstName(fName);
-          setFormCustomerLastName(lName);
-        } else {
-          const parts = rawName.split(' ');
-          setFormCustomerFirstName(parts[0] || '');
-          setFormCustomerLastName(parts.slice(1).join(' ') || '');
-        }
-        setFormCustomerName(rawName);
-        setFormCustomerPhone(cust.phone || cust.phone_secondary || '');
-        setFormCustomerAddress(cust.default_site_address || cust.defaultSiteAddress || cust.address || '');
-        if (!formTitle) {
-          setFormTitle(`ประมาณการงาน ${rawName}`);
-        }
-      }
+    setSelectedLeadObj(lead);
+    setFormCustomerId(lead.customer_id || '');
+    
+    const fName = lead.customer_first_name || (lead.customer_name ? lead.customer_name.split(' ')[0] : '');
+    const lName = lead.customer_last_name || (lead.customer_name ? lead.customer_name.split(' ').slice(1).join(' ') : '');
+    const fullName = lead.customer_name || `${fName} ${lName}`.trim();
+    
+    setFormCustomerFirstName(fName || '');
+    setFormCustomerLastName(lName || '');
+    setFormCustomerName(fullName);
+    setFormCustomerPhone(lead.customer_phone || lead.phone || '');
+    setFormCustomerAddress(lead.customer_address || lead.address || '');
+    setFormProjectType(lead.job_type || 'Renovation');
+    setFormBranch(lead.branch || (branches.length > 0 ? branches[0].name : 'สำนักงานใหญ่ (HQ)'));
+    
+    let bType = 'บ้านเดี่ยว';
+    let budget = '';
+    if (lead.notes) {
+      try {
+        const parsed = typeof lead.notes === 'string' && (lead.notes.startsWith('{') || lead.notes.startsWith('[')) ? JSON.parse(lead.notes) : null;
+        if (parsed?.building_type) bType = parsed.building_type;
+        if (parsed?.initial_budget) budget = parsed.initial_budget;
+      } catch (e) {}
+    }
+    setFormBuildingType(bType);
+    setFormInitialBudget(budget);
+    
+    setFormTitle(`ประมาณการงาน ${fullName} (${lead.job_type || 'Renovation'})`);
+
+    const parsedScope = parseLeadRoomsToScopeItems(lead);
+    if (parsedScope.length > 0) {
+      setFormItems(parsedScope);
     }
   };
 
@@ -384,7 +510,7 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
     });
   };
 
-  // Save new Draft Estimation
+  // Save new Draft Estimation (Creates Lead first if new_lead mode to ensure unified dataset)
   const handleSaveEstimation = async () => {
     if (!formTitle.trim()) {
       alert('กรุณาระบุชื่องานประมาณการ');
@@ -401,6 +527,43 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
     }
 
     try {
+      let activeLeadId = formLeadId;
+
+      // If New Lead mode, create Lead record first so data is unified right from the start!
+      if (creationMode === 'new_lead' || !activeLeadId) {
+        try {
+          const leadPayload = {
+            customer_first_name: formCustomerFirstName.trim(),
+            customer_last_name: formCustomerLastName.trim(),
+            customer_name: fullName,
+            customer_phone: formCustomerPhone.trim(),
+            customer_address: formCustomerAddress.trim(),
+            job_type: formProjectType || 'Renovation',
+            branch: formBranch || (branches.length > 0 ? branches[0].name : 'สำนักงานใหญ่ (HQ)'),
+            notes: JSON.stringify({
+              building_type: formBuildingType || 'บ้านเดี่ยว',
+              initial_budget: formInitialBudget || '',
+              work_areas: Array.from(new Set(formItems.map(it => it.area_name))),
+              notes: formNotes || ''
+            }),
+            sales_contact_id: currentUser?.id || null
+          };
+
+          const leadRes = await fetch('/api/leads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-User-Id': currentUser?.id || '' },
+            body: JSON.stringify(leadPayload)
+          });
+
+          if (leadRes.ok) {
+            const createdLead = await leadRes.json();
+            activeLeadId = createdLead.id;
+          }
+        } catch (err) {
+          console.error('Error creating unified lead:', err);
+        }
+      }
+
       const body = {
         title: formTitle,
         customer_id: formCustomerId || null,
@@ -408,7 +571,7 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
         customer_phone: formCustomerPhone,
         customer_address: formCustomerAddress,
         project_type: formProjectType,
-        lead_id: formLeadId || null,
+        lead_id: activeLeadId || null,
         target_margin_percent: formTargetMargin,
         vat_type: formVatType,
         notes: formNotes,
@@ -1506,16 +1669,26 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: CREATE NEW DRAFT ESTIMATION                                        */}
-      {/* ========================================================================= */}
-      {/* ========================================================================= */}
-      {/* MODAL: CREATE NEW DRAFT ESTIMATION (FULL SCREEN / EXPANDED)                */}
+      {/* MODAL: CREATE NEW DRAFT ESTIMATION (LEAD-CENTRIC & UNIFIED DATASET)        */}
       {/* ========================================================================= */}
       {isCreateModalOpen && (() => {
         const totalMaterialBaseline = formItems.reduce((acc, it) => acc + ((Number(it.selected_material_unit_cost) || 0) * (Number(it.quantity) || 1)), 0);
         const totalLaborBaseline = formItems.reduce((acc, it) => acc + ((Number(it.selected_labor_unit_cost) || 0) * (Number(it.quantity) || 1)), 0);
         const totalCostBaseline = totalMaterialBaseline + totalLaborBaseline;
         const targetSellingEst = formTargetMargin < 100 ? totalCostBaseline / (1 - (formTargetMargin / 100)) : totalCostBaseline * 1.35;
+
+        // Filter leads for search
+        const filteredLeadsForSelect = leads.filter(l => {
+          if (!leadSearchFilter.trim()) return true;
+          const q = leadSearchFilter.toLowerCase();
+          return (
+            (l.id && l.id.toLowerCase().includes(q)) ||
+            (l.customer_name && l.customer_name.toLowerCase().includes(q)) ||
+            (l.customer_phone && l.customer_phone.toLowerCase().includes(q)) ||
+            (l.branch && l.branch.toLowerCase().includes(q)) ||
+            (l.job_type && l.job_type.toLowerCase().includes(q))
+          );
+        });
 
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
@@ -1542,270 +1715,622 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                     <FileSpreadsheet color="var(--accent-primary)" size={22} />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                      สร้าง Draft ประมาณการต้นทุนใหม่ (Cost Estimation Draft)
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      สร้าง Draft ประมาณการต้นทุน (เชื่อมโยงฐานข้อมูล Lead & ลูกค้า)
                     </h2>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, marginTop: '2px' }}>
-                      กำหนดขอบเขตงาน ถอดแบบวัสดุ-ค่าแรง และดึงข้อมูลลูกค้าเดิมเพื่อส่งเทียบราคาช่าง
+                      ดึงข้อมูลลูกค้าและขอบเขตงานจาก Lead เพื่อเป็นชุดข้อมูลเดียวกันตั้งแต่เริ่มต้นสู่การถอดแบบและเสนอราคา
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setIsCreateModalOpen(false)}
-                  style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    padding: '0.4rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                >
-                  <X size={20} />
-                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  {/* Mode Switcher Tabs */}
+                  <div style={{ display: 'flex', background: 'var(--bg-tertiary)', padding: '0.25rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setCreationMode('existing_lead')}
+                      style={{
+                        padding: '0.35rem 0.85rem',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: creationMode === 'existing_lead' ? 'var(--accent-primary)' : 'transparent',
+                        color: creationMode === 'existing_lead' ? 'black' : 'var(--text-secondary)',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Target size={14} /> 🔍 เลือกลีดเดิมในระบบ ({leads.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCreationMode('new_lead');
+                        setFormLeadId('');
+                        setSelectedLeadObj(null);
+                      }}
+                      style={{
+                        padding: '0.35rem 0.85rem',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: creationMode === 'new_lead' ? 'var(--accent-primary)' : 'transparent',
+                        color: creationMode === 'new_lead' ? 'black' : 'var(--text-secondary)',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Plus size={14} /> ➕ สร้าง Lead ใหม่และถอดแบบ
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setIsCreateModalOpen(false)}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '0.4rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
 
               {/* Modal Body (Scrollable) */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 
-                {/* 1. Project & Customer Info Section */}
-                <div style={{ background: 'var(--bg-tertiary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <UserIcon size={18} color="var(--accent-primary)" />
-                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        ข้อมูลโครงการและลูกค้า
+                {/* 1. Lead / Customer Source Section */}
+                {creationMode === 'existing_lead' ? (
+                  <div style={{ background: 'var(--bg-tertiary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(0, 206, 209, 0.3)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Target size={18} color="var(--accent-primary)" />
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          เลือกลูกค้าจากฐานข้อมูล Leads
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        * เลือก Lead เพื่อดึงข้อมูลลูกค้า, ที่อยู่หน้างาน และห้องที่ต้องการทำให้อัตโนมัติ
                       </span>
                     </div>
 
-                    {/* Customer Picker from DB / Leads */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '320px' }}>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                        👥 ดึงจากลูกค้าเก่า / Leads:
-                      </span>
+                    {/* Search & Select Lead */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                      <div style={{ position: 'relative' }}>
+                        <Search size={15} color="var(--text-muted)" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                        <input
+                          type="text"
+                          placeholder="พิมพ์ค้นหาชื่อลูกค้า, เบอร์โทร, รหัส Lead..."
+                          value={leadSearchFilter}
+                          onChange={e => setLeadSearchFilter(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem 0.55rem 2rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.82rem'
+                          }}
+                        />
+                      </div>
+
                       <select
-                        value={selectedCustomerOption}
-                        onChange={e => handleSelectCustomer(e.target.value)}
+                        value={formLeadId}
+                        onChange={e => handleSelectLead(e.target.value)}
                         style={{
-                          flex: 1,
-                          padding: '0.45rem 0.75rem',
+                          width: '100%',
+                          padding: '0.55rem 0.75rem',
                           borderRadius: 'var(--radius-sm)',
                           background: 'var(--bg-secondary)',
                           border: '1px solid rgba(0, 206, 209, 0.4)',
                           color: 'var(--text-primary)',
-                          fontSize: '0.82rem',
-                          fontWeight: 500
+                          fontSize: '0.85rem',
+                          fontWeight: 600
                         }}
                       >
-                        <option value="">-- กรอกข้อมูลลูกค้าใหม่ (Custom / New) --</option>
-                        {customers.length > 0 && (
-                          <optgroup label="📋 ฐานข้อมูลลูกค้าเก่า (Customers Database)">
-                            {customers.map(c => {
-                              const cId = c.id || c.customerId;
-                              const cName = c.customer_name || c.customerName || `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'ไม่ระบุชื่อ';
-                              const cPhone = c.phone || c.phone_secondary || '';
-                              const cCode = c.customer_code || c.customerCode || '';
-                              return (
-                                <option key={`c_${cId}`} value={`cust:${cId}`}>
-                                  👤 {cName} {cPhone ? `(${cPhone})` : ''} {cCode ? `[${cCode}]` : ''}
-                                </option>
-                              );
-                            })}
-                          </optgroup>
-                        )}
-                        {leads.length > 0 && (
-                          <optgroup label="🎯 ลูกค้ามุ่งหวัง (Active Leads)">
-                            {leads.map(l => {
-                              const lName = l.customer_name || l.name || 'ไม่ระบุชื่อ';
-                              const lPhone = l.customer_phone || l.phone || '';
-                              return (
-                                <option key={`l_${l.id}`} value={`lead:${l.id}`}>
-                                  🎯 {lName} {lPhone ? `(${lPhone})` : ''} [{l.job_type || 'Lead'}]
-                                </option>
-                              );
-                            })}
-                          </optgroup>
-                        )}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                        ชื่องานประมาณการ *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="เช่น งานรีโนเวทห้องชุด 45 ตร.ม. คอนโด The Line หรือ งานต่อเติมครัว"
-                        value={formTitle}
-                        onChange={e => setFormTitle(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.55rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-color)',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.85rem'
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                        ประเภทโครงการ
-                      </label>
-                      <select
-                        value={formProjectType}
-                        onChange={e => setFormProjectType(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.55rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-color)',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.85rem'
-                        }}
-                      >
-                        <option value="Renovate">🏡 Renovate Service</option>
-                        <option value="MA Service">🔧 MA Service</option>
-                        <option value="Quick Service">⚡ Quick Service</option>
-                        <option value="Built-in">🛋️ Built-in Design</option>
-                        <option value="New House">🏗️ New House Build</option>
+                        <option value="">-- กรุณาเลือกลีด (Select Lead) --</option>
+                        {filteredLeadsForSelect.map(l => {
+                          const lName = l.customer_name || `${l.customer_first_name || ''} ${l.customer_last_name || ''}`.trim() || 'ไม่ระบุชื่อ';
+                          const lPhone = l.customer_phone || l.phone || '';
+                          const lBranch = l.branch || 'HQ';
+                          const lJob = l.job_type || 'Renovation';
+                          return (
+                            <option key={l.id} value={l.id}>
+                              🎯 [{l.id}] {lName} | 📞 {lPhone} | 🏢 {lBranch} ({lJob})
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                        Target Margin (%)
-                      </label>
-                      <div style={{ position: 'relative' }}>
+                    {/* Selected Lead Highlight Banner */}
+                    {selectedLeadObj && (
+                      <div style={{ background: 'rgba(0, 206, 209, 0.08)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid rgba(0, 206, 209, 0.25)', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                              <span style={{ background: 'var(--accent-primary)', color: 'black', padding: '0.1rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 800 }}>
+                                {selectedLeadObj.id}
+                              </span>
+                              <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>
+                                {selectedLeadObj.customer_name || `${formCustomerFirstName} ${formCustomerLastName}`}
+                              </strong>
+                              {selectedLeadObj.customer_phone && (
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                  📞 {selectedLeadObj.customer_phone}
+                                </span>
+                              )}
+                              <span style={{ fontSize: '0.75rem', color: '#60a5fa', background: 'rgba(59,130,246,0.15)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>
+                                🏢 {selectedLeadObj.branch || 'สำนักงานใหญ่'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                              📍 หน้างาน: {selectedLeadObj.customer_address || 'ไม่ระบุสถานที่ติดตั้ง'} | 🏷️ ประเภท: {selectedLeadObj.job_type || 'Renovation'}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
+                            <CheckCircle2 size={14} /> เชื่อมต่อกับข้อมูล Lead สำเร็จ
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Common Parameters Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          ชื่องานประมาณการ *
+                        </label>
                         <input
-                          type="number"
-                          min="5"
-                          max="80"
-                          value={formTargetMargin}
-                          onChange={e => setFormTargetMargin(Number(e.target.value))}
+                          type="text"
+                          placeholder="เช่น งานรีโนเวทห้องชุด 45 ตร.ม. คอนโด The Line หรือ งานต่อเติมครัว"
+                          value={formTitle}
+                          onChange={e => setFormTitle(e.target.value)}
                           style={{
                             width: '100%',
                             padding: '0.55rem 0.75rem',
-                            paddingRight: '2rem',
                             borderRadius: 'var(--radius-sm)',
                             background: 'var(--bg-secondary)',
                             border: '1px solid var(--border-color)',
-                            color: 'var(--accent-primary)',
-                            fontWeight: 700,
+                            color: 'var(--text-primary)',
                             fontSize: '0.85rem'
                           }}
                         />
-                        <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>%</span>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          ประเภทโครงการ
+                        </label>
+                        <select
+                          value={formProjectType}
+                          onChange={e => setFormProjectType(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          <option value="Renovation">🏡 Renovate Service</option>
+                          <option value="MA Service">🔧 MA Service</option>
+                          <option value="Quick Service">⚡ Quick Service</option>
+                          <option value="Built-in Design">🛋️ Built-in Design</option>
+                          <option value="New House Build">🏗️ New House Build</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          Target Margin (%)
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="number"
+                            min="5"
+                            max="80"
+                            value={formTargetMargin}
+                            onChange={e => setFormTargetMargin(Number(e.target.value))}
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              paddingRight: '2rem',
+                              borderRadius: 'var(--radius-sm)',
+                              background: 'var(--bg-secondary)',
+                              border: '1px solid var(--border-color)',
+                              color: 'var(--accent-primary)',
+                              fontWeight: 700,
+                              fontSize: '0.85rem'
+                            }}
+                          />
+                          <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Customer Specific Fields: First Name, Last Name, Phone, Address */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr 2fr', gap: '1rem', marginTop: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          ชื่อลูกค้า (First Name) *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น สมชาย"
+                          value={formCustomerFirstName}
+                          onChange={e => {
+                            const fName = e.target.value;
+                            setFormCustomerFirstName(fName);
+                            setFormCustomerName(`${fName} ${formCustomerLastName}`.trim());
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          นามสกุล (Last Name)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น ใจดี"
+                          value={formCustomerLastName}
+                          onChange={e => {
+                            const lName = e.target.value;
+                            setFormCustomerLastName(lName);
+                            setFormCustomerName(`${formCustomerFirstName} ${lName}`.trim());
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          เบอร์โทรศัพท์
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น 081-234-5678"
+                          value={formCustomerPhone}
+                          onChange={e => setFormCustomerPhone(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          สถานที่หน้างาน / ที่อยู่ติดตั้ง
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น อาคาร A ชั้น 12 คอนโด The Line ถ.สุขุมวิท 71"
+                          value={formCustomerAddress}
+                          onChange={e => setFormCustomerAddress(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
-
-                  {/* Customer Specific Fields: First Name, Last Name, Phone, Address */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr 2fr', gap: '1rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                        ชื่อลูกค้า (First Name) *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="เช่น สมชาย"
-                        value={formCustomerFirstName}
-                        onChange={e => {
-                          const fName = e.target.value;
-                          setFormCustomerFirstName(fName);
-                          setFormCustomerName(`${fName} ${formCustomerLastName}`.trim());
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '0.55rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-color)',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.85rem'
-                        }}
-                      />
+                ) : (
+                  /* Mode 2: Create New Lead & Draft Simultaneously */
+                  <div style={{ background: 'var(--bg-tertiary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.4)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Sparkles size={18} color="#34d399" />
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          สร้าง Lead ใหม่ลงในระบบพร้อมสร้าง Draft ประมาณการ
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: '#34d399', background: 'rgba(16,185,129,0.12)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 600 }}>
+                        ✓ ข้อมูลจะถูกบันทึกลงใน Leads และเชื่อมโยงกับ Draft ทันที
+                      </span>
                     </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                        นามสกุล (Last Name)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="เช่น ใจดี"
-                        value={formCustomerLastName}
-                        onChange={e => {
-                          const lName = e.target.value;
-                          setFormCustomerLastName(lName);
-                          setFormCustomerName(`${formCustomerFirstName} ${lName}`.trim());
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '0.55rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-color)',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.85rem'
-                        }}
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr 1.2fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          ชื่อลูกค้า (First Name) *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น สมชาย"
+                          value={formCustomerFirstName}
+                          onChange={e => {
+                            const fName = e.target.value;
+                            setFormCustomerFirstName(fName);
+                            setFormCustomerName(`${fName} ${formCustomerLastName}`.trim());
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          นามสกุล (Last Name)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น ใจดี"
+                          value={formCustomerLastName}
+                          onChange={e => {
+                            const lName = e.target.value;
+                            setFormCustomerLastName(lName);
+                            setFormCustomerName(`${formCustomerFirstName} ${lName}`.trim());
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          เบอร์โทรศัพท์ *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น 081-234-5678"
+                          value={formCustomerPhone}
+                          onChange={e => setFormCustomerPhone(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          สาขาที่ดูแล (Branch)
+                        </label>
+                        <select
+                          value={formBranch}
+                          onChange={e => setFormBranch(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          {branches.length > 0 ? (
+                            branches.map((b: any) => <option key={b.id || b.code} value={b.name}>{b.name}</option>)
+                          ) : (
+                            <>
+                              <option value="สำนักงานใหญ่ (HQ)">สำนักงานใหญ่ (HQ)</option>
+                              <option value="สาขาบางนา">สาขาบางนา</option>
+                              <option value="สาขารามอินทรา">สาขารามอินทรา</option>
+                              <option value="สาขาพระราม 2">สาขาพระราม 2</option>
+                              <option value="สาขารัตนาธิเบศร์">สาขารัตนาธิเบศร์</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
                     </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                        เบอร์โทรศัพท์
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="เช่น 081-234-5678"
-                        value={formCustomerPhone}
-                        onChange={e => setFormCustomerPhone(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.55rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-color)',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.85rem'
-                        }}
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          ชื่องานประมาณการ *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น งานรีโนเวทบ้าน 2 ชั้น หรือ งานต่อเติมครัว"
+                          value={formTitle}
+                          onChange={e => setFormTitle(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          ประเภทงาน (Job Type)
+                        </label>
+                        <select
+                          value={formProjectType}
+                          onChange={e => setFormProjectType(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          <option value="Renovation">🏡 Renovate Service</option>
+                          <option value="MA Service">🔧 MA Service</option>
+                          <option value="Quick Service">⚡ Quick Service</option>
+                          <option value="Built-in Design">🛋️ Built-in Design</option>
+                          <option value="New House Build">🏗️ New House Build</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          ประเภทอาคาร
+                        </label>
+                        <select
+                          value={formBuildingType}
+                          onChange={e => setFormBuildingType(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          <option value="บ้านเดี่ยว">🏡 บ้านเดี่ยว</option>
+                          <option value="ทาวน์เฮ้าส์/ทาวน์โฮม">🏘️ ทาวน์เฮ้าส์ / โฮม</option>
+                          <option value="คอนโดมิเนียม">🏢 คอนโดมิเนียม</option>
+                          <option value="อาคารพาณิชย์">🏪 อาคารพาณิชย์</option>
+                          <option value="สำนักงาน/ออฟฟิศ">💼 สำนักงาน / ออฟฟิศ</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          Target Margin (%)
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="number"
+                            min="5"
+                            max="80"
+                            value={formTargetMargin}
+                            onChange={e => setFormTargetMargin(Number(e.target.value))}
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              paddingRight: '2rem',
+                              borderRadius: 'var(--radius-sm)',
+                              background: 'var(--bg-secondary)',
+                              border: '1px solid var(--border-color)',
+                              color: 'var(--accent-primary)',
+                              fontWeight: 700,
+                              fontSize: '0.85rem'
+                            }}
+                          />
+                          <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>%</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
-                        สถานที่หน้างาน / ที่อยู่ติดตั้ง
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="เช่น อาคาร A ชั้น 12 คอนโด The Line ถ.สุขุมวิท 71"
-                        value={formCustomerAddress}
-                        onChange={e => setFormCustomerAddress(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.55rem 0.75rem',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-color)',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.85rem'
-                        }}
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          สถานที่หน้างาน / ที่อยู่ติดตั้ง
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น 123/45 ซ.สุขุมวิท 55 แขวงคลองตันเหนือ เขตวัฒนา กทม."
+                          value={formCustomerAddress}
+                          onChange={e => setFormCustomerAddress(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                          งบประมาณเบื้องต้นของลูกค้า (฿)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="เช่น 250,000"
+                          value={formInitialBudget}
+                          onChange={e => setFormInitialBudget(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* 2. Scope Items List Section */}
                 <div style={{ background: 'var(--bg-tertiary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -2100,7 +2625,7 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                     }}
                   >
                     <Check size={18} />
-                    บันทึก Draft ประมาณการ
+                    {creationMode === 'new_lead' ? '✓ บันทึก Lead & Draft ประมาณการ' : '✓ บันทึก Draft ประมาณการ'}
                   </button>
                 </div>
               </div>
