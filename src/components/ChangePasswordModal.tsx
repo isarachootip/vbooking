@@ -16,7 +16,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   targetUser
 }) => {
   const userToUpdate = targetUser || currentUser;
-  const isAdmin = (currentUser.globalRole as string) === 'Admin' || (currentUser.globalRole as string) === 'SuperAdmin' || currentUser.department === 'Management' || currentUser.email === 'isarachootip@gmail.com' || currentUser.email === 'chapirak@gmail.com' || currentUser.id === 'u_admin' || currentUser.id === 'u_chapirak';
+  const isAdmin = (currentUser.globalRole as string) === 'Admin' || (currentUser.globalRole as string) === 'SuperAdmin' || currentUser.department === 'Management' || currentUser.email === 'isarachootip@gmail.com' || currentUser.email === 'chapirak@gmail.com' || currentUser.email === 'itchootip@gmail.com' || currentUser.id === 'u_admin' || currentUser.id === 'u_chapirak' || currentUser.id === 'u_itchootip';
   const isSelf = userToUpdate.id === currentUser.id;
 
   const [newPassword, setNewPassword] = useState('');

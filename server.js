@@ -1526,13 +1526,13 @@ const initDB = async () => {
     const defaultPwHash = crypto.createHash('sha256').update('123456').digest('hex');
     await client.query('UPDATE users SET password_hash = $1 WHERE password_hash IS NULL', [defaultPwHash]);
 
-    // Ensure admin users (isarachootip, chapirak) exist in production
-    const adminEmails = ['isarachootip@gmail.com', 'chapirak@gmail.com'];
+    // Ensure admin users (isarachootip, chapirak, itchootip) exist in production
+    const adminEmails = ['isarachootip@gmail.com', 'chapirak@gmail.com', 'itchootip@gmail.com'];
     for (const admEmail of adminEmails) {
       const admExists = await client.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [admEmail]);
       if (admExists.rows.length === 0) {
         const adminPwHash = crypto.createHash('sha256').update('123456').digest('hex');
-        const admId = admEmail.startsWith('chapirak') ? 'u_chapirak' : 'u_admin';
+        const admId = admEmail.startsWith('chapirak') ? 'u_chapirak' : (admEmail.startsWith('itchootip') ? 'u_itchootip' : 'u_admin');
         const admName = admEmail.split('@')[0];
         await client.query(
           `INSERT INTO users (id, name, email, avatar, global_role, department, password_hash)
