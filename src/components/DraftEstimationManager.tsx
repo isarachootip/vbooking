@@ -138,6 +138,7 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [priceBook, setPriceBook] = useState<ServicePriceItem[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Search & Filter
@@ -153,6 +154,10 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
 
   // Create/Edit Draft Form State
   const [formTitle, setFormTitle] = useState('');
+  const [selectedCustomerOption, setSelectedCustomerOption] = useState('');
+  const [formCustomerId, setFormCustomerId] = useState('');
+  const [formCustomerFirstName, setFormCustomerFirstName] = useState('');
+  const [formCustomerLastName, setFormCustomerLastName] = useState('');
   const [formCustomerName, setFormCustomerName] = useState('');
   const [formCustomerPhone, setFormCustomerPhone] = useState('');
   const [formCustomerAddress, setFormCustomerAddress] = useState('');
@@ -203,17 +208,22 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [estRes, contRes, pbRes, leadsRes] = await Promise.all([
+      const [estRes, contRes, pbRes, leadsRes, custRes] = await Promise.all([
         fetch('/api/estimations'),
         fetch('/api/estimations/contractors'),
         fetch('/api/pricebook'),
-        fetch('/api/leads')
+        fetch('/api/leads'),
+        fetch('/api/customers')
       ]);
 
       if (estRes.ok) setEstimations(await estRes.json());
       if (contRes.ok) setContractors(await contRes.json());
       if (pbRes.ok) setPriceBook(await pbRes.json());
       if (leadsRes.ok) setLeads(await leadsRes.json());
+      if (custRes && custRes.ok) {
+        const cData = await custRes.json();
+        setCustomers(Array.isArray(cData) ? cData : (cData.data || []));
+      }
     } catch (err) {
       console.error('Failed to load data:', err);
     } finally {
@@ -235,6 +245,101 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
       }
     } catch (err) {
       console.error('Failed to fetch estimation details:', err);
+    }
+  };
+
+  // Reset Create Form
+  const resetCreateForm = () => {
+    setFormTitle('');
+    setSelectedCustomerOption('');
+    setFormCustomerId('');
+    setFormCustomerFirstName('');
+    setFormCustomerLastName('');
+    setFormCustomerName('');
+    setFormCustomerPhone('');
+    setFormCustomerAddress('');
+    setFormProjectType('Renovate');
+    setFormTargetMargin(35);
+    setFormVatType('Exclude VAT');
+    setFormNotes('');
+    setFormLeadId('');
+    setFormItems([
+      {
+        area_name: 'ห้องนั่งเล่น / โถงรับแขก',
+        trade_category: 'งานไฟฟ้า & สื่อสาร',
+        item_name: 'เดินสายไฟร้อยท่อฝังผนังพร้อมติดตั้งเต้ารับ-สวิตช์',
+        specs_description: 'ท่อ UPVC สีขาว, สาย THW 2.5 sq.mm., ปลั๊กคู่มีกราวด์ Panasonic',
+        quantity: 10,
+        unit: 'จุด',
+        selected_material_unit_cost: 200,
+        selected_labor_unit_cost: 150
+      },
+      {
+        area_name: 'ห้องนั่งเล่น / โถงรับแขก',
+        trade_category: 'งานฝ้าเพดาน & ผนังเบา',
+        item_name: 'รื้อฝ้าเดิมและติดตั้งฝ้าฉาบเรียบโครงคร่าว C-Line',
+        specs_description: 'แผ่นยิปซัม 9 มม. ขอบลาด โครงตราช้าง สปริงปรับระดับ',
+        quantity: 25,
+        unit: 'ตร.ม.',
+        selected_material_unit_cost: 180,
+        selected_labor_unit_cost: 200
+      }
+    ]);
+  };
+
+  // Handle Pick Existing Customer or Lead
+  const handleSelectCustomer = (val: string) => {
+    setSelectedCustomerOption(val);
+    if (!val) {
+      setFormCustomerId('');
+      setFormLeadId('');
+      return;
+    }
+
+    if (val.startsWith('lead:')) {
+      const lId = val.replace('lead:', '');
+      const lead = leads.find(l => String(l.id) === lId);
+      if (lead) {
+        setFormLeadId(lead.id);
+        setFormCustomerId('');
+        const rawName = (lead.customer_name || lead.name || '').trim();
+        const parts = rawName.split(' ');
+        const fName = parts[0] || '';
+        const lName = parts.slice(1).join(' ') || '';
+        setFormCustomerFirstName(fName);
+        setFormCustomerLastName(lName);
+        setFormCustomerName(rawName);
+        setFormCustomerPhone(lead.customer_phone || lead.phone || '');
+        setFormCustomerAddress(lead.customer_address || lead.address || '');
+        if (!formTitle) {
+          setFormTitle(`ประมาณการงาน ${rawName} (${lead.job_type || 'Renovate'})`);
+        }
+      }
+    } else if (val.startsWith('cust:')) {
+      const cId = val.replace('cust:', '');
+      const cust = customers.find(c => String(c.id || c.customerId) === cId);
+      if (cust) {
+        setFormCustomerId(cust.id || cust.customerId);
+        setFormLeadId('');
+        const fName = cust.first_name || cust.firstName || '';
+        const lName = cust.last_name || cust.lastName || '';
+        const rawName = (cust.customer_name || cust.customerName || `${fName} ${lName}`).trim();
+        
+        if (fName || lName) {
+          setFormCustomerFirstName(fName);
+          setFormCustomerLastName(lName);
+        } else {
+          const parts = rawName.split(' ');
+          setFormCustomerFirstName(parts[0] || '');
+          setFormCustomerLastName(parts.slice(1).join(' ') || '');
+        }
+        setFormCustomerName(rawName);
+        setFormCustomerPhone(cust.phone || cust.phone_secondary || '');
+        setFormCustomerAddress(cust.default_site_address || cust.defaultSiteAddress || cust.address || '');
+        if (!formTitle) {
+          setFormTitle(`ประมาณการงาน ${rawName}`);
+        }
+      }
     }
   };
 
@@ -285,6 +390,11 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
       alert('กรุณาระบุชื่องานประมาณการ');
       return;
     }
+    const fullName = `${formCustomerFirstName.trim()} ${formCustomerLastName.trim()}`.trim() || formCustomerName.trim();
+    if (!fullName) {
+      alert('กรุณาระบุชื่อลูกค้า');
+      return;
+    }
     if (formItems.length === 0) {
       alert('กรุณาเพิ่มรายการงานอย่างน้อย 1 รายการ');
       return;
@@ -293,7 +403,8 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
     try {
       const body = {
         title: formTitle,
-        customer_name: formCustomerName,
+        customer_id: formCustomerId || null,
+        customer_name: fullName,
         customer_phone: formCustomerPhone,
         customer_address: formCustomerAddress,
         project_type: formProjectType,
@@ -317,8 +428,8 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
         await fetchData();
         openEstimationDetail(saved.id);
       } else {
-        const err = await res.json();
-        alert(err.error || 'Failed to save estimation');
+        const errData = await res.json();
+        alert(errData.error || 'Failed to save estimation');
       }
     } catch (err) {
       console.error(err);
@@ -635,11 +746,7 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
 
           <button
             onClick={() => {
-              setFormTitle('');
-              setFormCustomerName('');
-              setFormCustomerPhone('');
-              setFormCustomerAddress('');
-              setFormLeadId('');
+              resetCreateForm();
               setIsCreateModalOpen(true);
             }}
             className="hover-lift"
@@ -1289,7 +1396,10 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
               <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>ไม่พบรายการ Draft ประมาณการ</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>เริ่มต้นสร้าง Draft เพื่อถอดแบบและส่งเทียบราคาช่างหลายทีมก่อนทำใบเสนอราคา</p>
               <button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => {
+                  resetCreateForm();
+                  setIsCreateModalOpen(true);
+                }}
                 style={{
                   padding: '0.6rem 1.25rem', borderRadius: 'var(--radius-md)', border: 'none',
                   background: 'var(--accent-primary)', color: 'black', fontWeight: 700, cursor: 'pointer'
@@ -1398,222 +1508,606 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
       {/* ========================================================================= */}
       {/* MODAL: CREATE NEW DRAFT ESTIMATION                                        */}
       {/* ========================================================================= */}
-      {isCreateModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div className="glass-panel" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', maxWidth: '840px', width: '100%', maxHeight: '90vh', overflowY: 'auto', border: '1px solid rgba(0, 206, 209, 0.3)', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <FileSpreadsheet color="var(--accent-primary)" size={22} />
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>สร้าง Draft ประมาณการต้นทุนใหม่</h2>
-              </div>
-              <button onClick={() => setIsCreateModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
-            </div>
+      {/* ========================================================================= */}
+      {/* MODAL: CREATE NEW DRAFT ESTIMATION (FULL SCREEN / EXPANDED)                */}
+      {/* ========================================================================= */}
+      {isCreateModalOpen && (() => {
+        const totalMaterialBaseline = formItems.reduce((acc, it) => acc + ((Number(it.selected_material_unit_cost) || 0) * (Number(it.quantity) || 1)), 0);
+        const totalLaborBaseline = formItems.reduce((acc, it) => acc + ((Number(it.selected_labor_unit_cost) || 0) * (Number(it.quantity) || 1)), 0);
+        const totalCostBaseline = totalMaterialBaseline + totalLaborBaseline;
+        const targetSellingEst = formTargetMargin < 100 ? totalCostBaseline / (1 - (formTargetMargin / 100)) : totalCostBaseline * 1.35;
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>ชื่องานประมาณการ *</label>
-                <input
-                  type="text"
-                  placeholder="เช่น งานรีโนเวทห้องชุด 45 ตร.ม. คอนโด The Line"
-                  value={formTitle}
-                  onChange={e => setFormTitle(e.target.value)}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>ชื่อลูกค้า</label>
-                <input
-                  type="text"
-                  placeholder="คุณสมชาย"
-                  value={formCustomerName}
-                  onChange={e => setFormCustomerName(e.target.value)}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>เบอร์โทรศัพท์</label>
-                <input
-                  type="text"
-                  placeholder="081-234-5678"
-                  value={formCustomerPhone}
-                  onChange={e => setFormCustomerPhone(e.target.value)}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>ประเภทโครงการ</label>
-                <select
-                  value={formProjectType}
-                  onChange={e => setFormProjectType(e.target.value)}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                >
-                  <option value="Renovate">🏡 Renovate Service</option>
-                  <option value="MA Service">🔧 MA Service</option>
-                  <option value="Quick Service">⚡ Quick Service</option>
-                  <option value="Built-in">🛋️ Built-in Design</option>
-                  <option value="New House">🏗️ New House Build</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>Target Margin (%)</label>
-                <input
-                  type="number"
-                  min="5"
-                  max="70"
-                  value={formTargetMargin}
-                  onChange={e => setFormTargetMargin(Number(e.target.value))}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                />
-              </div>
-            </div>
-
-            {/* Scope Items List in Form */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                  รายการขอบเขตงาน (Scope of Work Items)
-                </span>
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+            <div
+              className="glass-panel"
+              style={{
+                background: 'var(--bg-secondary)',
+                borderRadius: '16px',
+                width: '96vw',
+                maxWidth: '1440px',
+                height: '94vh',
+                maxHeight: '94vh',
+                display: 'flex',
+                flexDirection: 'column',
+                border: '1px solid rgba(0, 206, 209, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Modal Header */}
+              <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.1rem 1.75rem', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(0, 206, 209, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0, 206, 209, 0.3)' }}>
+                    <FileSpreadsheet color="var(--accent-primary)" size={22} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                      สร้าง Draft ประมาณการต้นทุนใหม่ (Cost Estimation Draft)
+                    </h2>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, marginTop: '2px' }}>
+                      กำหนดขอบเขตงาน ถอดแบบวัสดุ-ค่าแรง และดึงข้อมูลลูกค้าเดิมเพื่อส่งเทียบราคาช่าง
+                    </p>
+                  </div>
+                </div>
                 <button
-                  type="button"
-                  onClick={handleAddItem}
+                  onClick={() => setIsCreateModalOpen(false)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '0.3rem',
-                    padding: '0.3rem 0.75rem', borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(0, 206, 209, 0.15)', border: '1px solid var(--accent-primary)',
-                    color: 'var(--accent-primary)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer'
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '0.4rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease'
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
                 >
-                  <Plus size={14} /> + เพิ่มรายการ
+                  <X size={20} />
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {formItems.map((it, idx) => (
-                  <div key={idx} style={{ background: 'var(--bg-tertiary)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 1fr auto', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      <select
-                        value={it.area_name}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, area_name: val } : item));
-                        }}
-                        style={{ padding: '0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
-                      >
-                        {COMMON_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-                      </select>
-
-                      <select
-                        value={it.trade_category}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, trade_category: val } : item));
-                        }}
-                        style={{ padding: '0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem' }}
-                      >
-                        {COMMON_TRADES.map(tr => <option key={tr} value={tr}>{tr}</option>)}
-                      </select>
-
-                      {/* Pick from Price Book dropdown */}
-                      <select
-                        onChange={e => handlePickPriceBook(idx, e.target.value)}
-                        style={{ padding: '0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid rgba(0,206,209,0.3)', color: 'var(--accent-primary)', fontSize: '0.75rem' }}
-                      >
-                        <option value="">⚡ ดึงจาก Price Book...</option>
-                        {priceBook.map(pb => (
-                          <option key={pb.id} value={pb.id}>{pb.service_name} ({pb.category})</option>
-                        ))}
-                      </select>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(idx)}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.3rem' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+              {/* Modal Body (Scrollable) */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                
+                {/* 1. Project & Customer Info Section */}
+                <div style={{ background: 'var(--bg-tertiary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <UserIcon size={18} color="var(--accent-primary)" />
+                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        ข้อมูลโครงการและลูกค้า
+                      </span>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.6fr 0.6fr 0.8fr 0.8fr', gap: '0.5rem' }}>
+                    {/* Customer Picker from DB / Leads */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '320px' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        👥 ดึงจากลูกค้าเก่า / Leads:
+                      </span>
+                      <select
+                        value={selectedCustomerOption}
+                        onChange={e => handleSelectCustomer(e.target.value)}
+                        style={{
+                          flex: 1,
+                          padding: '0.45rem 0.75rem',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid rgba(0, 206, 209, 0.4)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.82rem',
+                          fontWeight: 500
+                        }}
+                      >
+                        <option value="">-- กรอกข้อมูลลูกค้าใหม่ (Custom / New) --</option>
+                        {customers.length > 0 && (
+                          <optgroup label="📋 ฐานข้อมูลลูกค้าเก่า (Customers Database)">
+                            {customers.map(c => {
+                              const cId = c.id || c.customerId;
+                              const cName = c.customer_name || c.customerName || `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'ไม่ระบุชื่อ';
+                              const cPhone = c.phone || c.phone_secondary || '';
+                              const cCode = c.customer_code || c.customerCode || '';
+                              return (
+                                <option key={`c_${cId}`} value={`cust:${cId}`}>
+                                  👤 {cName} {cPhone ? `(${cPhone})` : ''} {cCode ? `[${cCode}]` : ''}
+                                </option>
+                              );
+                            })}
+                          </optgroup>
+                        )}
+                        {leads.length > 0 && (
+                          <optgroup label="🎯 ลูกค้ามุ่งหวัง (Active Leads)">
+                            {leads.map(l => {
+                              const lName = l.customer_name || l.name || 'ไม่ระบุชื่อ';
+                              const lPhone = l.customer_phone || l.phone || '';
+                              return (
+                                <option key={`l_${l.id}`} value={`lead:${l.id}`}>
+                                  🎯 {lName} {lPhone ? `(${lPhone})` : ''} [{l.job_type || 'Lead'}]
+                                </option>
+                              );
+                            })}
+                          </optgroup>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                        ชื่องานประมาณการ *
+                      </label>
                       <input
                         type="text"
-                        placeholder="ชื่อรายการงาน (Item Name)"
-                        value={it.item_name}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, item_name: val } : item));
+                        placeholder="เช่น งานรีโนเวทห้องชุด 45 ตร.ม. คอนโด The Line หรือ งานต่อเติมครัว"
+                        value={formTitle}
+                        onChange={e => setFormTitle(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 0.75rem',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.85rem'
                         }}
-                        style={{ padding: '0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
                       />
-                      <input
-                        type="number"
-                        placeholder="จำนวน"
-                        value={it.quantity}
-                        onChange={e => {
-                          const val = Number(e.target.value);
-                          setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, quantity: val } : item));
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                        ประเภทโครงการ
+                      </label>
+                      <select
+                        value={formProjectType}
+                        onChange={e => setFormProjectType(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 0.75rem',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.85rem'
                         }}
-                        style={{ padding: '0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem', textAlign: 'right' }}
-                      />
+                      >
+                        <option value="Renovate">🏡 Renovate Service</option>
+                        <option value="MA Service">🔧 MA Service</option>
+                        <option value="Quick Service">⚡ Quick Service</option>
+                        <option value="Built-in">🛋️ Built-in Design</option>
+                        <option value="New House">🏗️ New House Build</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                        Target Margin (%)
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="number"
+                          min="5"
+                          max="80"
+                          value={formTargetMargin}
+                          onChange={e => setFormTargetMargin(Number(e.target.value))}
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem 0.75rem',
+                            paddingRight: '2rem',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--accent-primary)',
+                            fontWeight: 700,
+                            fontSize: '0.85rem'
+                          }}
+                        />
+                        <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Customer Specific Fields: First Name, Last Name, Phone, Address */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr 2fr', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                        ชื่อลูกค้า (First Name) *
+                      </label>
                       <input
                         type="text"
-                        placeholder="หน่วย"
-                        value={it.unit}
+                        placeholder="เช่น สมชาย"
+                        value={formCustomerFirstName}
                         onChange={e => {
-                          const val = e.target.value;
-                          setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, unit: val } : item));
+                          const fName = e.target.value;
+                          setFormCustomerFirstName(fName);
+                          setFormCustomerName(`${fName} ${formCustomerLastName}`.trim());
                         }}
-                        style={{ padding: '0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem', textAlign: 'center' }}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 0.75rem',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.85rem'
+                        }}
                       />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                        นามสกุล (Last Name)
+                      </label>
                       <input
-                        type="number"
-                        placeholder="ทุนค่าของ"
-                        value={it.selected_material_unit_cost || ''}
+                        type="text"
+                        placeholder="เช่น ใจดี"
+                        value={formCustomerLastName}
                         onChange={e => {
-                          const val = Number(e.target.value);
-                          setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, selected_material_unit_cost: val } : item));
+                          const lName = e.target.value;
+                          setFormCustomerLastName(lName);
+                          setFormCustomerName(`${formCustomerFirstName} ${lName}`.trim());
                         }}
-                        style={{ padding: '0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem', textAlign: 'right' }}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 0.75rem',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.85rem'
+                        }}
                       />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                        เบอร์โทรศัพท์
+                      </label>
                       <input
-                        type="number"
-                        placeholder="ทุนค่าแรง"
-                        value={it.selected_labor_unit_cost || ''}
-                        onChange={e => {
-                          const val = Number(e.target.value);
-                          setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, selected_labor_unit_cost: val } : item));
+                        type="text"
+                        placeholder="เช่น 081-234-5678"
+                        value={formCustomerPhone}
+                        onChange={e => setFormCustomerPhone(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 0.75rem',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.85rem'
                         }}
-                        style={{ padding: '0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem', textAlign: 'right' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+                        สถานที่หน้างาน / ที่อยู่ติดตั้ง
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="เช่น อาคาร A ชั้น 12 คอนโด The Line ถ.สุขุมวิท 71"
+                        value={formCustomerAddress}
+                        onChange={e => setFormCustomerAddress(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 0.75rem',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.85rem'
+                        }}
                       />
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* 2. Scope Items List Section */}
+                <div style={{ background: 'var(--bg-tertiary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <Layers size={18} color="var(--accent-primary)" />
+                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        รายการถอดแบบขอบเขตงาน (Scope of Work Items)
+                      </span>
+                      <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', background: 'rgba(0, 206, 209, 0.15)', color: 'var(--accent-primary)', borderRadius: '12px', fontWeight: 700 }}>
+                        {formItems.length} รายการ
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAddItem}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                        padding: '0.45rem 1rem', borderRadius: 'var(--radius-sm)',
+                        background: 'linear-gradient(135deg, rgba(0, 206, 209, 0.2), rgba(0, 128, 255, 0.2))',
+                        border: '1px solid var(--accent-primary)',
+                        color: 'var(--accent-primary)', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Plus size={15} /> + เพิ่มรายการงาน
+                    </button>
+                  </div>
+
+                  {/* Scope Items Grid */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    {formItems.map((it, idx) => {
+                      const matCost = Number(it.selected_material_unit_cost) || 0;
+                      const labCost = Number(it.selected_labor_unit_cost) || 0;
+                      const qty = Number(it.quantity) || 1;
+                      const lineUnitCost = matCost + labCost;
+                      const lineTotalCost = lineUnitCost * qty;
+
+                      return (
+                        <div
+                          key={idx}
+                          style={{
+                            background: 'var(--bg-secondary)',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                          }}
+                        >
+                          {/* Row 1: Area, Trade Category, Price Book Selector, Delete Button */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 1.5fr auto', gap: '0.75rem', marginBottom: '0.65rem' }}>
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>พื้นที่ / ห้อง</span>
+                              <select
+                                value={it.area_name}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, area_name: val } : item));
+                                }}
+                                style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                              >
+                                {COMMON_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+                              </select>
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>หมวดหมู่งานช่าง</span>
+                              <select
+                                value={it.trade_category}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, trade_category: val } : item));
+                                }}
+                                style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                              >
+                                {COMMON_TRADES.map(tr => <option key={tr} value={tr}>{tr}</option>)}
+                              </select>
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--accent-primary)', display: 'block', marginBottom: '2px', fontWeight: 600 }}>⚡ ดึงจาก Price Book</span>
+                              <select
+                                onChange={e => handlePickPriceBook(idx, e.target.value)}
+                                style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid rgba(0,206,209,0.35)', color: 'var(--accent-primary)', fontSize: '0.82rem', fontWeight: 500 }}
+                              >
+                                <option value="">-- เลือกรายการจาก Price Book --</option>
+                                {priceBook.map(pb => (
+                                  <option key={pb.id} value={pb.id}>{pb.service_name} ({pb.category})</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(idx)}
+                                title="ลบรายการนี้"
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  borderRadius: '6px',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  padding: '0.45rem 0.6rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Row 2: Item Name, Specs, Qty, Unit, Material Cost, Labor Cost, Total Line Preview */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 2fr 0.7fr 0.7fr 1fr 1fr 1.3fr', gap: '0.65rem', alignItems: 'flex-end' }}>
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>ชื่องาน (Item Name) *</span>
+                              <input
+                                type="text"
+                                placeholder="เช่น รื้อถอนสุขภัณฑ์เดิม หรือ ทาสีรองพื้นปูนเก่า"
+                                value={it.item_name}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, item_name: val } : item));
+                                }}
+                                style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                              />
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>สเปก / สเปกวัสดุ (Specs)</span>
+                              <input
+                                type="text"
+                                placeholder="เช่น ยี่ห้อ, ขนาด, คุณสมบัติเฉพาะ"
+                                value={it.specs_description || ''}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, specs_description: val } : item));
+                                }}
+                                style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem' }}
+                              />
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px', textAlign: 'right' }}>จำนวน</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                placeholder="1"
+                                value={it.quantity}
+                                onChange={e => {
+                                  const val = Number(e.target.value);
+                                  setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, quantity: val } : item));
+                                }}
+                                style={{ width: '100%', padding: '0.45rem 0.5rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem', textAlign: 'right' }}
+                              />
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px', textAlign: 'center' }}>หน่วย</span>
+                              <input
+                                type="text"
+                                placeholder="เช่น จุด"
+                                value={it.unit}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, unit: val } : item));
+                                }}
+                                style={{ width: '100%', padding: '0.45rem 0.5rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem', textAlign: 'center' }}
+                              />
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px', textAlign: 'right' }}>ทุนค่าของ / หน่วย</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                placeholder="0"
+                                value={it.selected_material_unit_cost || ''}
+                                onChange={e => {
+                                  const val = Number(e.target.value);
+                                  setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, selected_material_unit_cost: val } : item));
+                                }}
+                                style={{ width: '100%', padding: '0.45rem 0.5rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem', textAlign: 'right' }}
+                              />
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px', textAlign: 'right' }}>ทุนค่าแรง / หน่วย</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                placeholder="0"
+                                value={it.selected_labor_unit_cost || ''}
+                                onChange={e => {
+                                  const val = Number(e.target.value);
+                                  setFormItems(prev => prev.map((item, i) => i === idx ? { ...item, selected_labor_unit_cost: val } : item));
+                                }}
+                                style={{ width: '100%', padding: '0.45rem 0.5rem', borderRadius: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.82rem', textAlign: 'right' }}
+                              />
+                            </div>
+
+                            {/* Line Cost Summary Pill */}
+                            <div style={{ background: 'var(--bg-tertiary)', padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'right' }}>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                ทุน/หน่วย: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>฿{lineUnitCost.toLocaleString()}</span>
+                              </div>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
+                                รวม: ฿{lineTotalCost.toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer (Sticky Bottom with Live Cost Summary and Actions) */}
+              <div style={{ flexShrink: 0, padding: '0.85rem 1.75rem', background: 'var(--bg-tertiary)', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                {/* Left: Summary Metrics */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>รายการ:</span>
+                    <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{formItems.length} รายการ</strong>
+                  </div>
+                  <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.1)' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>ทุนค่าของ:</span>
+                    <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>฿{totalMaterialBaseline.toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>ทุนค่าแรง:</span>
+                    <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>฿{totalLaborBaseline.toLocaleString()}</strong>
+                  </div>
+                  <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.1)' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>รวมต้นทุนฐาน:</span>
+                    <strong style={{ fontSize: '0.95rem', color: '#f59e0b' }}>฿{totalCostBaseline.toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>ราคาขายเป้าหมาย (Margin {formTargetMargin}%):</span>
+                    <strong style={{ fontSize: '1rem', color: 'var(--accent-primary)', fontWeight: 800 }}>
+                      ฿{Math.round(targetSellingEst).toLocaleString()}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Right: Actions */}
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    style={{
+                      padding: '0.6rem 1.25rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveEstimation}
+                    className="hover-lift"
+                    style={{
+                      padding: '0.6rem 1.6rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'linear-gradient(135deg, var(--accent-primary), #0080ff)',
+                      border: 'none',
+                      color: 'white',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      boxShadow: '0 4px 14px rgba(0, 206, 209, 0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    <Check size={18} />
+                    บันทึก Draft ประมาณการ
+                  </button>
+                </div>
               </div>
             </div>
-
-            {/* Modal Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1rem' }}>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                style={{ padding: '0.6rem 1.25rem', borderRadius: 'var(--radius-md)', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--text-secondary)', cursor: 'pointer' }}
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveEstimation}
-                style={{ padding: '0.6rem 1.5rem', borderRadius: 'var(--radius-md)', background: 'var(--accent-primary)', border: 'none', color: 'black', fontWeight: 800, cursor: 'pointer' }}
-              >
-                ✓ บันทึก Draft ประมาณการ
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ========================================================================= */}
       {/* MODAL: CONTRACTOR BID ENTRY (RFQ)                                         */}
