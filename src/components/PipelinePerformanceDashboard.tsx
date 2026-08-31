@@ -85,7 +85,24 @@ export const PipelinePerformanceDashboard: React.FC<PipelinePerformanceDashboard
       if (selectedBranch !== 'all') params.append('branch', selectedBranch);
       if (selectedJobType !== 'all') params.append('jobType', selectedJobType);
 
-      const res = await fetch(`/api/dashboard/pipeline-performance?${params.toString()}`);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      const storedUserStr = typeof window !== 'undefined' ? localStorage.getItem('nt_current_user') : null;
+      if (storedUserStr) {
+        try {
+          const storedUser = JSON.parse(storedUserStr);
+          if (storedUser && storedUser.id) {
+            headers['X-User-Id'] = storedUser.id;
+          }
+        } catch {}
+      }
+
+      const res = await fetch(`/api/dashboard/pipeline-performance?${params.toString()}`, { headers });
       if (res.ok) {
         const data = await res.json();
         setSummary(data.summary);

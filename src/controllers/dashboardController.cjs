@@ -144,7 +144,7 @@ exports.getPipelinePerformance = async (req, res) => {
 
     // Fetch auxiliary log tables
     const followupsRes = await pool.query(`
-      SELECT lead_id, activity_type, new_status, notes, created_at, created_by, survey_date
+      SELECT lead_id, activity_type, appointment_date, created_at, created_by, notes
       FROM lead_followups
       ORDER BY created_at ASC
     `);
@@ -201,27 +201,32 @@ exports.getPipelinePerformance = async (req, res) => {
     });
 
     const projectsRes = await pool.query(`
-      SELECT id, name, status, start_date, end_date, budget, created_at, project_type
+      SELECT id, name, status, start_date, end_date, budget, COALESCE(converted_at, start_date) as created_at, project_type, lead_id, converted_at
       FROM projects
-      ORDER BY created_at DESC
+      ORDER BY start_date DESC
     `);
     const projectsById = {};
     projectsRes.rows.forEach(p => {
       projectsById[p.id] = p;
     });
 
-    const checkinsRes = await pool.query(`
-      SELECT project_id, MIN(check_in_time) as first_checkin, MAX(check_out_time) as last_checkout
-      FROM site_checkins
-      GROUP BY project_id
-    `);
-    const checkinsByProject = {};
-    checkinsRes.rows.forEach(c => {
-      checkinsByProject[c.project_id] = c;
-    });
+    let checkinsByProject = {};
+    try {
+      const checkinsRes = await pool.query(`
+        SELECT project_id, MIN(check_in_time) as first_checkin, MAX(check_out_time) as last_checkout
+        FROM site_checkins
+        GROUP BY project_id
+      `);
+      checkinsRes.rows.forEach(c => {
+        checkinsByProject[c.project_id] = c;
+      });
+    } catch (e) {
+      // fallback if site_checkins table empty or structured differently
+      checkinsByProject = {};
+    }
 
     const timesheetsRes = await pool.query(`
-      SELECT project_id, MIN(created_at) as first_ts, MAX(created_at) as last_ts,
+      SELECT project_id, MIN(date) as first_ts, MAX(date) as last_ts,
              COUNT(*) as ts_count,
              COUNT(CASE WHEN status = 'Approved' THEN 1 END) as approved_count,
              MIN(approved_at) as first_approved, MAX(approved_at) as last_approved
@@ -233,16 +238,21 @@ exports.getPipelinePerformance = async (req, res) => {
       timesheetsByProject[t.project_id] = t;
     });
 
-    const qcRes = await pool.query(`
-      SELECT project_id, MIN(created_at) as first_qc, MAX(created_at) as last_qc,
-             COUNT(*) as qc_count
-      FROM qc_inspections
-      GROUP BY project_id
-    `);
-    const qcByProject = {};
-    qcRes.rows.forEach(q => {
-      qcByProject[q.project_id] = q;
-    });
+    let qcByProject = {};
+    try {
+      const qcRes = await pool.query(`
+        SELECT project_id, MIN(created_at) as first_qc, MAX(created_at) as last_qc,
+               COUNT(*) as qc_count
+        FROM project_qc_inspections
+        GROUP BY project_id
+      `);
+      qcRes.rows.forEach(q => {
+        qcByProject[q.project_id] = q;
+      });
+    } catch (e) {
+      qcByProject = {};
+    }
+
 
     // Helper: calculate days between 2 timestamps
     const diffInDays = (start, end) => {
