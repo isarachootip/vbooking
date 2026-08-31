@@ -177,7 +177,9 @@ export const canUserApprove = (user?: User | null): boolean => {
     user.globalRole === 'Manager' ||
     (user.department && (user.department.includes('GM') || user.department.includes('Management') || user.department.includes('PM'))) ||
     user.email === 'isarachootip@gmail.com' ||
-    user.id === 'u_admin'
+    user.email === 'chapirak@gmail.com' ||
+    user.id === 'u_admin' ||
+    user.id === 'u_chapirak'
   );
 };
 
@@ -190,7 +192,9 @@ export const canUserRollbackStep = (user?: User | null): boolean => {
     user.globalRole === 'Manager' ||
     (user.department && (user.department.includes('GM') || user.department.includes('Management') || user.department.includes('PM'))) ||
     user.email === 'isarachootip@gmail.com' ||
-    user.id === 'u_admin'
+    user.email === 'chapirak@gmail.com' ||
+    user.id === 'u_admin' ||
+    user.id === 'u_chapirak'
   );
 };
 

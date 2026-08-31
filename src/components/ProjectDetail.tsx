@@ -6,7 +6,7 @@ import {
   MapPin, Activity, TrendingUp, CheckCircle2, AlertTriangle, 
   RotateCcw, DollarSign, UserPlus, Plus, Search, 
   Trash2, Save, FileSignature, ThumbsUp, Check, X,
-  AlertCircle, MessageSquare, Award, ShieldCheck
+  AlertCircle, MessageSquare, Award, ShieldCheck, Users, Wrench
 } from 'lucide-react';
 import type { Project, User, Task, ProjectWorkflow, TimesheetEntry } from '../types';
 import { formatToDDMMYYYY, canOperateProject, isQcUser } from '../utils';
@@ -380,6 +380,128 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const picUser = users.find(u => u.id === extra.picUser || u.id === project.members?.[0]?.userId);
   const picName = picUser ? picUser.name : (extra.picUser || 'PAKPOOM J.');
   const picAvatar = picUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100';
+
+  const DEFAULT_INT_TECHNICIANS = [
+    { 
+      id: 'tech_elec_01', 
+      name: 'สมใจ แสนดี', 
+      role: 'ช่างไฟฟ้า', 
+      skill: 'งานไฟฟ้า & สื่อสาร', 
+      phone: '089-111-2233', 
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=tech_elec_01',
+      rate: 650
+    },
+    { 
+      id: 'tech_craft_02', 
+      name: 'ณรงค์ ทนทาน', 
+      role: 'ช่างฝีมือ', 
+      skill: 'งานฝ้าเพดาน & ผนังเบา', 
+      phone: '081-444-5566', 
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=tech_craft_02',
+      rate: 600
+    },
+    { 
+      id: 'tech_gen_03', 
+      name: 'วิชัย อิ่มใจ', 
+      role: 'ช่างทั่วไป', 
+      skill: 'งานติดตั้งทั่วไป & ปูกระเบื้อง', 
+      phone: '086-777-8899', 
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=tech_gen_03',
+      rate: 550
+    }
+  ];
+
+  const handleDrawTechniciansFromInt = () => {
+    if (!project) return;
+    const techStrings = DEFAULT_INT_TECHNICIANS.map(t => `${t.name} (${t.role})`);
+    
+    // 1. Build and merge new project members
+    const newMembers = DEFAULT_INT_TECHNICIANS.map(t => ({
+      userId: t.id,
+      role: t.role,
+      manDayRate: t.rate,
+      name: t.name,
+      phone: t.phone
+    }));
+
+    const currentMembers = project.members || [];
+    const mergedMembers = [...currentMembers];
+    newMembers.forEach(nm => {
+      if (!mergedMembers.some(m => m.userId === nm.userId)) {
+        mergedMembers.push(nm);
+      }
+    });
+
+    const newExtra = {
+      ...(project.extraDetails || {}),
+      lifecycle: {
+        ...flowState,
+        technicians: techStrings,
+        technician_details: DEFAULT_INT_TECHNICIANS
+      }
+    };
+
+    const updatedProject = {
+      ...project,
+      members: mergedMembers,
+      extraDetails: newExtra
+    };
+
+    if (setProjects) {
+      setProjects(prev => prev.map(p => p.id === project.id ? updatedProject : p));
+    }
+
+    // 2. Auto assign technicians to WBS tasks matching skill if not assigned
+    if (setTasks) {
+      setTasks(prev => prev.map(t => {
+        if (t.projectId === project.id) {
+          let assignedId = t.assigneeId;
+          if (!assignedId) {
+            const titleLower = (t.title || '').toLowerCase();
+            if (titleLower.includes('ไฟ') || titleLower.includes('สวิตช์') || titleLower.includes('เต้ารับ') || titleLower.includes('เดินสาย')) {
+              assignedId = 'tech_elec_01';
+            } else if (titleLower.includes('ฝ้า') || titleLower.includes('ผนัง') || titleLower.includes('เพดาน') || titleLower.includes('รื้อ')) {
+              assignedId = 'tech_craft_02';
+            } else {
+              assignedId = 'tech_gen_03';
+            }
+          }
+          return { ...t, assigneeId: assignedId };
+        }
+        return t;
+      }));
+    }
+
+    alert('✅ ดึงรายชื่อช่างผู้ร่วมงานจากระบบ INT และเชื่อมโยงเข้าโครงการสำเร็จ!\n\n' +
+      DEFAULT_INT_TECHNICIANS.map(t => `• ${t.name} [${t.role}] - ${t.skill} (โทร: ${t.phone})`).join('\n') +
+      '\n\nระบบได้ทำการนำเข้าสมาชิกโครงการ (Project Members) และมอบหมายงาน WBS ให้ช่างตามความเชี่ยวชาญเรียบร้อยแล้ว');
+  };
+
+  const handleAssignTaskTechnician = (taskId: string, techUserId: string) => {
+    if (!setTasks) return;
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return { ...t, assigneeId: techUserId };
+      }
+      return t;
+    }));
+  };
+
+  const handleUpdateTaskProgress = (taskId: string, percent: number) => {
+    if (!setTasks) return;
+    const isDone = percent === 100;
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          progress_percent: percent,
+          progressPercent: percent,
+          status: isDone ? 'Done' : percent > 0 ? 'In Progress' : 'To Do'
+        };
+      }
+      return t;
+    }));
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -1011,6 +1133,115 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* CARD 5.5: ทีมช่างผู้ปฏิบัติงาน & สมาชิกโครงการ (Project Technicians & Team) */}
+          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.6rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Users size={18} color="var(--accent-primary)" /> 👷‍♂️ ทีมช่างผู้ปฏิบัติงาน & สมาชิกโครงการ ({project.members?.length || 0} คน)
+              </h3>
+              <button 
+                onClick={handleDrawTechniciansFromInt}
+                style={{ 
+                  background: 'rgba(59, 130, 246, 0.12)', 
+                  border: '1px solid var(--accent-primary)', 
+                  color: 'var(--accent-primary)', 
+                  padding: '0.25rem 0.65rem', 
+                  borderRadius: '6px', 
+                  fontSize: '0.75rem', 
+                  fontWeight: 700, 
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+              >
+                <Users size={14} /> ดึง/อัปเดตช่างจาก INT
+              </button>
+            </div>
+
+            {project.members && project.members.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.85rem' }}>
+                {project.members.map((m, idx) => {
+                  const techInfo = DEFAULT_INT_TECHNICIANS.find(t => t.id === m.userId);
+                  const userInfo = users.find(u => u.id === m.userId);
+                  const memberName = (m as any).name || techInfo?.name || userInfo?.name || m.userId;
+                  const memberPhone = (m as any).phone || techInfo?.phone || (userInfo as any)?.phone || '-';
+                  const memberAvatar = techInfo?.avatar || userInfo?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${m.userId}`;
+                  const memberRole = m.role || techInfo?.role || 'สมาชิกทีมงาน';
+                  const assignedTaskCount = (tasks || []).filter(t => t.projectId === project.id && t.assigneeId === m.userId).length;
+
+                  return (
+                    <div 
+                      key={idx}
+                      style={{ 
+                        background: 'var(--bg-tertiary)', 
+                        padding: '0.85rem', 
+                        borderRadius: '8px', 
+                        border: '1px solid var(--border-color)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem'
+                      }}
+                    >
+                      <img 
+                        src={memberAvatar} 
+                        alt={memberName} 
+                        style={{ width: '38px', height: '38px', borderRadius: '50%', border: '2px solid var(--accent-primary)' }} 
+                      />
+                      <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'space-between' }}>
+                          <strong style={{ fontSize: '0.825rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                            {memberName}
+                          </strong>
+                          <span style={{ 
+                            fontSize: '0.65rem', 
+                            padding: '0.1rem 0.4rem', 
+                            borderRadius: '4px',
+                            background: m.userId.startsWith('tech_') ? 'rgba(59, 130, 246, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                            color: m.userId.startsWith('tech_') ? 'var(--accent-primary)' : '#10b981',
+                            fontWeight: 700
+                          }}>
+                            {memberRole}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                          📞 {memberPhone}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>งานที่ได้รับมอบหมาย:</span>
+                          <strong style={{ color: assignedTaskCount > 0 ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
+                            {assignedTaskCount} งาน
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '1.5rem', background: 'var(--bg-tertiary)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', margin: '0 0 0.75rem 0' }}>
+                  ยังไม่มีการเพิ่มทีมช่างผู้รับผิดชอบในโครงการนี้
+                </p>
+                <button 
+                  onClick={handleDrawTechniciansFromInt}
+                  style={{ 
+                    background: 'var(--accent-primary)', 
+                    color: 'white', 
+                    border: 'none', 
+                    padding: '0.45rem 1rem', 
+                    borderRadius: '6px', 
+                    fontWeight: 700, 
+                    fontSize: '0.8rem', 
+                    cursor: 'pointer' 
+                  }}
+                >
+                  👥 ดึงช่างติดตั้งจาก INT ตอนนี้
+                </button>
+              </div>
+            )}
           </div>
 
           {/* CARD 6 & 7: โน้ต / หมายเหตุ & ไฟล์แนบ */}
@@ -1833,93 +2064,218 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                       </button>
 
                       <button 
-                        onClick={() => {
-                          const mockTechs = ['สมใจ แสนดี (ช่างไฟฟ้า)', 'ณรงค์ ทนทาน (ช่างฝีมือ)', 'วิชัย อิ่มใจ (ช่างทั่วไป)'];
-                          updateFlowState({ technicians: mockTechs });
-                          alert('ดึงรายชื่อช่างผู้ร่วมงานจากระบบ INT เรียบร้อย: ' + mockTechs.join(', '));
-                        }}
+                        onClick={handleDrawTechniciansFromInt}
+                        className="hover-lift"
                         style={{
-                          background: 'transparent',
-                          color: 'var(--text-primary)',
-                          border: '1px solid var(--border-color)',
+                          background: (project.members && project.members.some(m => m.userId.startsWith('tech_'))) ? 'rgba(59, 130, 246, 0.15)' : 'var(--accent-primary)',
+                          color: (project.members && project.members.some(m => m.userId.startsWith('tech_'))) ? 'var(--accent-primary)' : 'white',
+                          border: (project.members && project.members.some(m => m.userId.startsWith('tech_'))) ? '1px solid var(--accent-primary)' : 'none',
                           padding: '0.55rem 1.1rem',
                           borderRadius: '6px',
-                          fontWeight: 600,
+                          fontWeight: 700,
                           cursor: 'pointer',
-                          fontSize: '0.85rem'
+                          fontSize: '0.85rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem'
                         }}
                       >
-                        👥 ดึงช่างติดตั้งจาก INT
+                        <Users size={16} /> 👥 ดึงช่างติดตั้งจาก INT
                       </button>
                     </div>
 
-                    {flowState.technicians && flowState.technicians.length > 0 && (
-                      <div style={{ background: 'var(--bg-primary)', padding: '0.5rem 0.75rem', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>ช่างจาก INT:</span>
-                        {flowState.technicians.map((t: any, idx: number) => (
-                          <span key={idx} style={{ background: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', color: 'var(--accent-primary)' }}>{t}</span>
-                        ))}
+                    {((flowState.technicians && flowState.technicians.length > 0) || (project.members && project.members.some(m => m.userId.startsWith('tech_')))) && (
+                      <div style={{ background: 'var(--bg-primary)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <Wrench size={15} color="var(--accent-primary)" /> ทีมช่างติดตั้งประจำโครงการ (Project Technicians):
+                          </span>
+                          <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ เชื่อมโยงระบบ INT แล้ว</span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          {DEFAULT_INT_TECHNICIANS.map((t, idx) => (
+                            <div key={idx} style={{ background: 'var(--bg-secondary)', padding: '0.35rem 0.65rem', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <img src={t.avatar} alt={t.name} style={{ width: '22px', height: '22px', borderRadius: '50%' }} />
+                              <div>
+                                <strong style={{ color: 'var(--text-primary)', fontSize: '0.78rem', display: 'block' }}>{t.name}</strong>
+                                <span style={{ color: 'var(--accent-primary)', fontSize: '0.68rem', fontWeight: 600 }}>{t.role} • 📞 {t.phone}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
 
                   {/* Technician Check-in/out */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>📱 Step 8 & 9: เช็คอินช่างและบันทึก Timesheet (Check-In / Out)</div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Clock size={16} color="var(--accent-primary)" /> 📱 Step 8 & 9: เช็คอินช่างและบันทึก Timesheet (Check-In / Out & WBS Tasks)
+                    </div>
                     
-                    {/* WBS Tasks Guard & Progress Widget */}
+                    {/* WBS Tasks Guard & Detailed Task Cards */}
                     {(() => {
                       const projTasks = (tasks || []).filter(t => t.projectId === project?.id);
                       const completedProjTasks = projTasks.filter(t => t.status === 'Done' || t.progress_percent === 100 || (t as any).progressPercent === 100);
-                      const pendingProjTasks = projTasks.filter(t => t.status !== 'Done' && (t.progress_percent || 0) < 100 && ((t as any).progressPercent || 0) < 100);
                       const hasWbs = projTasks.length > 0;
                       const pct = hasWbs ? Math.round((completedProjTasks.length / projTasks.length) * 100) : 100;
 
                       if (!hasWbs) return null;
 
                       return (
-                        <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+                        <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.825rem' }}>
                             <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                              📋 ความคืบหน้าแผนงานย่อย (WBS Tasks): {completedProjTasks.length} / {projTasks.length} งานเสร็จสิ้น
+                              📋 แผนงานย่อยและมอบหมายช่าง (WBS Tasks): {completedProjTasks.length} / {projTasks.length} งานเสร็จสิ้น
                             </span>
-                            <span style={{ fontWeight: 800, color: pct === 100 ? '#10b981' : 'var(--accent-primary)' }}>{pct}%</span>
+                            <span style={{ fontWeight: 800, color: pct === 100 ? '#10b981' : 'var(--accent-primary)', fontSize: '0.9rem' }}>{pct}%</span>
                           </div>
 
                           <div style={{ width: '100%', height: '8px', background: 'var(--bg-secondary)', borderRadius: '4px', overflow: 'hidden' }}>
                             <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#10b981' : 'var(--accent-primary)', transition: 'width 0.3s ease' }} />
                           </div>
 
-                          {pendingProjTasks.length > 0 ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.25rem' }}>
-                              <div style={{ fontSize: '0.75rem', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                <AlertTriangle size={14} /> โครงการนี้มี {projTasks.length} งานย่อย — ช่างต้องดำเนินงานและ Check-In/Out ทีละ Task ในแผนงาน
-                              </div>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>งานที่รอดำเนินการ:</span>
-                                {pendingProjTasks.slice(0, 3).map((t, idx) => (
-                                  <span key={idx} style={{ fontSize: '0.7rem', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                                    {t.title}
-                                  </span>
-                                ))}
-                                {pendingProjTasks.length > 3 && (
-                                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>+{pendingProjTasks.length - 3} งาน</span>
-                                )}
-                              </div>
-                              <div style={{ marginTop: '0.35rem' }}>
-                                <Link 
-                                  to={`/project-plan/${project?.id}`}
-                                  style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                          {/* Interactive List of WBS Tasks with Assignee Selection & Quick Progress */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.35rem' }}>
+                            {projTasks.map((t) => {
+                              const isTaskDone = t.status === 'Done' || t.progress_percent === 100 || (t as any).progressPercent === 100;
+                              const currentProgress = t.progress_percent || (t as any).progressPercent || 0;
+                              const assignedTech = DEFAULT_INT_TECHNICIANS.find(tech => tech.id === t.assigneeId) || 
+                                                   users.find(u => u.id === t.assigneeId);
+
+                              return (
+                                <div 
+                                  key={t.id}
+                                  style={{
+                                    background: isTaskDone ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-secondary)',
+                                    border: `1px solid ${isTaskDone ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-color)'}`,
+                                    borderRadius: '6px',
+                                    padding: '0.65rem 0.85rem',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.4rem'
+                                  }}
                                 >
-                                  📊 เปิดดูและอัปเดตงานในเมนู "แผนงาน / Gantt" →
-                                </Link>
-                              </div>
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.2rem' }}>
-                              ✓ งานย่อยทุกรายการเสร็จสิ้น 100% พร้อมส่งมอบให้ QC ตรวจรับงาน
-                            </div>
-                          )}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: isTaskDone ? '#10b981' : 'var(--text-primary)', flex: 1, minWidth: '220px' }}>
+                                      {isTaskDone ? '✓ ' : '• '}{t.title}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      <span style={{ 
+                                        fontSize: '0.7rem', 
+                                        fontWeight: 700, 
+                                        padding: '0.15rem 0.45rem', 
+                                        borderRadius: '4px',
+                                        background: isTaskDone ? 'rgba(16, 185, 129, 0.15)' : currentProgress > 0 ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                        color: isTaskDone ? '#10b981' : currentProgress > 0 ? '#3b82f6' : '#f59e0b'
+                                      }}>
+                                        {isTaskDone ? 'เสร็จสิ้น 100%' : `กำลังทำ ${currentProgress}%`}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.75rem', paddingTop: '0.35rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                    {/* Assignee Selector */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                      <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>👤 ช่างผู้รับผิดชอบ:</span>
+                                      <select
+                                        value={t.assigneeId || ''}
+                                        onChange={(e) => handleAssignTaskTechnician(t.id, e.target.value)}
+                                        style={{
+                                          background: 'var(--bg-primary)',
+                                          color: 'var(--text-primary)',
+                                          border: '1px solid var(--border-color)',
+                                          borderRadius: '4px',
+                                          padding: '0.2rem 0.4rem',
+                                          fontSize: '0.75rem',
+                                          fontWeight: 600,
+                                          outline: 'none',
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        <option value="">-- ยังไม่ได้ระบุช่าง --</option>
+                                        {DEFAULT_INT_TECHNICIANS.map(tech => (
+                                          <option key={tech.id} value={tech.id}>
+                                            {tech.name} ({tech.role})
+                                          </option>
+                                        ))}
+                                        {users.filter(u => !DEFAULT_INT_TECHNICIANS.some(dt => dt.id === u.id)).map(u => (
+                                          <option key={u.id} value={u.id}>
+                                            {u.name} ({u.department || 'ทีมงาน'})
+                                          </option>
+                                        ))}
+                                      </select>
+                                      {assignedTech && (
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)' }}>
+                                          📞 {(assignedTech as any).phone || ''}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Progress Action Buttons */}
+                                    <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                                      <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>อัปเดตงาน:</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateTaskProgress(t.id, 0)}
+                                        style={{
+                                          background: currentProgress === 0 && !isTaskDone ? 'var(--accent-primary)' : 'transparent',
+                                          color: currentProgress === 0 && !isTaskDone ? 'white' : 'var(--text-secondary)',
+                                          border: '1px solid var(--border-color)',
+                                          borderRadius: '3px',
+                                          padding: '0.15rem 0.35rem',
+                                          fontSize: '0.68rem',
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        0%
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateTaskProgress(t.id, 50)}
+                                        style={{
+                                          background: currentProgress === 50 ? '#3b82f6' : 'transparent',
+                                          color: currentProgress === 50 ? 'white' : 'var(--text-secondary)',
+                                          border: '1px solid var(--border-color)',
+                                          borderRadius: '3px',
+                                          padding: '0.15rem 0.35rem',
+                                          fontSize: '0.68rem',
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        50%
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateTaskProgress(t.id, 100)}
+                                        style={{
+                                          background: isTaskDone ? '#10b981' : 'transparent',
+                                          color: isTaskDone ? 'white' : '#10b981',
+                                          border: '1px solid #10b981',
+                                          borderRadius: '3px',
+                                          padding: '0.15rem 0.45rem',
+                                          fontSize: '0.68rem',
+                                          fontWeight: 700,
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        ✓ 100% เสร็จสิ้น
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div style={{ marginTop: '0.35rem' }}>
+                            <Link 
+                              to={`/project-plan/${project?.id}`}
+                              style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                            >
+                              📊 เปิดดูและปรับแต่ง Gantt Chart ในเมนู "แผนงาน / Gantt" →
+                            </Link>
+                          </div>
                         </div>
                       );
                     })()}

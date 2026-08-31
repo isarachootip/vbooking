@@ -1525,23 +1525,26 @@ const initDB = async () => {
     const defaultPwHash = crypto.createHash('sha256').update('123456').digest('hex');
     await client.query('UPDATE users SET password_hash = $1 WHERE password_hash IS NULL', [defaultPwHash]);
 
-    // Ensure admin user (isarachootip) exists in production
-    const adminEmail = 'isarachootip@gmail.com';
-    const adminExists = await client.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
-    if (adminExists.rows.length === 0) {
-      const adminPwHash = crypto.createHash('sha256').update('123456').digest('hex');
-      await client.query(
-        `INSERT INTO users (id, name, email, avatar, global_role, department, password_hash)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (id) DO UPDATE SET
-           name = EXCLUDED.name, email = EXCLUDED.email, global_role = EXCLUDED.global_role,
-           department = EXCLUDED.department, password_hash = COALESCE(users.password_hash, EXCLUDED.password_hash)`,
-        ['u_admin', 'isarachootip', adminEmail, 'https://i.pravatar.cc/150?u=u_admin', 'Admin', 'Management', adminPwHash]
-      );
-      console.log('✅ Admin user (isarachootip) created.');
-    } else {
-      // Ensure existing user has Admin role
-      await client.query('UPDATE users SET global_role = $1 WHERE email = $2', ['Admin', adminEmail]);
+    // Ensure admin users (isarachootip, chapirak) exist in production
+    const adminEmails = ['isarachootip@gmail.com', 'chapirak@gmail.com'];
+    for (const admEmail of adminEmails) {
+      const admExists = await client.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [admEmail]);
+      if (admExists.rows.length === 0) {
+        const adminPwHash = crypto.createHash('sha256').update('123456').digest('hex');
+        const admId = admEmail.startsWith('chapirak') ? 'u_chapirak' : 'u_admin';
+        const admName = admEmail.split('@')[0];
+        await client.query(
+          `INSERT INTO users (id, name, email, avatar, global_role, department, password_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (id) DO UPDATE SET
+             name = EXCLUDED.name, email = EXCLUDED.email, global_role = EXCLUDED.global_role,
+             department = EXCLUDED.department, password_hash = COALESCE(users.password_hash, EXCLUDED.password_hash)`,
+          [admId, admName, admEmail, `https://i.pravatar.cc/150?u=${admId}`, 'Admin', 'Management', adminPwHash]
+        );
+        console.log(`✅ Admin user (${admEmail}) created.`);
+      } else {
+        await client.query('UPDATE users SET global_role = $1 WHERE LOWER(email) = LOWER($2)', ['Admin', admEmail]);
+      }
     }
 
     // ONE-TIME: Set password for all users except isarachootip to 'test123'
@@ -1713,6 +1716,74 @@ const initDB = async () => {
       await client.query("UPDATE users SET password_hash = $1 WHERE id LIKE 'usr-gm-%' AND (password_hash = $2 OR password_hash IS NULL)", [default123456Hash, test123Hash]);
       await client.query('INSERT INTO migrations (id) VALUES ($1)', [migResetGmPw]);
       console.log('✅ One-time migration: updated GM Store user default passwords to 123456.');
+    }
+
+    // ONE-TIME: Seed default INT Technicians with login accounts
+    const migSeedTechUsers = 'seed_int_technicians_accounts_v1';
+    const migSeedTechUsersDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migSeedTechUsers]);
+    if (migSeedTechUsersDone.rows.length === 0) {
+      const defaultPwHash = crypto.createHash('sha256').update('123456').digest('hex');
+      const defaultTechUsers = [
+        {
+          id: 'tech_elec_01',
+          name: 'สมใจ แสนดี',
+          email: 'somjai.tech@chg.co.th',
+          avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=tech_elec_01',
+          global_role: 'Employee',
+          department: 'ทีมช่างไฟฟ้า & สื่อสาร',
+          skills: ['งานไฟฟ้า & สื่อสาร', 'เดินสายไฟ', 'ติดตั้งสวิตช์-เต้ารับ'],
+          phones: ['089-111-2233'],
+          job_types: ['งานไฟฟ้า & สื่อสาร']
+        },
+        {
+          id: 'tech_craft_02',
+          name: 'ณรงค์ ทนทาน',
+          email: 'narong.tech@chg.co.th',
+          avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=tech_craft_02',
+          global_role: 'Employee',
+          department: 'ทีมช่างฝีมือ & ฝ้าเพดาน',
+          skills: ['งานฝ้าเพดาน & ผนังเบา', 'โครงคร่าว C-Line', 'งานฉาบเรียบ'],
+          phones: ['081-444-5566'],
+          job_types: ['งานฝ้าเพดาน & ผนังเบา']
+        },
+        {
+          id: 'tech_gen_03',
+          name: 'วิชัย อิ่มใจ',
+          email: 'wichai.tech@chg.co.th',
+          avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=tech_gen_03',
+          global_role: 'Employee',
+          department: 'ทีมช่างติดตั้งทั่วไป',
+          skills: ['งานติดตั้งทั่วไป & ปูกระเบื้อง', 'งานประปา', 'งานรีโนเวท'],
+          phones: ['086-777-8899'],
+          job_types: ['งานติดตั้งทั่วไป & ปูกระเบื้อง']
+        }
+      ];
+
+      for (const t of defaultTechUsers) {
+        await client.query(
+          `INSERT INTO users (
+             id, name, email, avatar, global_role, department, password_hash,
+             skills, phones, job_types
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           ON CONFLICT (id) DO UPDATE SET
+             name = EXCLUDED.name,
+             email = EXCLUDED.email,
+             avatar = EXCLUDED.avatar,
+             global_role = EXCLUDED.global_role,
+             department = EXCLUDED.department,
+             password_hash = COALESCE(users.password_hash, EXCLUDED.password_hash),
+             skills = EXCLUDED.skills,
+             phones = EXCLUDED.phones,
+             job_types = EXCLUDED.job_types`,
+          [
+            t.id, t.name, t.email, t.avatar, t.global_role, t.department, defaultPwHash,
+            t.skills, t.phones, t.job_types
+          ]
+        );
+      }
+      await client.query('INSERT INTO migrations (id) VALUES ($1)', [migSeedTechUsers]);
+      console.log('✅ One-time migration: seeded INT Technicians user accounts.');
     }
 
     // ONE-TIME: Insert Check-in bar and Check-out bar tasks in all task templates that have a Survey task
@@ -2309,7 +2380,7 @@ app.get('/api/auth/line/callback', async (req, res) => {
     
     // 3. Fallback: If new LINE login, check by corporate email
     if (!user && lineEmail) {
-      userRes = await pool.query('SELECT * FROM users WHERE email = $1', [lineEmail]);
+      userRes = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [lineEmail]);
       user = userRes.rows[0];
       if (user) {
         // Automatically bind the LINE ID to pre-created profile
@@ -2321,12 +2392,48 @@ app.get('/api/auth/line/callback', async (req, res) => {
         if (!user.avatar) user.avatar = linePicture;
       }
     }
-    
+
+    // 4. Fallback: Check by name
+    if (!user && lineName) {
+      userRes = await pool.query('SELECT * FROM users WHERE LOWER(name) = LOWER($1) OR LOWER(name) LIKE $2', [lineName.trim(), `${lineName.trim()}%`]);
+      if (userRes.rows.length > 0) {
+        user = userRes.rows[0];
+        await pool.query(
+          'UPDATE users SET line_user_id = $1, avatar = COALESCE(avatar, $2) WHERE id = $3',
+          [lineUserId, linePicture || `https://i.pravatar.cc/150?u=${user.id}`, user.id]
+        );
+        user.line_user_id = lineUserId;
+        if (!user.avatar) user.avatar = linePicture;
+      }
+    }
+
+    // 5. Auto-provision / Auto-register new technician user if not existing in database
     if (!user) {
-      // User not pre-registered in database
-      return res.redirect(`${clientOrigin}/?error=unauthorized&email=${encodeURIComponent(lineEmail || '')}`);
+      const newId = `usr_line_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+      const defaultName = lineName || 'LINE Technician';
+      const defaultEmail = lineEmail || `${lineUserId.substring(0, 10).toLowerCase()}@line.user`;
+      const defaultAvatar = linePicture || `https://api.dicebear.com/7.x/bottts/svg?seed=${lineUserId}`;
+      const defaultPwHash = crypto.createHash('sha256').update('123456').digest('hex');
+
+      await pool.query(
+        `INSERT INTO users (
+           id, name, email, avatar, global_role, department, password_hash, line_user_id, created_at
+         )
+         VALUES ($1, $2, $3, $4, 'Employee', 'ทีมช่างหน้างาน (LINE)', $5, $6, NOW())
+         ON CONFLICT (id) DO NOTHING`,
+        [newId, defaultName, defaultEmail, defaultAvatar, defaultPwHash, lineUserId]
+      );
+      userRes = await pool.query('SELECT * FROM users WHERE line_user_id = $1', [lineUserId]);
+      user = userRes.rows[0];
     }
     
+    // 6. Generate JWT Auth Token
+    const token = jwt.sign(
+      { userId: user.id, globalRole: user.global_role, email: user.email },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
     // Map DB columns to camelCase JS object
     const userData = {
       id: user.id,
@@ -2335,13 +2442,13 @@ app.get('/api/auth/line/callback', async (req, res) => {
       avatar: user.avatar,
       globalRole: user.global_role,
       department: user.department,
-      gender: user.gender,
-      birthday: user.birthday,
-      skills: user.skills
+      gender: user.gender || '',
+      birthday: user.birthday || '',
+      skills: user.skills || []
     };
     
-    // Redirect back to frontend success route
-    res.redirect(`${clientOrigin}/login-success?user=${encodeURIComponent(JSON.stringify(userData))}`);
+    // Redirect back to frontend success route with JWT token
+    res.redirect(`${clientOrigin}/login-success?user=${encodeURIComponent(JSON.stringify(userData))}&token=${encodeURIComponent(token)}`);
     
   } catch (err) {
     console.error('LINE Callback Error:', err.message);
