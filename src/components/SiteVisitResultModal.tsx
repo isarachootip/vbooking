@@ -292,6 +292,7 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
   const [compressingSlot, setCompressingSlot] = useState<number | null>(null);
   const [previewImageModal, setPreviewImageModal] = useState<{ url: string; title: string } | null>(null);
   const [showSampleGuide, setShowSampleGuide] = useState(false);
+  const [selectedHistoryVisitId, setSelectedHistoryVisitId] = useState<string>('all');
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -822,6 +823,45 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
         <div style={{ padding: isMobile ? '0.85rem' : '1.25rem', overflowY: 'auto', flex: 1 }}>
           {tab === 'new' && (
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+              {/* Notice Banner if already has saved visits */}
+              {results.length > 0 && (
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(37,99,235,0.08), rgba(147,51,234,0.08))',
+                  border: '1px solid rgba(37,99,235,0.25)',
+                  borderRadius: '10px',
+                  padding: '0.75rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.84rem', color: '#1e40af', fontWeight: 600 }}>
+                    <span>📋 ลูกค้ารายนี้มีบันทึก Visit Plan แล้ว <b>{results.length} ครั้ง</b></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTab('history')}
+                    style={{
+                      background: 'linear-gradient(135deg, #1e40af, #7c3aed)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.4rem 0.85rem',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      boxShadow: '0 2px 8px rgba(37,99,235,0.3)'
+                    }}
+                  >
+                    <Eye size={13} /> ดูประวัติที่บันทึกไว้ ({results.length})
+                  </button>
+                </div>
+              )}
+
               {/* SECTION 1: VISIT INFO */}
               <div style={sec}>
                 <div style={sh}><Calendar size={16} style={{ color: '#6366f1' }} /> ส่วนที่ 1 — ข้อมูลการ Visit</div>
@@ -1609,23 +1649,98 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                 </div>
               )}
 
-              {!loading && results.map(r => {
-                const ro = VISIT_RESULT_OPTIONS.find(o => o.value === r.visit_result);
-                const dc = CUSTOMER_DECISION_OPTIONS.find(o => o.value === r.customer_decision);
-                const na2 = NEXT_ACTION_OPTIONS.find(o => o.value === r.next_action);
-                const pastRoomPlans: RoomVisitPlan[] = Array.isArray(r.room_plans) ? r.room_plans : [];
+              {/* Visit Selector Filter if multiple visits */}
+              {!loading && results.length > 1 && (
+                <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '4px', borderBottom: '1px solid var(--border-color)', marginBottom: '0.35rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHistoryVisitId('all')}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '8px',
+                      border: '1px solid',
+                      borderColor: selectedHistoryVisitId === 'all' ? '#2563eb' : 'var(--border-color)',
+                      background: selectedHistoryVisitId === 'all' ? '#2563eb' : 'var(--bg-tertiary)',
+                      color: selectedHistoryVisitId === 'all' ? 'white' : 'var(--text-primary)',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    📋 แสดงทั้งหมด ({results.length} ครั้ง)
+                  </button>
+                  {results.map((r, rIdx) => {
+                    const visitNum = results.length - rIdx;
+                    const isSelected = selectedHistoryVisitId === r.id;
+                    const isLatest = rIdx === 0;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setSelectedHistoryVisitId(r.id)}
+                        style={{
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '8px',
+                          border: '1px solid',
+                          borderColor: isSelected ? '#7c3aed' : 'var(--border-color)',
+                          background: isSelected ? 'linear-gradient(135deg, #1e40af, #7c3aed)' : 'var(--bg-tertiary)',
+                          color: isSelected ? 'white' : 'var(--text-primary)',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        <span>Visit ครั้งที่ {visitNum} {isLatest ? '⚡(ล่าสุด)' : ''}</span>
+                        <span style={{ fontSize: '0.7rem', opacity: isSelected ? 0.9 : 0.65 }}>({fmtDate(r.visit_date || r.created_at)})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-                return (
-                  <div key={r.id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderLeft: `4px solid ${ro?.color || '#6b7280'}`, borderRadius: '12px', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <span style={{ fontWeight: 700, color: ro?.color || 'var(--text-primary)', fontSize: '0.95rem' }}>
-                        {ro?.label || r.visit_result}
-                      </span>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'flex', gap: '0.75rem' }}>
-                        <span>Visit: {fmtDate(r.visit_date)}</span>
-                        <span>โดย: {r.visited_by_name_ref || r.visited_by_name || '-'}</span>
+              {!loading && results
+                .filter(r => selectedHistoryVisitId === 'all' || r.id === selectedHistoryVisitId)
+                .map((r) => {
+                  const originalIndex = results.findIndex(item => item.id === r.id);
+                  const visitNum = results.length - originalIndex;
+                  const isLatest = originalIndex === 0;
+                  const ro = VISIT_RESULT_OPTIONS.find(o => o.value === r.visit_result);
+                  const dc = CUSTOMER_DECISION_OPTIONS.find(o => o.value === r.customer_decision);
+                  const na2 = NEXT_ACTION_OPTIONS.find(o => o.value === r.next_action);
+                  const pastRoomPlans: RoomVisitPlan[] = Array.isArray(r.room_plans) ? r.room_plans : [];
+
+                  return (
+                    <div key={r.id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderLeft: `4px solid ${ro?.color || '#6b7280'}`, borderRadius: '12px', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', boxShadow: isLatest ? '0 4px 12px rgba(0,0,0,0.05)' : 'none' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', borderBottom: '1px dashed var(--border-color)', paddingBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span style={{
+                            background: isLatest ? 'linear-gradient(135deg, #1e40af, #7c3aed)' : 'var(--bg-tertiary)',
+                            color: isLatest ? 'white' : 'var(--text-primary)',
+                            padding: '0.2rem 0.6rem',
+                            borderRadius: '6px',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            border: isLatest ? 'none' : '1px solid var(--border-color)'
+                          }}>
+                            🎯 Visit ครั้งที่ {visitNum} {isLatest ? '(ล่าสุด)' : ''}
+                          </span>
+                          <span style={{ fontWeight: 700, color: ro?.color || 'var(--text-primary)', fontSize: '0.92rem' }}>
+                            {ro?.label || r.visit_result}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                          <span>📅 {fmtDate(r.visit_date)}</span>
+                          <span>👤 โดย: <b>{r.visited_by_name_ref || r.visited_by_name || '-'}</b></span>
+                        </div>
                       </div>
-                    </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem' }}>
                       {r.site_condition && <div style={{ gridColumn: '1/-1' }}><b style={{ color: 'var(--text-tertiary)' }}>สภาพบ้าน/พื้นที่รวม: </b>{r.site_condition}</div>}
@@ -1700,26 +1815,44 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                                 </div>
                               )}
 
-                              {/* Room photo thumbnail */}
-                              {rm.photo && (
-                                <div
-                                  onClick={() => setPreviewImageModal({ url: rm.photo!, title: `รูปภาพ ${rm.room_name}` })}
-                                  style={{
-                                    width: '100%',
-                                    height: '90px',
-                                    borderRadius: '6px',
-                                    overflow: 'hidden',
-                                    border: '1px solid var(--border-color)',
-                                    cursor: 'pointer',
-                                    position: 'relative'
-                                  }}
-                                >
-                                  <img src={rm.photo} alt={`รูปภาพ ${rm.room_name}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                  <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '2px 5px', borderRadius: '4px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                    <ZoomIn size={10} /> ดูรูป
+                              {/* Room photo thumbnail / gallery */}
+                              {(() => {
+                                const roomPhotos = (Array.isArray(rm.photos) ? rm.photos.filter(Boolean) : []).length > 0
+                                  ? (rm.photos as string[]).filter(Boolean)
+                                  : (rm.photo ? [rm.photo] : []);
+                                if (roomPhotos.length === 0) return null;
+
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.2rem' }}>
+                                    <div style={{ fontSize: '0.72rem', color: '#2563eb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                      <Camera size={12} /> ภาพถ่ายประจำห้อง ({roomPhotos.length} รูป):
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.45rem', overflowX: 'auto', paddingBottom: '3px' }}>
+                                      {roomPhotos.map((pUrl, pIdx) => (
+                                        <div
+                                          key={pIdx}
+                                          onClick={() => setPreviewImageModal({ url: pUrl, title: `รูปภาพ ${rm.room_name} (รูปที่ ${pIdx + 1})` })}
+                                          style={{
+                                            width: roomPhotos.length === 1 ? '100%' : '75px',
+                                            height: roomPhotos.length === 1 ? '95px' : '75px',
+                                            borderRadius: '6px',
+                                            overflow: 'hidden',
+                                            border: '1px solid var(--border-color)',
+                                            cursor: 'pointer',
+                                            position: 'relative',
+                                            flexShrink: 0
+                                          }}
+                                        >
+                                          <img src={pUrl} alt={`รูปภาพ ${rm.room_name} ${pIdx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                          <div style={{ position: 'absolute', bottom: '3px', right: '3px', background: 'rgba(0,0,0,0.65)', color: 'white', padding: '1px 4px', borderRadius: '3px', fontSize: '0.62rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                            <ZoomIn size={10} />
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                );
+                              })()}
                             </div>
                           ))}
                         </div>

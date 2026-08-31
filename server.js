@@ -1608,7 +1608,7 @@ const initDB = async () => {
       console.log('Running migration: seeding GM Store users for all branches...');
       const storeUsersRes = await client.query("SELECT * FROM users WHERE id LIKE 'usr-store-%' ORDER BY id ASC");
       const branchesRes = await client.query("SELECT * FROM branches ORDER BY name ASC");
-      const defaultPwHash = crypto.createHash('sha256').update('test123').digest('hex');
+      const defaultPwHash = crypto.createHash('sha256').update('123456').digest('hex');
 
       const branchToCodeMap = {};
       storeUsersRes.rows.forEach(su => {
@@ -1702,6 +1702,17 @@ const initDB = async () => {
 
       await client.query('INSERT INTO migrations (id) VALUES ($1)', [migSeedGm]);
       console.log('✅ One-time migration: seeded GM Store users for all branches.');
+    }
+
+    // ONE-TIME: Reset GM users password to default 123456
+    const migResetGmPw = 'reset_gm_store_users_pw_123456';
+    const migResetGmPwDone = await client.query('SELECT id FROM migrations WHERE id = $1', [migResetGmPw]);
+    if (migResetGmPwDone.rows.length === 0) {
+      const default123456Hash = crypto.createHash('sha256').update('123456').digest('hex');
+      const test123Hash = crypto.createHash('sha256').update('test123').digest('hex');
+      await client.query("UPDATE users SET password_hash = $1 WHERE id LIKE 'usr-gm-%' AND (password_hash = $2 OR password_hash IS NULL)", [default123456Hash, test123Hash]);
+      await client.query('INSERT INTO migrations (id) VALUES ($1)', [migResetGmPw]);
+      console.log('✅ One-time migration: updated GM Store user default passwords to 123456.');
     }
 
     // ONE-TIME: Insert Check-in bar and Check-out bar tasks in all task templates that have a Survey task
@@ -2441,9 +2452,17 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+    const default123456Hash = crypto.createHash('sha256').update('123456').digest('hex');
+    const test123Hash = crypto.createHash('sha256').update('test123').digest('hex');
     
     if (user.password_hash && user.password_hash !== passwordHash) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      // Graceful compatibility for accounts seeded with test123 or 123456
+      if ((user.password_hash === test123Hash && password === '123456') || 
+          (user.password_hash === default123456Hash && password === 'test123')) {
+        await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, user.id]);
+      } else {
+        return res.status(401).json({ error: 'Invalid email or password' });
+      }
     }
     
     if (!user.password_hash) {
