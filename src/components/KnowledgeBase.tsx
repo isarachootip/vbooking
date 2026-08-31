@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Calendar, Users, Star, Shield, MessageSquare, Zap, Layers, ClipboardCheck, FileCheck, ShieldCheck, FolderPlus, Boxes, Wrench } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronRight, BookOpen, Database, BarChart3, Clock, Languages, CalendarRange, Calendar, Users, Star, Shield, MessageSquare, Zap, Layers, ClipboardCheck, FileCheck, ShieldCheck, FolderPlus, Boxes, Wrench, Smartphone, Camera, UserCheck } from 'lucide-react';
 
 import { marked } from 'marked';
 import type { User } from '../types';
@@ -1610,6 +1610,54 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
               </ul>
             </div>
           )
+        },
+        {
+          id: 'f_line_login_autobind_tech_en',
+          question: 'LINE Login OAuth 2.0 with Auto-Binding & Instant Auto-Provisioning for Job-Site Technicians',
+          icon: Smartphone,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>Full LINE OAuth 2.0 integration designed for seamless contractor and technician sign-in:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>1. Saved Account Binding (LINE User ID):</strong> Recurring technicians sign in instantly without passwords using their unique LINE User ID.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>2. Smart Profile Match:</strong> First-time logins match corporate email or technician names and bind <code>line_user_id</code> automatically.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>3. Zero-Setup Auto-Provisioning:</strong> New external technicians who click LINE Login are automatically registered as <code>Employee (Field Technician)</code> with LINE name and avatar.</li>
+                <li><strong>Environment Requirements:</strong> Configured via <code>LINE_CHANNEL_ID</code>, <code>LINE_CHANNEL_SECRET</code>, and <code>LINE_CALLBACK_URL</code> in Coolify/production.</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f_timesheet_5_photo_grid_en',
+          question: '5-Slot Standard Proof-of-Work Photo Grid for Field Time Logs',
+          icon: Camera,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>Standardized job-site photographic evidence across 5 standardized milestones:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>5 Standard Photo Slots:</strong> 1. Before Starting (Site Condition), 2. In-Progress Phase 1 (Rough-in/Demolition), 3. In-Progress Phase 2 (Structure/Installation), 4. Completion (After Finish), 5. Measurement/QC (Inspection/Level).</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Batch Multi-Upload:</strong> Upload up to 5 images simultaneously; auto-distributes into available slots.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Live HTML5 Camera:</strong> Capture live job-site photos directly into individual slots on mobile devices.</li>
+                <li><strong>Gallery & Lightbox:</strong> Timesheet table features thumbnail previews and high-resolution lightbox inspection.</li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f_int_step7_tech_assignment_en',
+          question: 'Step 7 INT Integration: Skill-Based Technician Assignment & WBS Task Distribution',
+          icon: UserCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>Automatic master schedule generation and technician dispatching:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Skill-Matched Dispatch:</strong> Automatically draws specialist technicians (Electrical, Craft/Ceiling/Paint, General) based on project trades.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>Project Team Integration:</strong> Appends drawn technicians into <code>project.members</code>, rendering dedicated team cards on the Overview dashboard.</li>
+                <li style={{ marginBottom: '0.25rem' }}><strong>WBS Task Distribution:</strong> Assigns technicians to Step 8 & 9 work packages with quick progress controls (0%, 50%, 100% Done).</li>
+                <li><strong>Active Work Accounts:</strong> Pre-seeded credentials or 1-click LINE Login allowing technicians to check their daily work orders immediately.</li>
+              </ul>
+            </div>
+          )
         }
       ]
     },
@@ -1617,6 +1665,85 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ currentUser }) => {
       title: "คู่มือฟีเจอร์และการจัดการระบบ (Admin Only)",
       subtitle: "คู่มือฟีเจอร์พิเศษสำหรับการวางแผนและตั้งค่าสำหรับผู้ดูแลระบบเท่านั้น",
       features: [
+        {
+          id: 'f_line_login_autobind_tech',
+          question: 'ระบบ LINE Login OAuth 2.0 พร้อมกลไก Auto-Binding & Auto-Provisioning สิทธิ์ช่างหน้างาน',
+          icon: Smartphone,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>ระบบรองรับการเข้าสู่ระบบผ่าน LINE Login OAuth 2.0 สำหรับพนักงาน ช่าง และผู้รับเหมา โดยมีระบบยืนยันตัวตนอัจฉริยะ 3 ระดับ:</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>1. ผูกบัญชีอัตโนมัติด้วย LINE User ID (Saved Account):</strong> หากผู้ใช้เคยล็อกอินผ่าน LINE มาก่อน ระบบจะจดจำรหัสเฉพาะ <code>line_user_id</code> (ขึ้นต้นด้วยตัว U) และเข้าสู่ระบบได้ทันทีโดยไม่ต้องกรอกรหัสผ่าน
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>2. Auto-Binding จากอีเมลและชื่อ (Corporate Profile Binding):</strong> หากเป็นการล็อกอินครั้งแรก ระบบจะตรวจจับอีเมลองค์กร (เช่น <code>chapirak@gmail.com</code>) หรือชื่อช่างในฐานข้อมูล และนำ <code>line_user_id</code> ไปบันทึกผูกลงฐานข้อมูลให้อัตโนมัติทันที
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>3. Auto-Provisioning สำหรับช่างใหม่ (No Pre-registration Needed):</strong> หากเป็นช่างใหม่ที่ไม่มีชื่อในระบบ ระบบจะไม่ปฏิเสธ แต่จะสร้างบัญชีผู้ใช้ใหม่ลงตาราง <code>users</code> ให้ทันทีกำหนดสิทธิ์เป็น <code>Employee (ทีมช่างหน้างาน)</code> พร้อมดึงรูปโปรไฟล์และชื่อจาก LINE มาให้ทันที
+                </li>
+                <li>
+                  <strong>การตั้งค่าสิ่งแวดล้อมระบบ (Server Config):</strong> ต้องการ 3 ตัวแปรหลักใน Coolify/Environment: <code>LINE_CHANNEL_ID</code>, <code>LINE_CHANNEL_SECRET</code>, และ <code>LINE_CALLBACK_URL=https://vibepmt.online/api/auth/line/callback</code>
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f_timesheet_5_photo_grid',
+          question: 'ระบบภาพถ่ายหลักฐานการทำงาน 5 ช่องมาตรฐาน (5-Slot Standard Proof of Work Grid) ใน Time Log',
+          icon: Camera,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>มาตรฐานการบันทึกภาพถ่ายการเข้าปฏิบัติงานของทีมช่างในหน้าต่าง "บันทึกเวลาทำงาน (Log Work Time)":</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>5 ช่องภาพถ่ายมาตรฐาน:</strong>
+                  <ol style={{ paddingLeft: '1.25rem', marginTop: '0.2rem' }}>
+                    <li><strong>🚩 1. ก่อนเริ่มงาน:</strong> สภาพเดิม / ป้ายหน้างาน / จุดเตรียมงาน</li>
+                    <li><strong>⚙️ 2. ระหว่างทำ 1:</strong> ขั้นตอนหลัก / รื้อถอน / วางท่อ</li>
+                    <li><strong>🔨 3. ระหว่างทำ 2:</strong> ประกอบ / ติดตั้ง / ยึดโครงสร้าง</li>
+                    <li><strong>✅ 4. หลังเสร็จสิ้น:</strong> ผลงานที่ทำเสร็จสมบูรณ์เรียบร้อย</li>
+                    <li><strong>📐 5. วัดระยะ / QC:</strong> ตรวจสอบระดับน้ำ / ตลับเมตร / จุดควบคุมคุณภาพ</li>
+                  </ol>
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ปุ่มเลือกพร้อมกัน 5 รูป (Batch Multi-Upload):</strong> คลิก <code>[⬆️ เลือกพร้อมกัน 5 รูป]</code> เพื่อเลือกไฟล์ภาพจากเครื่องพร้อมกัน ระบบจะกระจายภาพลงช่องว่าง 1-5 ให้อัตโนมัติ
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ถ่ายภาพสดผ่านกล้อง (Live HTML5 Camera):</strong> กด <code>[📷 เปิดกล้อง]</code> สามารถสลับถ่ายภาพลงตามช่องที่ต้องการได้ทันทีจากมือถือ
+                </li>
+                <li>
+                  <strong>ระบบดูภาพขนาดเต็ม (Lightbox) & แสดงผลในตาราง:</strong> หน้ารายการบันทึกเวลางานจะแสดงรูป Thumbnail ขนาดเล็กพร้อม Badge จำนวนภาพ คลิกเพื่อดูรูปขนาดเต็มความละเอียดสูง
+                </li>
+              </ul>
+            </div>
+          )
+        },
+        {
+          id: 'f_int_step7_tech_assignment',
+          question: 'การเชื่อมโยงทีมช่างจากขั้นตอนที่ 7 (INT Plan Integration) เข้าสู่สมาชิกโครงการ และการมอบหมายงาน WBS อัตโนมัติ',
+          icon: UserCheck,
+          answer: (
+            <div>
+              <p style={{ marginBottom: '0.5rem' }}>กลไกการดึงทีมช่างและการกระจายงาน WBS ในขั้นตอนที่ 7 (Step 7: INT Plan Integration):</p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ดึงช่างตามทักษะเฉพาะทาง (Skill Matching):</strong> ระบบจับคู่ทักษะช่างเข้ากับงานในโครงการอัตโนมัติ เช่น ช่างสมใจ (ระบบไฟฟ้า), ช่างณรงค์ (ฝ้าเพดาน/ทาสี/ฝีมือ), ช่างวิชัย (งานระบบทั่วไป)
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>ผูกเข้าสู่สมาชิกโครงการ (Project Members):</strong> ช่างที่ถูกดึงมาจะถูกเพิ่มเข้าสู่ <code>project.members</code> และแสดงในการ์ด <em>"ทีมช่างผู้ปฏิบัติงาน & สมาชิกโครงการ"</em> ในแท็บ Overview พร้อมเบอร์โทรและจำนวนงานที่ได้รับมอบหมาย
+                </li>
+                <li style={{ marginBottom: '0.35rem' }}>
+                  <strong>กระจายงานลงตาราง WBS อัตโนมัติ:</strong> รายการงานในขั้นตอนที่ 8 & 9 จะถูก Assign ช่างผู้รับผิดชอบตามประเภทงาน สามารถเปลี่ยนผู้รับผิดชอบผ่าน Dropdown และกดอัปเดตความคืบหน้าด่วน (0%, 50%, 100% เสร็จสิ้น) ได้ทันที
+                </li>
+                <li>
+                  <strong>บัญชีช่างพร้อมใช้งาน:</strong> มีบัญชีเริ่มต้นในตาราง <code>users</code> รหัสผ่านเริ่มต้น <code>123456</code> หรือสามารถกด Login ผ่าน LINE เพื่อเข้าดูงานของตนเองได้ทันที
+                </li>
+              </ul>
+            </div>
+          )
+        },
         {
           id: 'f_project_chat_and_permissions',
           question: 'ระบบแชทติดต่อช่างรายสาขา และระบบควบคุมสิทธิ์การดำเนินการโครงการ (Role & Branch Matrix)',
