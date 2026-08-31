@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Clock, Plus, CheckCircle2, Calendar as CalendarIcon, X, Trash2, ChevronLeft, ChevronRight, XCircle, Edit, Paperclip, ImageIcon } from 'lucide-react';
+import { Clock, Plus, CheckCircle2, Calendar as CalendarIcon, X, Trash2, ChevronLeft, ChevronRight, XCircle, Edit, Paperclip, ImageIcon, Camera, Upload, ZoomIn, RefreshCw } from 'lucide-react';
 import { format, isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth } from 'date-fns';
 import type { TimesheetEntry, Project, Task, User, TimesheetStatus } from '../types';
 import { sortTimesheetsByLastUpdate } from '../utils';
+
+const TIMESHEET_PHOTO_GUIDES = [
+  { id: 'before', label: '1. ก่อนเริ่มงาน', subLabel: 'สภาพเดิม / ป้าย / เตรียมงาน', icon: '🚩', color: '#f59e0b' },
+  { id: 'progress1', label: '2. ระหว่างทำ 1', subLabel: 'ขั้นตอนหลัก / รื้อถอน / วางท่อ', icon: '⚙️', color: '#3b82f6' },
+  { id: 'progress2', label: '3. ระหว่างทำ 2', subLabel: 'ประกอบ / ติดตั้ง / โครงสร้าง', icon: '🔨', color: '#6366f1' },
+  { id: 'after', label: '4. หลังเสร็จสิ้น', subLabel: 'ผลงานที่ทำเสร็จสมบูรณ์', icon: '✅', color: '#10b981' },
+  { id: 'qc', label: '5. วัดระยะ / QC', subLabel: 'ระดับน้ำ / ตลับเมตร / งานเก็บสี', icon: '📐', color: '#8b5cf6' }
+];
 
 interface TimesheetProps {
   timesheets: TimesheetEntry[];
@@ -30,7 +38,7 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
   const [description, setDescription] = useState('');
   const [workResults, setWorkResults] = useState('');
   const [entryStatus, setEntryStatus] = useState<TimesheetStatus>('Pending');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -53,14 +61,14 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
         endTime,
         description,
         workResults,
-        imageUrl,
+        imageUrls,
         selectedDate: selectedDate ? selectedDate.toISOString() : null,
       };
       localStorage.setItem('nt_timesheet_form_draft', JSON.stringify(draft));
     } else {
       localStorage.removeItem('nt_timesheet_form_draft');
     }
-  }, [isModalOpen, editingEntryId, projectId, taskId, hours, startTime, endTime, description, workResults, imageUrl, selectedDate]);
+  }, [isModalOpen, editingEntryId, projectId, taskId, hours, startTime, endTime, description, workResults, imageUrls, selectedDate]);
 
   // Restore form draft on mount
   useEffect(() => {
@@ -77,7 +85,7 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
         setEndTime(draft.endTime || '');
         setDescription(draft.description || '');
         setWorkResults(draft.workResults || '');
-        setImageUrl(draft.imageUrl || '');
+        setImageUrls(draft.imageUrls || (draft.imageUrl ? [draft.imageUrl] : []));
         if (draft.selectedDate) {
           setSelectedDate(new Date(draft.selectedDate));
         }
@@ -233,7 +241,7 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
     setDescription('');
     setWorkResults('');
     setEntryStatus('Pending');
-    setImageUrl('');
+    setImageUrls([]);
     setEditingEntryId(null);
   };
 
@@ -254,15 +262,23 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
     setDescription(entry.description);
     setWorkResults(entry.workResults || '');
     setEntryStatus(entry.status);
-    setImageUrl(entry.imageUrl || '');
+    setImageUrls(entry.imageUrls || (entry.imageUrl ? [entry.imageUrl] : []));
     setSelectedDate(new Date(entry.date));
     setEditingEntryId(entry.id);
     setIsModalOpen(true);
   };
 
-  const startCamera = async () => {
+  const [activeSlotIdx, setActiveSlotIdx] = useState<number | null>(null);
+
+  const startCamera = async (slotIdx?: number) => {
+    if (typeof slotIdx === 'number') {
+      setActiveSlotIdx(slotIdx);
+    } else {
+      const emptyIdx = imageUrls.findIndex((u, i) => !u && i < 5);
+      setActiveSlotIdx(emptyIdx !== -1 ? emptyIdx : 0);
+    }
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       setStream(mediaStream);
       setIsCameraActive(true);
       setTimeout(() => {
@@ -272,7 +288,19 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
       }, 100);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Could not access camera. Please check permissions.");
+      // Fallback to front camera if environment camera fails
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setStream(fallbackStream);
+        setIsCameraActive(true);
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = fallbackStream;
+          }
+        }, 100);
+      } catch (e) {
+        alert("Could not access camera. Please check permissions.");
+      }
     }
   };
 
@@ -282,9 +310,10 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
       setStream(null);
     }
     setIsCameraActive(false);
+    setActiveSlotIdx(null);
   };
 
-  const uploadBase64Image = async (base64: string) => {
+  const uploadBase64ImageToSlot = async (base64: string, slotIdx: number) => {
     setIsUploading(true);
     try {
       const res = await fetch('/api/upload', {
@@ -292,14 +321,18 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           file: base64,
-          fileName: `capture_${Date.now()}.jpg`,
+          fileName: `ts_photo_${slotIdx + 1}_${Date.now()}.jpg`,
           type: 'image/jpeg'
         })
       });
       
       if (res.ok) {
         const data = await res.json();
-        setImageUrl(data.url);
+        setImageUrls(prev => {
+          const next = [...prev];
+          next[slotIdx] = data.url;
+          return next;
+        });
       } else {
         const err = await res.json();
         alert(err.error || 'Failed to upload image');
@@ -318,7 +351,7 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
     const width = video.videoWidth || 640;
     const height = video.videoHeight || 480;
     
-    const MAX_SIZE = 600;
+    const MAX_SIZE = 800;
     let targetWidth = width;
     let targetHeight = height;
     
@@ -335,13 +368,14 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-      uploadBase64Image(dataUrl);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      const targetSlot = activeSlotIdx !== null ? activeSlotIdx : 0;
+      uploadBase64ImageToSlot(dataUrl, targetSlot);
     }
     stopCamera();
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSingleSlotUpload = (slotIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -367,7 +401,11 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
         
         if (res.ok) {
           const data = await res.json();
-          setImageUrl(data.url);
+          setImageUrls(prev => {
+            const next = [...prev];
+            next[slotIdx] = data.url;
+            return next;
+          });
         } else {
           const err = await res.json();
           alert(err.error || 'Failed to upload image');
@@ -376,9 +414,84 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
         alert(err.message || 'Error uploading file');
       } finally {
         setIsUploading(false);
+        e.target.value = '';
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleMultiPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const fileList = Array.from(files).slice(0, 5);
+      const uploadPromises = fileList.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = async () => {
+            try {
+              const base64 = reader.result as string;
+              const res = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  file: base64,
+                  fileName: file.name,
+                  type: file.type
+                })
+              });
+              if (res.ok) {
+                const data = await res.json();
+                resolve(data.url);
+              } else {
+                resolve('');
+              }
+            } catch (err) {
+              resolve('');
+            }
+          };
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(file);
+        });
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const validUrls = results.filter(Boolean);
+      setImageUrls(prev => {
+        const next = [...prev];
+        let vIdx = 0;
+        for (let i = 0; i < 5 && vIdx < validUrls.length; i++) {
+          if (!next[i]) {
+            next[i] = validUrls[vIdx++];
+          }
+        }
+        // Fill remaining if still any validUrls
+        while (vIdx < validUrls.length) {
+          const emptySlot = next.findIndex((u, idx) => !u && idx < 5);
+          if (emptySlot !== -1) {
+            next[emptySlot] = validUrls[vIdx++];
+          } else {
+            break;
+          }
+        }
+        return next.slice(0, 5);
+      });
+    } catch (err) {
+      console.error('Multi upload error:', err);
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveSlotPhoto = (slotIdx: number) => {
+    setImageUrls(prev => {
+      const next = [...prev];
+      next[slotIdx] = '';
+      return next;
+    });
   };
 
   // Auto-calculate hours from startTime and endTime
@@ -421,7 +534,8 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
         description,
         workResults: workResults || undefined,
         status: existing ? existing.status : 'Pending',
-        imageUrl: imageUrl || undefined
+        imageUrl: imageUrls.find(Boolean) || undefined,
+        imageUrls: imageUrls.filter(Boolean).length > 0 ? imageUrls : undefined
       };
       setTimesheets(prev => prev.map(ts => ts.id === editingEntryId ? updatedEntry : ts));
     } else {
@@ -437,7 +551,8 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
         description,
         workResults: workResults || undefined,
         status: entryStatus,
-        imageUrl: imageUrl || undefined
+        imageUrl: imageUrls.find(Boolean) || undefined,
+        imageUrls: imageUrls.filter(Boolean).length > 0 ? imageUrls : undefined
       };
       setTimesheets(prev => [...prev, newEntry]);
     }
@@ -1045,25 +1160,46 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                             <span>{entry.startTime} → {entry.endTime}</span>
                           </div>
                         )}
-                        {entry.imageUrl && (
-                          <div style={{ marginTop: '0.5rem' }}>
+                        {((entry.imageUrls && entry.imageUrls.filter(Boolean).length > 0) || entry.imageUrl) && (
+                          <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            {(entry.imageUrls && entry.imageUrls.filter(Boolean).length > 0 ? entry.imageUrls.filter(Boolean) : [entry.imageUrl || '']).map((img, iIdx) => (
+                              <div
+                                key={iIdx}
+                                onClick={() => setPreviewImageUrl(img)}
+                                style={{
+                                  position: 'relative',
+                                  width: '38px',
+                                  height: '38px',
+                                  borderRadius: '6px',
+                                  overflow: 'hidden',
+                                  border: '1px solid var(--border-color)',
+                                  cursor: 'pointer',
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                }}
+                                className="hover-lift"
+                                title={`ดูรูปภาพที่ ${iIdx + 1}`}
+                              >
+                                <img src={img} alt={`Proof ${iIdx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              </div>
+                            ))}
                             <button
-                              onClick={() => setPreviewImageUrl(entry.imageUrl || '')}
+                              onClick={() => setPreviewImageUrl((entry.imageUrls && entry.imageUrls.find(Boolean)) || entry.imageUrl || '')}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.3rem',
                                 padding: '0.2rem 0.5rem',
-                                background: 'rgba(0, 206, 209, 0.08)',
-                                border: '1px solid rgba(0, 206, 209, 0.2)',
+                                background: 'rgba(37, 99, 235, 0.08)',
+                                border: '1px solid rgba(37, 99, 235, 0.2)',
                                 borderRadius: 'var(--radius-sm)',
-                                color: 'var(--accent-primary)',
+                                color: '#2563eb',
                                 fontSize: '0.7rem',
+                                fontWeight: 600,
                                 cursor: 'pointer'
                               }}
                               className="hover-lift"
                             >
-                              <ImageIcon size={12} /> View Image Attachment
+                              <ImageIcon size={12} /> {entry.imageUrls && entry.imageUrls.filter(Boolean).length > 1 ? `ดูหลักฐาน (${entry.imageUrls.filter(Boolean).length} รูป)` : 'ดูรูปหลักฐาน'}
                             </button>
                           </div>
                         )}
@@ -1182,7 +1318,7 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
           justifyContent: 'center',
           zIndex: 1100
         }}>
-          <div className="glass-panel" style={{ padding: '2rem', width: '650px', maxWidth: '95%', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+          <div className="glass-panel" style={{ padding: '1.75rem', width: '780px', maxWidth: '96%', maxHeight: '92vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
             <div className="flex-between">
               <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                 {editingEntryId ? 'แก้ไขเวลาทำงาน (Edit Work Time)' : 'บันทึกเวลาทำงาน (Log Work Time)'}
@@ -1456,99 +1592,253 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <ImageIcon size={16} /> แนบรูปภาพหลักฐานการทำงาน (Attach Proof of Work Image)
-                </label>
-                
-                {imageUrl ? (
-                  <div style={{ position: 'relative', width: '130px', height: '95px', borderRadius: '6px', border: '1px solid var(--border-color)', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
-                    <img src={imageUrl} alt="Proof of work preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <button 
-                      type="button" 
-                      onClick={() => setImageUrl('')} 
-                      style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                      title="Remove image"
-                    >
-                      <X size={13} style={{ margin: 'auto' }} />
-                    </button>
+              {/* 5-Photo Proof of Work Section */}
+              <div style={{
+                background: 'var(--bg-secondary)',
+                borderRadius: '10px',
+                border: '1px solid var(--border-color)',
+                padding: '0.85rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.65rem'
+              }}>
+                {/* Section Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <Camera size={18} style={{ color: '#2563eb' }} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      ภาพถ่ายหลักฐานการทำงาน (5 มุมมาตรฐาน)
+                    </span>
+                    <span style={{
+                      fontSize: '0.72rem',
+                      color: imageUrls.filter(Boolean).length > 0 ? '#10b981' : 'var(--text-muted)',
+                      background: imageUrls.filter(Boolean).length > 0 ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-primary)',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '12px',
+                      fontWeight: 700,
+                      border: '1px solid ' + (imageUrls.filter(Boolean).length > 0 ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-color)')
+                    }}>
+                      แนบแล้ว {imageUrls.filter(Boolean).length}/5 รูป
+                    </span>
                   </div>
-                ) : isCameraActive ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '320px' }}>
-                    <div style={{ borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', background: '#000', position: 'relative', aspectRatio: '4/3' }}>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => startCamera()}
+                      disabled={isUploading}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        padding: '0.35rem 0.65rem',
+                        borderRadius: '6px',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        cursor: isUploading ? 'not-allowed' : 'pointer'
+                      }}
+                      className="hover-lift"
+                    >
+                      <Camera size={13} style={{ color: '#2563eb' }} /> เปิดกล้อง
+                    </button>
+
+                    <label style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      padding: '0.35rem 0.7rem',
+                      borderRadius: '6px',
+                      background: 'linear-gradient(135deg, #059669, #10b981)',
+                      color: 'white',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      cursor: isUploading ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                    }}>
+                      <Upload size={13} /> {isUploading ? 'กำลังอัปโหลด...' : 'เลือกพร้อมกัน 5 รูป'}
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleMultiPhotoUpload}
+                        disabled={isUploading}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Camera Live Preview (If active) */}
+                {isCameraActive && (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    background: '#000',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    <div style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 600 }}>
+                      กำลังถ่ายสำหรับช่อง: {TIMESHEET_PHOTO_GUIDES[activeSlotIdx ?? 0]?.label}
+                    </div>
+                    <div style={{ borderRadius: '6px', overflow: 'hidden', width: '100%', maxWidth: '360px', aspectRatio: '4/3', background: '#000' }}>
                       <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button 
-                        type="button" 
-                        onClick={capturePhoto} 
-                        style={{ padding: '0.4rem 0.8rem', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
+                      <button
+                        type="button"
+                        onClick={capturePhoto}
+                        style={{ padding: '0.4rem 1rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
                       >
-                        ถ่ายรูป (Capture)
+                        📸 บันทึกภาพนี้
                       </button>
-                      <button 
-                        type="button" 
-                        onClick={stopCamera} 
-                        style={{ padding: '0.4rem 0.8rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                      <button
+                        type="button"
+                        onClick={stopCamera}
+                        style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
                       >
                         ยกเลิก
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleImageChange} 
-                      id="timesheet-image-upload" 
-                      style={{ display: 'none' }} 
-                      disabled={isUploading}
-                    />
-                    <label 
-                      htmlFor="timesheet-image-upload" 
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.5rem', 
-                        padding: '0.45rem 0.85rem', 
-                        background: 'var(--bg-secondary)', 
-                        border: '1px solid var(--border-color)', 
-                        borderRadius: '6px', 
-                        color: 'var(--text-primary)', 
-                        cursor: isUploading ? 'not-allowed' : 'pointer',
-                        fontSize: '0.82rem',
-                        fontWeight: 600
-                      }}
-                      className="hover-lift"
-                    >
-                      <Paperclip size={14} />
-                      {isUploading ? 'Uploading...' : 'เลือกรูปภาพ (Choose Image)'}
-                    </label>
-                    <button 
-                      type="button" 
-                      onClick={startCamera} 
-                      disabled={isUploading}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.5rem', 
-                        padding: '0.45rem 0.85rem', 
-                        background: 'var(--bg-secondary)', 
-                        border: '1px solid var(--border-color)', 
-                        borderRadius: '6px', 
-                        color: 'var(--text-primary)', 
-                        cursor: isUploading ? 'not-allowed' : 'pointer',
-                        fontSize: '0.82rem',
-                        fontWeight: 600
-                      }}
-                      className="hover-lift"
-                    >
-                      <span style={{ fontSize: '14px' }}>📷</span>
-                      เปิดกล้อง (Use Camera)
-                    </button>
-                  </div>
                 )}
+
+                {/* 5-Slot Responsive Grid */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+                  gap: '0.5rem'
+                }}>
+                  {TIMESHEET_PHOTO_GUIDES.map((guide, sIdx) => {
+                    const photoUrl = imageUrls[sIdx] || '';
+                    return (
+                      <div
+                        key={guide.id}
+                        style={{
+                          border: photoUrl ? '1.5px solid #10b981' : '1px dashed var(--border-color)',
+                          borderRadius: '8px',
+                          background: 'var(--bg-primary)',
+                          padding: '0.4rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.3rem'
+                        }}
+                      >
+                        {/* Slot Header Label */}
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {guide.icon} {guide.label}
+                          </span>
+                          <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={guide.subLabel}>
+                            {guide.subLabel}
+                          </span>
+                        </div>
+
+                        {/* Slot Box / Thumbnail */}
+                        <div style={{
+                          position: 'relative',
+                          height: '95px',
+                          background: 'var(--bg-secondary)',
+                          borderRadius: '6px',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          {photoUrl ? (
+                            <>
+                              <img
+                                src={photoUrl}
+                                alt={guide.label}
+                                style={{ width: '100%', height: '95px', objectFit: 'cover', cursor: 'pointer' }}
+                                onClick={() => setPreviewImageUrl(photoUrl)}
+                              />
+                              {/* Overlay actions */}
+                              <div style={{
+                                position: 'absolute',
+                                top: '4px',
+                                right: '4px',
+                                display: 'flex',
+                                gap: '3px'
+                              }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewImageUrl(photoUrl)}
+                                  style={{
+                                    background: 'rgba(0,0,0,0.65)',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    color: 'white',
+                                    width: '22px',
+                                    height: '22px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    padding: 0
+                                  }}
+                                  title="ดูรูปขนาดเต็ม"
+                                >
+                                  <ZoomIn size={12} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveSlotPhoto(sIdx)}
+                                  style={{
+                                    background: 'rgba(239, 68, 68, 0.85)',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    color: 'white',
+                                    width: '22px',
+                                    height: '22px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    padding: 0
+                                  }}
+                                  title="ลบรูปนี้"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <label style={{
+                              width: '100%',
+                              height: '100%',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              gap: '0.2rem',
+                              padding: '0.25rem',
+                              textAlign: 'center'
+                            }}>
+                              <Camera size={18} style={{ color: 'var(--text-muted)' }} />
+                              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                + ถ่าย / เลือกรูป
+                              </span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={e => handleSingleSlotUpload(sIdx, e)}
+                                style={{ display: 'none' }}
+                                disabled={isUploading}
+                              />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>

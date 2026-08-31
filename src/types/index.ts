@@ -230,6 +230,7 @@ export interface TimesheetEntry {
   approvedBy?: string;
   approvedAt?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   workResults?: string;
   updatedAt?: string;
   check_in_lat?: number;

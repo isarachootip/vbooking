@@ -386,6 +386,7 @@ const initDB = async () => {
       ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS start_time VARCHAR(10);
       ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS end_time VARCHAR(10);
       ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS image_url TEXT;
+      ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS image_urls JSONB DEFAULT '[]'::jsonb;
       ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS work_results TEXT;
       ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS planned_hours NUMERIC;
       ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS updated_at VARCHAR(50);
@@ -3339,8 +3340,8 @@ app.get('/api/initial-data', async (req, res) => {
       description: ts.description,
       status: ts.status,
       approvedBy: ts.approved_by,
-      approvedAt: ts.approved_at,
-      imageUrl: ts.image_url || undefined,
+      imageUrl: ts.image_url || (Array.isArray(ts.image_urls) && ts.image_urls.length > 0 ? ts.image_urls[0] : undefined),
+      imageUrls: Array.isArray(ts.image_urls) ? ts.image_urls : (ts.image_url ? [ts.image_url] : []),
       workResults: ts.work_results || undefined,
       updatedAt: ts.updated_at || undefined
     }));
@@ -5020,16 +5021,19 @@ app.post('/api/webhooks/gitlab', async (req, res) => {
 
 // Timesheets REST API
 app.post('/api/timesheets', async (req, res) => {
-  const { id, userId, projectId, taskId, date, hours, plannedHours, startTime, endTime, description, status, approvedBy, approvedAt, imageUrl, workResults, checkInLat, checkInLng, beforeImage } = req.body;
+  const { id, userId, projectId, taskId, date, hours, plannedHours, startTime, endTime, description, status, approvedBy, approvedAt, imageUrl, imageUrls, workResults, checkInLat, checkInLng, beforeImage } = req.body;
   const updatedAt = new Date().toISOString();
   try {
     // Check existing status before update to detect transitions
     const existingTimesheet = await pool.query('SELECT status FROM timesheets WHERE id = $1', [id]);
     const oldStatus = existingTimesheet.rows[0]?.status;
 
+    const finalImageUrls = Array.isArray(imageUrls) ? imageUrls : (imageUrl ? [imageUrl] : []);
+    const primaryImageUrl = finalImageUrls.length > 0 ? finalImageUrls[0] : (imageUrl || null);
+
     await pool.query(
-      `INSERT INTO timesheets (id, user_id, project_id, task_id, date, hours, planned_hours, start_time, end_time, description, status, approved_by, approved_at, image_url, work_results, updated_at, check_in_lat, check_in_lng, before_image)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      `INSERT INTO timesheets (id, user_id, project_id, task_id, date, hours, planned_hours, start_time, end_time, description, status, approved_by, approved_at, image_url, image_urls, work_results, updated_at, check_in_lat, check_in_lng, before_image)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
        ON CONFLICT (id) DO UPDATE SET
          user_id = EXCLUDED.user_id,
          project_id = EXCLUDED.project_id,
@@ -5044,12 +5048,13 @@ app.post('/api/timesheets', async (req, res) => {
          approved_by = EXCLUDED.approved_by,
          approved_at = EXCLUDED.approved_at,
          image_url = EXCLUDED.image_url,
+         image_urls = EXCLUDED.image_urls,
          work_results = EXCLUDED.work_results,
          check_in_lat = COALESCE(EXCLUDED.check_in_lat, timesheets.check_in_lat),
          check_in_lng = COALESCE(EXCLUDED.check_in_lng, timesheets.check_in_lng),
          before_image = COALESCE(EXCLUDED.before_image, timesheets.before_image),
          updated_at = EXCLUDED.updated_at`,
-      [id, userId, projectId, taskId, date, hours, plannedHours ?? null, startTime || null, endTime || null, description, status, approvedBy, approvedAt, imageUrl || null, workResults || null, updatedAt, checkInLat || null, checkInLng || null, beforeImage || null]
+      [id, userId, projectId, taskId, date, hours, plannedHours ?? null, startTime || null, endTime || null, description, status, approvedBy, approvedAt, primaryImageUrl, JSON.stringify(finalImageUrls), workResults || null, updatedAt, checkInLat || null, checkInLng || null, beforeImage || null]
     );
 
     // Send email notifications asynchronously (non-blocking)
