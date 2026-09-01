@@ -588,9 +588,10 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
       });
 
       if (res.ok) {
+        const saved = await res.json();
         setIsCreateModalOpen(false);
-        resetCreateForm();
         await fetchData();
+        openEstimationDetail(saved.id);
       } else {
         const errData = await res.json();
         alert(errData.error || 'Failed to save estimation');
