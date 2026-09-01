@@ -585,10 +585,10 @@ exports.addVisitResult = async (req, res) => {
       ]
     );
 
-    // Auto-update lead status based on next_action
+    // Auto-update lead status based on next_action or customer_decision
     let newLeadStatus = null;
     if (next_action === 'send_quotation') newLeadStatus = 'Pending Quote';
-    else if (next_action === 'close_lost') newLeadStatus = 'Lost';
+    else if (next_action === 'close_lost' || customer_decision === 'Not Interested' || customer_decision === 'ไม่สนใจ') newLeadStatus = 'Lost';
 
     if (newLeadStatus) {
       await pool.query(
@@ -598,6 +598,16 @@ exports.addVisitResult = async (req, res) => {
     } else {
       // Just bump updated_at
       await pool.query(`UPDATE leads SET updated_at = $1 WHERE id = $2`, [now, id]);
+    }
+
+    // Auto-create followup for Close Lost audit log
+    if (next_action === 'close_lost' || customer_decision === 'Not Interested' || customer_decision === 'ไม่สนใจ') {
+      const flwId = `flw_lost_${Date.now()}`;
+      await pool.query(
+        `INSERT INTO lead_followups (id, lead_id, activity_type, notes, created_at, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [flwId, id, 'ปิดการขาย (Close Lost)', `ลูกค้าไม่สนใจ / ปิดการขาย (Close Lost) จากผลสำรวจหน้างาน (${visit_result}): ${internal_notes || '-'}`, now, created_by || 'System']
+      );
     }
 
     // Auto-create followup if next_action requires follow-up

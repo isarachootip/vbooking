@@ -1552,7 +1552,35 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                     <label style={lbl}>การตัดสินใจลูกค้า *</label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '0.5rem' }}>
                       {CUSTOMER_DECISION_OPTIONS.map(o => (
-                        <button key={o.value} type="button" onClick={() => setCdec(o.value)} style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', cursor: 'pointer', border: cdec === o.value ? `2px solid var(--accent-primary)` : '2px solid var(--border-color)', background: cdec === o.value ? 'var(--accent-bg)' : 'var(--bg-tertiary)', color: cdec === o.value ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: cdec === o.value ? 700 : 500, fontSize: '0.82rem', textAlign: 'left' }}>{o.label}</button>
+                        <button
+                          key={o.value}
+                          type="button"
+                          onClick={() => {
+                            setCdec(o.value);
+                            if (o.value === 'Not Interested') {
+                              setNact('close_lost');
+                            }
+                          }}
+                          style={{
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            border: cdec === o.value
+                              ? (o.value === 'Not Interested' ? '2px solid #ef4444' : '2px solid var(--accent-primary)')
+                              : '2px solid var(--border-color)',
+                            background: cdec === o.value
+                              ? (o.value === 'Not Interested' ? 'rgba(239, 68, 68, 0.1)' : 'var(--accent-bg)')
+                              : 'var(--bg-tertiary)',
+                            color: cdec === o.value
+                              ? (o.value === 'Not Interested' ? '#ef4444' : 'var(--accent-primary)')
+                              : 'var(--text-secondary)',
+                            fontWeight: cdec === o.value ? 700 : 500,
+                            fontSize: '0.82rem',
+                            textAlign: 'left'
+                          }}
+                        >
+                          {o.label}
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -1566,13 +1594,21 @@ export const SiteVisitResultModal: React.FC<SiteVisitResultModalProps> = ({
                   <label style={lbl}>การดำเนินการครั้งถัดไป *</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                     {NEXT_ACTION_OPTIONS.map(o => (
-                      <label key={o.value} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: nact === o.value ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: nact === o.value ? 600 : 400, padding: '0.45rem 0.6rem', borderRadius: '6px', background: nact === o.value ? 'var(--bg-tertiary)' : 'transparent', border: nact === o.value ? '1px solid var(--border-color)' : '1px solid transparent' }}>
+                      <label key={o.value} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: nact === o.value ? (o.value === 'close_lost' ? '#ef4444' : 'var(--text-primary)') : 'var(--text-secondary)', fontWeight: nact === o.value ? 700 : 400, padding: '0.45rem 0.6rem', borderRadius: '6px', background: nact === o.value ? (o.value === 'close_lost' ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-tertiary)') : 'transparent', border: nact === o.value ? (o.value === 'close_lost' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--border-color)') : '1px solid transparent' }}>
                         <input type="radio" name="nact" value={o.value} checked={nact === o.value} onChange={() => setNact(o.value)} />
                         {o.label}
                       </label>
                     ))}
                   </div>
                 </div>
+                {(nact === 'close_lost' || cdec === 'Not Interested') && (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', padding: '0.65rem 0.85rem', fontSize: '0.78rem', color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <AlertCircle size={16} color="#ef4444" style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>สถานะ Close Lost (ลูกค้ายกเลิก/ไม่สนใจ):</strong> เมื่อบันทึกผลสำรวจนี้ ระบบจะปรับสถานะ Lead เป็น <strong>Lost</strong> โดยไม่ต้องดำเนินการต่อ และจะนำสถิตินี้ไปสรุปในรายงาน Conversion / Close Lost Report
+                    </span>
+                  </div>
+                )}
                 {(nact === 'follow_up_call' || nact === 'reschedule_visit') && (
                   <div>
                     <label style={lbl}>วันนัดหมายครั้งถัดไป (DD/MM/YYYY)</label>
