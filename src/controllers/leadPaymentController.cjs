@@ -55,10 +55,26 @@ exports.createLeadPayment = async (req, res) => {
       ]
     );
 
-    // Auto-update lead status to Paid (Ready to Convert)
+    // Auto-update lead status to Close Won only when slip_url is attached
+    const hasSlip = Boolean(slip_url && slip_url.trim().length > 0);
+    const newStatus = hasSlip ? 'Close Won' : 'Pending Slip Verification';
+
     await pool.query(
-      `UPDATE leads SET status = 'Payment Verified', updated_at = $1 WHERE id = $2`,
-      [now, leadId]
+      `UPDATE leads SET status = $1, updated_at = $2 WHERE id = $3`,
+      [newStatus, now, leadId]
+    );
+
+    // Write audit log
+    const flwId = `flw_pmt_${Date.now()}`;
+    const actType = hasSlip ? 'ปิดการขายสำเร็จ (Close Won)' : 'บันทึกการชำระเงิน (รอสลิป)';
+    const actNote = hasSlip 
+      ? `ลูกค้าชำระเงินมัดจำและแนบหลักฐานสลิปโอนเงิน (Slip) เรียบร้อยแล้ว ยอดเงิน: ${parseFloat(amount || 0).toLocaleString()} บาท [สถานะ: Close Won]`
+      : `บันทึกรายการเงินมัดจำ ${parseFloat(amount || 0).toLocaleString()} บาท (ยังไม่ได้แนบรูปสลิป)`;
+
+    await pool.query(
+      `INSERT INTO lead_followups (id, lead_id, activity_type, notes, created_at, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [flwId, leadId, actType, actNote, now, created_by || 'System']
     );
 
     res.json(insertResult.rows[0]);
@@ -134,11 +150,26 @@ exports.createQuotationPayment = async (req, res) => {
       ]
     );
 
-    // If quotation has lead_id, update lead status
+    // If quotation has lead_id, update lead status to Close Won when slip is attached
     if (leadId) {
+      const hasSlip = Boolean(slip_url && slip_url.trim().length > 0);
+      const newStatus = hasSlip ? 'Close Won' : 'Pending Slip Verification';
+
       await pool.query(
-        `UPDATE leads SET status = 'Payment Verified', updated_at = $1 WHERE id = $2`,
-        [now, leadId]
+        `UPDATE leads SET status = $1, updated_at = $2 WHERE id = $3`,
+        [newStatus, now, leadId]
+      );
+
+      const flwId = `flw_pmt_${Date.now()}`;
+      const actType = hasSlip ? 'ปิดการขายสำเร็จ (Close Won)' : 'บันทึกการชำระเงิน (รอสลิป)';
+      const actNote = hasSlip 
+        ? `ลูกค้าชำระเงินมัดจำและแนบหลักฐานสลิปโอนเงิน (Slip) ใบเสนอราคา #${quo.quotation_number || id} ยอดเงิน: ${parseFloat(amount || 0).toLocaleString()} บาท [สถานะ: Close Won]`
+        : `บันทึกรายการเงินมัดจำ ${parseFloat(amount || 0).toLocaleString()} บาท (ยังไม่ได้แนบรูปสลิป)`;
+
+      await pool.query(
+        `INSERT INTO lead_followups (id, lead_id, activity_type, notes, created_at, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [flwId, leadId, actType, actNote, now, created_by || 'System']
       );
     }
 

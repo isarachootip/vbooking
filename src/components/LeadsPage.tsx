@@ -1514,6 +1514,7 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
             รอเสนอราคา
           </span>
         );
+      case 'Close Won':
       case 'Payment Verified':
         return (
           <span style={{ 
