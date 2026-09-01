@@ -6,9 +6,10 @@ import { PMTBrandLogo } from './PMTBrandLogo';
 interface LoginProps {
   onLogin: (user: User) => void;
   availableUsers: User[];
+  systemSettings?: Record<string, any>;
 }
 
-export const Login = ({ onLogin, availableUsers }: LoginProps) => {
+export const Login = ({ onLogin, availableUsers, systemSettings }: LoginProps) => {
   const [lineLoading, setLineLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -104,8 +105,10 @@ export const Login = ({ onLogin, availableUsers }: LoginProps) => {
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center' }}>
-          <PMTBrandLogo variant="full" size="md" />
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.4rem', fontWeight: 500 }}>ระบบบริหารจัดการโครงการติดตั้ง &amp; รีโนเวทบ้าน</p>
+          <PMTBrandLogo variant="full" size="md" logoUrl={systemSettings?.brand_logo_url} altText={systemSettings?.brand_name} />
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.4rem', fontWeight: 500 }}>
+            {systemSettings?.brand_subtitle || 'ระบบบริหารจัดการโครงการติดตั้ง & รีโนเวทบ้าน'}
+          </p>
         </div>
 
         {errorParam && (

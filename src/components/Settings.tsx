@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { TaskTemplate, TaskPriority, PermissionScheme, User, CostRate, MasterProjectType } from '../types';
-import { Plus, Trash2, Edit, X, Save, Shield, ShieldCheck, Coins, AlertTriangle, RefreshCw, FileUp, Sparkles, FileSpreadsheet, Lock, Eye, EyeOff, Key } from 'lucide-react';
+import { Plus, Trash2, Edit, X, Save, Shield, ShieldCheck, Coins, AlertTriangle, RefreshCw, FileUp, Sparkles, FileSpreadsheet, Lock, Eye, EyeOff, Key, Image as ImageIcon, Upload, RotateCcw, Layout } from 'lucide-react';
 
 interface SettingsProps {
   taskTemplates: TaskTemplate[];
@@ -76,6 +76,30 @@ export const Settings = ({
   const [autoSyncTechs, setAutoSyncTechs] = useState(true);
   const [isSavingSystemConfig, setIsSavingSystemConfig] = useState(false);
   const [systemConfigMessage, setSystemConfigMessage] = useState('');
+
+  // Branding & Logo States
+  const [brandLogoUrl, setBrandLogoUrl] = useState('/pmt-logo.png');
+  const [brandName, setBrandName] = useState('PMT Renovation');
+  const [brandSubtitle, setBrandSubtitle] = useState('vBooking Suite');
+  const [brandBadge, setBrandBadge] = useState('PRO');
+  const [brandHeaderStyle, setBrandHeaderStyle] = useState<'banner' | 'compact'>('compact');
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 5MB (Image file size must be <= 5MB)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setBrandLogoUrl(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Password Security states
   const [oldPassword, setOldPassword] = useState('');
@@ -195,6 +219,21 @@ export const Settings = ({
         if (data.auto_sync_remote_technicians !== undefined) {
           setAutoSyncTechs(data.auto_sync_remote_technicians !== 'false');
         }
+        if (data.brand_logo_url) {
+          setBrandLogoUrl(data.brand_logo_url);
+        }
+        if (data.brand_name) {
+          setBrandName(data.brand_name);
+        }
+        if (data.brand_subtitle !== undefined) {
+          setBrandSubtitle(data.brand_subtitle);
+        }
+        if (data.brand_badge !== undefined) {
+          setBrandBadge(data.brand_badge);
+        }
+        if (data.brand_header_style) {
+          setBrandHeaderStyle(data.brand_header_style as 'banner' | 'compact');
+        }
       })
       .catch(err => console.error('Failed to load system settings', err));
     }
@@ -212,7 +251,12 @@ export const Settings = ({
           gemini_api_key: geminiApiKey, 
           google_maps_api_key: googleMapsApiKey,
           max_upload_mb: maxUploadMb,
-          auto_sync_remote_technicians: String(autoSyncTechs)
+          auto_sync_remote_technicians: String(autoSyncTechs),
+          brand_logo_url: brandLogoUrl,
+          brand_name: brandName,
+          brand_subtitle: brandSubtitle,
+          brand_badge: brandBadge,
+          brand_header_style: brandHeaderStyle
         })
       });
       if (res.ok) {
@@ -223,7 +267,12 @@ export const Settings = ({
             gemini_api_key: geminiApiKey, 
             google_maps_api_key: googleMapsApiKey,
             max_upload_mb: maxUploadMb,
-            auto_sync_remote_technicians: String(autoSyncTechs)
+            auto_sync_remote_technicians: String(autoSyncTechs),
+            brand_logo_url: brandLogoUrl,
+            brand_name: brandName,
+            brand_subtitle: brandSubtitle,
+            brand_badge: brandBadge,
+            brand_header_style: brandHeaderStyle
           }));
         }
         setTimeout(() => setSystemConfigMessage(''), 3000);
@@ -2438,7 +2487,342 @@ export const Settings = ({
             <h3 style={{ margin: 0, fontSize: '1.25rem' }}>System Configuration (Super Admin Only)</h3>
           </div>
 
-          <form onSubmit={handleSaveSystemConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '600px' }}>
+          <form onSubmit={handleSaveSystemConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', maxWidth: '720px' }}>
+            
+            {/* Branding & Logo Header Configuration */}
+            <div style={{
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <ImageIcon size={20} color="var(--accent-primary)" />
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                      โลโก้และชื่อแบรนด์ระบบ (Workspace Logo & Header)
+                    </h4>
+                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      ปรับแต่งโลโก้, ชื่อระบบ และรูปแบบการแสดงผลที่มุมซ้ายบนของเมนูแถบข้าง (Sidebar)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Style Selection (Banner vs Compact) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  รูปแบบการแสดงผลหัวแถบข้าง (Sidebar Header Style)
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem' }}>
+                  <div 
+                    onClick={() => setBrandHeaderStyle('banner')}
+                    style={{
+                      padding: '0.85rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: `2px solid ${brandHeaderStyle === 'banner' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                      background: brandHeaderStyle === 'banner' ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: `2px solid ${brandHeaderStyle === 'banner' ? 'var(--accent-primary)' : 'var(--text-muted)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {brandHeaderStyle === 'banner' && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-primary)' }} />}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                        📐 แบนเนอร์โลโก้เต็มกรอบ (Full Banner)
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                        แสดงรูปภาพโลโก้เต็มกรอบด้านบน (แบบกรอบแดง)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => setBrandHeaderStyle('compact')}
+                    style={{
+                      padding: '0.85rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: `2px solid ${brandHeaderStyle === 'compact' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                      background: brandHeaderStyle === 'compact' ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: `2px solid ${brandHeaderStyle === 'compact' ? 'var(--accent-primary)' : 'var(--text-muted)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {brandHeaderStyle === 'compact' && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-primary)' }} />}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                        📌 ไอคอนคู่ชื่อระบบ (Compact Icon + Text)
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                        แสดงไอคอน 36x36 คู่กับชื่อและ Badge
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Logo Upload & URL */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                <label style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  รูปภาพโลโก้ (Logo Image)
+                </label>
+                
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  {/* Thumbnail / Upload Box */}
+                  <div 
+                    onClick={() => logoFileInputRef.current?.click()}
+                    style={{
+                      width: '120px',
+                      height: '80px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '2px dashed var(--border-color)',
+                      background: '#ffffff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                      padding: '4px',
+                      position: 'relative',
+                      flexShrink: 0
+                    }}
+                    title="คลิกเพื่ออัปโหลดรูปภาพโลโก้ใหม่"
+                  >
+                    {brandLogoUrl ? (
+                      <img 
+                        src={brandLogoUrl} 
+                        alt="Brand Logo Preview" 
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: 'var(--text-muted)' }}>
+                        <Upload size={20} />
+                        <span style={{ fontSize: '0.68rem' }}>อัปโหลด</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <input 
+                    ref={logoFileInputRef}
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleLogoFileUpload} 
+                    style={{ display: 'none' }} 
+                  />
+
+                  {/* Inputs & Controls */}
+                  <div style={{ flex: 1, minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => logoFileInputRef.current?.click()}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          padding: '0.5rem 0.85rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: '1px solid var(--border-color)',
+                          background: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          fontWeight: 500
+                        }}
+                      >
+                        <Upload size={14} /> เลือกไฟล์รูปภาพ (Upload File)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setBrandLogoUrl('/pmt-logo.png')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          padding: '0.5rem 0.85rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: '1px solid var(--border-color)',
+                          background: 'transparent',
+                          color: 'var(--text-muted)',
+                          fontSize: '0.82rem',
+                          cursor: 'pointer'
+                        }}
+                        title="รีเซ็ตกลับเป็นโลโก้เริ่มต้น"
+                      >
+                        <RotateCcw size={13} /> รีเซ็ตค่าเริ่มต้น
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>หรือใส่ URL / พาธไฟล์รูปภาพ:</span>
+                      <input
+                        type="text"
+                        value={brandLogoUrl}
+                        onChange={(e) => setBrandLogoUrl(e.target.value)}
+                        placeholder="/pmt-logo.png หรือ https://..."
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          borderRadius: 'var(--radius-md)',
+                          border: '1px solid var(--border-color)',
+                          background: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.85rem',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Brand Text Inputs */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    ชื่อแบรนด์ / ระบบ (Brand Name)
+                  </label>
+                  <input
+                    type="text"
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
+                    placeholder="e.g. PMT Renovation"
+                    style={{
+                      padding: '0.6rem 0.85rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.9rem',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    คำบรรยายใต้ชื่อ (Subtitle)
+                  </label>
+                  <input
+                    type="text"
+                    value={brandSubtitle}
+                    onChange={(e) => setBrandSubtitle(e.target.value)}
+                    placeholder="e.g. vBooking Suite"
+                    style={{
+                      padding: '0.6rem 0.85rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.9rem',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    ป้ายกำกับ (Badge Tag)
+                  </label>
+                  <input
+                    type="text"
+                    value={brandBadge}
+                    onChange={(e) => setBrandBadge(e.target.value)}
+                    placeholder="e.g. PRO (เว้นว่างได้)"
+                    style={{
+                      padding: '0.6rem 0.85rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.9rem',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Real-time Preview Box */}
+              <div style={{ marginTop: '0.25rem', paddingTop: '0.85rem', borderTop: '1px dashed var(--border-color)' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  🔍 ตัวอย่างการแสดงผลที่แถบข้าง (Live Sidebar Preview):
+                </span>
+                
+                <div style={{ 
+                  marginTop: '0.65rem', 
+                  maxWidth: '280px', 
+                  borderRadius: 'var(--radius-md)', 
+                  border: '1px solid var(--border-color)', 
+                  background: 'var(--bg-secondary)',
+                  overflow: 'hidden'
+                }}>
+                  {brandHeaderStyle === 'banner' ? (
+                    <div style={{ padding: '0.75rem 0.9rem', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                      <div style={{ width: '100%', borderRadius: '6px', overflow: 'hidden', background: '#ffffff', padding: '6px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img 
+                          src={brandLogoUrl || '/pmt-logo.png'} 
+                          alt="Logo Preview" 
+                          style={{ width: '100%', maxHeight: '65px', objectFit: 'contain' }} 
+                        />
+                      </div>
+                      {(brandName || brandSubtitle) && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {brandName || 'PMT Renovation'}
+                          </span>
+                          {brandBadge && (
+                            <span style={{ fontSize: '0.6rem', padding: '0.1rem 0.35rem', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-primary)', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                              {brandBadge}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '0.85rem 0.9rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--border-color)', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, padding: '2px' }}>
+                        <img 
+                          src={brandLogoUrl || '/pmt-logo.png'} 
+                          alt="Logo Preview" 
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, lineHeight: 1.2, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {brandName || 'PMT Renovation'}
+                          </span>
+                          {brandBadge && (
+                            <span style={{ fontSize: '0.62rem', padding: '0.1rem 0.35rem', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-primary)', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                              {brandBadge}
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          {brandSubtitle || 'vBooking Suite'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Google Gemini API Key</label>
               <input

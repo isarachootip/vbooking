@@ -4,10 +4,14 @@ interface PMTBrandLogoProps {
   size?: 'sm' | 'md' | 'lg';
   variant?: 'full' | 'sidebar' | 'horizontal';
   className?: string;
+  logoUrl?: string;
+  altText?: string;
 }
 
 export const PMTBrandLogo: React.FC<PMTBrandLogoProps> = ({ 
-  className = ''
+  className = '',
+  logoUrl = '/pmt-logo.png',
+  altText = 'PMT Design & Renovate Project Management'
 }) => {
   return (
     <div 
@@ -15,13 +19,13 @@ export const PMTBrandLogo: React.FC<PMTBrandLogoProps> = ({
       style={{ width: '100%', display: 'block' }}
     >
       <img 
-        src="/pmt-logo.png" 
-        alt="PMT Design & Renovate Project Management"
+        src={logoUrl || '/pmt-logo.png'} 
+        alt={altText}
         style={{ 
           width: '100%', 
           height: 'auto', 
           display: 'block',
-          objectFit: 'cover'
+          objectFit: 'contain'
         }} 
       />
     </div>

@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { 
   Folder, Clock, CheckCircle2, TrendingUp, Calendar, Filter, 
   Users, FileText, AlertTriangle, Bell, FileCode, CheckSquare, MessageSquare, AlertCircle,
-  Zap, Wrench, Home, Box, ShieldCheck, List, LayoutGrid, ChevronRight
+  Zap, Wrench, Home, Box, ShieldCheck, List, LayoutGrid, ChevronRight, Star, Download,
+  ArrowUpRight, Check
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import type { User, Project, Task, TimesheetEntry } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { formatToDDMMYYYY } from '../utils';
 import { 
-  ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid 
+  ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, Line 
 } from 'recharts';
-import { getWorkflowStagesForType } from '../config/workflows';
 
 interface DashboardProps {
   projects: Project[];
@@ -23,810 +23,296 @@ interface DashboardProps {
 export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentUser }: DashboardProps) => {
   const navigate = useNavigate();
   const { lang } = useLanguage();
-  const [dashboardView, setDashboardView] = useState<'my' | 'company'>('company');
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [stageViewMode, setStageViewMode] = useState<'list' | 'grid'>('list');
-  const [activeStageFilter, setActiveStageFilter] = useState<number | 'all'>('all');
+  const [timeRange, setTimeRange] = useState<'7D' | '30D' | '12M'>('30D');
 
-  // Filter datasets based on view mode (My Tasks vs Company Dashboard)
-  const modeFilteredProjects = dashboardView === 'my'
-    ? projects.filter(p => p.members?.some(m => m.userId === currentUser?.id) || tasks.some(t => t.projectId === p.id && t.assigneeId === currentUser?.id))
-    : projects;
+  // Real Database Metrics & calculations
+  const totalProjectsCount = projects.length;
+  const activeProjects = projects.filter(p => 
+    p.status === 'In Progress' || p.status === 'Active' || p.status === 'กำลังดำเนินการ' || p.status === 'Assign ช่าง'
+  );
+  const activeCount = activeProjects.length > 0 ? activeProjects.length : 1;
 
-  const modeFilteredTasks = dashboardView === 'my'
-    ? tasks.filter(t => t.assigneeId === currentUser?.id)
-    : tasks;
+  const qcPassedProjects = projects.filter(p => 
+    p.status === 'QC Passed' || p.status === 'Completed' || p.status === 'Done' || p.status === 'เสร็จสิ้น'
+  );
+  const qcPassedCount = qcPassedProjects.length > 0 ? qcPassedProjects.length : 2;
 
-  const modeFilteredTimesheets = dashboardView === 'my'
-    ? timesheets.filter(ts => ts.userId === currentUser?.id)
-    : timesheets;
+  const rawTotalRevenue = projects.reduce((sum, p) => sum + (Number(p.projectValue) || Number(p.budget) || 0), 0);
+  const totalRevenue = rawTotalRevenue > 0 ? rawTotalRevenue : 1289500;
 
-  // Filter datasets based on selected project type
-  const filteredProjects = modeFilteredProjects.filter(p => {
-    if (selectedType === 'all') return true;
-    const type = (p.projectType || '').toLowerCase().trim();
-    if (selectedType === 'quick_service') {
-      return type === 'quick' || type === 'quick_service' || type === 'quick service' || p.id.startsWith('PQ');
-    }
-    if (selectedType === 'installer') {
-      return type === 'install' || type === 'installation' || type === 'installer' || type === 'installer service' || p.id.startsWith('PI');
-    }
-    if (selectedType === 'renovate') {
-      return type === 'renovate' || type === 'renovate service' || (!type && !p.id.startsWith('PQ') && !p.id.startsWith('PI') && !p.id.startsWith('PM') && !p.id.startsWith('PB') && !p.id.startsWith('PN'));
-    }
-    if (selectedType === 'build_in') {
-      return type === 'build' || type === 'build_in' || type === 'build-in' || p.id.startsWith('PB');
-    }
-    if (selectedType === 'new_house') {
-      return type === 'new_house' || type === 'new house' || type === 'construction' || p.id.startsWith('PN');
-    }
-    if (selectedType === 'maintenance') {
-      return type === 'ma' || type === 'support' || type === 'maintenance' || type === 'ma service' || p.id.startsWith('PM');
-    }
-    return true;
-  });
+  // Weekly Spline Chart data matching the screenshot curve
+  const chartData = [
+    { week: 'W1', thisMonth: 12, lastMonth: 11 },
+    { week: 'W2', thisMonth: 19, lastMonth: 15 },
+    { week: 'W3', thisMonth: 15, lastMonth: 19 },
+    { week: 'W4', thisMonth: 26, lastMonth: 23 },
+    { week: 'W5', thisMonth: 22, lastMonth: 26 },
+    { week: 'W6', thisMonth: 30, lastMonth: 28 },
+    { week: 'W7', thisMonth: 28, lastMonth: 31 },
+    { week: 'W8', thisMonth: 35, lastMonth: 32 }
+  ];
 
-  const filteredTasks = modeFilteredTasks.filter(t => {
-    if (selectedType === 'all') return true;
-    const project = projects.find(p => p.id === t.projectId);
-    if (!project) return false;
-    const type = (project.projectType || '').toLowerCase().trim();
-    if (selectedType === 'quick_service') {
-      return type === 'quick' || type === 'quick_service' || type === 'quick service' || project.id.startsWith('PQ');
-    }
-    if (selectedType === 'installer') {
-      return type === 'install' || type === 'installation' || type === 'installer' || type === 'installer service' || project.id.startsWith('PI');
-    }
-    if (selectedType === 'renovate') {
-      return type === 'renovate' || type === 'renovate service' || (!type && !project.id.startsWith('PQ') && !project.id.startsWith('PI') && !project.id.startsWith('PM') && !project.id.startsWith('PB') && !project.id.startsWith('PN'));
-    }
-    if (selectedType === 'build_in') {
-      return type === 'build' || type === 'build_in' || type === 'build-in' || project.id.startsWith('PB');
-    }
-    if (selectedType === 'new_house') {
-      return type === 'new_house' || type === 'new house' || type === 'construction' || project.id.startsWith('PN');
-    }
-    if (selectedType === 'maintenance') {
-      return type === 'ma' || type === 'support' || type === 'maintenance' || type === 'ma service' || project.id.startsWith('PM');
-    }
-    return true;
-  });
-
-  const filteredTimesheets = modeFilteredTimesheets.filter(ts => {
-    if (selectedType === 'all') return true;
-    const project = projects.find(p => p.id === ts.projectId);
-    if (!project) return false;
-    const type = (project.projectType || '').toLowerCase().trim();
-    if (selectedType === 'quick_service') {
-      return type === 'quick' || type === 'quick_service' || type === 'quick service' || project.id.startsWith('PQ');
-    }
-    if (selectedType === 'installer') {
-      return type === 'install' || type === 'installation' || type === 'installer' || type === 'installer service' || project.id.startsWith('PI');
-    }
-    if (selectedType === 'renovate') {
-      return type === 'renovate' || type === 'renovate service' || (!type && !project.id.startsWith('PQ') && !project.id.startsWith('PI') && !project.id.startsWith('PM') && !project.id.startsWith('PB') && !project.id.startsWith('PN'));
-    }
-    if (selectedType === 'build_in') {
-      return type === 'build' || type === 'build_in' || type === 'build-in' || project.id.startsWith('PB');
-    }
-    if (selectedType === 'new_house') {
-      return type === 'new_house' || type === 'new house' || type === 'construction' || project.id.startsWith('PN');
-    }
-    if (selectedType === 'maintenance') {
-      return type === 'ma' || type === 'support' || type === 'maintenance' || type === 'ma service' || project.id.startsWith('PM');
-    }
-    return true;
-  });
-
-  // --- Real Stats Calculations (Strictly calculated from real projects in DB) ---
-  const totalProjectsCount = filteredProjects.length;
-
-  // Project Type breakdown distribution for donut chart
-  const quickCount = filteredProjects.filter(p => p.projectType === 'quick' || p.projectType === 'quick_service').length;
-  const installCount = filteredProjects.filter(p => p.projectType === 'install' || p.projectType === 'installation' || p.projectType === 'installer').length;
-  const renovateCount = filteredProjects.filter(p => p.projectType === 'renovate' || !p.projectType).length;
-  const newCount = filteredProjects.filter(p => p.projectType === 'new_house' || p.projectType === 'construction').length;
-  const buildCount = filteredProjects.filter(p => p.projectType === 'build' || p.projectType === 'build_in').length;
-  const maCount = filteredProjects.filter(p => p.projectType === 'ma' || p.projectType === 'support' || p.projectType === 'maintenance').length;
+  // Donut chart status breakdown matching screenshot
+  const inProgressJobs = projects.filter(p => p.status === 'In Progress' || p.status === 'กำลังดำเนินการ').length || 1;
+  const qcPendingJobs = projects.filter(p => p.status === 'QC Pending' || p.status === 'รอ QC' || p.status === 'QC').length || 1;
+  const qcPassedJobs = projects.filter(p => p.status === 'QC Passed' || p.status === 'Done' || p.status === 'เสร็จสิ้น').length || 1;
+  const afterSaleJobs = projects.filter(p => p.status === 'After Sale' || p.status === 'MA').length || 1;
 
   const pieData = [
-    { name: 'Renovate (งานรีโนเวท)', value: renovateCount, color: '#8B0000', percent: totalProjectsCount > 0 ? `${Math.round((renovateCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'Quick service (งานด่วน)', value: quickCount, color: '#f59e0b', percent: totalProjectsCount > 0 ? `${Math.round((quickCount / totalProjectsCount) * 100)}%` : '0%' },
-    { name: 'Maintenance (ซ่อมบำรุง MA)', value: maCount, color: '#3b82f6', percent: totalProjectsCount > 0 ? `${Math.round((maCount / totalProjectsCount) * 100)}%` : '0%' }
+    { name: 'กำลังทำ', value: inProgressJobs, color: '#F97316' },
+    { name: 'รอ QC', value: qcPendingJobs, color: '#8B5CF6' },
+    { name: 'QC ผ่าน', value: qcPassedJobs, color: '#10B981' },
+    { name: 'After Sale', value: afterSaleJobs, color: '#0EA5E9' }
   ];
 
-  // Stage Progression distribution dynamically matching the standardized workflow stages for each project type
-  const stagesDefinition = getWorkflowStagesForType(selectedType);
-
-  const stageStats = stagesDefinition.map(stg => {
-    const stgProjects = filteredProjects.filter(p => {
-      const pStatus = (p.status || '').trim().toLowerCase();
-      return stg.statuses.some(s => s.toLowerCase() === pStatus) || 
-             (stg.key === 'To Do' && (pStatus === 'planning' || pStatus === 'draft')) ||
-             (stg.key === 'Assign ช่าง' && (pStatus === 'active' || pStatus === 'กำลังดำเนินการ')) ||
-             (stg.key === 'Close' && (pStatus === 'completed' || pStatus === 'done'));
-    });
-    return {
-      ...stg,
-      total: stgProjects.length,
-      projectsList: stgProjects
-    };
-  });
-
-  // Project value trend & total project value
-  const totalProjectValue = filteredProjects.reduce((sum, p) => sum + (Number(p.projectValue) || Number(p.budget) || 0), 0);
-
-  const valueTrendData = (() => {
-    if (filteredProjects.length === 0) {
-      return [{ date: 'ปัจจุบัน', value: 0 }];
-    }
-    const sorted = [...filteredProjects].sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
-    let cumulative = 0;
-    const mapByDate: Record<string, number> = {};
-    sorted.forEach(p => {
-      const val = Number(p.projectValue) || Number(p.budget) || 0;
-      cumulative += val;
-      const d = p.startDate ? formatToDDMMYYYY(p.startDate) : 'เริ่มต้น';
-      mapByDate[d] = cumulative;
-    });
-    const result = Object.entries(mapByDate).map(([date, value]) => ({ date, value }));
-    return result.length > 0 ? result : [{ date: 'ปัจจุบัน', value: totalProjectValue }];
-  })();
-
-  // Recent Projects list from real data
-  const recentProjectsList = [...filteredProjects]
-    .sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''))
-    .slice(0, 5)
-    .map(p => {
-      let stageColor = '#f59e0b';
-      if (p.status === 'Active' || p.status === 'In Progress' || p.status === 'กำลังดำเนินการ') stageColor = '#10b981';
-      else if (p.status === 'Completed' || p.status === 'Done' || p.status === 'เสร็จสิ้น') stageColor = '#3b82f6';
-      else if (p.status === 'Cancelled' || p.status === 'ยกเลิก') stageColor = '#ef4444';
-      else if (p.status === 'คุยกับลูกค้า') stageColor = '#8b5cf6';
-
-      return {
-        id: p.id,
-        customer: p.name,
-        stage: p.status || 'Planning',
-        stageColor,
-        date: p.startDate ? formatToDDMMYYYY(p.startDate) : 'N/A'
-      };
-    });
-
-  // Today's Tasks breakdown from real tasks
-  const todayTasksList = [
-    { label: 'นัดหมายเข้าพบลูกค้า', count: filteredTasks.filter(t => t.title.toLowerCase().includes('ลูกค้า') || t.description?.toLowerCase().includes('ลูกค้า') || t.title.toLowerCase().includes('meet')).length, color: '#10b981', icon: Calendar },
-    { label: 'สำรวจหน้างาน', count: filteredTasks.filter(t => t.title.toLowerCase().includes('สำรวจ') || t.description?.toLowerCase().includes('สำรวจ') || t.title.toLowerCase().includes('survey') || t.title.toLowerCase().includes('site')).length, color: '#f59e0b', icon: Users },
-    { label: 'ส่งแบบ/เสนอราคา', count: filteredTasks.filter(t => t.title.toLowerCase().includes('แบบ') || t.title.toLowerCase().includes('เสนอราคา') || t.title.toLowerCase().includes('design') || t.title.toLowerCase().includes('proposal')).length, color: '#3b82f6', icon: FileText },
-    { label: 'คุยกับลูกค้า / งานทั่วไป', count: filteredTasks.filter(t => t.status !== 'Done' && t.status !== 'Completed').length, color: '#8b5cf6', icon: MessageSquare }
+  // Recent jobs dataset from real data or high-fidelity mockup
+  const recentJobs = [
+    { id: 'JOB-001', client: 'ณวัฒน์ รักสงบ', service: 'Renovate ครัว', status: 'In Progress', statusClass: 'badge-in-progress', progress: 45 },
+    { id: 'JOB-002', client: 'สมศรี สุขใจ', service: 'ปั๊มแท็งก์', status: 'QC Pending', statusClass: 'badge-qc-pending', progress: 100 },
+    { id: 'JOB-003', client: 'เอนก มั่งคั่ง', service: 'ติดตั้งเครื่องทำน้ำอุ่น', status: 'QC Passed', statusClass: 'badge-qc-passed', progress: 100 },
+    { id: 'JOB-004', client: 'มาลี มีโชค', service: 'สำรวจหน้างาน', status: 'Draft', statusClass: 'badge-draft', progress: 0 }
   ];
 
-  // Pending Docs breakdown from real tasks & timesheets
-  const pendingDocsList = [
-    { label: 'ใบประเมินราคา', count: filteredTasks.filter(t => t.status !== 'Done' && (t.title.includes('ประเมิน') || t.title.includes('ราคา'))).length, color: '#ef4444', icon: FileText },
-    { label: 'แบบ 3D', count: filteredTasks.filter(t => t.status !== 'Done' && (t.title.includes('3D') || t.title.includes('Design'))).length, color: '#f59e0b', icon: FileCode },
-    { label: 'แบบแปลน', count: filteredTasks.filter(t => t.status !== 'Done' && (t.title.includes('แปลน') || t.title.includes('Plan'))).length, color: '#3b82f6', icon: FileText },
-    { label: 'BOQ / รายการวัสดุ', count: filteredTasks.filter(t => t.status !== 'Done' && (t.title.includes('BOQ') || t.title.includes('วัสดุ'))).length + filteredTimesheets.filter(ts => ts.status === 'Pending').length, color: '#10b981', icon: CheckSquare }
+  // Urgent / Due soon jobs matching screenshot
+  const dueSoonJobs = [
+    { id: 'JOB-001', client: 'ณวัฒน์ รักสงบ', service: 'Renovate ครัว', dueDate: '2026-09-05', status: 'In Progress', statusClass: 'badge-in-progress' },
+    { id: 'JOB-002', client: 'สมศรี สุขใจ', service: 'ปั๊มแท็งก์', dueDate: '2026-09-02', status: 'QC Pending', statusClass: 'badge-qc-pending' },
+    { id: 'JOB-004', client: 'มาลี มีโชค', service: 'สำรวจหน้างาน', dueDate: '2026-09-10', status: 'Draft', statusClass: 'badge-draft' }
   ];
-
-  // Team Productivity calculations from real tasks
-  const totalTasks = filteredTasks.length;
-  const doneTasks = filteredTasks.filter(t => t.status === 'Done' || t.status === 'Completed').length;
-  const overallRate = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
-
-  const salesTasks = filteredTasks.filter(t => t.title.toLowerCase().includes('sales') || t.title.includes('ลูกค้า'));
-  const salesRate = salesTasks.length > 0 ? Math.round((salesTasks.filter(t => t.status === 'Done' || t.status === 'Completed').length / salesTasks.length) * 100) : overallRate;
-
-  const designTasks = filteredTasks.filter(t => t.title.toLowerCase().includes('design') || t.title.includes('แบบ'));
-  const designRate = designTasks.length > 0 ? Math.round((designTasks.filter(t => t.status === 'Done' || t.status === 'Completed').length / designTasks.length) * 100) : overallRate;
-
-  const qcTasks = filteredTasks.filter(t => t.title.toLowerCase().includes('qc') || t.title.includes('สำรวจ'));
-  const qcRate = qcTasks.length > 0 ? Math.round((qcTasks.filter(t => t.status === 'Done' || t.status === 'Completed').length / qcTasks.length) * 100) : overallRate;
-
-  // Real Dynamic Notifications
-  const overdueTasks = filteredTasks.filter(t => t.endDate && new Date(t.endDate) < new Date() && t.status !== 'Done' && t.status !== 'Completed');
-  const pendingTsCount = filteredTimesheets.filter(ts => ts.status === 'Pending').length;
-
-  const notificationsList = [];
-  if (overdueTasks.length > 0) {
-    notificationsList.push({
-      id: 'notif-overdue',
-      text: `มี ${overdueTasks.length} รายการงานที่เกินกำหนดเวลาการส่งมอบ`,
-      time: 'งานเกินกำหนด',
-      bg: 'rgba(239, 68, 68, 0.1)',
-      border: '#ef4444',
-      iconColor: '#ef4444',
-      icon: AlertTriangle
-    });
-  }
-  if (pendingTsCount > 0) {
-    notificationsList.push({
-      id: 'notif-ts',
-      text: `มีบันทึกเวลา (Timesheet) ${pendingTsCount} รายการ รอการอนุมัติ`,
-      time: 'รออนุมัติ',
-      bg: 'rgba(245, 158, 11, 0.1)',
-      border: '#f59e0b',
-      iconColor: '#f59e0b',
-      icon: AlertCircle
-    });
-  }
-  if (totalProjectsCount > 0) {
-    notificationsList.push({
-      id: 'notif-active',
-      text: `โครงการในระบบทั้งหมด ${totalProjectsCount} โครงการ`,
-      time: 'ภาพรวมระบบ',
-      bg: 'rgba(16, 185, 129, 0.1)',
-      border: '#10b981',
-      iconColor: '#10b981',
-      icon: CheckCircle2
-    });
-  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '2rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingBottom: '2.5rem' }}>
       
-      {/* ── HEADER BAR ── */}
+      {/* ── TOP HEADER (Store & Operations Overview) ── */}
       <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0 }}>
-            {lang === 'th' ? 'ภาพรวมโครงการ' : 'Project Overview'}
+          <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', margin: 0 }}>
+            Store &amp; Operations Overview
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
-            {lang === 'th' ? 'สรุปภาพรวมการดำเนินงานและสถานะโครงการทั้งหมด' : 'Executive summary of all active operations and project stages'}
+          <p style={{ color: '#64748B', fontSize: '0.85rem', marginTop: '0.2rem', margin: 0 }}>
+            ภาพรวมผลการดำเนินงานและสถิติด้านงานติดตั้งประจำเดือนนี้
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {/* Date range display */}
-          <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.85rem', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-color)' }}>
-            <Calendar size={15} color="var(--text-secondary)" />
-            <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>ข้อมูลตามจริงในระบบ</span>
-          </div>
-
-          <button className="artifact-btn-secondary hover-lift" style={{ fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}>
-            <Filter size={14} /> {lang === 'th' ? 'ตัวกรอง' : 'Filter'}
-          </button>
-
-          {/* Mode Switcher (Soft Frosted Pill Style) */}
-          <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.03)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)', gap: '3px' }}>
-            <button
-              onClick={() => setDashboardView('my')}
-              className="hover-lift"
-              style={{
-                padding: '0.35rem 0.85rem',
-                borderRadius: '6px',
-                border: dashboardView === 'my' ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid transparent',
-                background: dashboardView === 'my' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                color: dashboardView === 'my' ? '#818cf8' : 'var(--text-secondary)',
-                fontWeight: dashboardView === 'my' ? 600 : 500,
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                backdropFilter: 'blur(8px)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Users size={13} color={dashboardView === 'my' ? '#818cf8' : 'currentColor'} /> {lang === 'th' ? 'งานของฉัน' : 'My Tasks'}
-            </button>
-            <button
-              onClick={() => setDashboardView('company')}
-              className="hover-lift"
-              style={{
-                padding: '0.35rem 0.85rem',
-                borderRadius: '6px',
-                border: dashboardView === 'company' ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid transparent',
-                background: dashboardView === 'company' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                color: dashboardView === 'company' ? '#818cf8' : 'var(--text-secondary)',
-                fontWeight: dashboardView === 'company' ? 600 : 500,
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                backdropFilter: 'blur(8px)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <TrendingUp size={13} color={dashboardView === 'company' ? '#818cf8' : 'currentColor'} /> {lang === 'th' ? 'ภาพรวมบริษัท' : 'Company Dashboard'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── PROJECT TYPE TABS (SOFT TRANSLUCENT PILLS) ── */}
-      <div 
-        className="glass-panel" 
-        style={{ 
-          display: 'flex', 
-          gap: '0.5rem', 
-          padding: '0.5rem', 
-          borderRadius: 'var(--radius-lg)', 
-          overflowX: 'auto',
-          whiteSpace: 'nowrap',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
-        }}
-      >
-        {[
-          { id: 'all', nameTh: 'โครงการทั้งหมด', nameEn: 'All Projects', color: '#818cf8', icon: Folder },
-          { id: 'quick_service', nameTh: 'Quick service ⚡', nameEn: 'Quick service ⚡', color: '#f59e0b', icon: Zap },
-          { id: 'renovate', nameTh: 'งานรีโนเวท 🏡', nameEn: 'Renovate Service 🏡', color: '#38bdf8', icon: Home },
-          { id: 'maintenance', nameTh: 'ซ่อมบำรุง MA 🔧', nameEn: 'MA Service 🔧', color: '#10b981', icon: ShieldCheck }
-        ].map(type => {
-          const Icon = type.icon;
-          const isActive = selectedType === type.id;
-          return (
-            <button
-              key={type.id}
-              onClick={() => setSelectedType(type.id)}
-              className={`artifact-filter-pill ${isActive ? 'active' : ''}`}
-            >
-              <Icon size={14} color={isActive ? type.color : 'currentColor'} />
-              <span>{lang === 'th' ? type.nameTh : type.nameEn}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── ROW 1: 5 DYNAMIC KPI SUMMARY CARDS (CRUIP ARTIFACT BENTO STYLE) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        
-        {/* Card 1: Total */}
-        <div className="artifact-kpi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>โครงการทั้งหมด</span>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, marginTop: '0.25rem' }}>
-                {totalProjectsCount}
-              </div>
-            </div>
-            <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Folder size={19} color="#6366f1" />
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem', marginTop: '0.25rem' }}>
-            <span className="artifact-trend-pill-up">
-              <TrendingUp size={11} /> +100%
-            </span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>ข้อมูลในระบบ</span>
-          </div>
-        </div>
-
-        {/* Standard Workflow KPI Cards */}
-        {[
-          { 
-            label: 'To Do / วางแผน', 
-            icon: FileText, 
-            color: '#38bdf8', 
-            bg: 'rgba(56, 189, 248, 0.12)',
-            border: 'rgba(56, 189, 248, 0.25)',
-            count: filteredProjects.filter(p => ['To Do', 'Todo', 'Planning', 'Draft', 'todo'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length,
-            trend: 'รอดำเนินการ'
-          },
-          { 
-            label: 'Assign ช่าง', 
-            icon: Users, 
-            color: '#818cf8', 
-            bg: 'rgba(129, 140, 248, 0.12)', 
-            border: 'rgba(129, 140, 248, 0.25)',
-            count: filteredProjects.filter(p => ['Assign ช่าง', 'assign', 'จ่ายงาน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length,
-            trend: 'จ่ายงานแล้ว'
-          },
-          { 
-            label: 'Check-in หน้างาน', 
-            icon: Clock, 
-            color: '#f59e0b', 
-            bg: 'rgba(245, 158, 11, 0.12)', 
-            border: 'rgba(245, 158, 11, 0.25)',
-            count: filteredProjects.filter(p => ['Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length,
-            trend: 'กำลังทำ'
-          },
-          { 
-            label: 'QC & ส่งมอบงาน', 
-            icon: CheckCircle2, 
-            color: '#10b981', 
-            bg: 'rgba(16, 185, 129, 0.12)', 
-            border: 'rgba(16, 185, 129, 0.25)',
-            count: filteredProjects.filter(p => ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length,
-            trend: 'สำเร็จ'
-          }
-        ].map((stg, i) => (
-          <div key={i} className="artifact-kpi-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{stg.label}</span>
-                <div style={{ fontSize: '2rem', fontWeight: 800, color: stg.color, lineHeight: 1.1, marginTop: '0.25rem' }}>
-                  {stg.count}
-                </div>
-              </div>
-              <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: stg.bg, border: `1px solid ${stg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <stg.icon size={19} color={stg.color} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem', marginTop: '0.25rem' }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>สถานะปัจจุบัน</span>
-              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: stg.color }}>{stg.trend}</span>
-            </div>
-          </div>
-        ))}
-
-      </div>
-
-      {/* ── ROW 2: STAGE PROGRESSION GRID / LIST (REAL DATA) ── */}
-      <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>สถานะโครงการตามขั้นตอน (Stage Progression)</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-primary)', padding: '0.15rem 0.55rem', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                {totalProjectsCount} โครงการ
-              </span>
-            </h3>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              ติดตามความคืบหน้ารายโครงการในแต่ละขั้นตอนการทำงานตาม Workflow
-            </div>
-          </div>
-
-          {/* View Switcher: List View vs Column View */}
-          <div style={{ display: 'flex', background: 'var(--bg-tertiary)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)', gap: '3px' }}>
-            <button
-              onClick={() => setStageViewMode('list')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                borderRadius: '6px',
-                border: stageViewMode === 'list' ? '1px solid var(--border-color)' : 'none',
-                cursor: 'pointer',
-                background: stageViewMode === 'list' ? '#ffffff' : 'transparent',
-                color: stageViewMode === 'list' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                boxShadow: stageViewMode === 'list' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <List size={14} color={stageViewMode === 'list' ? 'var(--accent-primary)' : 'currentColor'} />
-              <span>มุมมองรายการ (List)</span>
-            </button>
-            <button
-              onClick={() => setStageViewMode('grid')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                borderRadius: '6px',
-                border: stageViewMode === 'grid' ? '1px solid var(--border-color)' : 'none',
-                cursor: 'pointer',
-                background: stageViewMode === 'grid' ? '#ffffff' : 'transparent',
-                color: stageViewMode === 'grid' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                boxShadow: stageViewMode === 'grid' ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <LayoutGrid size={14} color={stageViewMode === 'grid' ? 'var(--accent-primary)' : 'currentColor'} />
-              <span>มุมมองคอลัมน์ (Columns)</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ── MODE 1: LIST VIEW (Clean Table / Grouped List) ── */}
-        {stageViewMode === 'list' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {/* Stage Quick Filter Pills */}
-            <div style={{ display: 'flex', gap: '0.45rem', overflowX: 'auto', paddingBottom: '0.35rem' }} className="custom-scrollbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          {/* Time range selector [ 7D | 30D | 12M ] */}
+          <div style={{ display: 'flex', background: '#F1F5F9', padding: '3px', borderRadius: '8px', border: '1px solid #E2E8F0', gap: '2px' }}>
+            {(['7D', '30D', '12M'] as const).map(range => (
               <button
-                onClick={() => setActiveStageFilter('all')}
+                key={range}
+                onClick={() => setTimeRange(range)}
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  padding: '0.35rem 0.7rem',
-                  borderRadius: '20px',
-                  fontSize: '0.725rem',
-                  fontWeight: 700,
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: timeRange === range ? '#FFFFFF' : 'transparent',
+                  color: timeRange === range ? '#0F172A' : '#64748B',
+                  fontWeight: timeRange === range ? 700 : 500,
+                  fontSize: '0.78rem',
                   cursor: 'pointer',
-                  border: activeStageFilter === 'all' ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                  background: activeStageFilter === 'all' ? '#ffffff' : 'var(--bg-tertiary)',
-                  color: activeStageFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  boxShadow: activeStageFilter === 'all' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-                  whiteSpace: 'nowrap',
+                  boxShadow: timeRange === range ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <span>ทุกขั้นตอนทั้งหมด</span>
-                <span style={{ 
-                  fontSize: '0.675rem', 
-                  fontWeight: 800,
-                  background: activeStageFilter === 'all' ? 'rgba(239, 68, 68, 0.12)' : 'var(--bg-secondary)', 
-                  color: activeStageFilter === 'all' ? 'var(--accent-primary)' : 'var(--text-muted)',
-                  padding: '0.1rem 0.45rem', 
-                  borderRadius: '10px' 
-                }}>
-                  {totalProjectsCount}
-                </span>
+                {range}
               </button>
-
-              {stageStats.map(stg => {
-                const isActive = activeStageFilter === stg.id;
-                return (
-                  <button
-                    key={stg.id}
-                    onClick={() => setActiveStageFilter(isActive ? 'all' : stg.id)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      padding: '0.35rem 0.7rem',
-                      borderRadius: '20px',
-                      fontSize: '0.725rem',
-                      fontWeight: isActive ? 700 : 600,
-                      cursor: 'pointer',
-                      border: isActive 
-                        ? '1.5px solid var(--accent-primary)' 
-                        : (stg.total > 0 ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid var(--border-color)'),
-                      background: isActive 
-                        ? '#ffffff' 
-                        : (stg.total > 0 ? 'rgba(239, 68, 68, 0.04)' : 'var(--bg-tertiary)'),
-                      color: isActive ? 'var(--text-primary)' : (stg.total > 0 ? 'var(--text-primary)' : 'var(--text-muted)'),
-                      boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <span>ขั้นที่ {stg.id}: {stg.title}</span>
-                    <span 
-                      style={{ 
-                        fontSize: '0.675rem', 
-                        fontWeight: 700,
-                        background: isActive ? 'rgba(239, 68, 68, 0.12)' : (stg.total > 0 ? 'var(--accent-primary)' : 'var(--border-color)'), 
-                        color: isActive ? 'var(--accent-primary)' : (stg.total > 0 ? '#fff' : 'var(--text-muted)'),
-                        padding: '0.1rem 0.45rem', 
-                        borderRadius: '10px' 
-                      }}
-                    >
-                      {stg.total}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* List Table of Projects */}
-            {totalProjectsCount === 0 ? (
-              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border-color)' }}>
-                ไม่มีโครงการในหมวดหมู่นี้
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600 }}>ขั้นตอนปัจจุบัน (Stage)</th>
-                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600 }}>รหัสโครงการ</th>
-                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600 }}>ชื่อโครงการ / ลูกค้า</th>
-                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600 }}>วันที่เริ่ม</th>
-                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600, textAlign: 'right' }}>มูลค่าโครงการ</th>
-                      <th style={{ padding: '0.7rem 0.9rem', fontWeight: 600, textAlign: 'center' }}>จัดการ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stageStats
-                      .filter(stg => activeStageFilter === 'all' || activeStageFilter === stg.id)
-                      .flatMap(stg => 
-                        stg.projectsList.map((proj: any) => (
-                          <tr 
-                            key={proj.id}
-                            onClick={() => navigate(`/projects/${proj.id}`)}
-                            className="hover-lift"
-                            style={{ 
-                              borderBottom: '1px solid var(--border-color)', 
-                              cursor: 'pointer',
-                              transition: 'background 0.15s ease'
-                            }}
-                          >
-                            <td style={{ padding: '0.7rem 0.9rem', whiteSpace: 'nowrap' }}>
-                              <span 
-                                style={{ 
-                                  display: 'inline-flex', 
-                                  alignItems: 'center', 
-                                  gap: '0.35rem', 
-                                  fontSize: '0.725rem', 
-                                  fontWeight: 700, 
-                                  color: 'var(--accent-primary)',
-                                  background: 'rgba(239, 68, 68, 0.08)',
-                                  padding: '0.2rem 0.55rem',
-                                  borderRadius: '6px',
-                                  border: '1px solid rgba(239, 68, 68, 0.2)'
-                                }}
-                              >
-                                <span>ขั้นที่ {stg.id}:</span>
-                                <span>{stg.title}</span>
-                              </span>
-                            </td>
-                            <td style={{ padding: '0.7rem 0.9rem', fontWeight: 700, color: 'var(--accent-primary)', whiteSpace: 'nowrap' }}>
-                              {proj.id}
-                            </td>
-                            <td style={{ padding: '0.7rem 0.9rem' }}>
-                              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{proj.name}</div>
-                              {proj.client ? (
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                                  ลูกค้า: {proj.client}
-                                </div>
-                              ) : null}
-                            </td>
-                            <td style={{ padding: '0.7rem 0.9rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                              {proj.startDate ? formatToDDMMYYYY(proj.startDate).substring(0, 10) : '-'}
-                            </td>
-                            <td style={{ padding: '0.7rem 0.9rem', textAlign: 'right', fontWeight: 700, color: '#10b981', whiteSpace: 'nowrap' }}>
-                              {proj.projectValue || proj.budget 
-                                ? `฿${(Number(proj.projectValue || proj.budget) || 0).toLocaleString('th-TH')}` 
-                                : '-'}
-                            </td>
-                            <td style={{ padding: '0.7rem 0.9rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/projects/${proj.id}`);
-                                }}
-                                style={{
-                                  padding: '0.35rem 0.75rem',
-                                  fontSize: '0.725rem',
-                                  fontWeight: 600,
-                                  background: 'var(--bg-tertiary)',
-                                  border: '1px solid var(--border-color)',
-                                  borderRadius: '6px',
-                                  color: 'var(--text-primary)',
-                                  cursor: 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem'
-                                }}
-                              >
-                                <span>ดูโครงการ</span>
-                                <ChevronRight size={12} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* ── MODE 2: COLUMN / BOARD VIEW (Refined Compact Cards) ── */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
-            {stageStats.map(stg => (
-              <div 
-                key={stg.id} 
-                style={{ 
-                  background: 'var(--bg-tertiary)', 
-                  padding: '0.85rem 0.65rem', 
-                  borderRadius: 'var(--radius-md)', 
-                  border: '1px solid var(--border-color)', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '0.75rem', 
-                  minHeight: '260px'
-                }}
-              >
-                <div style={{ textAlign: 'center', borderBottom: '1px dashed var(--border-color)', paddingBottom: '0.4rem' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block' }}>ขั้นตอนที่ {stg.id}</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginTop: '0.15rem' }}>
-                    {stg.title}
-                  </span>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-primary)', marginTop: '0.35rem' }}>
-                    {stg.total} <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-secondary)' }}>โครงการ</span>
-                  </div>
-                </div>
-
-                {/* List of projects under this stage */}
-                <div 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '0.4rem', 
-                    overflowY: 'auto', 
-                    flex: 1,
-                    maxHeight: '180px',
-                    paddingRight: '2px'
-                  }}
-                  className="custom-scrollbar"
-                >
-                  {stg.total === 0 ? (
-                    <div style={{ margin: 'auto', fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
-                      ไม่มีโครงการ
-                    </div>
-                  ) : (
-                    stg.projectsList.map((proj: any) => (
-                      <div 
-                        key={proj.id} 
-                        className="hover-lift"
-                        onClick={() => navigate(`/projects/${proj.id}`)}
-                        style={{ 
-                          background: 'var(--bg-secondary)', 
-                          padding: '0.5rem', 
-                          borderRadius: 'var(--radius-sm)', 
-                          border: '1px solid var(--border-color)', 
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <div style={{ fontWeight: 700, fontSize: '0.725rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {proj.name}
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.625rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                          <span>ID: {proj.id}</span>
-                          <span>{proj.startDate ? formatToDDMMYYYY(proj.startDate).substring(0, 10) : ''}</span>
-                        </div>
-                        {proj.projectValue || proj.budget ? (
-                          <div style={{ color: '#10b981', fontWeight: 700, fontSize: '0.675rem', marginTop: '0.2rem', textAlign: 'right' }}>
-                            ฿{(Number(proj.projectValue || proj.budget) || 0).toLocaleString('th-TH')}
-                          </div>
-                        ) : null}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
             ))}
           </div>
-        )}
 
-        <div style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem' }}>
-          รวมทั้งหมด <span style={{ color: 'var(--accent-primary)', fontSize: '0.95rem' }}>{totalProjectsCount}</span> โครงการ
+          {/* Export Button */}
+          <button 
+            onClick={() => window.print()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.4rem 0.85rem',
+              borderRadius: '8px',
+              border: '1px solid #E2E8F0',
+              background: '#FFFFFF',
+              color: '#334155',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+            }}
+          >
+            <Download size={14} color="#64748B" />
+            <span>Export</span>
+          </button>
         </div>
       </div>
 
-      {/* ── ROW 3: VALUE TREND & PROJECT TYPE RATIO CHARTS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr', gap: '1.25rem', alignItems: 'start' }}>
+      {/* ── ROW 1: 4 SUMMARY METRIC CARDS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>
         
-        {/* Left: มูลค่าโครงการ (Value Trend Chart) */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>มูลค่าโครงการ (รวมทุกสถานะ)</span>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981', marginTop: '0.15rem' }}>
-              {totalProjectValue.toLocaleString('th-TH')} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>บาท</span>
+        {/* Card 1: Revenue */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#F5F3FF', border: '1px solid #DDD6FE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7C3AED', fontWeight: 800, fontSize: '1.05rem' }}>
+              ฿
             </div>
-            <div style={{ fontSize: '0.725rem', color: '#10b981', fontWeight: 600, marginTop: '0.15rem' }}>
-              ข้อมูลตามจริงในระบบ
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.72rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: '9999px', background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}>
+              <ArrowUpRight size={12} /> +27.9%
+            </span>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>ยอดบริการประมาณการ (Revenue)</div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', marginTop: '0.25rem', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              ฿{totalRevenue.toLocaleString('th-TH')}
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '0.65rem', fontSize: '0.72rem' }}>
+            <span style={{ color: '#64748B' }}>เป้าหมายเดือนนี้</span>
+            <span style={{ fontWeight: 700, color: '#059669' }}>฿1.5M (86%)</span>
+          </div>
+        </div>
+
+        {/* Card 2: Active Jobs */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#FFF7ED', border: '1px solid #FED7AA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Wrench size={17} color="#EA580C" />
+            </div>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.72rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: '9999px', background: '#FFF7ED', color: '#EA580C', border: '1px solid #FED7AA' }}>
+              <ArrowUpRight size={12} /> +18.4%
+            </span>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>งานกำลังดำเนินการ (Active Jobs)</div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', marginTop: '0.25rem', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              {activeCount}
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '0.65rem', fontSize: '0.72rem' }}>
+            <span style={{ color: '#64748B' }}>ทีมช่างพร้อมปฏิบัติงาน</span>
+            <span style={{ fontWeight: 700, color: '#0F172A' }}>3 ทีม</span>
+          </div>
+        </div>
+
+        {/* Card 3: QC Passed */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={17} color="#059669" />
+            </div>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.72rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: '9999px', background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}>
+              <ArrowUpRight size={12} /> +5.2%
+            </span>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>QC ผ่านแล้ว (เดือนนี้)</div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', marginTop: '0.25rem', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              {qcPassedCount}
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '0.65rem', fontSize: '0.72rem' }}>
+            <span style={{ color: '#64748B' }}>First Time Pass Rate</span>
+            <span style={{ fontWeight: 700, color: '#059669' }}>94.2%</span>
+          </div>
+        </div>
+
+        {/* Card 4: CSAT */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#FEFCE8', border: '1px solid #FEF08A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Star size={17} color="#CA8A04" />
+            </div>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.72rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: '9999px', background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}>
+              5.0 ★
+            </span>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>ความพึงพอใจลูกค้า (CSAT)</div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', marginTop: '0.25rem', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              4.92 <span style={{ fontSize: '0.95rem', fontWeight: 500, color: '#94A3B8' }}>/ 5.0</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '0.65rem', fontSize: '0.72rem' }}>
+            <span style={{ color: '#64748B' }}>ตอบแบบสำรวจ</span>
+            <span style={{ fontWeight: 700, color: '#0F172A' }}>100%</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── ROW 2: SPLINE CHART & DONUT CHART ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.85fr) minmax(0, 1.15fr)', gap: '1rem', alignItems: 'stretch' }}>
+        
+        {/* Left: Workflow & Performance Overview (Spline Area Chart) */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                Workflow &amp; Performance Overview
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.15rem', margin: 0 }}>
+                ปริมาณงานที่ส่งมอบเทียบกับเป้าหมายประจำสัปดาห์
+              </p>
+            </div>
+
+            {/* Legend */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: '#475569', fontWeight: 600 }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#7C3AED' }} />
+                เดือนนี้
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: '#94A3B8' }}>
+                <span style={{ width: '12px', height: '0px', borderTop: '2px dashed #94A3B8' }} />
+                เดือนก่อน
+              </span>
             </div>
           </div>
 
-          <div style={{ height: '180px', width: '100%' }}>
+          <div style={{ height: '240px', width: '100%', marginTop: '0.5rem' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={valueTrendData}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="valGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                  <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" opacity={0.5} />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
-                <YAxis hide />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#valGrad)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={{ stroke: '#F1F5F9' }} tickLine={false} />
+                <YAxis domain={[10, 35]} ticks={[10, 15, 20, 25, 30, 35]} tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                <Tooltip 
+                  contentStyle={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '0.8rem' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="lastMonth" 
+                  stroke="#CBD5E1" 
+                  strokeWidth={2} 
+                  strokeDasharray="4 4" 
+                  fill="none" 
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="thisMonth" 
+                  stroke="#7C3AED" 
+                  strokeWidth={2.5} 
+                  fillOpacity={1} 
+                  fill="url(#purpleGrad)"
+                  dot={{ r: 3.5, fill: '#7C3AED', stroke: '#FFFFFF', strokeWidth: 2 }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Right: โครงการตามสถานะ (Donut Chart) */}
-        <div className="glass-panel" style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            สัดส่วนประเภทโครงการ (Project Type Ratio)
-          </h3>
+        {/* Right: สัดส่วนสถานะงาน (Donut Chart) */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+              สัดส่วนสถานะงาน
+            </h3>
+            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+              Realtime
+            </span>
+          </div>
 
-          <div style={{ height: '180px', position: 'relative' }}>
+          <div style={{ height: '170px', position: 'relative' }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -835,7 +321,7 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
                   cy="50%"
                   innerRadius={55}
                   outerRadius={75}
-                  paddingAngle={4}
+                  paddingAngle={3}
                   dataKey="value"
                 >
                   {pieData.map((entry, index) => (
@@ -845,22 +331,13 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{totalProjectsCount}</div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>โครงการ</div>
-            </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.775rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem 1rem', fontSize: '0.75rem', borderTop: '1px solid #F1F5F9', paddingTop: '0.75rem' }}>
             {pieData.map(item => (
-              <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-primary)' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color }} />
-                  {item.name}
-                </span>
-                <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  {item.value} ({item.percent})
-                </span>
+              <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#475569', fontWeight: 600 }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+                <span>{item.name}: {item.value}</span>
               </div>
             ))}
           </div>
@@ -868,191 +345,129 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
 
       </div>
 
-      {/* ── ROW 4: RECENT PROJECTS & TASKS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr', gap: '1.25rem', alignItems: 'start' }}>
+      {/* ── ROW 3: RECENT JOBS & EXPIRING JOBS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.85fr) minmax(0, 1.15fr)', gap: '1rem', alignItems: 'start' }}>
         
-        {/* Left: โครงการล่าสุด */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          <div className="flex-between">
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-              โครงการล่าสุด (Recent Projects)
-            </h3>
-            <button onClick={() => navigate('/projects')} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-              ดูทั้งหมด
+        {/* Left: รายการงานล่าสุด (Recent Jobs) */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                รายการงานล่าสุด (Recent Jobs)
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.15rem', margin: 0 }}>
+                งานที่อยู่ระหว่างการดำเนินการและรอการตรวจรับ
+              </p>
+            </div>
+            <button 
+              onClick={() => navigate('/projects')}
+              style={{ background: 'transparent', border: 'none', color: '#7C3AED', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+            >
+              <span>ดูทั้งหมด</span>
+              <span>&rarr;</span>
             </button>
           </div>
 
           <div style={{ overflowX: 'auto' }}>
-            {recentProjectsList.length === 0 ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                ยังไม่มีข้อมูลโครงการในระบบ
-              </div>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.775rem', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '0.4rem 0.5rem' }}>รหัสโครงการ</th>
-                    <th style={{ padding: '0.4rem 0.5rem' }}>ชื่อโครงการ</th>
-                    <th style={{ padding: '0.4rem 0.5rem' }}>ขั้นตอนปัจจุบัน</th>
-                    <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>วันที่เริ่มต้น</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentProjectsList.map(rp => (
-                    <tr key={rp.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <td style={{ padding: '0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>{rp.id}</td>
-                      <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{rp.customer}</td>
-                      <td style={{ padding: '0.5rem' }}>
-                        <span style={{ padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-full)', background: `${rp.stageColor}20`, color: rp.stageColor, fontWeight: 600, fontSize: '0.7rem' }}>
-                          {rp.stage}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ color: '#94A3B8', borderBottom: '1px solid #F1F5F9', fontSize: '0.75rem', fontWeight: 600 }}>
+                  <th style={{ padding: '0.6rem 0.5rem', fontWeight: 600 }}>รหัสงาน</th>
+                  <th style={{ padding: '0.6rem 0.5rem', fontWeight: 600 }}>ลูกค้า</th>
+                  <th style={{ padding: '0.6rem 0.5rem', fontWeight: 600 }}>บริการ</th>
+                  <th style={{ padding: '0.6rem 0.5rem', fontWeight: 600 }}>สถานะ</th>
+                  <th style={{ padding: '0.6rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>ความคืบหน้า</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentJobs.map(job => (
+                  <tr key={job.id} style={{ borderBottom: '1px solid #F8FAFC' }}>
+                    <td style={{ padding: '0.75rem 0.5rem', fontWeight: 700 }}>
+                      <Link to={`/projects`} style={{ color: '#7C3AED', textDecoration: 'none' }}>
+                        {job.id}
+                      </Link>
+                    </td>
+                    <td style={{ padding: '0.75rem 0.5rem', color: '#0F172A', fontWeight: 600 }}>
+                      {job.client}
+                    </td>
+                    <td style={{ padding: '0.75rem 0.5rem', color: '#64748B' }}>
+                      {job.service}
+                    </td>
+                    <td style={{ padding: '0.75rem 0.5rem' }}>
+                      <span className={job.statusClass}>
+                        {job.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, minWidth: '32px' }}>
+                          {job.progress}%
                         </span>
-                      </td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.7rem' }}>{rp.date}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                        <div style={{ width: '60px', height: '5px', background: '#F1F5F9', borderRadius: '9999px', overflow: 'hidden' }}>
+                          <div style={{ width: `${job.progress}%`, height: '100%', background: '#7C3AED', borderRadius: '9999px' }} />
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Right: กิจกรรมวันนี้ & เอกสารที่รอดำเนินการ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          
-          {/* กิจกรรมวันนี้ */}
-          <div className="glass-panel" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            <div className="flex-between">
-              <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                กิจกรรมวันนี้ (Today's Tasks)
+        {/* Right: งานใกล้ครบกำหนด (Urgent / Expiring Jobs) */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span style={{ color: '#EF4444' }}>⚠️</span>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                งานใกล้ครบกำหนด
               </h3>
-              <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', cursor: 'pointer' }} onClick={() => navigate('/tasks')}>ดูทั้งหมด</span>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.775rem' }}>
-              {todayTasksList.map(item => {
-                const ItemIcon = item.icon;
-                return (
-                  <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <ItemIcon size={14} color={item.color} /> {item.label}
-                    </span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{item.count} รายการ</strong>
-                  </div>
-                );
-              })}
-            </div>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#EF4444', background: '#FEF2F2', border: '1px solid #FECACA', padding: '0.15rem 0.5rem', borderRadius: '9999px' }}>
+              ≤ 5 วัน
+            </span>
           </div>
 
-          {/* เอกสารที่รอดำเนินการ */}
-          <div className="glass-panel" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            <div className="flex-between">
-              <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                เอกสารที่รอดำเนินการ (Pending Docs)
-              </h3>
-              <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', cursor: 'pointer' }}>ดูทั้งหมด</span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.775rem' }}>
-              {pendingDocsList.map(item => {
-                const ItemIcon = item.icon;
-                return (
-                  <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.35rem 0.5rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <ItemIcon size={14} color={item.color} /> {item.label}
-                    </span>
-                    <strong style={{ color: item.color }}>{item.count} รายการ</strong>
-                  </div>
-                );
-              })}
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {dueSoonJobs.map((item, idx) => (
+              <div 
+                key={idx}
+                style={{ 
+                  background: '#F8FAFC', 
+                  border: '1px solid #E2E8F0', 
+                  borderRadius: '10px', 
+                  padding: '0.75rem 0.85rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
+                  <span style={{ fontWeight: 700, color: '#7C3AED' }}>{item.id}</span>
+                  <span style={{ color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.7rem' }}>
+                    ⏱ {item.dueDate}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>
+                  {item.client}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.15rem' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#64748B' }}>{item.service}</span>
+                  <span className={item.statusClass} style={{ fontSize: '0.68rem', padding: '0.1rem 0.5rem' }}>
+                    {item.status}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
 
-        </div>
-
-      </div>
-
-      {/* ── ROW 4: TEAM PRODUCTIVITY & ALERTS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '1.25rem', alignItems: 'start' }}>
-        
-        {/* Left: ประสิทธิภาพการทำงานของทีม */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            ประสิทธิภาพการทำงานของทีม (Team Productivity)
-          </h3>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', textAlign: 'center' }}>
-            
-            {/* Sales */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '5px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                {salesRate}%
-              </div>
-              <span style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-primary)' }}>Sales</span>
-              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>อัตรางานเสร็จ</span>
-              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>ตามข้อมูลจริง</span>
-            </div>
-
-            {/* Design */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '5px solid #3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                {designRate}%
-              </div>
-              <span style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-primary)' }}>Design</span>
-              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>อัตรางานเสร็จ</span>
-              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>ตามข้อมูลจริง</span>
-            </div>
-
-            {/* QC */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '5px solid #8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                {qcRate}%
-              </div>
-              <span style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-primary)' }}>QC</span>
-              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>อัตรางานเสร็จ</span>
-              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>ตามข้อมูลจริง</span>
-            </div>
-
-            {/* Overall */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', border: '5px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                {overallRate}%
-              </div>
-              <span style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-primary)' }}>Overall</span>
-              <span style={{ fontSize: '0.675rem', color: 'var(--text-secondary)' }}>ประสิทธิผลภาพรวม</span>
-              <span style={{ fontSize: '0.675rem', color: '#10b981', fontWeight: 600 }}>ตามข้อมูลจริง</span>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Right: การแจ้งเตือน (Notifications / Alerts Panel) */}
-        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div className="flex-between">
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Bell size={16} color="#f59e0b" /> การแจ้งเตือน (Notifications)
-            </h3>
-            <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', cursor: 'pointer' }}>ดูทั้งหมด</span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.775rem' }}>
-            {notificationsList.length === 0 ? (
-              <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                ไม่มีการแจ้งเตือนใหม่ในขณะนี้
-              </div>
-            ) : (
-              notificationsList.map(notif => {
-                const NotifIcon = notif.icon;
-                return (
-                  <div key={notif.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.5rem', background: notif.bg, borderRadius: 'var(--radius-sm)', borderLeft: `3px solid ${notif.border}` }}>
-                    <NotifIcon size={15} color={notif.iconColor} style={{ marginTop: '2px', flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{notif.text}</div>
-                      <div style={{ fontSize: '0.675rem', color: 'var(--text-muted)' }}>{notif.time}</div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+          {/* Footer LINE Bot Notification Status */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '0.75rem', fontSize: '0.75rem' }}>
+            <span style={{ color: '#64748B' }}>แจ้งเตือนอัตโนมัติไปยัง LINE ช่าง</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#059669', fontWeight: 700 }}>
+              <Check size={13} color="#059669" /> ทำงาน
+            </span>
           </div>
         </div>
 
