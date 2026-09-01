@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, FileSpreadsheet, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, ShieldAlert, Lock, Building2, User } from 'lucide-react';
+import { Users, Plus, Check, CheckCircle2, RefreshCw, X, Search, FileText, FileSpreadsheet, Phone, Building, Edit2, MapPin, Navigation, ExternalLink, Compass, Map, Search as SearchIcon, Clipboard, ClipboardCheck, Sparkles, Calendar, Clock, History, AlertCircle, Home, Palette, DollarSign, CreditCard, MoreVertical, ShieldCheck, ShieldAlert, Lock, Building2, User, XCircle } from 'lucide-react';
 import type { User as UserType, Customer, CustomerSite } from '../types';
 import { 
   formatToDDMMYYYY, getTodayDateString, isDateInPast,
@@ -1554,6 +1554,8 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           </span>
         );
       case 'Lost':
+      case 'Cancelled':
+      case 'Cancel':
         return (
           <span style={{ 
             display: 'inline-flex', 
@@ -1561,15 +1563,15 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
             gap: '0.35rem', 
             padding: '0.2rem 0.6rem', 
             borderRadius: '9999px', 
-            background: 'rgba(239, 68, 68, 0.1)', 
+            background: 'rgba(239, 68, 68, 0.12)', 
             color: '#dc2626', 
             fontSize: '0.75rem', 
-            fontWeight: 700,
-            border: '1px solid rgba(239, 68, 68, 0.2)',
+            fontWeight: 800,
+            border: '1px solid rgba(239, 68, 68, 0.3)',
             whiteSpace: 'nowrap'
           }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#dc2626' }} />
-            ยกเลิก
+            🚫 ยกเลิก (Lost)
           </span>
         );
       default:
@@ -1640,6 +1642,29 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
   });
 
   const renderPrimaryActionButton = (lead: Lead) => {
+    if (lead.status === 'Lost' || lead.status === 'Cancelled' || lead.status === 'Cancel') {
+      return (
+        <span
+          style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            color: '#dc2626',
+            fontWeight: 700,
+            padding: '0.35rem 0.65rem',
+            borderRadius: '6px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            fontSize: '0.78rem',
+            cursor: 'not-allowed'
+          }}
+          title="Lead นี้ถูกยกเลิก (Close Lost) แล้ว ไม่สามารถทำรายการต่อได้"
+        >
+          <XCircle size={13} /> 🚫 ยกเลิก (ปิดงานแล้ว)
+        </span>
+      );
+    }
+
     if (lead.status === 'Converted') {
       return (
         <a
