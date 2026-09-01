@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   FileSpreadsheet, Plus, Search, Trash2, Edit3, CheckCircle, 
@@ -265,6 +265,7 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
   const [creationMode, setCreationMode] = useState<'existing_lead' | 'new_lead'>('existing_lead');
   const [selectedLeadObj, setSelectedLeadObj] = useState<any | null>(null);
   const [leadSearchFilter, setLeadSearchFilter] = useState('');
+  const [filterOnlyDesignApproved, setFilterOnlyDesignApproved] = useState(true);
 
   const [formTitle, setFormTitle] = useState('');
   const [formCustomerId, setFormCustomerId] = useState('');
@@ -385,6 +386,7 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
     setCreationMode('existing_lead');
     setSelectedLeadObj(null);
     setLeadSearchFilter('');
+    setFilterOnlyDesignApproved(true);
     setFormTitle('');
     setFormCustomerId('');
     setFormCustomerFirstName('');
@@ -1677,8 +1679,21 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
         const totalCostBaseline = totalMaterialBaseline + totalLaborBaseline;
         const targetSellingEst = formTargetMargin < 100 ? totalCostBaseline / (1 - (formTargetMargin / 100)) : totalCostBaseline * 1.35;
 
+        // IDs of leads that already have an existing estimation
+        const existingDraftLeadIds = new Set(estimations.map(e => String(e.lead_id || '')).filter(Boolean));
+
+        // Filter eligible leads based on Design Approved status & no existing draft estimation
+        const eligibleLeads = leads.filter(l => {
+          const isDesignApproved = l.status === 'Design Approved';
+          const alreadyEstimated = existingDraftLeadIds.has(String(l.id));
+          if (filterOnlyDesignApproved) {
+            return isDesignApproved && !alreadyEstimated;
+          }
+          return true;
+        });
+
         // Filter leads for search
-        const filteredLeadsForSelect = leads.filter(l => {
+        const filteredLeadsForSelect = eligibleLeads.filter(l => {
           if (!leadSearchFilter.trim()) return true;
           const q = leadSearchFilter.toLowerCase();
           return (
@@ -1745,7 +1760,7 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                         transition: 'all 0.2s ease'
                       }}
                     >
-                      <Target size={14} /> 🔍 เลือกลีดเดิมในระบบ ({leads.length})
+                      <Target size={14} /> 🔍 เลือกลีดเดิมในระบบ ({eligibleLeads.length})
                     </button>
                     <button
                       type="button"
@@ -1814,7 +1829,7 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                     </div>
 
                     {/* Search & Select Lead */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '0.75rem', marginBottom: '0.5rem' }}>
                       <div style={{ position: 'relative' }}>
                         <Search size={15} color="var(--text-muted)" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
                         <input
@@ -1848,19 +1863,49 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
                           fontWeight: 600
                         }}
                       >
-                        <option value="">-- กรุณาเลือกลีด (Select Lead) --</option>
+                        <option value="">
+                          {filteredLeadsForSelect.length > 0
+                            ? `-- กรุณาเลือกลีด (${filteredLeadsForSelect.length} รายการที่พร้อมถอด BOQ) --`
+                            : `-- ไม่พบลีดที่พร้อมทำ BOQ (สถานะ 'Design Approved' ที่ยังไม่มี BOQ) --`}
+                        </option>
                         {filteredLeadsForSelect.map(l => {
                           const lName = l.customer_name || `${l.customer_first_name || ''} ${l.customer_last_name || ''}`.trim() || 'ไม่ระบุชื่อ';
                           const lPhone = l.customer_phone || l.phone || '';
                           const lBranch = l.branch || 'HQ';
                           const lJob = l.job_type || 'Renovation';
+                          const isDesignApproved = l.status === 'Design Approved';
+                          const hasExistingDraft = existingDraftLeadIds.has(String(l.id));
+
+                          let statusBadge = '🟢 Design Approved';
+                          if (hasExistingDraft) {
+                            statusBadge = '⚠️ มี BOQ แล้ว';
+                          } else if (!isDesignApproved) {
+                            statusBadge = `⏳ ${l.status || 'รออนุมัติแบบ'}`;
+                          }
+
                           return (
                             <option key={l.id} value={l.id}>
-                              🎯 [{l.id}] {lName} | 📞 {lPhone} | 🏢 {lBranch} ({lJob})
+                              🎯 [{l.id}] {lName} | [{statusBadge}] | 📞 {lPhone} | 🏢 {lBranch} ({lJob})
                             </option>
                           );
                         })}
                       </select>
+                    </div>
+
+                    {/* Filter Toggle & Counter Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', padding: '0.4rem 0.75rem', background: 'rgba(0,0,0,0.15)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer', fontSize: '0.78rem', color: filterOnlyDesignApproved ? '#34d399' : 'var(--text-muted)', fontWeight: 600 }}>
+                        <input
+                          type="checkbox"
+                          checked={filterOnlyDesignApproved}
+                          onChange={e => setFilterOnlyDesignApproved(e.target.checked)}
+                          style={{ accentColor: '#10b981', cursor: 'pointer' }}
+                        />
+                        <span>🛡️ กรองเฉพาะ Lead ที่สถานะ <strong>Design Approved</strong> และยังไม่มี BOQ</span>
+                      </label>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                        แสดง {filteredLeadsForSelect.length} / {leads.length} ลีด
+                      </span>
                     </div>
 
                     {/* Selected Lead Highlight Banner */}

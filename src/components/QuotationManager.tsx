@@ -1383,7 +1383,7 @@ export const QuotationManager: React.FC<QuotationManagerProps> = ({ currentUser 
                         <option value="">-- เลือกลูกค้ามุ่งหวัง (Lead) --</option>
                         {leads.map(l => (
                           <option key={l.id} value={l.id}>
-                            {l.id}: {l.customer_name || l.customerName || 'ลูกค้า'} ({l.job_type || l.jobType || 'ทั่วไป'}) {l.customer_phone || l.customerPhone ? `- ${l.customer_phone || l.customerPhone}` : ''}
+                            {l.id}: {l.customer_name || l.customerName || 'ลูกค้า'} | {l.status === 'Design Approved' ? '🟢 Design Approved' : `⏳ ${l.status || 'รออนุมัติแบบ'}`} ({l.job_type || l.jobType || 'ทั่วไป'}) {l.customer_phone || l.customerPhone ? `- ${l.customer_phone || l.customerPhone}` : ''}
                           </option>
                         ))}
                       </select>

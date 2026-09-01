@@ -99,28 +99,129 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
     };
   };
 
-  const getStatusColor = (status: string) => {
-    const mapping: Record<string, string> = {
-      'To Do': '#2563eb',
-      'In Progress': '#0284c7',
-      'ซื้อสำรวจ': '#0284c7',
-      'QC (สำรวจ)': '#d97706',
-      'ออกแบบ': '#7c3aed',
-      'สร้างใบเสนอราคา': '#db2777',
-      'ลูกค้ายืนยัน': '#c026d3',
-      'ชำระเงิน': '#059669',
-      'ดำเนินการโครงการ': '#0d9488',
-      'ช่าง check-in/check out siteงาน': '#0891b2',
-      'Project complete': '#16a34a',
-      'QC (ส่งมอบ)': '#4f46e5',
-      'aftersales': '#ea580c',
-      'ปิดjob': '#9333ea',
-      'Active': '#059669',
-      'Planning': '#475569',
-      'Completed': '#16a34a',
-      'On Hold': '#d97706'
+  const getStatusTheme = (status: string) => {
+    const mapping: Record<string, { bg: string; border: string; text: string; badgeBg: string }> = {
+      'To Do': {
+        bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(59, 130, 246, 0.12))',
+        border: 'rgba(59, 130, 246, 0.45)',
+        text: '#1e40af',
+        badgeBg: 'rgba(59, 130, 246, 0.14)'
+      },
+      'In Progress': {
+        bg: 'linear-gradient(135deg, rgba(6, 182, 212, 0.22), rgba(6, 182, 212, 0.12))',
+        border: 'rgba(6, 182, 212, 0.45)',
+        text: '#0e7490',
+        badgeBg: 'rgba(6, 182, 212, 0.14)'
+      },
+      'ซื้อสำรวจ': {
+        bg: 'linear-gradient(135deg, rgba(14, 165, 233, 0.22), rgba(14, 165, 233, 0.12))',
+        border: 'rgba(14, 165, 233, 0.45)',
+        text: '#0369a1',
+        badgeBg: 'rgba(14, 165, 233, 0.14)'
+      },
+      'QC (สำรวจ)': {
+        bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0.12))',
+        border: 'rgba(245, 158, 11, 0.45)',
+        text: '#b45309',
+        badgeBg: 'rgba(245, 158, 11, 0.14)'
+      },
+      'ออกแบบ': {
+        bg: 'linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(139, 92, 246, 0.12))',
+        border: 'rgba(139, 92, 246, 0.45)',
+        text: '#6d28d9',
+        badgeBg: 'rgba(139, 92, 246, 0.14)'
+      },
+      'สร้างใบเสนอราคา': {
+        bg: 'linear-gradient(135deg, rgba(236, 72, 153, 0.22), rgba(236, 72, 153, 0.12))',
+        border: 'rgba(236, 72, 153, 0.45)',
+        text: '#be185d',
+        badgeBg: 'rgba(236, 72, 153, 0.14)'
+      },
+      'ลูกค้ายืนยัน': {
+        bg: 'linear-gradient(135deg, rgba(217, 70, 239, 0.22), rgba(217, 70, 239, 0.12))',
+        border: 'rgba(217, 70, 239, 0.45)',
+        text: '#a21caf',
+        badgeBg: 'rgba(217, 70, 239, 0.14)'
+      },
+      'ชำระเงิน': {
+        bg: 'linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(16, 185, 129, 0.12))',
+        border: 'rgba(16, 185, 129, 0.45)',
+        text: '#047857',
+        badgeBg: 'rgba(16, 185, 129, 0.14)'
+      },
+      'ดำเนินการโครงการ': {
+        bg: 'linear-gradient(135deg, rgba(20, 184, 166, 0.22), rgba(20, 184, 166, 0.12))',
+        border: 'rgba(20, 184, 166, 0.45)',
+        text: '#0f766e',
+        badgeBg: 'rgba(20, 184, 166, 0.14)'
+      },
+      'ช่าง check-in/check out siteงาน': {
+        bg: 'linear-gradient(135deg, rgba(6, 182, 212, 0.22), rgba(6, 182, 212, 0.12))',
+        border: 'rgba(6, 182, 212, 0.45)',
+        text: '#0e7490',
+        badgeBg: 'rgba(6, 182, 212, 0.14)'
+      },
+      'Project complete': {
+        bg: 'linear-gradient(135deg, rgba(34, 197, 94, 0.22), rgba(34, 197, 94, 0.12))',
+        border: 'rgba(34, 197, 94, 0.45)',
+        text: '#15803d',
+        badgeBg: 'rgba(34, 197, 94, 0.14)'
+      },
+      'QC (ส่งมอบ)': {
+        bg: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(99, 102, 241, 0.12))',
+        border: 'rgba(99, 102, 241, 0.45)',
+        text: '#4338ca',
+        badgeBg: 'rgba(99, 102, 241, 0.14)'
+      },
+      'aftersales': {
+        bg: 'linear-gradient(135deg, rgba(249, 115, 22, 0.22), rgba(249, 115, 22, 0.12))',
+        border: 'rgba(249, 115, 22, 0.45)',
+        text: '#c2410c',
+        badgeBg: 'rgba(249, 115, 22, 0.14)'
+      },
+      'ปิดjob': {
+        bg: 'linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(168, 85, 247, 0.12))',
+        border: 'rgba(168, 85, 247, 0.45)',
+        text: '#7e22ce',
+        badgeBg: 'rgba(168, 85, 247, 0.14)'
+      },
+      'Active': {
+        bg: 'linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(16, 185, 129, 0.12))',
+        border: 'rgba(16, 185, 129, 0.45)',
+        text: '#047857',
+        badgeBg: 'rgba(16, 185, 129, 0.14)'
+      },
+      'Planning': {
+        bg: 'linear-gradient(135deg, rgba(100, 116, 139, 0.22), rgba(100, 116, 139, 0.12))',
+        border: 'rgba(100, 116, 139, 0.45)',
+        text: '#334155',
+        badgeBg: 'rgba(100, 116, 139, 0.14)'
+      },
+      'Completed': {
+        bg: 'linear-gradient(135deg, rgba(34, 197, 94, 0.22), rgba(34, 197, 94, 0.12))',
+        border: 'rgba(34, 197, 94, 0.45)',
+        text: '#15803d',
+        badgeBg: 'rgba(34, 197, 94, 0.14)'
+      },
+      'Close': {
+        bg: 'linear-gradient(135deg, rgba(100, 116, 139, 0.22), rgba(100, 116, 139, 0.12))',
+        border: 'rgba(100, 116, 139, 0.45)',
+        text: '#334155',
+        badgeBg: 'rgba(100, 116, 139, 0.14)'
+      },
+      'On Hold': {
+        bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0.12))',
+        border: 'rgba(245, 158, 11, 0.45)',
+        text: '#b45309',
+        badgeBg: 'rgba(245, 158, 11, 0.14)'
+      }
     };
-    return mapping[status] || '#2563eb';
+    return mapping[status] || {
+      bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(59, 130, 246, 0.12))',
+      border: 'rgba(59, 130, 246, 0.45)',
+      text: '#1e40af',
+      badgeBg: 'rgba(59, 130, 246, 0.14)'
+    };
   };
 
   return (
@@ -235,7 +336,7 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
           }}>
             {/* Left Name Label column */}
             <div style={{
-              width: '240px',
+              width: '320px',
               padding: '1rem',
               fontWeight: 800,
               fontSize: '0.85rem',
@@ -280,6 +381,7 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
             ) : (
               filteredProjects.map((proj, idx) => {
                 const barLayout = getProjectBarLayout(proj);
+                const statusTheme = getStatusTheme(proj.status);
                 
                 return (
                   <div key={proj.id} style={{
@@ -291,7 +393,7 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                   }}>
                     {/* Left Project Info column */}
                     <div style={{
-                      width: '240px',
+                      width: '320px',
                       padding: '0.85rem 1rem',
                       borderRight: '1.5px solid var(--border-color)',
                       flexShrink: 0,
@@ -302,19 +404,29 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'center',
-                      gap: '0.25rem'
+                      gap: '0.35rem'
                     }}>
-                      <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#000000', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={proj.name}>
+                      <span style={{ 
+                        fontSize: '0.88rem', 
+                        fontWeight: 800, 
+                        color: '#000000', 
+                        display: '-webkit-box', 
+                        WebkitLineClamp: 2, 
+                        WebkitBoxOrient: 'vertical', 
+                        overflow: 'hidden',
+                        lineHeight: '1.3',
+                        wordBreak: 'break-word'
+                      }} title={proj.name}>
                         {proj.name}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <span style={{
-                          fontSize: '0.68rem',
-                          background: getStatusColor(proj.status),
-                          color: '#ffffff',
-                          border: '1px solid rgba(0,0,0,0.15)',
-                          padding: '0.15rem 0.5rem',
-                          borderRadius: '4px',
+                          fontSize: '0.72rem',
+                          background: statusTheme.badgeBg,
+                          color: statusTheme.text,
+                          border: `1px solid ${statusTheme.border}`,
+                          padding: '0.15rem 0.55rem',
+                          borderRadius: '6px',
                           fontWeight: 800
                         }}>
                           {proj.status}
@@ -352,32 +464,33 @@ export const ProjectTimeline = ({ projects, currentUser, masterProjectTypes = []
                           left: `${(barLayout.startCol - 1) * 32 + 4}px`,
                           width: `${Math.max(barLayout.span * 32 - 8, 32)}px`,
                           height: '36px',
-                          background: getStatusColor(proj.status),
-                          border: '1.5px solid rgba(0, 0, 0, 0.25)',
-                          borderRadius: '6px',
+                          background: statusTheme.bg,
+                          border: `1.5px solid ${statusTheme.border}`,
+                          borderRadius: '8px',
+                          backdropFilter: 'blur(6px)',
                           display: 'flex',
                           alignItems: 'center',
-                          padding: '0 0.5rem',
-                          color: '#ffffff',
-                          textShadow: '0 1px 2px rgba(0, 0, 0, 0.9)',
-                          boxShadow: '0 3px 8px rgba(0, 0, 0, 0.2)',
+                          padding: '0 0.65rem',
+                          color: statusTheme.text,
+                          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
                           cursor: 'pointer',
                           zIndex: 2,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          transition: 'all 0.15s ease'
                         }}
                         title={`${proj.name}\nระยะเวลา: ${formatToDDMMYYYY(proj.startDate)} - ${proj.endDate ? formatToDDMMYYYY(proj.endDate) : 'Ongoing'}\nที่อยู่: ${proj.address || 'ไม่มี'}\nสถานะ: ${proj.status}`}
                         >
                           {/* Fade indicators for start before / end after */}
                           {barLayout.isStartsBefore && (
-                            <span style={{ marginRight: '0.2rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>◀</span>
+                            <span style={{ marginRight: '0.3rem', fontWeight: 800, fontSize: '0.75rem', opacity: 0.85 }}>◀</span>
                           )}
-                          <span style={{ fontSize: '0.78rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.9)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {proj.name} {proj.address ? `(📍 ${proj.address})` : ''}
                           </span>
                           {barLayout.isEndsAfter && (
-                            <span style={{ marginLeft: 'auto', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>▶</span>
+                            <span style={{ marginLeft: 'auto', fontWeight: 800, fontSize: '0.75rem', opacity: 0.85 }}>▶</span>
                           )}
                         </div>
                       )}
