@@ -204,13 +204,19 @@ export const SiteCheckInOut = ({
 
     // Calculate hours if start & end time exist
     let calcHours = 8;
-    if (formStartTime && formEndTime) {
+    if (formStartTime && formEndTime && formEndTime.trim() !== '') {
       const [sh, sm] = formStartTime.split(':').map(Number);
       const [eh, em] = formEndTime.split(':').map(Number);
-      const diffMs = (eh * 60 + em) - (sh * 60 + sm);
-      if (diffMs > 0) {
-        calcHours = Number((diffMs / 60).toFixed(1));
+      const startMin = sh * 60 + sm;
+      const endMin = eh * 60 + em;
+
+      if (endMin <= startMin) {
+        alert(`⚠️ เวลา Check-Out (${formEndTime} น.) ต้องมากกว่าเวลา Check-In (${formStartTime} น.)`);
+        return;
       }
+
+      const diffMin = endMin - startMin;
+      calcHours = Number((diffMin / 60).toFixed(1));
     }
 
     const newEntry: TimesheetEntry = {
@@ -638,15 +644,40 @@ export const SiteCheckInOut = ({
                   />
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                  <label style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>เวลา Check-Out</label>
-                  <input 
-                    type="time" 
-                    value={formEndTime} 
-                    onChange={e => setFormEndTime(e.target.value)} 
-                    style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', outline: 'none', fontSize: '0.85rem' }}
-                  />
-                </div>
+                {(() => {
+                  let isEndTimeInvalid = false;
+                  if (formStartTime && formEndTime && formEndTime.trim() !== '') {
+                    const [sh, sm] = formStartTime.split(':').map(Number);
+                    const [eh, em] = formEndTime.split(':').map(Number);
+                    isEndTimeInvalid = (eh * 60 + em) <= (sh * 60 + sm);
+                  }
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                      <label style={{ fontSize: '0.825rem', color: isEndTimeInvalid ? '#ef4444' : 'var(--text-secondary)', fontWeight: 600 }}>
+                        เวลา Check-Out {isEndTimeInvalid ? '(ไม่ถูกต้อง)' : ''}
+                      </label>
+                      <input 
+                        type="time" 
+                        value={formEndTime} 
+                        onChange={e => setFormEndTime(e.target.value)} 
+                        style={{
+                          background: 'var(--bg-tertiary)',
+                          border: isEndTimeInvalid ? '2px solid #ef4444' : '1px solid var(--border-color)',
+                          borderRadius: 'var(--radius-md)',
+                          padding: '0.5rem 0.75rem',
+                          color: 'var(--text-primary)',
+                          outline: 'none',
+                          fontSize: '0.85rem'
+                        }}
+                      />
+                      {isEndTimeInvalid && (
+                        <span style={{ fontSize: '0.72rem', color: '#ef4444', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <AlertCircle size={12} /> เวลาออกต้องมากกว่าเวลาเข้า ({formStartTime} น.)
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>

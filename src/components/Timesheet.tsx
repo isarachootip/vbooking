@@ -519,6 +519,14 @@ export const Timesheet = ({ timesheets, setTimesheets, projects, tasks, currentU
     e.preventDefault();
     if (!projectId || !hours || !description) return alert('Project, Hours, and Description are required');
 
+    if (startTime && endTime) {
+      const [sh, sm] = startTime.split(':').map(Number);
+      const [eh, em] = endTime.split(':').map(Number);
+      if (eh * 60 + em <= sh * 60 + sm) {
+        return alert(`⚠️ เวลาสิ้นสุด (${endTime} น.) ต้องมากกว่าเวลาเริ่มต้น (${startTime} น.)`);
+      }
+    }
+
     if (editingEntryId) {
       const existing = timesheets.find(ts => ts.id === editingEntryId);
       const updatedEntry: TimesheetEntry = {
