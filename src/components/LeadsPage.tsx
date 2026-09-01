@@ -2908,27 +2908,42 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
                   <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#9333ea', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     <Clock size={16} /> กำหนดนัดหมายวันเวลา & จองคิว QC
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setIsQcBookingModalOpen(true)}
-                    style={{
-                      padding: '0.3rem 0.75rem',
-                      borderRadius: '6px',
-                      background: 'linear-gradient(135deg, #059669, #10b981)',
-                      color: 'white',
-                      border: 'none',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)'
-                    }}
-                    className="hover-lift"
-                  >
-                    <Sparkles size={13} /> 🔍 ตรวจสอบคิวว่าง & จองคิว QC (Slot Lock)
-                  </button>
+                  {(() => {
+                    const isQcBookingActive = activityType.includes('1.2.2') || activityType.includes('1.3.2');
+                    return (
+                      <button
+                        type="button"
+                        disabled={!isQcBookingActive}
+                        onClick={() => {
+                          if (isQcBookingActive) {
+                            setIsQcBookingModalOpen(true);
+                          }
+                        }}
+                        title={isQcBookingActive ? 'คลิกเพื่อตรวจสอบคิวว่างและจองคิว QC' : 'ปุ่มตรวจสอบคิวช่างจะเปิดใช้งานเฉพาะเมื่อเลือกหัวข้อ 1.2.2 หรือ 1.3.2 เท่านั้น'}
+                        style={{
+                          padding: '0.3rem 0.75rem',
+                          borderRadius: '6px',
+                          background: isQcBookingActive
+                            ? 'linear-gradient(135deg, #059669, #10b981)'
+                            : 'var(--bg-tertiary, #e2e8f0)',
+                          color: isQcBookingActive ? 'white' : 'var(--text-muted, #94a3b8)',
+                          border: isQcBookingActive ? 'none' : '1px solid var(--border-color, #cbd5e1)',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          cursor: isQcBookingActive ? 'pointer' : 'not-allowed',
+                          opacity: isQcBookingActive ? 1 : 0.6,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          boxShadow: isQcBookingActive ? '0 2px 6px rgba(16, 185, 129, 0.3)' : 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                        className={isQcBookingActive ? 'hover-lift' : ''}
+                      >
+                        <Sparkles size={13} /> 🔍 ตรวจสอบคิวว่าง & จองคิว QC (Slot Lock)
+                      </button>
+                    );
+                  })()}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                   <div>
