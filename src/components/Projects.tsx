@@ -548,21 +548,21 @@ export const Projects = ({
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button 
             onClick={() => setViewMode(prev => prev === 'table' ? 'cards' : 'table')} 
-            className="glass-panel hover-lift" 
-            style={{ padding: '0.5rem 0.85rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', outline: 'none', fontSize: '0.85rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}
+            className="artifact-btn-secondary hover-lift" 
+            style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
           >
-            <Layers size={16} /> {viewMode === 'table' ? 'มุมมองการ์ด (Cards)' : 'มุมมองตาราง (Table)'}
+            <Layers size={15} /> {viewMode === 'table' ? 'มุมมองการ์ด' : 'มุมมองตาราง'}
           </button>
 
           <button 
             onClick={exportToCSV}
-            className="glass-panel hover-lift"
-            style={{ padding: '0.5rem 0.85rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', outline: 'none', fontSize: '0.85rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}
+            className="artifact-btn-secondary hover-lift" 
+            style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
           >
-            <Download size={16} /> ส่งออกข้อมูล
+            <Download size={15} /> ส่งออกข้อมูล
           </button>
 
           {canCreateProject() && (
@@ -570,20 +570,21 @@ export const Projects = ({
               onClick={openAddModal}
               className="hover-lift"
               style={{ 
-                background: '#10b981', 
-                color: 'white', 
-                border: 'none', 
-                padding: '0.55rem 1.25rem', 
+                background: 'rgba(16, 185, 129, 0.14)', 
+                color: '#10b981', 
+                border: '1px solid rgba(16, 185, 129, 0.35)', 
+                padding: '0.45rem 1.15rem', 
                 borderRadius: 'var(--radius-md)', 
-                fontWeight: 700, 
+                fontWeight: 600, 
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                fontSize: '0.9rem'
+                fontSize: '0.85rem',
+                backdropFilter: 'blur(8px)'
               }}
             >
-              <Plus size={18} /> + สร้างโปรเจกต์
+              <Plus size={16} /> + สร้างโปรเจกต์
             </button>
           )}
         </div>

@@ -1671,17 +1671,18 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           href="/projects"
           className="lead-action-btn hover-lift"
           style={{
-            background: 'rgba(16, 185, 129, 0.12)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            color: '#059669',
-            fontWeight: 700,
+            background: 'rgba(20, 184, 166, 0.14)',
+            border: '1px solid rgba(20, 184, 166, 0.35)',
+            color: '#2dd4bf',
+            fontWeight: 600,
             padding: '0.35rem 0.75rem',
             borderRadius: '6px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.35rem',
             textDecoration: 'none',
-            fontSize: '0.78rem'
+            fontSize: '0.78rem',
+            backdropFilter: 'blur(8px)'
           }}
         >
           <CheckCircle2 size={13} /> 📁 ไปที่โครงการ
@@ -1704,18 +1705,18 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           className="lead-action-btn hover-lift"
           title="บันทึกผลการเข้า Visit Site ลูกค้า / สรุปความต้องการ"
           style={{
-            background: 'linear-gradient(135deg, #1e40af, #2563eb)',
-            border: 'none',
-            color: '#ffffff',
-            fontWeight: 700,
+            background: 'rgba(56, 189, 248, 0.14)',
+            border: '1px solid rgba(56, 189, 248, 0.35)',
+            color: '#38bdf8',
+            fontWeight: 600,
             padding: '0.35rem 0.75rem',
             borderRadius: '6px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.35rem',
-            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)',
             cursor: 'pointer',
-            fontSize: '0.78rem'
+            fontSize: '0.78rem',
+            backdropFilter: 'blur(8px)'
           }}
         >
           <ClipboardCheck size={13} /> บันทึกผล Visit
@@ -1734,18 +1735,18 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           className="lead-action-btn hover-lift"
           title="จัดการแบบแปลน 2D / ภาพจำลอง 3D Perspective และตรวจรับแบบ"
           style={{
-            background: 'linear-gradient(135deg, #0284c7, #0ea5e9)',
-            border: 'none',
-            color: '#ffffff',
-            fontWeight: 700,
+            background: 'rgba(99, 102, 241, 0.14)',
+            border: '1px solid rgba(99, 102, 241, 0.35)',
+            color: '#818cf8',
+            fontWeight: 600,
             padding: '0.35rem 0.75rem',
             borderRadius: '6px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.35rem',
-            boxShadow: '0 2px 4px rgba(14, 165, 233, 0.25)',
             cursor: 'pointer',
-            fontSize: '0.78rem'
+            fontSize: '0.78rem',
+            backdropFilter: 'blur(8px)'
           }}
         >
           <Palette size={13} /> จัดการแบบ 2D/3D
@@ -1764,18 +1765,18 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
           className="lead-action-btn hover-lift"
           title="บันทึกรับชำระเงินมัดจำ & แปลงเป็นโครงการติดตั้ง"
           style={{
-            background: 'linear-gradient(135deg, #059669, #10b981)',
-            border: 'none',
-            color: '#ffffff',
-            fontWeight: 700,
+            background: 'rgba(16, 185, 129, 0.14)',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            color: '#10b981',
+            fontWeight: 600,
             padding: '0.35rem 0.75rem',
             borderRadius: '6px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.35rem',
-            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.25)',
             cursor: 'pointer',
-            fontSize: '0.78rem'
+            fontSize: '0.78rem',
+            backdropFilter: 'blur(8px)'
           }}
         >
           <DollarSign size={13} /> รับมัดจำ & แปลงงาน
@@ -1790,18 +1791,18 @@ export const LeadsPage = ({ currentUser, branches = [], users = [] }: LeadsPageP
         className="lead-action-btn hover-lift"
         title="บันทึกการติดตาม & นัดหมายลงพื้นที่"
         style={{
-          background: 'linear-gradient(135deg, #7e22ce, #9333ea)',
-          border: 'none',
-          color: '#ffffff',
-          fontWeight: 700,
+          background: 'rgba(168, 85, 247, 0.14)',
+          border: '1px solid rgba(168, 85, 247, 0.35)',
+          color: '#c084fc',
+          fontWeight: 600,
           padding: '0.35rem 0.75rem',
           borderRadius: '6px',
           display: 'inline-flex',
           alignItems: 'center',
           gap: '0.35rem',
-          boxShadow: '0 2px 4px rgba(147, 51, 234, 0.25)',
           cursor: 'pointer',
-          fontSize: '0.78rem'
+          fontSize: '0.78rem',
+          backdropFilter: 'blur(8px)'
         }}
       >
         <Calendar size={13} /> ติดตาม / นัดหมาย

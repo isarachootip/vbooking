@@ -60,39 +60,72 @@
 
 html[data-theme='dark'], body[data-theme='dark'], body.dark-theme {
   color-scheme: dark;
-  /* Color Palette - Premium Dark Mode with Cyber-Neon Glassmorphism */
-  --bg-primary: #06080c;
-  --bg-secondary: #0d111a;
-  --bg-tertiary: #141b29;
-  --bg-glass: rgba(13, 17, 26, 0.65);
+  /* Artifact Modern Slate/Zinc Dark Mode */
+  --bg-primary: #09090b;
+  --bg-secondary: #121215;
+  --bg-tertiary: #1c1c21;
+  --bg-glass: rgba(18, 18, 21, 0.85);
   
-  --card-bg: #0d111a;
-  --input-bg: #06080c;
-  --table-header-bg: rgba(255, 255, 255, 0.03);
+  --card-bg: #121215;
+  --input-bg: #09090b;
+  --table-header-bg: #18181b;
   
-  --text-primary: #F1F5F9;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
   
-  --accent-primary: #FF4D4D; /* Vibrant Crimson Red */
-  --accent-primary-hover: #E63939;
-  --accent-secondary: #F43F5E; /* Deep Pinkish Red for gradient */
-  --accent-danger: #EF4444; /* Red */
-  --accent-warning: #F59E0B; /* Amber */
-  --accent-info: #3B82F6; /* Blue */
+  --accent-primary: #6366f1; /* Artifact Indigo/Violet */
+  --accent-primary-hover: #4f46e5;
+  --accent-secondary: #818cf8;
+  --accent-danger: #f43f5e;
+  --accent-warning: #f59e0b;
+  --accent-info: #38bdf8;
 
-  --border-color: #1e293b;
-  --border-glass: rgba(255, 77, 77, 0.15);
+  --border-color: #27272a;
+  --border-glass: rgba(99, 102, 241, 0.2);
   
-  /* Cyber-Neon Glow Elements */
-  --border-glow: 1px solid rgba(255, 77, 77, 0.25);
-  --shadow-glow: 0 0 15px rgba(255, 77, 77, 0.2), 0 0 30px rgba(244, 63, 94, 0.1);
+  --border-glow: 1px solid #27272a;
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.55);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme='artifact'], body[data-theme='artifact'], body.artifact-theme {
+  color-scheme: dark;
+  /* Cruip Artifact - Ultra Sleek Minimalist Next.js Admin Dark */
+  --bg-primary: #09090b;
+  --bg-secondary: #0f0f13;
+  --bg-tertiary: #18181f;
+  --bg-glass: rgba(15, 15, 19, 0.92);
+  
+  --card-bg: #111116;
+  --input-bg: #09090b;
+  --table-header-bg: #16161d;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --accent-primary: #6366f1; /* Electric Indigo */
+  --accent-primary-hover: #4f46e5;
+  --accent-secondary: #8b5cf6; /* Violet */
+  --accent-danger: #f43f5e;
+  --accent-warning: #f59e0b;
+  --accent-info: #0ea5e9;
+
+  --border-color: #23232a;
+  --border-glass: rgba(99, 102, 241, 0.15);
+  
+  --border-glow: 1px solid #23232a;
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.7);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 }
 
 html[data-theme='revora'], body[data-theme='revora'], body.revora-theme {
@@ -284,6 +317,179 @@ h6 { font-size: var(--fs-base); line-height: 1.25rem; }
 /* --- Scaled Typography for Core UI Components --- */
 button, .btn, [role="button"] {
   font-size: var(--fs-base) !important;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+/* ─── Soft Translucent Frosted Glass Button System (Cruip Artifact Style) ─── */
+
+/* Primary Translucent Button (Electric Indigo / Violet Soft Frosted) */
+.btn-primary, .artifact-btn-primary, button.primary {
+  background: rgba(99, 102, 241, 0.14) !important;
+  color: #818cf8 !important;
+  border: 1px solid rgba(99, 102, 241, 0.32) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-primary:hover, .artifact-btn-primary:hover, button.primary:hover {
+  background: rgba(99, 102, 241, 0.24) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  color: #a5b4fc !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+/* Secondary / Neutral Translucent Button */
+.btn-secondary, .artifact-btn-secondary, button.secondary {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.85rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-secondary:hover, .artifact-btn-secondary:hover, button.secondary:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: var(--text-muted) !important;
+  transform: translateY(-1px);
+}
+
+/* Success Translucent Button (Emerald Soft Frosted) */
+.btn-success, .artifact-btn-success, button.success {
+  background: rgba(16, 185, 129, 0.13) !important;
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.32) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-success:hover, .artifact-btn-success:hover, button.success:hover {
+  background: rgba(16, 185, 129, 0.24) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #34d399 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.18);
+}
+
+/* Danger / Delete Translucent Button (Rose Soft Frosted) */
+.btn-danger, .artifact-btn-danger, button.danger {
+  background: rgba(244, 63, 94, 0.13) !important;
+  color: #f43f5e !important;
+  border: 1px solid rgba(244, 63, 94, 0.32) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-danger:hover, .artifact-btn-danger:hover, button.danger:hover {
+  background: rgba(244, 63, 94, 0.24) !important;
+  border-color: rgba(244, 63, 94, 0.5) !important;
+  color: #fb7185 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.18);
+}
+
+/* Warning Translucent Button (Amber Soft Frosted) */
+.btn-warning, .artifact-btn-warning, button.warning {
+  background: rgba(245, 158, 11, 0.13) !important;
+  color: #f59e0b !important;
+  border: 1px solid rgba(245, 158, 11, 0.32) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-warning:hover, .artifact-btn-warning:hover, button.warning:hover {
+  background: rgba(245, 158, 11, 0.24) !important;
+  border-color: rgba(245, 158, 11, 0.5) !important;
+  color: #fbbf24 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.18);
+}
+
+/* Info Translucent Button (Sky / Cyan Soft Frosted) */
+.btn-info, .artifact-btn-info, button.info {
+  background: rgba(56, 189, 248, 0.13) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.32) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-info:hover, .artifact-btn-info:hover, button.info:hover {
+  background: rgba(56, 189, 248, 0.24) !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  color: #7dd3fc !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.18);
+}
+
+/* Pill Filter Buttons */
+.artifact-filter-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 9999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+}
+.artifact-filter-pill:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+.artifact-filter-pill.active {
+  background: rgba(99, 102, 241, 0.16) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: #818cf8 !important;
+  font-weight: 600;
 }
 
 table, th, td {
@@ -687,5 +893,147 @@ thead th, thead td {
   background-color: var(--bg-tertiary) !important;
 }
 
+/* ─── Cruip Artifact Shadcn UI Design System Classes ─── */
+.artifact-sidebar-group {
+  margin-bottom: 1.25rem;
+  padding: 0 0.75rem;
+}
 
+.artifact-sidebar-group-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.5rem 0.6rem 0.35rem 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
+.artifact-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.48rem 0.75rem;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 500;
+  transition: all 150ms ease;
+  position: relative;
+  margin-bottom: 2px;
+}
+
+.artifact-nav-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.artifact-nav-item.active {
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+}
+
+.artifact-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  top: 15%;
+  bottom: 15%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent-primary);
+}
+
+.artifact-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.artifact-card:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.artifact-kpi-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.85rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.artifact-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.2);
+  border-color: var(--accent-primary);
+}
+
+.artifact-trend-pill-up {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.artifact-trend-pill-down {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+.artifact-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.4rem 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  width: 260px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.artifact-search-box:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.artifact-kbd {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  color: var(--text-muted);
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileSpreadsheet, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText, ClipboardList, Key, Hammer } from 'lucide-react';
+import { LayoutDashboard, FileSpreadsheet, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText, ClipboardList, Key, Hammer, Search as SearchIcon, Sparkles } from 'lucide-react';
 
 import { PMTBrandLogo } from './components/PMTBrandLogo';
 import { Dashboard } from './components/Dashboard';
@@ -44,6 +44,23 @@ const getLocalStorage = <T,>(key: string, fallback: T): T => {
   return data ? JSON.parse(data) : fallback;
 };
 
+const SidebarSectionTitle = ({ title }: { title: string }) => (
+  <div style={{ 
+    fontSize: '0.66rem', 
+    fontWeight: 700, 
+    letterSpacing: '0.08em', 
+    textTransform: 'uppercase', 
+    color: 'var(--text-muted)', 
+    padding: '0.75rem 0.75rem 0.25rem 0.75rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    opacity: 0.85
+  }}>
+    <span>{title}</span>
+  </div>
+);
+
 const SidebarItem = ({ icon: Icon, label, path, badgeCount }: { icon: any, label: string, path: string, badgeCount?: number }) => {
   const location = useLocation();
   const isActive = location.pathname === path;
@@ -51,33 +68,37 @@ const SidebarItem = ({ icon: Icon, label, path, badgeCount }: { icon: any, label
   return (
     <Link 
       to={path} 
+      className={`artifact-nav-item ${isActive ? 'active' : ''}`}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '0.75rem',
-        padding: '0.75rem 1.5rem',
-        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+        gap: '0.65rem',
+        padding: '0.5rem 0.75rem',
+        borderRadius: '6px',
+        color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
         background: isActive ? 'var(--bg-tertiary)' : 'transparent',
-        borderRight: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
-        transition: 'all var(--transition-fast)',
-        fontWeight: isActive ? 500 : 400,
+        border: isActive ? '1px solid var(--border-color)' : '1px solid transparent',
+        transition: 'all 150ms ease',
+        fontWeight: isActive ? 600 : 500,
+        fontSize: '0.85rem',
+        textDecoration: 'none',
         position: 'relative'
       }}
-      className="hover-lift"
     >
-      <Icon size={20} color={isActive ? 'var(--accent-primary)' : 'currentColor'} />
-      <span style={{ flex: 1 }}>{label}</span>
+      <Icon size={17} color={isActive ? 'var(--accent-primary)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
+      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
       {badgeCount && badgeCount > 0 ? (
         <span 
           style={{
             background: 'var(--accent-danger, #ef4444)',
             color: 'white',
-            fontSize: '0.7rem',
+            fontSize: '0.65rem',
             fontWeight: 700,
-            padding: '0.1rem 0.4rem',
-            borderRadius: '10px',
+            padding: '0.1rem 0.45rem',
+            borderRadius: '9999px',
             minWidth: '18px',
-            textAlign: 'center'
+            textAlign: 'center',
+            boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
           }}
         >
           {badgeCount}
@@ -378,13 +399,68 @@ const MobileBottomNav = () => {
   );
 };
 
+const getBreadcrumbInfo = (pathname: string, lang: string) => {
+  const isTh = lang === 'th';
+  switch (pathname) {
+    case '/exec-dashboard':
+      return { section: isTh ? 'หน้าหลัก & ภาพรวม' : 'Overview', page: 'Executive Dashboard' };
+    case '/':
+      return { section: isTh ? 'หน้าหลัก & ภาพรวม' : 'Overview', page: isTh ? 'แดชบอร์ดโครงการ' : 'Dashboard' };
+    case '/leads':
+      return { section: isTh ? 'โครงการ & ลูกค้า' : 'Project Management', page: isTh ? 'ลูกค้ามุ่งหวัง (Leads)' : 'Leads' };
+    case '/estimations':
+      return { section: isTh ? 'โครงการ & ลูกค้า' : 'Project Management', page: isTh ? 'Draft & ประเมินราคาช่าง' : 'Estimation & Bids' };
+    case '/quotations':
+      return { section: isTh ? 'โครงการ & ลูกค้า' : 'Project Management', page: isTh ? 'ใบเสนอราคา (Quotations)' : 'Quotations' };
+    case '/projects':
+      return { section: isTh ? 'โครงการ & ลูกค้า' : 'Project Management', page: isTh ? 'โครงการทั้งหมด' : 'Projects' };
+    case '/project-board':
+      return { section: isTh ? 'โครงการ & ลูกค้า' : 'Project Management', page: isTh ? 'กระดานโครงการ (Board)' : 'Project Board' };
+    case '/project-timeline':
+      return { section: isTh ? 'โครงการ & ลูกค้า' : 'Project Management', page: isTh ? 'ไทม์ไลน์โครงการ' : 'Timeline' };
+    case '/project-plan':
+      return { section: isTh ? 'โครงการ & ลูกค้า' : 'Project Management', page: isTh ? 'แผนโครงการ (SOW 12 ขั้นตอน)' : 'Project Plan' };
+    case '/tasks':
+      return { section: isTh ? 'ปฏิบัติการ & หน้างาน' : 'Field Operations', page: isTh ? 'งานและขั้นตอน' : 'Tasks' };
+    case '/timesheet':
+      return { section: isTh ? 'ปฏิบัติการ & หน้างาน' : 'Field Operations', page: isTh ? 'บันทึกเวลาทำงาน' : 'Timesheet' };
+    case '/checkin-checkout':
+      return { section: isTh ? 'ปฏิบัติการ & หน้างาน' : 'Field Operations', page: isTh ? 'เช็คอินหน้างาน' : 'Site Check-in' };
+    case '/qc-daily-plan':
+      return { section: isTh ? 'ปฏิบัติการ & หน้างาน' : 'Field Operations', page: isTh ? 'แผนตรวจ QC ประจำวัน' : 'QC Daily Plan' };
+    case '/chat':
+      return { section: isTh ? 'ปฏิบัติการ & หน้างาน' : 'Field Operations', page: isTh ? 'แชทโครงการ' : 'Project Chat' };
+    case '/team':
+      return { section: isTh ? 'ทีม & สัญญา' : 'Team & Directory', page: isTh ? 'การอนุมัติทีม' : 'Team Approvals' };
+    case '/users':
+      return { section: isTh ? 'ทีม & สัญญา' : 'Team & Directory', page: isTh ? 'จัดการผู้ใช้งาน' : 'User Management' };
+    case '/customers':
+      return { section: isTh ? 'ทีม & สัญญา' : 'Team & Directory', page: isTh ? 'ข้อมูลลูกค้า & ไซต์งาน' : 'Customers & Sites' };
+    case '/ma-contracts':
+      return { section: isTh ? 'ทีม & สัญญา' : 'Team & Directory', page: isTh ? 'สัญญา MA' : 'MA Contracts' };
+    case '/master-management':
+      return { section: isTh ? 'ระบบ & รายงาน' : 'System & Admin', page: isTh ? 'จัดการ Master Data' : 'Master Management' };
+    case '/reports':
+      return { section: isTh ? 'ระบบ & รายงาน' : 'System & Admin', page: isTh ? 'รายงาน & สถิติ' : 'Reports & Analytics' };
+    case '/settings':
+      return { section: isTh ? 'ระบบ & รายงาน' : 'System & Admin', page: isTh ? 'ตั้งค่าระบบ' : 'System Settings' };
+    case '/help':
+      return { section: isTh ? 'ระบบ & รายงาน' : 'System & Admin', page: isTh ? 'คู่มือ & ความรู้' : 'Knowledge Base' };
+    default:
+      return { section: 'PMT System', page: 'Overview' };
+  }
+};
+
 const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React.ReactNode, currentUser: User, tasks: Task[], onLogout: () => void }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [chatNotifications, setChatNotifications] = useState<any[]>([]);
+  const location = useLocation();
   const { lang, toggleLang, t } = useLanguage();
-  const [theme, setTheme] = useState<'light' | 'dark' | 'revora'>(() => {
-    return (localStorage.getItem('app_theme') as 'light' | 'dark' | 'revora') || 'revora';
+  const [theme, setTheme] = useState<'light' | 'dark' | 'artifact' | 'revora'>(() => {
+    return (localStorage.getItem('app_theme') as any) || 'artifact';
   });
+
+  const breadcrumb = getBreadcrumbInfo(location.pathname, lang);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -395,9 +471,10 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
 
   const toggleTheme = () => {
     setTheme(prev => {
-      if (prev === 'light') return 'dark';
+      if (prev === 'artifact') return 'dark';
       if (prev === 'dark') return 'revora';
-      return 'light';
+      if (prev === 'revora') return 'light';
+      return 'artifact';
     });
   };
 
@@ -431,22 +508,40 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
         />
       )}
 
-      {/* Sidebar */}
-      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div style={{ padding: 0, borderBottom: '1px solid var(--border-color)', position: 'relative', overflow: 'hidden', background: '#ece9e9' }}>
-          <PMTBrandLogo variant="sidebar" />
+      {/* Cruip Artifact Style Sidebar */}
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`} style={{ borderRight: '1px solid var(--border-color)', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column' }}>
+        
+        {/* Workspace Brand Header */}
+        <div style={{ padding: '0.85rem 0.9rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.65rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+              <img src="/pmt-logo.png" alt="PMT Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, lineHeight: 1.2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>PMT Renovation</span>
+                <span style={{ fontSize: '0.62rem', padding: '0.1rem 0.35rem', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent-primary)', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.3)' }}>PRO</span>
+              </div>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>vBooking Suite</span>
+            </div>
+          </div>
           <button 
             className="mobile-close-btn"
             onClick={() => setIsSidebarOpen(false)}
-            style={{ position: 'absolute', right: '10px', top: '10px', background: 'rgba(0,0,0,0.2)', border: 'none', color: '#ffffff', cursor: 'pointer', display: 'none', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', padding: '4px', zIndex: 10 }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'none', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', padding: '4px' }}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
         
-        <nav style={{ padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1, overflowY: 'auto' }} onClick={() => setIsSidebarOpen(false)}>
+        {/* Grouped Hierarchical Navigation */}
+        <nav style={{ padding: '0.85rem 0.65rem', display: 'flex', flexDirection: 'column', gap: '0.15rem', flex: 1, overflowY: 'auto' }} onClick={() => setIsSidebarOpen(false)}>
+          
+          <SidebarSectionTitle title={lang === 'th' ? 'แดชบอร์ด & ภาพรวม' : 'Overview'} />
           <SidebarItem icon={Activity} label="Executive Dashboard" path="/exec-dashboard" />
           <SidebarItem icon={LayoutDashboard} label={t.dashboard} path="/" />
+
+          <SidebarSectionTitle title={lang === 'th' ? 'โครงการ & SOW' : 'Projects & SOW'} />
           <SidebarItem icon={Users} label={t.leads} path="/leads" />
           <SidebarItem icon={FileSpreadsheet} label={lang === 'th' ? 'Draft & เทียบราคาช่าง' : 'Cost Estimation & Bids'} path="/estimations" />
           <SidebarItem icon={FileText} label={t.quotations} path="/quotations" />
@@ -454,160 +549,160 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
           <SidebarItem icon={Kanban} label={t.projectBoard} path="/project-board" />
           <SidebarItem icon={CalendarDays} label={t.projectTimeline} path="/project-timeline" />
           <SidebarItem icon={CalendarRange} label={t.projectPlan} path="/project-plan" />
+
+          <SidebarSectionTitle title={lang === 'th' ? 'ปฏิบัติการ & หน้างาน' : 'Field Operations'} />
           <SidebarItem icon={CheckSquare} label={t.tasks} path="/tasks" />
           <SidebarItem icon={Clock} label={t.timesheet} path="/timesheet" />
           <SidebarItem icon={MapPin} label={t.siteCheckInOut} path="/checkin-checkout" />
-          <SidebarItem icon={Navigation} label={lang === 'th' ? 'แผนงาน QC (Daily Plan)' : 'QC Daily Plan'} path="/qc-daily-plan" />
+          <SidebarItem icon={Navigation} label={lang === 'th' ? 'แผนงาน QC ประจำวัน' : 'QC Daily Plan'} path="/qc-daily-plan" />
           <SidebarItem icon={MessageSquare} label={t.chat} path="/chat" badgeCount={unreadChatCount} />
+
+          <SidebarSectionTitle title={lang === 'th' ? 'ทีม & สัญญา' : 'Team & Directory'} />
           <SidebarItem icon={Users} label={t.team} path="/team" />
           <SidebarItem icon={UserCog} label={t.userManagement} path="/users" />
-          <SidebarItem icon={Users} label={lang === 'th' ? 'ข้อมูลลูกค้า & ไซต์งาน' : 'Customers & Sites'} path="/customers" />
+          <SidebarItem icon={Users} label={lang === 'th' ? 'ข้อมูลลูกค้า & ไซต์' : 'Customers & Sites'} path="/customers" />
           <SidebarItem icon={ClipboardList} label={lang === 'th' ? 'สัญญา MA 🔧' : 'MA Contracts'} path="/ma-contracts" />
 
+          <SidebarSectionTitle title={lang === 'th' ? 'ระบบ & รายงาน' : 'System'} />
           <SidebarItem icon={Database} label={lang === 'th' ? 'จัดการ Master Data' : 'Maintain Master'} path="/master-management" />
           <SidebarItem icon={BarChart3} label={t.reports} path="/reports" />
           <SidebarItem icon={SettingsIcon} label={t.settings} path="/settings" />
           <SidebarItem icon={HelpCircle} label={t.help} path="/help" />
         </nav>
 
-        {/* User Profile & Logout Footer inside Sidebar (Available on Mobile & Desktop) */}
+        {/* User Profile & Footer */}
         <div style={{
-          padding: '1rem',
+          padding: '0.85rem 0.9rem',
           borderTop: '1px solid var(--border-color)',
           background: 'var(--bg-secondary)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.75rem'
+          gap: '0.65rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <img 
               src={currentUser.avatar} 
               alt="User" 
-              style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--accent-primary)', objectFit: 'cover' }} 
+              style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid var(--accent-primary)', objectFit: 'cover', flexShrink: 0 }} 
             />
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {currentUser.name}
               </span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 {currentUser.globalRole}
               </span>
             </div>
+            <button 
+              onClick={onLogout}
+              className="hover-lift"
+              title={lang === 'th' ? 'ออกจากระบบ' : 'Log out'}
+              style={{
+                padding: '0.4rem',
+                borderRadius: '6px',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                background: 'rgba(239, 68, 68, 0.08)',
+                color: '#ef4444',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <LogOut size={15} color="#ef4444" />
+            </button>
           </div>
-
-          <button 
-            onClick={onLogout}
-            className="hover-lift"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.45rem',
-              padding: '0.6rem 1rem',
-              borderRadius: '8px',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              background: 'rgba(239, 68, 68, 0.12)',
-              color: '#ef4444',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              width: '100%'
-            }}
-          >
-            <LogOut size={16} color="#ef4444" />
-            <span>{lang === 'th' ? 'ออกจากระบบ' : 'Log out'}</span>
-          </button>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="main-content">
-        <header className="header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <header className="header" style={{ height: '64px', padding: '0 1.5rem', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-glass)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          
+          {/* Left: Mobile Toggle & Breadcrumbs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button 
               className="mobile-menu-btn"
               onClick={() => setIsSidebarOpen(true)}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'none', alignItems: 'center', justifyContent: 'center', padding: '0.25rem' }}
             >
-              <Menu size={24} />
+              <Menu size={22} />
             </button>
-            <h2 className="header-title" style={{ fontSize: '1.15rem', margin: 0, fontWeight: 600 }}>System Overview</h2>
+            
+            {/* Artifact Breadcrumb */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
+              <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{breadcrumb.section}</span>
+              <span style={{ color: 'var(--border-color)', fontSize: '0.8rem' }}>/</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{breadcrumb.page}</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'nowrap' }}>
+
+          {/* Right: Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'nowrap' }}>
+            
+            {/* Quick Search Box (Artifact style) */}
+            <div className="artifact-search-box hide-mobile" title="Quick Search (Ctrl + K)">
+              <SearchIcon size={14} color="var(--text-muted)" />
+              <span>{lang === 'th' ? 'ค้นหาโปรเจกต์, ลูกค้า...' : 'Search projects, leads...'}</span>
+              <span className="artifact-kbd">⌘K</span>
+            </div>
+
             <button 
               onClick={toggleLang}
               className="glass-panel hover-lift"
               title="Switch Language (TH / EN)"
-              style={{ padding: '0.4rem 0.65rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'transparent', outline: 'none', fontSize: '0.8rem', fontWeight: 600 }}
+              style={{ padding: '0.35rem 0.65rem', borderRadius: '6px', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', outline: 'none', fontSize: '0.78rem', fontWeight: 600 }}
             >
               <span>{lang === 'th' ? '🇹🇭 TH' : '🇬🇧 EN'}</span>
             </button>
+            
             <button 
               onClick={toggleTheme} 
               className="glass-panel hover-lift" 
               title={
-                theme === 'light' ? 'Switch to Dark Mode' :
-                theme === 'dark' ? 'Switch to Revora Theme (Home Renovation Gold)' :
-                'Switch to Light Mode'
+                theme === 'artifact' ? 'Artifact Theme (Modern Slate/Indigo) - Click to Switch' :
+                theme === 'dark' ? 'Dark Theme - Click to Switch' :
+                theme === 'revora' ? 'Revora Gold Theme - Click to Switch' :
+                'Light Theme - Click to Switch'
               }
-              style={{ padding: '0.4rem 0.65rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'transparent', outline: 'none', fontSize: '0.8rem', fontWeight: 500 }}
+              style={{ padding: '0.35rem 0.65rem', borderRadius: '6px', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', outline: 'none', fontSize: '0.78rem', fontWeight: 500 }}
             >
-              {theme === 'light' && <Sun size={17} color="#f59e0b" />}
-              {theme === 'dark' && <Moon size={17} color="#00F5FF" />}
-              {theme === 'revora' && <Hammer size={17} color="#FFB703" />}
-              <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>
-                {theme === 'light' ? t.themeLight : theme === 'dark' ? t.themeDark : 'Revora Theme'}
+              {theme === 'artifact' && <Sparkles size={15} color="#818cf8" />}
+              {theme === 'dark' && <Moon size={15} color="#6366f1" />}
+              {theme === 'revora' && <Hammer size={15} color="#FFB703" />}
+              {theme === 'light' && <Sun size={15} color="#f59e0b" />}
+              <span className="hide-mobile" style={{ fontSize: '0.78rem' }}>
+                {theme === 'artifact' ? 'Artifact Theme' : theme === 'dark' ? t.themeDark : theme === 'revora' ? 'Revora Gold' : t.themeLight}
               </span>
             </button>
+
             <div className="hide-mobile">
               <QCPlanQuickButton currentUser={currentUser} />
             </div>
+            
             <NotificationBell tasks={tasks} currentUser={currentUser} />
 
-            {/* User Profile & Logout */}
+            {/* User Profile Mini Badge */}
             <div 
-              className="glass-panel"
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '0.45rem', 
-                padding: '0.25rem 0.55rem',
-                borderRadius: 'var(--radius-lg)',
-                marginLeft: '0.15rem'
+                gap: '0.5rem', 
+                padding: '0.25rem 0.5rem',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--bg-secondary)',
+                marginLeft: '0.2rem'
               }}
             >
               <img 
                 src={currentUser.avatar} 
                 alt="User Profile" 
-                style={{ width: '30px', height: '30px', borderRadius: '50%', border: '2px solid var(--accent-primary)', objectFit: 'cover' }} 
+                style={{ width: '26px', height: '26px', borderRadius: '50%', border: '1px solid var(--accent-primary)', objectFit: 'cover' }} 
               />
-              <div className="hide-mobile" style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{currentUser.name}</span>
-                <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>{currentUser.globalRole}</span>
-              </div>
-              <button 
-                onClick={onLogout}
-                className="hover-lift"
-                title={lang === 'th' ? 'ออกจากระบบ (Log out)' : 'Log out'}
-                style={{ 
-                  background: 'rgba(239, 68, 68, 0.12)', 
-                  border: '1px solid rgba(239, 68, 68, 0.25)', 
-                  color: 'var(--accent-danger)', 
-                  borderRadius: 'var(--radius-md)', 
-                  padding: '0.35rem 0.6rem', 
-                  cursor: 'pointer', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.3rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease',
-                  marginLeft: '0.2rem'
-                }}
-              >
-                <LogOut size={14} color="var(--accent-danger)" />
-                <span className="hide-mobile">{lang === 'th' ? 'ออก' : 'Logout'}</span>
-              </button>
+              <span className="hide-mobile" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                {currentUser.name.split(' ')[0]}
+              </span>
             </div>
           </div>
         </header>

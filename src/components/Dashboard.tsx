@@ -278,62 +278,64 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           {/* Date range display */}
-          <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 0.85rem', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
-            <Calendar size={16} color="var(--text-secondary)" />
+          <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.85rem', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-color)' }}>
+            <Calendar size={15} color="var(--text-secondary)" />
             <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>ข้อมูลตามจริงในระบบ</span>
           </div>
 
-          <button className="glass-panel hover-lift" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.85rem', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', cursor: 'pointer', background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
-            <Filter size={15} /> {lang === 'th' ? 'ตัวกรอง' : 'Filter'}
+          <button className="artifact-btn-secondary hover-lift" style={{ fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}>
+            <Filter size={14} /> {lang === 'th' ? 'ตัวกรอง' : 'Filter'}
           </button>
 
-          {/* Mode Switcher */}
-          <div style={{ display: 'flex', background: 'var(--bg-tertiary)', padding: '0.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', gap: '4px' }}>
+          {/* Mode Switcher (Soft Frosted Pill Style) */}
+          <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.03)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)', gap: '3px' }}>
             <button
               onClick={() => setDashboardView('my')}
+              className="hover-lift"
               style={{
-                padding: '0.4rem 0.85rem',
-                borderRadius: 'var(--radius-sm)',
-                border: dashboardView === 'my' ? '1px solid var(--border-color)' : 'none',
-                background: dashboardView === 'my' ? '#ffffff' : 'transparent',
-                color: dashboardView === 'my' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: dashboardView === 'my' ? 700 : 600,
-                fontSize: '0.8rem',
+                padding: '0.35rem 0.85rem',
+                borderRadius: '6px',
+                border: dashboardView === 'my' ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid transparent',
+                background: dashboardView === 'my' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                color: dashboardView === 'my' ? '#818cf8' : 'var(--text-secondary)',
+                fontWeight: dashboardView === 'my' ? 600 : 500,
+                fontSize: '0.78rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                boxShadow: dashboardView === 'my' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                backdropFilter: 'blur(8px)',
                 transition: 'all 0.15s ease'
               }}
             >
-              <Users size={14} color={dashboardView === 'my' ? 'var(--accent-primary)' : 'currentColor'} /> {lang === 'th' ? 'หน้างานส่วนตัว (My Tasks)' : 'My Tasks'}
+              <Users size={13} color={dashboardView === 'my' ? '#818cf8' : 'currentColor'} /> {lang === 'th' ? 'งานของฉัน' : 'My Tasks'}
             </button>
             <button
               onClick={() => setDashboardView('company')}
+              className="hover-lift"
               style={{
-                padding: '0.4rem 0.85rem',
-                borderRadius: 'var(--radius-sm)',
-                border: dashboardView === 'company' ? '1px solid var(--border-color)' : 'none',
-                background: dashboardView === 'company' ? '#ffffff' : 'transparent',
-                color: dashboardView === 'company' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: dashboardView === 'company' ? 700 : 600,
-                fontSize: '0.8rem',
+                padding: '0.35rem 0.85rem',
+                borderRadius: '6px',
+                border: dashboardView === 'company' ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid transparent',
+                background: dashboardView === 'company' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                color: dashboardView === 'company' ? '#818cf8' : 'var(--text-secondary)',
+                fontWeight: dashboardView === 'company' ? 600 : 500,
+                fontSize: '0.78rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                boxShadow: dashboardView === 'company' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                backdropFilter: 'blur(8px)',
                 transition: 'all 0.15s ease'
               }}
             >
-              <TrendingUp size={14} color={dashboardView === 'company' ? 'var(--accent-primary)' : 'currentColor'} /> {lang === 'th' ? 'ภาพรวมบริษัท (Company Dashboard)' : 'Company Dashboard'}
+              <TrendingUp size={13} color={dashboardView === 'company' ? '#818cf8' : 'currentColor'} /> {lang === 'th' ? 'ภาพรวมบริษัท' : 'Company Dashboard'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── PROJECT TYPE TABS ── */}
+      {/* ── PROJECT TYPE TABS (SOFT TRANSLUCENT PILLS) ── */}
       <div 
         className="glass-panel" 
         style={{ 
@@ -348,10 +350,10 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
         }}
       >
         {[
-          { id: 'all', nameTh: 'โครงการทั้งหมด (All)', nameEn: 'All Projects', color: 'var(--accent-primary)', icon: Folder },
+          { id: 'all', nameTh: 'โครงการทั้งหมด', nameEn: 'All Projects', color: '#818cf8', icon: Folder },
           { id: 'quick_service', nameTh: 'Quick service ⚡', nameEn: 'Quick service ⚡', color: '#f59e0b', icon: Zap },
-          { id: 'renovate', nameTh: 'งานรีโนเวท 🏡', nameEn: 'Renovate Service 🏡', color: '#8B0000', icon: Home },
-          { id: 'maintenance', nameTh: 'ซ่อมบำรุง MA 🔧', nameEn: 'MA Service 🔧', color: '#3b82f6', icon: ShieldCheck }
+          { id: 'renovate', nameTh: 'งานรีโนเวท 🏡', nameEn: 'Renovate Service 🏡', color: '#38bdf8', icon: Home },
+          { id: 'maintenance', nameTh: 'ซ่อมบำรุง MA 🔧', nameEn: 'MA Service 🔧', color: '#10b981', icon: ShieldCheck }
         ].map(type => {
           const Icon = type.icon;
           const isActive = selectedType === type.id;
@@ -359,92 +361,93 @@ export const Dashboard = ({ projects = [], tasks = [], timesheets = [], currentU
             <button
               key={type.id}
               onClick={() => setSelectedType(type.id)}
-              className="hover-lift"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.55rem 1.15rem',
-                borderRadius: 'var(--radius-md)',
-                border: isActive ? '1px solid var(--border-color)' : '1px solid transparent',
-                background: isActive ? '#ffffff' : 'var(--bg-tertiary)',
-                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: isActive ? 700 : 600,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.08)' : 'none'
-              }}
+              className={`artifact-filter-pill ${isActive ? 'active' : ''}`}
             >
-              <Icon size={15} color={type.color} />
+              <Icon size={14} color={isActive ? type.color : 'currentColor'} />
               <span>{lang === 'th' ? type.nameTh : type.nameEn}</span>
             </button>
           );
         })}
       </div>
 
-      {/* ── ROW 1: 5 DYNAMIC KPI SUMMARY CARDS (REAL DATA) ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+      {/* ── ROW 1: 5 DYNAMIC KPI SUMMARY CARDS (CRUIP ARTIFACT BENTO STYLE) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         
         {/* Card 1: Total */}
-        <div className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>โครงการทั้งหมด</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Folder size={20} color="#10b981" />
+        <div className="artifact-kpi-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>โครงการทั้งหมด</span>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, marginTop: '0.25rem' }}>
+                {totalProjectsCount}
+              </div>
+            </div>
+            <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Folder size={19} color="#6366f1" />
             </div>
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            {totalProjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <TrendingUp size={12} /> ข้อมูลตามจริง <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>ในระบบ</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem', marginTop: '0.25rem' }}>
+            <span className="artifact-trend-pill-up">
+              <TrendingUp size={11} /> +100%
+            </span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>ข้อมูลในระบบ</span>
           </div>
         </div>
 
         {/* Standard Workflow KPI Cards */}
         {[
           { 
-            label: 'To Do', 
+            label: 'To Do / วางแผน', 
             icon: FileText, 
-            color: '#3b82f6', 
-            bg: 'rgba(59, 130, 246, 0.15)', 
-            count: filteredProjects.filter(p => ['To Do', 'Todo', 'Planning', 'Draft', 'todo'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
+            color: '#38bdf8', 
+            bg: 'rgba(56, 189, 248, 0.12)',
+            border: 'rgba(56, 189, 248, 0.25)',
+            count: filteredProjects.filter(p => ['To Do', 'Todo', 'Planning', 'Draft', 'todo'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length,
+            trend: 'รอดำเนินการ'
           },
           { 
             label: 'Assign ช่าง', 
             icon: Users, 
-            color: '#8b5cf6', 
-            bg: 'rgba(139, 92, 246, 0.15)', 
-            count: filteredProjects.filter(p => ['Assign ช่าง', 'assign', 'จ่ายงาน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
+            color: '#818cf8', 
+            bg: 'rgba(129, 140, 248, 0.12)', 
+            border: 'rgba(129, 140, 248, 0.25)',
+            count: filteredProjects.filter(p => ['Assign ช่าง', 'assign', 'จ่ายงาน'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length,
+            trend: 'จ่ายงานแล้ว'
           },
           { 
-            label: 'Check-in & Check-out (หน้างาน)', 
+            label: 'Check-in หน้างาน', 
             icon: Clock, 
             color: '#f59e0b', 
-            bg: 'rgba(245, 158, 11, 0.15)', 
-            count: filteredProjects.filter(p => ['Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
+            bg: 'rgba(245, 158, 11, 0.12)', 
+            border: 'rgba(245, 158, 11, 0.25)',
+            count: filteredProjects.filter(p => ['Check-in', 'Check-out', 'In Progress', 'Active', 'กำลังดำเนินการ'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length,
+            trend: 'กำลังทำ'
           },
           { 
-            label: 'QC, Aftersale & Close', 
+            label: 'QC & ส่งมอบงาน', 
             icon: CheckCircle2, 
             color: '#10b981', 
-            bg: 'rgba(16, 185, 129, 0.15)', 
-            count: filteredProjects.filter(p => ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length 
+            bg: 'rgba(16, 185, 129, 0.12)', 
+            border: 'rgba(16, 185, 129, 0.25)',
+            count: filteredProjects.filter(p => ['QC', 'Aftersale', 'Close', 'Completed', 'Done', 'เสร็จสิ้น'].some(s => s.toLowerCase() === (p.status || '').toLowerCase())).length,
+            trend: 'สำเร็จ'
           }
         ].map((stg, i) => (
-          <div key={i} className="glass-panel hover-lift" style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{stg.label}</span>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: stg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <stg.icon size={20} color={stg.color} />
+          <div key={i} className="artifact-kpi-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{stg.label}</span>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: stg.color, lineHeight: 1.1, marginTop: '0.25rem' }}>
+                  {stg.count}
+                </div>
+              </div>
+              <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: stg.bg, border: `1px solid ${stg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <stg.icon size={19} color={stg.color} />
               </div>
             </div>
-            <div style={{ fontSize: '1.85rem', fontWeight: 800, color: stg.color }}>
-              {stg.count} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>โครงการ</span>
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-              ตามขั้นตอนปัจจุบัน
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.65rem', marginTop: '0.25rem' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>สถานะปัจจุบัน</span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: stg.color }}>{stg.trend}</span>
             </div>
           </div>
         ))}
