@@ -95,6 +95,41 @@ html[data-theme='dark'], body[data-theme='dark'], body.dark-theme {
   --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
+html[data-theme='revora'], body[data-theme='revora'], body.revora-theme {
+  color-scheme: dark;
+  /* Revora - Home Renovation & Remodeling Industrial Gold Theme */
+  --bg-primary: #0D1117;
+  --bg-secondary: #161B22;
+  --bg-tertiary: #21262D;
+  --bg-glass: rgba(22, 27, 34, 0.95);
+  
+  --card-bg: #161B22;
+  --input-bg: #0D1117;
+  --table-header-bg: #21262D;
+  
+  --text-primary: #F0F6FC;
+  --text-secondary: #C9D1D9;
+  --text-muted: #8B949E;
+  
+  --accent-primary: #FFB703; /* Revora Renovation Gold / Amber */
+  --accent-primary-hover: #F5A623;
+  --accent-secondary: #FB8500; /* Warm Industrial Amber */
+  --accent-danger: #F85149;
+  --accent-warning: #D29922;
+  --accent-info: #58A6FF;
+
+  --border-color: #30363D;
+  --border-glass: rgba(255, 183, 3, 0.25);
+  
+  --border-glow: 1px solid rgba(255, 183, 3, 0.3);
+  --shadow-glow: 0 0 15px rgba(255, 183, 3, 0.2), 0 0 30px rgba(251, 133, 0, 0.1);
+
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 20px -3px rgba(0, 0, 0, 0.6);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

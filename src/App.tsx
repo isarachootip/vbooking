@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileSpreadsheet, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText, ClipboardList, Key } from 'lucide-react';
+import { LayoutDashboard, FileSpreadsheet, CheckSquare, Clock, Users, Settings as SettingsIcon, LogOut, Briefcase, BarChart3, Menu, X, CalendarRange, Bell, AlertTriangle, AlertCircle, CalendarClock, HelpCircle, MessageSquare, Kanban, CalendarDays, MapPin, Sun, Moon, UserCog, Database, Activity, Navigation, FileText, ClipboardList, Key, Hammer } from 'lucide-react';
 
 import { PMTBrandLogo } from './components/PMTBrandLogo';
 import { Dashboard } from './components/Dashboard';
@@ -382,8 +382,8 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [chatNotifications, setChatNotifications] = useState<any[]>([]);
   const { lang, toggleLang, t } = useLanguage();
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('app_theme') as 'light' | 'dark') || 'light';
+  const [theme, setTheme] = useState<'light' | 'dark' | 'revora'>(() => {
+    return (localStorage.getItem('app_theme') as 'light' | 'dark' | 'revora') || 'revora';
   });
 
   useEffect(() => {
@@ -394,7 +394,11 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setTheme(prev => {
+      if (prev === 'light') return 'dark';
+      if (prev === 'dark') return 'revora';
+      return 'light';
+    });
   };
 
   const fetchNotifications = async () => {
@@ -541,11 +545,19 @@ const AppLayout = ({ children, currentUser, tasks, onLogout }: { children: React
             <button 
               onClick={toggleTheme} 
               className="glass-panel hover-lift" 
-              title={theme === 'light' ? 'สลับเป็น Theme มืด (Dark Mode)' : 'สลับเป็น Theme สว่าง (Light Mode)'}
+              title={
+                theme === 'light' ? 'Switch to Dark Mode' :
+                theme === 'dark' ? 'Switch to Revora Theme (Home Renovation Gold)' :
+                'Switch to Light Mode'
+              }
               style={{ padding: '0.4rem 0.65rem', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'transparent', outline: 'none', fontSize: '0.8rem', fontWeight: 500 }}
             >
-              {theme === 'light' ? <Sun size={17} color="#f59e0b" /> : <Moon size={17} color="#00F5FF" />}
-              <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>{theme === 'light' ? t.themeLight : t.themeDark}</span>
+              {theme === 'light' && <Sun size={17} color="#f59e0b" />}
+              {theme === 'dark' && <Moon size={17} color="#00F5FF" />}
+              {theme === 'revora' && <Hammer size={17} color="#FFB703" />}
+              <span className="hide-mobile" style={{ fontSize: '0.85rem' }}>
+                {theme === 'light' ? t.themeLight : theme === 'dark' ? t.themeDark : 'Revora Theme'}
+              </span>
             </button>
             <div className="hide-mobile">
               <QCPlanQuickButton currentUser={currentUser} />
