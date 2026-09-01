@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   FileSpreadsheet, Plus, Search, Trash2, Edit3, CheckCircle, 
@@ -354,19 +354,26 @@ export const DraftEstimationManager: React.FC<DraftEstimationManagerProps> = ({ 
     fetchData();
   }, []);
 
-  // Check URL query param ?leadId=... on load
+  const hasHandledLeadParam = useRef(false);
+
+  // Check URL query param ?leadId=... on load (only once, and not if already in detail view)
   useEffect(() => {
+    if (hasHandledLeadParam.current || activeEstimation) return;
     const params = new URLSearchParams(location.search);
     const leadIdParam = params.get('leadId') || (location.state as any)?.leadId;
     if (leadIdParam && leads.length > 0) {
       const found = leads.find(l => String(l.id) === leadIdParam);
       if (found) {
+        hasHandledLeadParam.current = true;
         setCreationMode('existing_lead');
         handleSelectLead(found.id, found);
         setIsCreateModalOpen(true);
+        try {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {}
       }
     }
-  }, [location.search, location.state, leads]);
+  }, [location.search, location.state, leads, activeEstimation]);
 
   // Fetch full details of an active estimation
   const openEstimationDetail = async (estId: string) => {
