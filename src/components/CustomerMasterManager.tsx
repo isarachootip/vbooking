@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, Building2, User, Phone, Mail, MapPin, Plus, Search, 
   Edit, Trash2, ChevronDown, ChevronUp, Check, ExternalLink, 
@@ -12,6 +13,7 @@ interface CustomerMasterManagerProps {
 }
 
 export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = ({ currentUser }) => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -345,7 +347,7 @@ export const CustomerMasterManager: React.FC<CustomerMasterManagerProps> = ({ cu
 
         <button
           type="button"
-          onClick={() => handleOpenCustModal()}
+          onClick={() => navigate('/customers/new')}
           style={{
             background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)',
             color: '#0f172a',

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="artifact">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -10,6 +10,19 @@
     <title>PMT - บริหารโครงการติดตั้ง & รีโนเวท</title>
     <!-- Chatbot Assistant -->
     <script src="/widget.js" defer></script>
+    <!-- Theme: Force artifact theme as default (Artifact Admin Kit style) -->
+    <script>
+      (function() {
+        var storedTheme = localStorage.getItem('app_theme');
+        // If no theme stored yet, or if it was the old 'light' default, set artifact
+        if (!storedTheme || storedTheme === 'light') {
+          localStorage.setItem('app_theme', 'artifact');
+          storedTheme = 'artifact';
+        }
+        document.documentElement.setAttribute('data-theme', storedTheme);
+        document.body && (document.body.className = storedTheme + '-theme');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

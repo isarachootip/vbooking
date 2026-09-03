@@ -261,20 +261,25 @@ export const Settings = ({
       });
       if (res.ok) {
         setSystemConfigMessage('Settings saved successfully!');
+        const newSettings = {
+          brand_logo_url: brandLogoUrl,
+          brand_name: brandName,
+          brand_subtitle: brandSubtitle,
+          brand_badge: brandBadge,
+          brand_header_style: brandHeaderStyle,
+          gemini_api_key: geminiApiKey,
+          google_maps_api_key: googleMapsApiKey,
+          max_upload_mb: maxUploadMb,
+          auto_sync_remote_technicians: String(autoSyncTechs),
+        };
         if (setSystemSettings) {
-          setSystemSettings(prev => ({ 
-            ...prev, 
-            gemini_api_key: geminiApiKey, 
-            google_maps_api_key: googleMapsApiKey,
-            max_upload_mb: maxUploadMb,
-            auto_sync_remote_technicians: String(autoSyncTechs),
-            brand_logo_url: brandLogoUrl,
-            brand_name: brandName,
-            brand_subtitle: brandSubtitle,
-            brand_badge: brandBadge,
-            brand_header_style: brandHeaderStyle
-          }));
+          setSystemSettings(prev => ({ ...prev, ...newSettings }));
         }
+        // Persist to localStorage so sidebar updates instantly on next page load
+        try {
+          const current = JSON.parse(localStorage.getItem('nt_system_settings') || '{}');
+          localStorage.setItem('nt_system_settings', JSON.stringify({ ...current, ...newSettings }));
+        } catch {}
         setTimeout(() => setSystemConfigMessage(''), 3000);
       } else {
         const errorData = await res.json();

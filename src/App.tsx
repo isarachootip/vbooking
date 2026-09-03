@@ -27,6 +27,7 @@ import { LeadsPage } from './components/LeadsPage';
 import { QuotationManager } from './components/QuotationManager';
 import { DraftEstimationManager } from './components/DraftEstimationManager';
 import { CustomerMasterManager } from './components/CustomerMasterManager';
+import { AddCustomerPage } from './components/AddCustomerPage';
 import { MAContracts } from './components/MAContracts';
 import { PublicQuotationSign } from './components/PublicQuotationSign';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
@@ -442,6 +443,8 @@ const getBreadcrumbInfo = (pathname: string, lang: string) => {
       return { section: isTh ? 'ทีม & สัญญา' : 'Team & Directory', page: isTh ? 'การอนุมัติทีม' : 'Team Approvals' };
     case '/users':
       return { section: isTh ? 'ทีม & สัญญา' : 'Team & Directory', page: isTh ? 'จัดการผู้ใช้งาน' : 'User Management' };
+    case '/customers/new':
+      return { section: isTh ? 'ทีม & สัญญา' : 'Team & Directory', page: isTh ? 'เพิ่มลูกค้าใหม่' : 'Add Customer' };
     case '/customers':
       return { section: isTh ? 'ทีม & สัญญา' : 'Team & Directory', page: isTh ? 'ข้อมูลลูกค้า & ไซต์งาน' : 'Customers & Sites' };
     case '/ma-contracts':
@@ -465,7 +468,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout, systemSettings }: {
   const location = useLocation();
   const { lang, toggleLang, t } = useLanguage();
   const [theme, setTheme] = useState<'light' | 'dark' | 'artifact' | 'revora'>(() => {
-    return (localStorage.getItem('app_theme') as any) || 'light';
+    return (localStorage.getItem('app_theme') as any) || 'artifact';
   });
 
   const breadcrumb = getBreadcrumbInfo(location.pathname, lang);
@@ -528,35 +531,76 @@ const AppLayout = ({ children, currentUser, tasks, onLogout, systemSettings }: {
           justifyContent: 'space-between', 
           gap: '0.65rem' 
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
-            <div style={{ 
-              width: '36px', 
-              height: '36px', 
-              borderRadius: '10px', 
-              background: 'linear-gradient(135deg, #7C3AED, #6366F1)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              color: '#ffffff',
-              boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
-              flexShrink: 0 
-            }}>
-              <Activity size={20} color="#ffffff" />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, lineHeight: 1.25, flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-                  PMT Flow
+          {systemSettings?.brand_header_style === 'banner' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', minWidth: 0, flex: 1 }}>
+              <div style={{ width: '100%', borderRadius: '8px', overflow: 'hidden', background: '#ffffff', padding: '6px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img 
+                  src={systemSettings?.brand_logo_url || '/pmt-logo.png'} 
+                  alt="Workspace Logo" 
+                  style={{ width: '100%', maxHeight: '55px', objectFit: 'contain', display: 'block' }} 
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.02em' }}>
+                  {systemSettings?.brand_name || 'PMT Flow'}
                 </span>
-                <span style={{ fontSize: '0.62rem', padding: '0.1rem 0.4rem', borderRadius: '9999px', background: 'rgba(124, 58, 237, 0.12)', color: '#7C3AED', fontWeight: 700, border: '1px solid rgba(124, 58, 237, 0.25)' }}>
-                  Artifact
+                {systemSettings?.brand_badge && (
+                    <span style={{ fontSize: '0.62rem', padding: '0.1rem 0.4rem', borderRadius: '9999px', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-primary)', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                    {systemSettings.brand_badge}
+                  </span>
+                )}
+              </div>
+              {systemSettings?.brand_subtitle && (
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '-0.2rem' }}>
+                  {systemSettings.brand_subtitle}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+              <div style={{ 
+                width: '36px', 
+                height: '36px', 
+                borderRadius: '10px', 
+                border: '1px solid var(--border-color)',
+                background: '#ffffff', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                overflow: 'hidden',
+                flexShrink: 0,
+                padding: '2px',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)'
+              }}>
+                {systemSettings?.brand_logo_url ? (
+                  <img 
+                    src={systemSettings.brand_logo_url} 
+                    alt="Workspace Logo" 
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} 
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', borderRadius: '8px', background: 'linear-gradient(135deg, #7C3AED, #6366F1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                    <Activity size={18} color="#ffffff" />
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, lineHeight: 1.25, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {systemSettings?.brand_name || 'PMT Flow'}
+                  </span>
+                  {systemSettings?.brand_badge && (
+                    <span style={{ fontSize: '0.62rem', padding: '0.1rem 0.4rem', borderRadius: '9999px', background: 'rgba(124, 58, 237, 0.12)', color: '#7C3AED', fontWeight: 700, border: '1px solid rgba(124, 58, 237, 0.25)', flexShrink: 0 }}>
+                      {systemSettings.brand_badge}
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {systemSettings?.brand_subtitle !== undefined ? systemSettings.brand_subtitle : 'Enterprise Operations'}
                 </span>
               </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                Enterprise Operations
-              </span>
             </div>
-          </div>
+          )}
           <button 
             className="mobile-close-btn"
             onClick={() => setIsSidebarOpen(false)}
@@ -588,6 +632,7 @@ const AppLayout = ({ children, currentUser, tasks, onLogout, systemSettings }: {
           <SidebarItem icon={MessageSquare} label={t.chat} path="/chat" badgeCount={unreadChatCount} />
 
           <SidebarSectionTitle title={lang === 'th' ? 'การตั้งค่าระบบ' : 'System & Settings'} />
+          <SidebarItem icon={UserCog} label={t.userManagement} path="/users" />
           <SidebarItem icon={SettingsIcon} label={lang === 'th' ? 'ตั้งค่าระบบ & API' : 'Settings & API'} path="/settings" />
           <SidebarItem icon={Database} label={lang === 'th' ? 'จัดการ Master Data' : 'Maintain Master'} path="/master-management" />
           <SidebarItem icon={BarChart3} label={t.reports} path="/reports" />
@@ -793,7 +838,13 @@ function App() {
   const [permissionSchemes, setPermissionSchemes] = useState<PermissionScheme[]>([]);
   const [projectWorkflows, setProjectWorkflows] = useState<ProjectWorkflow[]>([]);
   const [costRates, setCostRates] = useState<CostRate[]>([]);
-  const [systemSettings, setSystemSettings] = useState<SystemSettings>({});
+  const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => {
+    try {
+      const cached = localStorage.getItem('nt_system_settings');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return {};
+  });
   const [branches, setBranches] = useState<any[]>([]);
   const [masterBranches, setMasterBranches] = useState<any[]>([]);
   const [masterZones, setMasterZones] = useState<any[]>([]);
@@ -886,13 +937,14 @@ function App() {
         setPermissionSchemes(data.permissionSchemes || []);
         setProjectWorkflows(data.projectWorkflows || []);
         setCostRates(data.costRates || []);
-        setSystemSettings(data.systemSettings || {});
         setBranches(data.branches || []);
         setMasterBranches(data.masterBranches || []);
         setMasterZones(data.masterZones || []);
         setPriceBook(data.priceBook || []);
         const settings = data.systemSettings || {};
         setSystemSettings(settings);
+        // Cache brand settings in localStorage so sidebar renders instantly on next load
+        try { localStorage.setItem('nt_system_settings', JSON.stringify(settings)); } catch {}
         
         if (settings.master_project_types) {
           try {
@@ -1435,6 +1487,7 @@ function App() {
           <Route path="/chat" element={<ProjectChat projects={projects} users={users} currentUser={currentUser} systemSettings={systemSettings} />} />
           <Route path="/team" element={<TeamApprovals users={users} setUsers={handleSetUsers} timesheets={timesheets} setTimesheets={handleSetTimesheets} projects={projects} setProjects={handleSetProjects} tasks={tasks} currentUser={currentUser} branches={branches} />} />
           <Route path="/users" element={<UserManagement users={users} setUsers={setUsers} projects={projects} currentUser={currentUser} fetchInitialData={fetchInitialData} branches={branches && branches.length > 0 ? branches : masterBranches} />} />
+          <Route path="/customers/new" element={<AddCustomerPage currentUser={currentUser} />} />
           <Route path="/customers" element={<CustomerMasterManager currentUser={currentUser} />} />
           <Route path="/ma-contracts" element={<MAContracts currentUser={currentUser} />} />
 

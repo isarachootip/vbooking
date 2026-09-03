@@ -94,38 +94,54 @@ html[data-theme='dark'], body[data-theme='dark'], body.dark-theme {
 }
 
 html[data-theme='artifact'], body[data-theme='artifact'], body.artifact-theme {
-  color-scheme: dark;
-  /* Cruip Artifact - Ultra Sleek Minimalist Next.js Admin Dark */
-  --bg-primary: #09090b;
-  --bg-secondary: #0f0f13;
-  --bg-tertiary: #18181f;
-  --bg-glass: rgba(15, 15, 19, 0.92);
+  color-scheme: light dark;
+  /* Artifact Admin Kit - Cruip/Shadcn Style: Dark sidebar + Light content */
   
-  --card-bg: #111116;
-  --input-bg: #09090b;
-  --table-header-bg: #16161d;
-  
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  
-  --accent-primary: #6366f1; /* Electric Indigo */
+  /* Content area backgrounds (light/zinc) */
+  --bg-primary: #f4f4f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f4f4f5;
+  --bg-glass: rgba(255, 255, 255, 0.96);
+
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --table-header-bg: #f8fafc;
+
+  /* Content area text (dark) */
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+  --text-muted: #a1a1aa;
+
+  /* Indigo accent (Artifact-style) */
+  --accent-primary: #6366f1;
   --accent-primary-hover: #4f46e5;
-  --accent-secondary: #8b5cf6; /* Violet */
-  --accent-danger: #f43f5e;
+  --accent-secondary: #8b5cf6;
+  --accent-danger: #ef4444;
   --accent-warning: #f59e0b;
   --accent-info: #0ea5e9;
 
-  --border-color: #23232a;
-  --border-glass: rgba(99, 102, 241, 0.15);
-  
-  --border-glow: 1px solid #23232a;
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+  --border-color: #e4e4e7;
+  --border-glass: rgba(99, 102, 241, 0.12);
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.7);
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+  --border-glow: 1px solid #e4e4e7;
+  --shadow-glow: 0 0 0 transparent;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-glass: 0 4px 16px 0 rgba(0, 0, 0, 0.06);
+
+  /* Sidebar-specific overrides via CSS variables */
+  --sidebar-bg: #09090b;
+  --sidebar-border: #18181b;
+  --sidebar-text: #a1a1aa;
+  --sidebar-text-hover: #fafafa;
+  --sidebar-text-active: #fafafa;
+  --sidebar-item-hover-bg: #18181b;
+  --sidebar-item-active-bg: #27272a;
+  --sidebar-section-title: #52525b;
+  --sidebar-header-bg: #09090b;
+  --sidebar-logo-bg: #18181b;
 }
 
 html[data-theme='revora'], body[data-theme='revora'], body.revora-theme {
@@ -183,6 +199,113 @@ body {
     radial-gradient(circle at 85% 30%, rgba(37, 99, 235, 0.04), transparent 25%);
   background-attachment: fixed;
   min-height: 100vh;
+}
+
+/* ─── Artifact Theme: Clean body (no gradient noise) ─── */
+html[data-theme='artifact'] body,
+body.artifact-theme {
+  background-image: none !important;
+  background-color: #f4f4f5 !important;
+}
+
+/* ─── Artifact Theme: Dark Sidebar Override ─── */
+html[data-theme='artifact'] .sidebar,
+body.artifact-theme .sidebar {
+  background: var(--sidebar-bg, #09090b) !important;
+  border-right: 1px solid var(--sidebar-border, #18181b) !important;
+  color: var(--sidebar-text, #a1a1aa) !important;
+}
+
+html[data-theme='artifact'] .sidebar *,
+body.artifact-theme .sidebar * {
+  color: var(--sidebar-text, #a1a1aa);
+}
+
+html[data-theme='artifact'] .artifact-sidebar-group-title,
+body.artifact-theme .artifact-sidebar-group-title {
+  color: var(--sidebar-section-title, #52525b) !important;
+}
+
+html[data-theme='artifact'] .artifact-nav-item,
+body.artifact-theme .artifact-nav-item {
+  color: var(--sidebar-text, #a1a1aa) !important;
+}
+
+html[data-theme='artifact'] .artifact-nav-item:hover,
+body.artifact-theme .artifact-nav-item:hover {
+  background: var(--sidebar-item-hover-bg, #18181b) !important;
+  color: var(--sidebar-text-hover, #fafafa) !important;
+}
+
+html[data-theme='artifact'] .artifact-nav-item.active,
+body.artifact-theme .artifact-nav-item.active {
+  background: var(--sidebar-item-active-bg, #27272a) !important;
+  color: var(--sidebar-text-active, #fafafa) !important;
+  border-color: #3f3f46 !important;
+}
+
+html[data-theme='artifact'] .artifact-nav-item.active::before,
+body.artifact-theme .artifact-nav-item.active::before {
+  background: #6366f1 !important;
+}
+
+/* Sidebar brand header */
+html[data-theme='artifact'] .sidebar > div:first-child,
+body.artifact-theme .sidebar > div:first-child {
+  background: var(--sidebar-header-bg, #09090b) !important;
+  border-bottom-color: var(--sidebar-border, #18181b) !important;
+}
+
+/* Sidebar bottom user bar */
+html[data-theme='artifact'] .sidebar > div:last-child,
+body.artifact-theme .sidebar > div:last-child {
+  background: var(--sidebar-header-bg, #09090b) !important;
+  border-top-color: var(--sidebar-border, #18181b) !important;
+}
+
+/* Sidebar scrollbar in artifact mode */
+html[data-theme='artifact'] .sidebar ::-webkit-scrollbar-track,
+body.artifact-theme .sidebar ::-webkit-scrollbar-track {
+  background: transparent;
+}
+html[data-theme='artifact'] .sidebar ::-webkit-scrollbar-thumb,
+body.artifact-theme .sidebar ::-webkit-scrollbar-thumb {
+  background: #27272a;
+}
+
+/* ─── Artifact Theme: Header (top bar) ─── */
+html[data-theme='artifact'] .header,
+body.artifact-theme .header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e4e4e7 !important;
+  backdrop-filter: none !important;
+}
+
+/* ─── Artifact Theme: Content area ─── */
+html[data-theme='artifact'] .content-area,
+body.artifact-theme .content-area {
+  background: #f4f4f5 !important;
+}
+
+/* ─── Artifact Theme: Primary action button (solid indigo) ─── */
+html[data-theme='artifact'] .btn-primary,
+body.artifact-theme .btn-primary {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  border: 1px solid #4f46e5 !important;
+}
+html[data-theme='artifact'] .btn-primary:hover,
+body.artifact-theme .btn-primary:hover {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+}
+
+/* Artifact filter pill active state */
+html[data-theme='artifact'] .artifact-filter-pill.active,
+body.artifact-theme .artifact-filter-pill.active {
+  background: rgba(99, 102, 241, 0.10) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  color: #6366f1 !important;
 }
 
 /* Modern Theme Text Styling */
